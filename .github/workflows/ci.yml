@@ -1,4 +1,4 @@
-name: AirRadar V2 validation (NO DEPLOY)
+name: AirRadar V2 — testy a česká dokumentace (bez nasazení)
 
 on:
   push:
@@ -14,6 +14,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  documentation:
+    name: Česká dokumentace
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Kontrola dokumentace a matice 79/99
+        run: node tools/check-docs.mjs
   rust-engine:
     runs-on: ubuntu-24.04
     steps:
@@ -21,13 +31,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-      - name: Rust format
+      - name: Formátování Rust
         run: cargo fmt --all -- --check
-      - name: Rust lint
+      - name: Statická kontrola Rust
         run: cargo clippy --locked --workspace --all-targets -- -D warnings
-      - name: Engine tests
+      - name: Testy Rust enginu
         run: cargo test --locked --workspace
-      - name: Bootstrap API runtime smoke (receiver disabled)
+      - name: Zkušební spuštění API bez přijímače
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -60,17 +70,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install pinned web dependencies
+      - name: Instalace webových závislostí podle lockfilu
         run: npm ci --no-audit --no-fund
       - name: Lint
         run: npm run lint
       - name: TypeScript
         run: npm run typecheck
-      - name: Unit tests
+      - name: Jednotkové testy
         run: npm test
-      - name: Build static placeholder
+      - name: Sestavení vývojové stránky
         run: npm run build
-      - name: Bootstrap website runtime smoke (not live)
+      - name: Zkušební HTTP kontrola českého webu
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -89,4 +99,5 @@ jobs:
             cat /tmp/airradar-v2-web.log
             exit 1
           fi
-          grep -q "Not connected to live aircraft" /tmp/airradar-v2-home.html
+          grep -q "Není připojen živý provoz" /tmp/airradar-v2-home.html
+          grep -q 'lang="cs"' /tmp/airradar-v2-home.html

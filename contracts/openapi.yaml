@@ -1,18 +1,18 @@
 openapi: 3.1.0
 info:
-  title: AirRadar V2 engine
+  title: AirRadar V2 — základní API
   version: 0.1.0
-  description: Initial G-00 stub contracts; none of these endpoints contains live traffic.
+  description: Zkušební kontrakty etapy G-00. Žádný endpoint nevrací živá data letadel.
 servers:
   - url: http://127.0.0.1:4101
 paths:
   /api/v1/health:
     get:
       operationId: health
-      summary: Bootstrap health (NOT a live readiness check)
+      summary: Stav zkušební služby (nikoli potvrzení živého provozu)
       responses:
         '200':
-          description: Service up, ADS-B not implemented
+          description: Služba odpovídá, přijímač ADS-B ještě není implementován
           content:
             application/json:
               schema:
@@ -26,10 +26,10 @@ paths:
   /api/v1/aircraft:
     get:
       operationId: aircraft
-      summary: Empty placeholder; explicitly NOT_IMPLEMENTED
+      summary: Prázdná testovací odpověď se stavem NOT_IMPLEMENTED
       responses:
         '200':
-          description: Empty stub, not a live observation
+          description: Prázdná struktura, nikoliv živě přijatá letadla
           content:
             application/json:
               schema:
@@ -45,10 +45,10 @@ paths:
   /api/v1/stream:
     get:
       operationId: stream
-      summary: Placeholder SSE snapshot with keepalive; no live data
+      summary: Zkušební SSE stream s heartbeat bez živých dat
       responses:
         '200':
-          description: Stub-only event stream
+          description: Stream obsahuje pouze neimplementovaný počáteční snapshot
           content:
             text/event-stream:
               schema:
