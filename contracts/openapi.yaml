@@ -1,0 +1,55 @@
+openapi: 3.1.0
+info:
+  title: AirRadar V2 engine
+  version: 0.1.0
+  description: Initial G-00 stub contracts; none of these endpoints contains live traffic.
+servers:
+  - url: http://127.0.0.1:4101
+paths:
+  /api/v1/health:
+    get:
+      operationId: health
+      summary: Bootstrap health (NOT a live readiness check)
+      responses:
+        '200':
+          description: Service up, ADS-B not implemented
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, stage, live_ingest, database_connected]
+                properties:
+                  status: { type: string, const: bootstrap }
+                  stage: { type: string, const: G-00 }
+                  live_ingest: { type: boolean, const: false }
+                  database_connected: { type: boolean, const: false }
+  /api/v1/aircraft:
+    get:
+      operationId: aircraft
+      summary: Empty placeholder; explicitly NOT_IMPLEMENTED
+      responses:
+        '200':
+          description: Empty stub, not a live observation
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, source, aircraft]
+                properties:
+                  status: { type: string, const: NOT_IMPLEMENTED }
+                  source: { type: string, const: bootstrap }
+                  aircraft:
+                    type: array
+                    maxItems: 0
+                    items: {}
+  /api/v1/stream:
+    get:
+      operationId: stream
+      summary: Placeholder SSE snapshot with keepalive; no live data
+      responses:
+        '200':
+          description: Stub-only event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string

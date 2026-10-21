@@ -1,0 +1,50 @@
+name: AirRadar V2 validation (NO DEPLOY)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v2-validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust-engine:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Rust format
+        run: cargo fmt --all -- --check
+      - name: Rust lint
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Engine tests
+        run: cargo test --workspace
+
+  nextjs-web:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install isolated web dependencies (bootstrap only)
+        run: npm install --no-audit --no-fund
+      - name: Lint
+        run: npm run lint
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: Build static placeholder
+        run: npm run build

@@ -1,0 +1,1446 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "Boym323/AirRadar",
+    "path": "docs/audits/SELECTED-FEATURE-REVISED-2026-10-21.json",
+    "asOf": "2026-10-21",
+    "historicalSourceOfRequirements": true
+  },
+  "statusLegend": [
+    "NOT_STARTED",
+    "IN_PROGRESS",
+    "TESTED",
+    "ACCEPTED",
+    "EXCLUDED"
+  ],
+  "counts": {
+    "KEEP": 79,
+    "REMOVE": 99
+  },
+  "features": [
+    {
+      "id": "J01",
+      "name": "Příjem lokálních letadel přes readsb JSON · základ systému",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "J02",
+      "name": "Přímý příjem lokálních BEAST TCP rámců",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "J03",
+      "name": "Rust akcelerace BEAST parseru a CRC24",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "J04",
+      "name": "Automatické přepínání BEAST / JSON při výpadku",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "J05",
+      "name": "Správa živého stavu letadel v RAM · základ systému",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "J06",
+      "name": "Veřejné API aktuálních letadel · základ systému",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "J07",
+      "name": "Živý stream SSE V1 – celé snapshoty · základ systému",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "J08",
+      "name": "Optimalizovaný SSE V2 – delta aktualizace",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "J09",
+      "name": "Ukládání vzorkované historie do PostgreSQL",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "J11",
+      "name": "Kontinuita identity letadel, detekce výpadků a deduplikace · základ systému",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "R01",
+      "name": "Základní interaktivní mapa MapLibre · základ systému",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "R02",
+      "name": "Přepínání LOCAL / EXTENDED pokrytí",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "R03",
+      "name": "Ikony letadel podle typu a směru",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "R04",
+      "name": "Popisky letadel a řízení jejich kolizí",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "R05",
+      "name": "Barevné režimy letadel podle provozních údajů",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "R06",
+      "name": "Živý seznam provozu a filtrování letadel",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "R07",
+      "name": "Detail vybraného letadla v mapovém panelu",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "R08",
+      "name": "Zobrazení živé letové stopy (trail)",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "R09",
+      "name": "Sledování letadla kamerou mapy (follow)",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "R10",
+      "name": "Současné sledování více letadel",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "R11",
+      "name": "Zobrazení trasy mezi letišti a jejího průběhu",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "R12",
+      "name": "Vrstvy okolních letišť",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "R14",
+      "name": "Mapové podklady, vzhled a předvolby vrstev",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "R15",
+      "name": "Mapová HUD lišta a rychlé akce",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "R17",
+      "name": "ATC sektory a vysílače přímo v mapě",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "R18",
+      "name": "Volitelné počasí a vzdušné prostory přímo v mapě",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "H03",
+      "name": "Fotografie letadel z Planespotters",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "H07",
+      "name": "Výškový, rychlostní a vertikální profil letu",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "H14",
+      "name": "Souhrny letadla za 7/30 dní a celé období",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "A01",
+      "name": "Katalog letišť a vyhledávání podle ICAO",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "A02",
+      "name": "Detail letiště – dráhy, poloha, vybavení a frekvence",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "T08",
+      "name": "ATS tratě České republiky",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "T09",
+      "name": "ATS tratě Slovenska a Rakouska",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "T10",
+      "name": "NAVAID/FIX databáze a navigační průzkumník",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "T13",
+      "name": "Navigation Integrity – podezřelé anomálie ADS-B",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "T14",
+      "name": "Navigation Integrity – regionální mapa, historie a analýza",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "W01",
+      "name": "Aktuální METAR a TAF letišť",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "W02",
+      "name": "METAR značky a informace přímo v mapě",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "W03",
+      "name": "Meteorologický radar ČHMÚ s časovou osou",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "W06",
+      "name": "SIGMET a AirSIGMET výstrahy",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "W08",
+      "name": "Počasí měřené letadly z Mode-S / BDS 4,4",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "W09",
+      "name": "Profil a kvalita počasí pozorovaného letadlem",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "L11",
+      "name": "Push notifikace do prohlížeče",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "L12",
+      "name": "Externí Pushover upozornění",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "E01",
+      "name": "ADSBHub – příjem externího síťového provozu",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "E02",
+      "name": "ADSB.lol – surový BEAST/SBS stream",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "E03",
+      "name": "ADSB.lol – HTTP geografická záloha",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "E04",
+      "name": "OGN/FLARM – letadla, kluzáky a další cíle",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "E05",
+      "name": "OGN Device Database – identifikace a ochrana soukromí",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "E06",
+      "name": "SoftRF SQLite – nouzová OGN whitelist databáze",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "E07",
+      "name": "ACARS/VDL2 metadata přes RXW Hub",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "E09",
+      "name": "FlightAware – doplňování letových plánů a diagnostika využití",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "E10",
+      "name": "ADSBDB – externí metadata letadel",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "S01",
+      "name": "Aktuální počítadla letadel a zpráv za sekundu",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "S02",
+      "name": "Denní/7denní/30denní agregované statistiky – API",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "S03",
+      "name": "Receiver Coverage – polární mapa dosahu",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "S04",
+      "name": "Analýza slabých sektorů a spolehlivosti příjmu",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "S06",
+      "name": "Statistiky typů letadel, aerolinek a tratí – API",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "S09",
+      "name": "Logbook a agregované souhrny přijímače",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "O01",
+      "name": "System Dashboard – stav všech komponent",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "O02",
+      "name": "Veřejná kontrola zdraví aplikace a verze · základ systému",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "O03",
+      "name": "Receiver Monitoring – zdraví SDR/readsb příjmu",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "O04",
+      "name": "Diagnostika externích poskytovatelů a integrací",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "O05",
+      "name": "CPU, RAM, GC a event-loop telemetrie",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "O06",
+      "name": "Historie výkonu a aktuálních bottlenecků",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "O07",
+      "name": "Databázová latence, fronty a diagnostika zapisování",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "O08",
+      "name": "Systémové diagnostické SSE streamy",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "O09",
+      "name": "T58 production soak, stall canary a CPU profiling",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "O10",
+      "name": "Výkonové benchmarky a zátěžové testy",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "O11",
+      "name": "Automatické CI, testy, CodeQL a bezpečnostní kontroly · základ systému",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "O12",
+      "name": "Automatické nasazení, health check a rollback · základ systému",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "O13",
+      "name": "Import/synchronizace eAIP, ATS a letištních dat",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "O15",
+      "name": "Správa přihlášení administrátora a bezpečnostních oprávnění · základ systému",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "U01",
+      "name": "Responzivní rozhraní mobil/tablet/desktop · základ systému",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "U02",
+      "name": "Instalovatelná PWA aplikace",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "U03",
+      "name": "Offline cache posledního známého stavu",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "U04",
+      "name": "Česká a anglická lokalizace",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "U05",
+      "name": "Globální Command Search a navigace",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "U08",
+      "name": "Klávesové zkratky a rychlé ovládání",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "A03",
+      "name": "Airport Live Board – přehled provozu letiště",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "A04",
+      "name": "Odvozené přílety, odlety a průlety",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "A05",
+      "name": "Vyhodnocení použitých přistávacích drah",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "A06",
+      "name": "Arrival Sequence / Approach Queue",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "A07",
+      "name": "Arrival Flow, vytížení a stabilita drah (V8)",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "A08",
+      "name": "Odhad terminálové poptávky / příletů (V9)",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "A09",
+      "name": "Provozní výjimky a konfliktní údaje letiště",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "A10",
+      "name": "Live Airport Network – okolní aktivní letiště",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "A11",
+      "name": "Porovnání letišť",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "A12",
+      "name": "Historická statistika provozu letiště za 7/30 dní",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D01",
+      "name": "Digital Twin – základní projekce letu na 30 minut",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D02",
+      "name": "4D koridor – budoucí poloha, výška a čas",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D03",
+      "name": "Prediction Timeline v detailu letadla",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D04",
+      "name": "Budoucí průniky ATC sektorů a ATS tras",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D05",
+      "name": "Průniky s plánovanými AUP/UUP prostory",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D06",
+      "name": "Průniky s Navigation Integrity anomáliemi",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D07",
+      "name": "Operational Focus – prioritní situace letadla",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D08",
+      "name": "Operational Focus Change – změny priorit",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D09",
+      "name": "Regional Situation Graph – vazby mezi letadly",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D10",
+      "name": "Operational Attention – regionální upozornění",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D11",
+      "name": "Regional Focus Queue – pořadí prioritních letadel",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D12",
+      "name": "Regionální projekce za 5/15/30 minut",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D13",
+      "name": "Validace koridoru proti pozdějším pozicím",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D14",
+      "name": "Validace predikovaných událostí",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D15",
+      "name": "Truth-first Validation – vyhodnocování podle skutečných událostí",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D16",
+      "name": "Ukládání anonymních výsledků kalibrace",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D17",
+      "name": "Regional Attention Outcome – kontrola regionálních predikcí",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D18",
+      "name": "Regional Attention Graduation – pravidla povýšení modelu",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D19",
+      "name": "Trajectory Quality V2 – alternativní vertikální model",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D20",
+      "name": "Trajectory Quality V3 – výkonově orientovaný shadow model",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D21",
+      "name": "Outcome Validation pro modely V2 a V3",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D22",
+      "name": "Graduation/Promotion – výběr schváleného modelu",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "D23",
+      "name": "Admin Calibration Center – diagnostika modelů",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "E08",
+      "name": "ACARS H1/FPN waypointy a mapová vrstva",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "H01",
+      "name": "Samostatný detail letadla – registrace, typ, operátor",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "H02",
+      "name": "Katalog a automatické doplňování metadat letadel",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "H04",
+      "name": "Letový plán, volací znak a letiště OD/DO",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "H05",
+      "name": "Historie konkrétního letadla a jeho letů",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "H06",
+      "name": "Detail jednotlivého letu (Flight Story V2)",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "H08",
+      "name": "Historické přehrávání konkrétního letu",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "H09",
+      "name": "Seznam a vyhledávání historických letů",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "H10",
+      "name": "Porovnání dvou letů",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "H11",
+      "name": "Time Machine – přehrávání všech letadel v čase",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "H12",
+      "name": "Event Replay – ±10 minut kolem události",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "H13",
+      "name": "Historická identita NEW / RARE / RETURNING",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "J10",
+      "name": "Demo provoz se simulovanými letadly",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "L01",
+      "name": "Watchlist – pravidla sledování letadel",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "L02",
+      "name": "Hlídání ICAO, registrace, callsignu, typu a aerolinky",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "L03",
+      "name": "Upozornění podle vzdálenosti od přijímače",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "L04",
+      "name": "Fleet Explorer – vlastní sledované flotily",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "L05",
+      "name": "Geofencing – vlastní sledované geografické oblasti",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "L06",
+      "name": "Emergency squawk 7500/7600/7700",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "L07",
+      "name": "Historie upozornění a událostí",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "L08",
+      "name": "Pravidla cooldownu a odstranění duplicit",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "L09",
+      "name": "Notification Center – přijaté/nepřečtené zprávy",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "L10",
+      "name": "Ztlumení oznámení pro letadlo nebo pravidlo",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "L13",
+      "name": "Delivery Health – stav doručování zpráv",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "L14",
+      "name": "Alert Rule Simulator – testování pravidel",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "L15",
+      "name": "Alert Effectiveness Analytics – účinnost upozornění",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "O14",
+      "name": "Automatická dokumentace, changelog a metriky růstu kódu",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "P01",
+      "name": "Flight Intelligence – automatické události letu",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "P02",
+      "name": "Rozpoznávání holding, go-around, diversion, orbit a neobvyklých zatáček",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "P03",
+      "name": "Přehled událostí a analytická stránka",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "P04",
+      "name": "Route Intelligence – interpretace letového plánu",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "P05",
+      "name": "Route Corridor Intelligence – odchylka od plánované trasy",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "P06",
+      "name": "Trajectory Conformance – odklon, návrat a pravděpodobné DCT",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "P07",
+      "name": "Predikce času příletu ETA",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "P08",
+      "name": "Predikce přistávací dráhy",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "P09",
+      "name": "Predikce změny přistávací dráhy",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "P10",
+      "name": "Predikce budoucí trajektorie",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "P11",
+      "name": "Explainable Prediction – vysvětlení podkladů predikcí",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "P12",
+      "name": "Prospektivní sběr a validace predikcí",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "P13",
+      "name": "Readiness a pravidla pro zveřejnění predikcí",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "P14",
+      "name": "Kalibrace a porovnání predikcí s výsledky",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "P15",
+      "name": "Predictive Operations Center – souhrn předpovědí",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "R13",
+      "name": "Poloha přijímače, kružnice dosahu a měřítko",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "R16",
+      "name": "Režim prezentace mapy",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "S05",
+      "name": "Rekordy vzdálenosti a přijatých letadel",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "S07",
+      "name": "Historická heatmapa a profil provozu – API",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "S08",
+      "name": "Denní a týdenní recap – zbývající API",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "T01",
+      "name": "ATC sektory včetně geometrie a výškových hranic",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "T02",
+      "name": "Samostatný detail ATC sektoru",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "T03",
+      "name": "ATC frekvence, vysílače a publikované služby",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "T04",
+      "name": "Pravděpodobné ATC přiřazení vybraného letadla",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "T05",
+      "name": "ATC handoff – odhad přechodu mezi sektory",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "T06",
+      "name": "Historie provozu a přechodů mezi sektory – API",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "T07",
+      "name": "Validace a diagnostika ATC dat",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "T11",
+      "name": "Letové procedury SID/STAR a procedurální data",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "T12",
+      "name": "AUP/UUP – plánovaná aktivace vzdušného prostoru",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "U06",
+      "name": "Oblíbená letiště a lokální uživatelské preference",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "U07",
+      "name": "Sdílené záložkové odkazy na filtrování a analýzy",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "W04",
+      "name": "Echo Top – výška radarových odrazů",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "W05",
+      "name": "Model větru ICON-EU v různých letových hladinách",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "W07",
+      "name": "PIREP/AIREP hlášení pilotů",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "W10",
+      "name": "Weather Fusion – spojení více zdrojů počasí",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "W11",
+      "name": "Weather Avoidance – vyhodnocení možné odchylky kvůli počasí",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "W12",
+      "name": "Počasí na trase zvoleného letu",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "W13",
+      "name": "Historické mapové počasí v Time Machine",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    },
+    {
+      "id": "W14",
+      "name": "Weather Corridor – počasí v předpokládaném koridoru",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
+      "tests": [],
+      "notes": ""
+    }
+  ]
+}
