@@ -9,6 +9,8 @@ Nová generace leteckého radaru, budovaná **od nuly**. Tento repozitář je zc
 
 ![Stav CI](https://github.com/Boym323/AirRadarV2/actions/workflows/ci.yml/badge.svg?branch=main)
 
+Aktualizace statistik: **denně ve 03:17 (Europe/Prague)** a ručně na vyžádání.
+
 | Ukazatel | Stav |
 |---|---:|
 | Řádky zdrojového kódu, včetně prázdných | **496** |

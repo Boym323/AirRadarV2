@@ -10,8 +10,8 @@ Tyto statistiky se týkají vývoje repozitáře, nikoli provozu ADS-B radaru.
 
 ## Automatizace
 
-GitHub Actions workflow [Statistiky vývoje](../../.github/workflows/development-metrics.yml) se spouští při každém push do main, každé pondělí a ručně.
-Zapisuje nové vzorky do history.json, přepočítá README a vytvoří SVG graf. Pokud nevznikla změna, commit nevytváří.
+GitHub Actions workflow [Statistiky vývoje](../../.github/workflows/development-metrics.yml) se spouští **jednou denně ve 03:17 v časovém pásmu Europe/Prague** (automatické zohlednění letního a zimního času), případně ručně. Při push do main se nespouští.
+Jestliže se změnila některá ze sledovaných hodnot, přidá nový vzorek do history.json, přepočítá README a SVG graf. Pokud se hodnoty nezměnily, nevznikne nový vzorek ani zbytečný commit.
 Vyžaduje oprávnění contents: write a povolený zápis z GitHub Actions do main. Jestliže je větev chráněna před automatickými zápisy, workflow skončí chybou a je nutné upravit jeho režim (například na pull request).
 
 Ručně lze generátor spustit příkazem: node tools/update-dev-stats.mjs (Node.js 22+ a git checkout).

@@ -48,7 +48,19 @@ const history = existsSync(historyPath)
   ? JSON.parse(readFileSync(historyPath, "utf8"))
   : { schemaVersion: 1, snapshots: [] };
 if (history.schemaVersion !== 1 || !Array.isArray(history.snapshots)) throw new Error("Chybná historie.");
-if (!history.snapshots.some((s) => s.sha === snap.sha)) history.snapshots.push(snap);
+// Nové měření se ukládá pouze při změně sledovaných metrik.
+// Pomocné commity generované automatizací tak nevytvářejí falešný trend.
+const measuredKeys = [
+  "sourceLines", "rustLines", "webLines", "sourceFiles", "testFiles",
+  "markdownFiles", "trackedFiles", "stagesDone", "stagesTotal",
+  "featuresVerified", "featuresTotal"
+];
+const previous = history.snapshots.at(-1);
+const changed = !previous || measuredKeys.some((key) => snap[key] !== previous[key]);
+if (changed && !history.snapshots.some((s) => s.sha === snap.sha)) {
+  history.snapshots.push(snap);
+}
+const measured = history.snapshots.at(-1);
 writeFileSync(historyPath, JSON.stringify(history, null, 2) + "\n");
 
 const f = (n) => n.toLocaleString("cs-CZ");
@@ -58,21 +70,23 @@ const table = [
   "",
   "![Stav CI](https://github.com/Boym323/AirRadarV2/actions/workflows/ci.yml/badge.svg?branch=main)",
   "",
+  "Aktualizace statistik: **denně ve 03:17 (Europe/Prague)** a ručně na vyžádání.",
+  "",
   "| Ukazatel | Stav |",
   "|---|---:|",
-  "| Řádky zdrojového kódu, včetně prázdných | **" + f(snap.sourceLines) + "** |",
-  "| Rust | " + f(snap.rustLines) + " |",
-  "| TypeScript / JavaScript / CSS | " + f(snap.webLines) + " |",
-  "| Soubory zdrojového kódu | " + f(snap.sourceFiles) + " |",
-  "| Testovací soubory (ne počet testů) | " + f(snap.testFiles) + " |",
-  "| Dokumenty Markdown | " + f(snap.markdownFiles) + " |",
-  "| Všechny sledované soubory | " + f(snap.trackedFiles) + " |",
-  "| Dokončené etapy | **" + snap.stagesDone + "/" + snap.stagesTotal + "** (" + ratio(snap.stagesDone, snap.stagesTotal) + ") |",
-  "| Ověřené KEEP funkce | **" + snap.featuresVerified + "/" + snap.featuresTotal + "** (" + ratio(snap.featuresVerified, snap.featuresTotal) + ") |",
+  "| Řádky zdrojového kódu, včetně prázdných | **" + f(measured.sourceLines) + "** |",
+  "| Rust | " + f(measured.rustLines) + " |",
+  "| TypeScript / JavaScript / CSS | " + f(measured.webLines) + " |",
+  "| Soubory zdrojového kódu | " + f(measured.sourceFiles) + " |",
+  "| Testovací soubory (ne počet testů) | " + f(measured.testFiles) + " |",
+  "| Dokumenty Markdown | " + f(measured.markdownFiles) + " |",
+  "| Všechny sledované soubory | " + f(measured.trackedFiles) + " |",
+  "| Dokončené etapy | **" + measured.stagesDone + "/" + measured.stagesTotal + "** (" + ratio(measured.stagesDone, measured.stagesTotal) + ") |",
+  "| Ověřené KEEP funkce | **" + measured.featuresVerified + "/" + measured.featuresTotal + "** (" + ratio(measured.featuresVerified, measured.featuresTotal) + ") |",
   "",
   "![Historie řádků zdrojového kódu](docs/metrics/loc.svg)",
   "",
-  "Měřený commit: [" + snap.sha.slice(0, 8) + "](https://github.com/Boym323/AirRadarV2/commit/" + snap.sha + ")"
+  "Měřený commit: [" + measured.sha.slice(0, 8) + "](https://github.com/Boym323/AirRadarV2/commit/" + measured.sha + ")"
     + " · [Historie](docs/metrics/history.json) · [Metodika](docs/metrics/README.md)"
     + " · [Výsledky CI](https://github.com/Boym323/AirRadarV2/actions/workflows/ci.yml).",
   "",
@@ -112,7 +126,7 @@ const svg = [
   '<text x="858" y="213" fill="#cbd5e1" font-size="12" text-anchor="end">' + values.at(-1).at.slice(0, 10) + '</text>',
   '<polyline points="' + polyline + '" fill="none" stroke="#60a5fa" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
   points,
-  '<text x="844" y="27" text-anchor="end" fill="#93c5fd" font-size="14">' + snap.sourceLines + ' řádků</text>',
+  '<text x="844" y="27" text-anchor="end" fill="#93c5fd" font-size="14">' + measured.sourceLines + ' řádků</text>',
   '</svg>',
 ].join("\n") + "\n";
 writeFileSync(p("docs/metrics/loc.svg"), svg);
