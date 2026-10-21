@@ -1,31 +1,29 @@
-# G-01 — API kontrakty, testovací data a přejímací scénáře
+# G-01 — Verzované kontrakty a testovací data
 
-**Stav: NEZAHÁJENO**  
-**Závislost:** G-00 (ověřené Rust/Next.js sestavení a HTTP smoke)  
-**Rozsah:** pouze kontrakty a testovací základ; **neimplementovat celý ingest, databázi ani produkční nasazení**.
+**Stav:** NEZAHÁJENO  
+**Závislosti:** G-00  
+**Vlastněná aktivní ID:** `J01`, `J02`, `J03`, `J04`, `J05`, `J11`, `J06`, `J07`, `J08`, `J09`, `R01`, `R03`, `R04`, `R06`, `R08`, `R09`, `R12`, `R14`, `A01`, `A02`, `T10`, `W03`, `W06`, `W08`, `W09`, `L06`, `L11`, `L12`, `S01`, `S06`, `S09`, `O01`, `O02`, `O03`, `O04`, `O05`, `O06`, `O07`, `O08`, `U01`, `U02`, `U03`, `U04`, `U05`, `U08`
 
 ## Cíl
 
-Vytvořit jednoznačné a testovatelné definice chování AirRadar V2 před vývojem živého přijímače. Odstranit nejasnosti z V1, aniž by se do V2 kopíroval její monolit.
+Vytvořit jednoznačné smlouvy a reprodukovatelné testovací podklady pro všech 45 aktivních požadavků.
 
-## Zadání
+## Konkrétní práce
 
-1. Projdi všech **46 KEEP** v `contracts/feature-matrix.json`, rozděl je na odpovědné moduly a pro každou funkci napiš měřitelný přejímací scénář: vstup, očekávaný výstup, chyba, související bezpečnostní invariant a odkaz na budoucí test.
-2. Doplň verzované OpenAPI/JSON Schema pro health, aircraft, single aircraft, SSE full/delta a chybové odpovědi. Navrhni pevné DTO typy Rust a generovaný TS klient. Veřejné chyby musí být sanitizované. Nepřekládej klíče/stavové konstanty, vysvětlení piš česky.
-3. Připrav *syntetické nebo bezpečně anonymizované* referenční readsb JSON a BEAST sekvence: normální let, ztráta pozice, opakovaná zpráva, změna callsign, výpadek zdroje, chybné ICAO, ne-ICAO identita, wrap timestampu, více lokálních letadel a přepnutí BEAST/JSON (bez simulace externích síťových poskytovatelů).
-4. Založ strojově spustitelné golden/contract/property testy, kontrolu stability DTO a replay bez vnější sítě. Žádné testovací fixture nesmí obsahovat identifikátory tajných účtů, credentials nebo přesné soukromé souřadnice.
-5. Urči chybějící vstupy jen pro zachované funkce: letiště/NAVAID, ČHMÚ/SIGMET/BDS, emergency squawk L06 a vzorkovanou historii J09. Uveď zdroje dat, licence a omezení při jejich veřejném ukládání.
-6. Zveřejni v českém ADR případné odchylky V2 od starých API (zachování produktové funkce je nadřazené nevyžádané byte-level kompatibilitě).
-7. Výsledek zapiš do `docs/reports/G-01-VYSLEDEK.md`; aktualizuj `docs/plan/ETAPY-A-STAV.md` a stavy funkcí pouze pokud mají skutečný implementační důkaz.
+1. Definovat veřejné DTO a OpenAPI/JSON Schema pro health, letadla, chybové odpovědi a SSE snapshot/delta; strojové názvy stabilní, popisy české.
+2. Vytvořit syntetické readsb JSON a BEAST fixtures (běžný let, duplicitní rámec, změna callsign, chybná poloha/čas, CRC a výpadek zdroje).
+3. Pro každé aktivní ID doplnit akceptační scénář s vstupem, výstupem, mezními případy, testem a vazbou na modul.
+4. Připravit Rust/TypeScript kontraktové testy bez živého přijímače a bez síťové služby.
 
-## Hotovo když
+## Testy a měření
 
-- Množina všech 46 KEEP má akceptační scénáře (L06 je nově zahrnuta, 34 vyřazených ID neimplementovat); 132 REMOVE nepřibylo do rozsahu.
-- Kontrakty jsou syntakticky a behaviorálně otestované proti deterministickým datům.
-- Příklady explicitně rozlišují skutečný live stav a současný G-00 `NOT_IMPLEMENTED`.
-- Dokumentace a názvy testovacích scénářů pro uživatele jsou česky; identifikátory zůstávají stabilní.
-- Všechny testy a CI prošly na přesném SHA, nebo je etapa označena **ČÁSTEČNĚ/BLOKOVÁNO** s důkazy.
+- Ověřit přesnost 45 ID, bez neaktivních kontraktů.
+- Spustit JSON/OpenAPI validaci, Rust/Next.js testy a aktualizovat českou dokumentaci.
 
-## Pokyn pro Codex
+## Kritéria převzetí
 
-> Realizuj pouze **G-01** v repozitáři `Boym323/AirRadarV2` podle tohoto českého Markdown zadání. Nejdřív ověř aktuální `main`, přečti `AGENTS.md` a závazné `docs/plan/ZADANI-AIRRADAR-V2.md`. Vytvoř skutečné verzované kontrakty, bezpečné fixture a automatické testy, dolož jejich výsledky, aktualizuj matici a český report. Nepracuj v produkčním AirRadar V1, nepřipojuj živý přijímač ani nevytvářej deploy.
+Všechny požadavky této etapy jsou doloženy reálnými testy a případnými relevantními měřeními. `contracts/feature-matrix.json`, český report `docs/reports/G-01-VYSLEDEK.md`, etapový stav i `CHANGELOG.md` odpovídají kódu a CI přesného commitu. Nesmí se zasáhnout do V1 ani provést produkční release bez zvláštního souhlasu.
+
+## Co do etapy nepatří
+
+Nedoplňovat rozšíření mimo [aktivní matice](../../contracts/feature-matrix.json); případné budoucí funkce jsou evidované samostatně v [archivu](../backlog/FUNKCE-PRO-BUDOUCI-ROZSIRENI.md).

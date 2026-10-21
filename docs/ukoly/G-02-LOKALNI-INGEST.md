@@ -1,33 +1,29 @@
-# G-02 — Rust příjem readsb/BEAST a stav letadel
+# G-02 — Lokální ADS-B ingest a RAM
 
-**Stav:** NEZAHÁJENO
-**Závislosti:** G-01
-**Primární KEEP ID:** `J01`, `J02`, `J03`, `J04`, `J05`, `J11`
+**Stav:** NEZAHÁJENO  
+**Závislosti:** G-01  
+**Vlastněná aktivní ID:** `J01`, `J02`, `J03`, `J04`, `J05`, `J11`
 
 ## Cíl
 
-Funkční místní radar se single-owner stavem v Rust RAM, bez DB a externích providerů.
+Rust engine dekóduje místní readsb JSON a BEAST a drží jednotný, ohraničený stav letadel v paměti.
 
-## Postup
+## Konkrétní práce
 
-1. Napsat bounded JSON snapshot adapter readsb a BEAST TCP dekodér se správným CRC24, DF, escape a časovým razítkem.
-2. Přepínat BEAST/JSON pouze po výpadku, bez duplikace či ztráty identity; validovat ICAO/ne-ICAO, poloha, rychlost a stáří.
-3. Udržet jediný kanonický RAM state, deduplikaci, ochranu před hromadným výpadkem a explicitní health/failure stav.
+1. Implementovat čistý Rust BEAST/Mode-S/CRC24 parser a readsb JSON adapter bez přístupu k produkci.
+2. Řešit autentickou identitu ICAO/ne-ICAO, deduplikaci, stale TTL, validní polohy, callsign a časové přetečení.
+3. Při výpadku přepnout BEAST/JSON bez duplikace a restartovat spojení s backoff; žádná závislost na DB.
+4. Mít jediný vlastník RAM state s explicitními limity počtu tracků a příjmových front.
 
 ## Testy a měření
 
+- Golden fixtures a fuzz/property testy chybně zformátovaných rámců.
+- Zátěž 1×/2×/4× a opakované reconnect; evidence CPU, RSS a latence.
 
-- Replay se syntetickými validními i poškozenými rámci; ztráta a návrat zdroje; continuity po změně callsign.
-- 1×/2×/4× replay měření CPU/RSS, bounded paměti, latence; nulový přístup k DB.
+## Kritéria převzetí
 
-## Co neimplementovat
+Všechny požadavky této etapy jsou doloženy reálnými testy a případnými relevantními měřeními. `contracts/feature-matrix.json`, český report `docs/reports/G-02-VYSLEDEK.md`, etapový stav i `CHANGELOG.md` odpovídají kódu a CI přesného commitu. Nesmí se zasáhnout do V1 ani provést produkční release bez zvláštního souhlasu.
 
-Žádné externí ADSBHub/ADSB.lol/OGN, žádný Node polling, žádné surové zápisy všech zpráv.
+## Co do etapy nepatří
 
-## Kritéria dokončení
-
-Každá související KEEP funkce má konkrétní testovací důkaz, relevantní build/CI prošly na přesném SHA, byly aktualizovány český report, stav etap a changelog. Nesplněné položky označit ČÁSTEČNĚ/BLOKOVÁNO. Žádný deploy do V1.
-
-## Bezpečnost a provoz
-
-AirRadar V1 a jeho LXC/databáze jsou pouze read-only reference. Žádná etapa sama neopravňuje ke změně produkčního provozu nebo reálnému rozesílání notifikací.
+Nedoplňovat rozšíření mimo [aktivní matice](../../contracts/feature-matrix.json); případné budoucí funkce jsou evidované samostatně v [archivu](../backlog/FUNKCE-PRO-BUDOUCI-ROZSIRENI.md).
