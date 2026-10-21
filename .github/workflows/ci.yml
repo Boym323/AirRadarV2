@@ -27,6 +27,15 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Engine tests
         run: cargo test --workspace
+      - name: Emit generated Cargo.lock for initial pinning
+        if: always()
+        run: |
+          if test -f Cargo.lock; then
+            echo 'AIRRADAR_V2_CARGO_LOCK_BEGIN'
+            base64 -w0 Cargo.lock
+            echo
+            echo 'AIRRADAR_V2_CARGO_LOCK_END'
+          fi
 
   nextjs-web:
     runs-on: ubuntu-24.04
@@ -48,3 +57,12 @@ jobs:
         run: npm test
       - name: Build static placeholder
         run: npm run build
+      - name: Emit generated package-lock for initial pinning
+        if: always()
+        run: |
+          if test -f package-lock.json; then
+            echo 'AIRRADAR_V2_NPM_LOCK_BEGIN'
+            base64 -w0 package-lock.json
+            echo
+            echo 'AIRRADAR_V2_NPM_LOCK_END'
+          fi
