@@ -1,7 +1,18 @@
-# V2 database contract (G-00 placeholder)
+# Databáze AirRadar V2 — připravovaný návrh
 
-**No database has been created or migrated in this stage.**
+**Stav G-00: databáze nebyla vytvořena, nebyla provedena žádná migrace.**
 
-G-05 will introduce its own PostgreSQL `airradar_v2` database and a least-privilege V2 role, schema migrations (SQLx) and sampled storage. It will **not migrate or delete** historical flights from AirRadar V1. Never point a V2 writer at V1's `DATABASE_URL`.
+V G-05 vznikne vlastní PostgreSQL `airradar_v2` s odděleným účtem a SQLx migracemi. Nová databáze začne **bez historických letů z V1**. Nikdy ji nenastavuj na produkční `DATABASE_URL` původního AirRadaru.
 
-Before introducing migrations, define the actual queries and TTL/retention for reference catalogs, flight samples, daily rollups, navigation anomalies, alert delivery and operational telemetry. No raw BEAST stream persistence. Benchmark against isolated DEV fixtures.
+## Zásady
+
+- Autoritativní živá letadla zůstávají v Rust RAM; PostgreSQL přijímá pouze vzorkované historie a provozní referenční údaje.
+- Datové modely tvořit podle konkrétních dotazů a přístupových vzorců, ne kopírováním Prisma schématu V1.
+- Vzorkované pozice a letové instance zapisovat přes ohraničenou frontu a dávkové transakce.
+- Retenci a indexy stanovit po měření: velikost dat, CPU, WAL, rychlost INSERT, četnost SELECT a p95/p99.
+- Začít s jednoduchým SQL a SQLx migracemi, oddělit integritu a přístupová práva.
+- **Žádný automatický přesun či mazání dat V1**. Pro G-05 použít jen DEV databázi se samostatným účtem.
+- Prázdná 7/30denní historie po spuštění V2 není chyba; UI musí zobrazovat pravdivé „zatím nejsou data“.
+
+Podrobné požadavky: [hlavní zadání](../docs/plan/ZADANI-AIRRADAR-V2.md) a etapa [G-05](../docs/plan/ETAPY-A-STAV.md).
+

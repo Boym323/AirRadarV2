@@ -1,58 +1,63 @@
 # AirRadar V2
 
-**Greenfield development — not production-ready.** This repository is independent of [AirRadar V1](https://github.com/Boym323/AirRadar). The existing V1 application, databases and LXC remain unchanged.
+Nová generace leteckého radaru, budovaná **od nuly**. Tento repozitář je zcela oddělený od [AirRadar V1](https://github.com/Boym323/AirRadar). Původní aplikace, produkční LXC a databáze se nemění.
 
-## Direction
+**Stav:** dokončen a ověřen základ G-00; **nejde ještě o živý radar**. G-01 a další etapy zatím nejsou realizovány.
 
-- Live aircraft engine: **Rust / Tokio / Axum**.
-- Web UI: **TypeScript / Next.js / React / MapLibre** (map work begins in G-06).
-- Storage: independent **PostgreSQL** database with SQLx (begins in G-05).
-- One canonical live track owner, bounded SSE, sampled asynchronous history, no dependence on DB to serve live traffic.
-- **79 KEEP** features are targets; **99 REMOVE** are excluded. All statuses currently say NOT_STARTED or EXCLUDED, because this is only a scaffold.
+## Dokumentace a zadání — vše česky
 
-Read [the complete V2 build brief](docs/plan/GREENFIELD-BRIEF.md) and [AGENTS.md](AGENTS.md) before contributing.
+| Dokument | Účel |
+|---|---|
+| **[Hlavní zadání AirRadar V2](docs/plan/ZADANI-AIRRADAR-V2.md)** | Úplné zadání, cíle, architektura, databáze, provoz a kritéria úspěchu |
+| [Plán etap a jejich stav](docs/plan/ETAPY-A-STAV.md) | Pořadí G-00 až G-15, závislosti a stav realizace |
+| [Matice všech funkcí](docs/plan/MATICE-FUNKCI.md) | 79 požadovaných funkcí a 99 vyřazených |
+| [Pravidla práce s dokumentací](docs/plan/PRAVIDLA-DOKUMENTACE.md) | Jazyk, systém zadání, reportů a ADR |
+| [Zadání G-01](docs/ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) | Další samostatná implementační etapa |
+| [Výsledky G-00](docs/reports/G-00-BOOTSTRAP.md) | Ověřené testy a hranice aktuální implementace |
+| [Příprava nového LXC](docs/runbooks/LXC-SETUP.md) | Oddělené vývojové a budoucí provozní prostředí |
+| [Pokyny pro Codex](AGENTS.md) | Závazné postupy, čeština a bezpečnost |
 
-## G-00 bootstrap scope
+**Veškerá nová projektová dokumentace, zadání a výchozí uživatelské rozhraní jsou česky.** Identifikátory API, jazyky programování a názvy proměnných zůstávají standardní. Volitelná angličtina uživatelského rozhraní bude později součástí požadavku U04.
 
-The engine implements only `/api/v1/health`, a clearly marked not-implemented aircraft response and a non-live SSE placeholder with a heartbeat. The website is a static placeholder. **There is no live ADS-B reception, real map, history persistence or alert sending.**
+## Navržená architektura
 
-### Prerequisites
+- **Rust / Tokio / Axum:** samostatný engine pro budoucí ADS-B/BEAST příjem, jednotný stav letadel a SSE.
+- **TypeScript / Next.js / React / MapLibre:** mapa a klientská část (živá mapa začíná až v G-06).
+- **PostgreSQL + SQLx:** nová izolovaná databáze; ukládaná historie začne od nuly v G-05.
+- **79 KEEP / 99 REMOVE:** plánovaný funkční rozsah, nikoliv počet aktuálně dokončených funkcí.
 
-Rust stable (2024 edition, 1.85+), Node.js 22.18+, npm 10+. Development runs on a workstation or dedicated **V2 LXC**, never in the V1 production checkout.
+G-00 obsahuje pouze zkušební Rust API `/api/v1/health`, neimplementovaný výpis letadel a SSE se stavem `NOT_IMPLEMENTED`. Web je informační úvodní stránka. **Neexistuje zatím skutečný přijímač, živá mapa, aktivní databáze ani notifikace.**
 
-### Run backend
+## Lokální vývoj
 
-~~~sh
-cargo run -p airradarv2-engine
-# curl http://127.0.0.1:4101/api/v1/health
-~~~
+Vyžaduje Rust stable, Node.js 22.18+ a npm 10+. Nepoužívej produkční checkout AirRadar V1.
 
-### Run web
+~~~bash
+cargo run --locked -p airradarv2-engine
+# http://127.0.0.1:4101/api/v1/health
 
-~~~sh
 cd apps/web
 npm ci
 npm run dev
 # http://127.0.0.1:4100
 ~~~
 
-### Quality gates
+## Kontroly
 
-~~~sh
+~~~bash
 cargo fmt --all -- --check
 cargo clippy --locked --workspace --all-targets -- -D warnings
 cargo test --locked --workspace
-cd apps/web && npm run lint && npm run typecheck && npm test && npm run build
+node tools/check-docs.mjs
+cd apps/web
+npm ci
+npm run lint
+npm run typecheck
+npm test
+npm run build
 ~~~
 
-Pinned `Cargo.lock` and `apps/web/package-lock.json` are tracked. CI uses `cargo --locked` and `npm ci` and never runs a deploy job. G-00 code/CI bootstrap is **DONE**: [CI run 39659205202](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202) passed on commit `99df0456`, including HTTP smoke tests for both services. The owner-provided V2 LXC has **not** been configured or deployed.
+Závislosti jsou připnuté v `Cargo.lock` a `apps/web/package-lock.json`. [CI běh 39659205202](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202) ověřil na commitu `99df0456` Rust, Next.js a HTTP smoke testy; podrobný [report](docs/reports/G-00-BOOTSTRAP.md). Pozdější změny dokumentace a českého úvodu se ověřují samostatným CI.
 
-## Isolation
+**Není nakonfigurováno žádné produkční nasazení.** Samostatný LXC zajistí vlastník projektu; V1 zůstává dostupná pro srovnávání.
 
-- Engine default bind `127.0.0.1:4101`.
-- Web default port `4100`.
-- No shared V1 runtime files, credentials, database, DNS, proxy, GitHub Actions deploy runner or production service.
-- No real receiver input until an explicitly approved read-only shadow test.
-- No V1 flight history import. V2 begins with an empty, separately owned DB when G-05 is implemented.
-
-See [dedicated LXC setup](docs/runbooks/LXC-SETUP.md). **No production deploy is configured.**

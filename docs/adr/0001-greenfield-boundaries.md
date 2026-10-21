@@ -1,13 +1,24 @@
-# ADR 0001 — Standalone AirRadar V2
+# ADR 0001 — Samostatná architektura AirRadar V2
 
-**Decision:** Start in a separate GitHub repository and dedicated future LXC. Rust/Tokio/Axum will own live ingest and canonical RAM state. Next.js/React/MapLibre renders UI only. PostgreSQL/SQLx handles bounded sampled history and indexed queries. Do not migrate old flight history.
+**Stav:** přijato jako výchozí návrh; pravidelně ověřovat měřením.
 
-**Motivation:** V1 accumulated coupled web, ingest, history, geometry, status and notification concerns, and a large CSS/React surface. V2 must maintain a single state authority and avoid putting DB/provider work in the readsb → RAM → SSE critical path.
+## Rozhodnutí
 
-**Boundaries:** The Rust HTTP/SSE engine is the source of truth. Web code must not implement separate readsb polling or flight history writes. Prefer versioned OpenAPI contracts. Preserve public privacy, OGN DDB fail-closed semantics, ATC uncertainty, local/network provenance and explicit service degradation.
+AirRadar V2 má vlastní GitHub repozitář, budoucí samostatný LXC, služby a databázi. Rust/Tokio/Axum bude vlastníkem živého stavu a přijímačů; Next.js/React/MapLibre zajišťuje výhradně web a ovládání; PostgreSQL/SQLx obstará vzorkovanou historii, indexované dotazy a agregace. Historie z V1 se nepřenáší.
 
-**Alternatives:** All-TypeScript rewrite (rejected as preferred default for low-level BEAST and CPU-bound hot paths, not because TypeScript is categorically slow); several microservices and queues (rejected as needless operational overhead before profiling).
+## Odůvodnění
 
-**Risks:** Rust introduces new build/deployment expertise, backend/frontend version coordination, and two runtime processes. Test graceful shutdown, SSE backpressure, API versioning, memory bounds, container resource consumption and rollback before running production.
+V1 obsahovala příliš těsné vazby mezi webem, příjmem, historií, diagnostikou a notifikacemi. V2 musí mít jeden jednoznačný vlastník stavu a oddělit práci s externí databází a providery od kritické cesty `readsb → RAM → SSE`.
 
-**State:** Accepted as a starting design; revisit based on measured evidence, not assumptions.
+## Hranice
+
+Rust poskytuje kontrakty HTTP/SSE. Web nečte readsb ani nezapisuje letovou historii. API je verzované, OGN privacy fail-closed a data LOCAL/EXTENDED mají jednoznačný původ. Výpadky externích služeb nesmějí zastavit živý radar.
+
+## Zvažované alternativy
+
+Výhradně TypeScript byl možný, ale Rust se předběžně jeví vhodnější pro low-level BEAST a profily CPU. Neznamená to, že je TypeScript obecně nevýkonný. Mnoho mikroservis a nových front by navíc bez měření přineslo zbytečnou provozní složitost.
+
+## Rizika a ověření
+
+Rust přidává nároky na build a dva běžící procesy vyžadují smlouvu API. Před nasazením ověřit graceful shutdown, SSE backpressure, maximální paměť, restart, databázové výpadky, kompatibilitu LXC a rollback. Je-li jiná technologie prokazatelně lepší, zdůvodni změnu novým ADR.
+

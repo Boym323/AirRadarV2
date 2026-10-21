@@ -1,19 +1,36 @@
-# G-00 bootstrap: verified implementation
+# G-00 — výsledný report založení AirRadar V2
 
-**Software stage:** DONE. **New LXC provisioning/deployment:** NOT STARTED. **Live radar and G-01+ features:** NOT IMPLEMENTED.
+**Stav kódu a CI: HOTOVO.**  
+**Samostatný nový LXC: ZATÍM NEKONFIGUROVÁN.**  
+**Živý radar a funkce G-01+: NEIMPLEMENTOVÁNY.**
 
-- Repository: https://github.com/Boym323/AirRadarV2
-- Verified source SHA: `99df0456c4e57b8192db9b41020453abcd14c8f6`
-- CI: https://github.com/Boym323/AirRadarV2/actions/runs/39659205202
-- CI result: **rust-engine PASS; nextjs-web PASS**, including lockfile-pinned installs, Rust fmt, Clippy, unit tests, Next.js lint/typecheck/unit tests/build and actual HTTP smoke tests.
-- Initial failed CI `39657981782` was due to Rust formatting and was corrected. Follow-ups `39658242976`, `39658530749` also passed; the latter produced the committed reproducible `Cargo.lock` and `apps/web/package-lock.json`.
+## Ověřené výsledky
 
-**Implemented:** isolated new repository; Rust/Tokio/Axum HTTP stub (bootstrap health, explicitly NOT_IMPLEMENTED aircraft API and SSE placeholder with keepalive); new Next.js static development website; 79 KEEP + 99 REMOVE feature matrix; OpenAPI baseline; LXC provisioning specification; standalone V2-only CI without deploy permissions.
+- Repozitář: https://github.com/Boym323/AirRadarV2
+- Ověřený původní commit: `99df0456c4e57b8192db9b41020453abcd14c8f6`.
+- [GitHub Actions 39659205202](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202) — **obě úlohy úspěšné**, Rust i Next.js.
+- Testováno: připnuté `Cargo.lock` a `package-lock.json`, Rust fmt/Clippy/testy, Next.js lint/typecheck/testy/build, reálný HTTP smoke obou spuštěných komponent.
+- Předchozí běh `39657981782` selhal na Rust formátování a byl opraven. Následné běhy `39658242976` a `39658530749` prošly.
+- Nové české dokumentační a UI změny budou mít vlastní kontrolní běh CI; historické PASS nesmí být vydáváno za důkaz jejich aktuálního SHA.
 
-**Not implemented:** actual readsb/BEAST/ADS-B ingest, live state, working map, PostgreSQL schema/queries, flight history, real notifications, production domain, service units, LXC provisioning or deployment. API stub responses are not proof of live functionality.
+## Skutečně vytvořeno
 
-**Environment restrictions:** V1 code, CI, database, reverse proxy and original LXC were not edited. V2 will get a new Proxmox LXC, separate least-privilege PostgreSQL credentials, isolated ports and its own release process later.
+Samostatný GitHub repo, Rust/Tokio/Axum HTTP základ (`health`, neimplementovaná letadla a testovací SSE s heartbeat), statický úvodní Next.js web, OpenAPI, funkční matice 79 KEEP / 99 REMOVE, připnuté závislosti a CI **bez deploye**.
 
-**Pending outside G-00 software scope:** owner creates the LXC; provide its network/OS access for a separately authorized setup. Choose an explicit project license before publishing redistributed builds. G-01 must add detailed feature acceptance tests and deterministic sanitized fixtures.
+## Co zatím neexistuje
 
-**Decision:** GO for implementing **G-01** in the isolated repository; **NO-GO for live/production deployment** or representing the scaffold as a functional radar.
+Živý příjem readsb/BEAST/ADS-B, samostatné RAM tracks, skutečná mapa, PostgreSQL schema, letová historie, reálné notifikace, veřejná doména, systemd služby a produkční deployment.
+
+Současné API záměrně vrací `NOT_IMPLEMENTED`. Výsledek G-00 **není funkční letecký radar**.
+
+## Oddělení od V1
+
+Původní kód, CI, PostgreSQL, reverse proxy a starý LXC nebyly změněny. V2 bude mít vlastní nový LXC, databázi, oprávnění a samostatné release postupy.
+
+## Navazující rozhodnutí
+
+- **PŘIPRAVENO** k realizaci českého zadání [G-01](../ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md).
+- **NENÍ PŘIPRAVENO** k produkčnímu provozu či nahrazení V1.
+- Příprava LXC čeká na zřízení a autorizovaný přístup; není nutná pro práci na G-01.
+- Zbývá formální rozhodnutí o licenci před veřejným vydáním distribuovaných buildů.
+
