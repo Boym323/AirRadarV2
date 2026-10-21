@@ -4,6 +4,30 @@ Nová generace leteckého radaru, budovaná **od nuly**. Tento repozitář je zc
 
 **Stav:** dokončen a ověřen základ G-00; **nejde ještě o živý radar**. G-01 a další etapy zatím nejsou realizovány.
 
+<!-- AIRRADAR_STATS_START -->
+## Statistiky vývoje
+
+![Stav CI](https://github.com/Boym323/AirRadarV2/actions/workflows/ci.yml/badge.svg?branch=main)
+
+| Ukazatel | Výchozí měření k 885cd06c |
+|---|---:|
+| Řádky zdrojového kódu (včetně prázdných) | **376** |
+| Rust | 149 |
+| TypeScript / JavaScript / CSS | 227 |
+| Soubory zdrojového kódu | 11 |
+| Testovací soubory | 1 |
+| Dokončené etapy | 1/16 |
+| Ověřené KEEP funkce | 0/79 |
+
+![Historie řádků kódu](docs/metrics/loc.svg)
+
+Počáteční měření ze [zdrojového commitu](https://github.com/Boym323/AirRadarV2/commit/885cd06c71db0971df414a62df0f2fd3cbace19e).
+Další měření aktualizuje [GitHub Actions](.github/workflows/development-metrics.yml).
+[Historie](docs/metrics/history.json) · [Metodika](docs/metrics/README.md).
+
+> Jde o statistiky repozitáře, nikoli důkaz, že je živý radar hotový.
+<!-- AIRRADAR_STATS_END -->
+
 ## Dokumentace a zadání — vše česky
 
 | Dokument | Účel |

@@ -1,0 +1,52 @@
+name: Statistiky vývoje AirRadar V2
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: airradar-v2-development-metrics
+  cancel-in-progress: false
+
+jobs:
+  metrics:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntaxe generátoru
+        run: node --check tools/update-dev-stats.mjs
+      - name: Přepočet statistik a historie
+        run: node tools/update-dev-stats.mjs
+      - name: Kontrola opakovaného spuštění a whitespace
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp docs/metrics/history.json /tmp/v2-metrics-history.json
+          node tools/update-dev-stats.mjs
+          cmp /tmp/v2-metrics-history.json docs/metrics/history.json
+          git diff --check
+      - name: Uložení metrik do main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add README.md docs/metrics/history.json docs/metrics/loc.svg
+          if git diff --cached --quiet; then
+            echo "Žádné změny statistik."
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "docs: automatická aktualizace statistik vývoje"
+          git push origin HEAD:main
