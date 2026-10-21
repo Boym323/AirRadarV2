@@ -5,12 +5,14 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 ## [Nepublikováno]
 
 ### Změněno
+- Vývojová platforma modernizována na Node.js 26.12.0/npm 11, Next.js 16.4.2, React 19.3.1, TypeScript 6 (poslední podporovaná řada), ESLint 10 a Vitest 5. Regenerace lockfilu a CI neprovádí nasazení.
 - Produktový plán je nyní **místní radar s 45 aktivními funkcemi**. Rozšíření jsou přesunuta do jediného odděleného souboru pro budoucí posouzení; aktivní zdrojová matice neobsahuje nevybrané požadavky.
 - Aktualizováno rozdělení devíti logických modulů, navazující české implementační úkoly a souvislé číslování etap G-00 až G-13.
 - Zesílena kontrola synchronizace matice, české dokumentace a vývojových statistik bez pevně zakódovaného historického rozsahu.
 - Základní přijímací API ani UI implementace se tímto rozhodnutím nestaly živým radarem.
 
 ### Ověření
+- Modernizace runtime ověřena [CI 39673418390](https://github.com/Boym323/AirRadarV2/actions/runs/39673418390), commit `d59f98d4`: Node 26, web lint/types/test/build/smoke, Rust testy a česká dokumentace prošly.
 - Stav tohoto dokumentačního čištění musí potvrdit CI na jeho finálním SHA. Žádné produkční nasazení se neprovádí.
 
 ## 2026-10-21 — Založení nezávislého AirRadar V2

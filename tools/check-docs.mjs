@@ -61,7 +61,7 @@ if (moduleIds.length !== active.length || new Set(moduleIds).size !== active.len
   fail("Moduly nepokrývají všechna aktivní ID právě jednou.");
 }
 
-const taskFiles = readdirSync(resolve(root,"docs/ukoly")).filter(p=>p.endsWith(".md"));
+const taskFiles = readdirSync(resolve(root,"docs/ukoly")).filter(p=>p.endsWith(".md") && !p.startsWith("G-00-"));
 const taskStages = taskFiles.map(p=>p.match(/^G-(\d{2})-/)?.[1]);
 if (taskStages.length !== 13 || taskStages.some(v=>v===undefined) ||
     JSON.stringify([...taskStages].sort()) !== JSON.stringify(Array.from({length:13},(_,i)=>String(i+1).padStart(2,"0")))) {

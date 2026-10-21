@@ -21,8 +21,8 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
-      - name: Kontrola dokumentace a matice 46/132
+          node-version-file: .node-version
+      - name: Kontrola dokumentace a 45 aktivních funkcí
         run: node tools/check-docs.mjs
   rust-engine:
     runs-on: ubuntu-24.04
@@ -69,7 +69,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version-file: .node-version
       - name: Instalace webových závislostí podle lockfilu
         run: npm ci --no-audit --no-fund
       - name: Lint
