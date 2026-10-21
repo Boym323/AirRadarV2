@@ -14,4 +14,4 @@ Aktuální matice má 45 schválených funkcí; stav žádné funkce se nemění
 5. Aktualizovat changelog a český report s přesným SHA a odkazem na CI.
 
 ## Výsledek
-**ČÁSTEČNĚ** do finální úspěšné CI. Report: [G-00-AKTUALIZACE-STACKU-VYSLEDEK.md](../reports/G-00-AKTUALIZACE-STACKU-VYSLEDEK.md).
+**HOTOVO** po [CI 39673418390](https://github.com/Boym323/AirRadarV2/actions/runs/39673418390) na `d59f98d4`. Report: [G-00-AKTUALIZACE-STACKU-VYSLEDEK.md](../reports/G-00-AKTUALIZACE-STACKU-VYSLEDEK.md).

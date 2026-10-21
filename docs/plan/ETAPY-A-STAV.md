@@ -22,7 +22,7 @@
 ## Technologická údržba G-00 (bez změny funkčního rozsahu)
 
 - Node.js 26 a aktualizace webu: [zadání](../ukoly/G-00-AKTUALIZACE-STACKU.md), [report](../reports/G-00-AKTUALIZACE-STACKU-VYSLEDEK.md).
-- Stav: **ČÁSTEČNĚ**, do úspěšného CI na finálním commitu. Nejde o novou produktovou etapu.
+- Stav: **HOTOVO**, výsledky doloženy [CI 39673418390](https://github.com/Boym323/AirRadarV2/actions/runs/39673418390) na `d59f98d4`. Nejde o novou produktovou etapu.
 
 ## Ověřená výchozí základna
 

@@ -1,6 +1,6 @@
 # ADR 0003 — Jednotný Node.js 26 v projektu AirRadar V2
 
-**Stav:** navrženo, do úspěšného CI. **Datum:** 2026-10-21.
+**Stav:** přijato po úspěšném [CI 39673418390](https://github.com/Boym323/AirRadarV2/actions/runs/39673418390). **Datum:** 2026-10-21.
 
 ## Kontext
 CI a dokumentace stále používaly Node.js 22. V říjnu 2026 je dostupný Node.js 26.12.0, nové záplaty Next.js 16.4 a současné verze vývojových nástrojů.

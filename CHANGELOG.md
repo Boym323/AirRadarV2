@@ -12,6 +12,7 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 - Základní přijímací API ani UI implementace se tímto rozhodnutím nestaly živým radarem.
 
 ### Ověření
+- Modernizace runtime ověřena [CI 39673418390](https://github.com/Boym323/AirRadarV2/actions/runs/39673418390), commit `d59f98d4`: Node 26, web lint/types/test/build/smoke, Rust testy a česká dokumentace prošly.
 - Stav tohoto dokumentačního čištění musí potvrdit CI na jeho finálním SHA. Žádné produkční nasazení se neprovádí.
 
 ## 2026-10-21 — Založení nezávislého AirRadar V2
