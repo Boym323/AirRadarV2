@@ -40,12 +40,12 @@ npm run dev
 
 ~~~sh
 cargo fmt --all -- --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
+cargo clippy --locked --workspace --all-targets -- -D warnings
+cargo test --locked --workspace
 cd apps/web && npm run lint && npm run typecheck && npm test && npm run build
 ~~~
 
-Pinned `Cargo.lock` and `apps/web/package-lock.json` are tracked. CI uses `cargo --locked` and `npm ci` and never runs a deploy job. G-00 is **PARTIAL** until the exact committed SHA passes CI and runtime smoke checks are evidenced.
+Pinned `Cargo.lock` and `apps/web/package-lock.json` are tracked. CI uses `cargo --locked` and `npm ci` and never runs a deploy job. G-00 code/CI bootstrap is **DONE**: [CI run 39659205202](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202) passed on commit `99df0456`, including HTTP smoke tests for both services. The owner-provided V2 LXC has **not** been configured or deployed.
 
 ## Isolation
 
