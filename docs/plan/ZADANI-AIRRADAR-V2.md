@@ -9,7 +9,7 @@
 
 Postavit novou, jednoduchou a výkonnou aplikaci pro **místní letecký radar** z vlastních readsb JSON a BEAST TCP dat. Nejde o mechanický přepis V1. Projekt má vlastní GitHub repozitář, vývojové CI a v budoucnu vlastní LXC i PostgreSQL. V1, její historie, síťová konfigurace a služby zůstávají beze změny.
 
-**Dnešní G-00 implementace:** Rust/Tokio/Axum jako jediný vlastník příjmu a RAM state, Next.js/TypeScript/React jako webový základ a zatím nenasazená PostgreSQL/SQLx v návrhu. **Výsledek technologické rešerše:** pro statický web upřednostnit Vite + React/TypeScript + MapLibre; pro vzorkovanou historii porovnat SQLite WAL a PostgreSQL přes SQLx. Viz [technologický průzkum](TECHNOLOGICKY-PRUZKUM.md), [architektura](ARCHITEKTURA-V2.md) a [rozhodnutí](TECHNOLOGICKA-ROZHODNUTI.md). Žádná migrace webu ani DB zatím neproběhla.
+**Definitivní architektura:** Rust/Tokio/Axum je vlastníkem živého RAM stavu, **Vite + React/TypeScript + MapLibre** je statický web, **PostgreSQL + SQLx** je jediná databázová technologie. PostgreSQL běží v existujícím samostatném DB LXC; nová V2 databáze a schéma vzniknou teprve v G-04. Webový G-00 skeleton už byl převeden z Next.js na Vite. Viz [ADR 0005](../adr/0005-vite-a-postgresql-v2.md) a [runbook DB](../../database/POSTGRES-LXC.md).
 
 **Primární tok:** `readsb JSON nebo BEAST TCP → Rust parser a normalizace → RAM → HTTP/SSE → MapLibre`. Druhý nezávislý ingest ve webu se nesmí vytvořit. `RAM → bounded sampling queue → samostatná PostgreSQL` nikdy nesmí blokovat živý přenos.
 
@@ -29,7 +29,7 @@ Základní produkt tvoří: příjem readsb/BEAST, korektní identita a stav let
 
 ## 4. Výkon a databáze
 
-- Nové izolované V2 úložiště začne prázdné, stará historická data se nepřenášejí. **G-04 musí nejprve vybrat SQLite WAL nebo PostgreSQL na základě benchmarků a obnovy**; bez přímého uživatele dat nevytvářet tabulku, index ani pozadí worker.
+- Nové izolované V2 úložiště začne prázdné, stará historická data se nepřenášejí. **G-04 použije PostgreSQL na existujícím odděleném DB LXC a musí prokázat bezpečné role, TLS, indexy, retenci a obnovu**; bez přímého uživatele dat nevytvářet tabulku, index ani pozadí worker.
 - SQLx migrace, bezpečná oprávnění, bounded zápisová fronta, vzorkování a dávkování, retence podle skutečných aktivních konzumentů.
 - Ověřovat `EXPLAIN (ANALYZE, BUFFERS)`, latence P95/P99, CPU/RSS, WAL a velikost dat; nepředstírat porovnání bez baseline.
 - Výpadek DB, meteorologického zdroje nebo UI klienta nesmí pozastavit vlastní příjem.
@@ -48,7 +48,7 @@ Základní produkt tvoří: příjem readsb/BEAST, korektní identita a stav let
 - Výchozí jazyk každého MD, zadání, ADR, reportu a viditelného UI je čeština. Klíče API, technické názvy a stabilní identifikátory zůstávají anglické.
 - Povinné GitHub CI: Rust fmt/Clippy/testy a Next.js lint/typecheck/test/build, kontrola českých MD a vazeb na aktivní rozsah.
 - Syntetický replay, kontraktové testy, UI E2E a odpovídající výkonnostní testy se tvoří dle reálných etap. Bez doložených výsledků funkce nemůže mít status `ACCEPTED`.
-- V2 má vlastní LXC, porty, samostatný systémový účet, databázi, zálohy a rollback. Žádné produkční přesměrování či změna V1 bez výslovného souhlasu.
+- V2 má vlastní aplikační LXC, porty a účet. Samostatná databáze bude v existujícím PostgreSQL LXC s izolovaným přístupem, zálohami a rollbackem. Žádné produkční přesměrování či změna V1 bez výslovného souhlasu.
 
 ## 7. Etapy a navázání nového vlákna
 

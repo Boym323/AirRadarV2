@@ -1,8 +1,8 @@
 # Architektura AirRadar V2 — optimalizovaný návrh po technologickém průzkumu
 
-**Stav:** doporučený cílový návrh, nikoliv stav běžící implementace.  
+**Stav:** závazná cílová architektura. Vite webový skeleton je implementován; radar a databáze zatím ne.  
 **Rozsah:** 45 aktuálních aktivních funkcí, výhradně místní readsb/BEAST data.  
-**Rozhodnutí k potvrzení:** web Vite/React a databáze SQLite vs PostgreSQL před implementací dotčených etap.  
+**Rozhodnuto:** Vite/React + PostgreSQL/SQLx na existujícím odděleném DB LXC.  
 **V1:** bez zásahu a bez migrace starých historických dat.
 
 ## 1. Systémové hranice
@@ -26,7 +26,7 @@
 └───────────────┼─────────────────┼─────────────────────────┘
                 │                 │
                 ▼                 ▼
-        HTTPS reverse proxy   SQLite WAL nebo PostgreSQL
+        HTTPS reverse proxy   PostgreSQL v existujícím odděleném DB LXC
            ┌──────┴──────┐        pouze V2 data
            ▼             ▼
     statický Vite/React  /api/ proxy Rust
@@ -34,7 +34,7 @@
       české UI
 ~~~
 
-**Poznámka:** Současný G-00 kód stále obsahuje Next.js a nemá reálný ingest ani databázi. Toto schéma proto definuje *cílové členění*, nikoli implementovaný stav. Přechod webového buildu musí být samostatným testovaným commitem.
+**Poznámka:** G-00 web už používá Vite/React. Rust ingest ani databázové schéma dosud nebyly implementovány; toto schéma je cílový datový tok.
 
 ## 2. Proč bez samostatného Next.js serveru
 
@@ -98,19 +98,16 @@ event: heartbeat               komentář/heartbeat bez dat letadel
 
 ## 7. Úložiště a retence
 
-**Finální DB engine není zatím vybrán na základě měření.** Preferované ověřování: SQLite WAL a PostgreSQL se stejným schématem a ekvivalentními SQL dotazy.
+**PostgreSQL byla definitivně vybrána vlastníkem.** Databáze je na existujícím samostatném LXC, pro V2 bude nová DB a oddělené role.
 
 - Povinné logické tabulky jen podle aktivních konzumentů, zejména samples/flight identity, agregace pro S06/S09 a případné push queue; katalogy lze držet ve statické verzované podobě, pokud data nemusejí být měněna online.
 - Zápisová cesta **RAM → bounded queue → coalescing → batch writer**; při plné frontě nikdy blokovat ingest, místo toho explicitně hlásit ztracené vzorky.
-- SQLite: lokální file path v privátním V2 adresáři, WAL, \`busy_timeout\`, předvídatelný checkpoint, jediný sériový writer, verifikovaný online backup a restore.
 - PostgreSQL: oddělený DB/role/schema, pool limits, WAL/autovacuum, \`pg_dump\` či base backup/PITR dle potřeb, obdobná retence.
-- Obě cesty musí poskytovat shodné aplikační chování. Není nutné zavádět obecnou runtime pluginovou vrstvu DB, pokud bude jeden engine definitivně zvolen.
+- Používat jen PostgreSQL driver SQLx, nikoliv přepínatelnou runtime DB vrstvu.
 
 ## 8. Procesy, konfigurace, deployment
 
-**Cíl při variantě Vite + SQLite:** běžící Rust engine + HTTPS reverse proxy, která rovněž servíruje statický build, a jeden lokální SQLite datový soubor. Žádný dlouhodobý Node runtime, samostatný DB proces či Redis.
-
-**Cíl při PostgreSQL:** Rust engine + statický web + oddělená PostgreSQL instance, vždy s vlastní V2 databází; žádná V1 DB.
+**Cíl:** Rust engine a statický Vite build na aplikačním LXC s HTTPS proxy, vlastní V2 databáze na existujícím odděleném PostgreSQL LXC. Není potřeba Node server ani Redis.
 
 - Vlastní unprivileged LXC, vlastní hostname, porty, uživatel a cgroup limity. Výchozí 4 vCPU / 8 GiB / 60 GiB je **nezměřený plán**, ne faktická potřeba.
 - CI build Rust + web s připnutými lockfile, samostatné artefakty a SHA.
@@ -120,4 +117,4 @@ event: heartbeat               komentář/heartbeat bez dat letadel
 
 ## 9. Nezbytné kvalitativní brány
 
-Před G-02 musí G-01 dodat kontrakty a opakovatelné fixtures. Před G-04 musí být zavřeno DB rozhodnutí. Před G-05 musí Vite frontend prokázat PWA/SSR-nepotřebnost v prototypu. Před G-12 shadow musí být připraveny limity přijímače a prokázána neškodnost druhého read-only připojení. G-13 je samostatné povolení produkčního vydání, nikoliv automatický deploy.
+Před G-02 musí G-01 dodat kontrakty a opakovatelné fixtures. PostgreSQL je vybraná; před G-04 ověřit bezpečné připojení/role a obnovu. Před G-05 ověřit přístupnost a chování Vite MapLibre mapy v browseru. Před G-12 shadow musí být připraveny limity přijímače a prokázána neškodnost druhého read-only připojení. G-13 je samostatné povolení produkčního vydání, nikoliv automatický deploy.

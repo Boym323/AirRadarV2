@@ -28,8 +28,8 @@
 
 - Dokončené **zdrojované srovnání návrhů**: [průzkum](TECHNOLOGICKY-PRUZKUM.md), [cílová architektura](ARCHITEKTURA-V2.md), [rozhodnutí](TECHNOLOGICKA-ROZHODNUTI.md).
 - **Výkonové benchmarky zatím nebyly provedeny**. [Protokol B01–B07](BENCHMARKY-TECHNOLOGII.md) určuje společné vstupy, důkazy a přejímku.
-- Rust + Axum a MapLibre zůstávají. Doporučuje se Vite/React místo dnešního Next.js webového skeletonu; migrace se provede zvlášť a až s ověřenými testy. SQLite WAL je kandidát, nikoliv schválené produkční úložiště.
-- Číslování G-00 až G-13 se nemění; G-01 připraví fixture/kontrakty, G-04 uzavře volbu DB a G-05 ověří webovou migraci. Měření nikdy nespouštět na V1.
+- Rust + Axum a MapLibre zůstávají. **G-00 web je převeden na Vite/React**, se statickým výstupem a npm lockfile. **PostgreSQL byla zvolena definitivně** na již existujícím DB LXC, ale žádné V2 DB schéma zatím neexistuje.
+- Číslování G-00 až G-13 se nemění; G-01 připraví fixture/kontrakty, G-04 připraví oddělenou PostgreSQL databázi V2 a G-05 implementuje MapLibre ve Vite webu. Měření nikdy nespouštět na V1.
 
 ## Ověřená výchozí základna
 

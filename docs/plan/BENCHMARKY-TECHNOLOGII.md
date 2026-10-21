@@ -3,6 +3,12 @@
 **Stav:** REPRODUKOVATELNÝ PLÁN, **nikoli hotová měření**. Žádný zde popsaný benchmark nebyl v rámci tohoto technologického průzkumu na produkčním LXC, skutečném readsb ani reálné PostgreSQL/SQLite databázi spuštěn.  
 **Pravidlo:** žádná tabulka bez poznámky „NEZMĚŘENO“ nesmí být vyplněna odhadem či čísly z cizího projektu.
 
+## Závazná aktualizace měření
+
+PostgreSQL bylo definitivně vybráno a existuje v samostatném DB LXC. **B05 již nemusí rozhodovat mezi SQLite a PostgreSQL**: musí měřit skutečné PostgreSQL/SQLx zápisy, SQL dotazy, pool, síťovou latenci, TLS, retenci a backup+restore na oddělené DEV DB. Níže popsané SQLite srovnání je pouze starší referenční scénář, nikoliv úkol nebo důvod zavádět SQLite do V2.
+
+G-00 web již používá Vite, případné srovnání s Next.js má pouze diagnostický význam.
+
 ## Protokol společný pro všechna měření
 
 1. Použít izolovaný vývojový checkout, přesné SHA, lockfily, konkrétní verze Rust/Go/Node, OS/kernel, cgroup limit CPU/RAM a hardware LXC.

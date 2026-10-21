@@ -5,6 +5,10 @@
 **Typ důkazu:** ověřené oficiální dokumentace a aktuální stav repozitáře; **nejde o naměřený benchmark AirRadar V2**.  
 **Výsledek:** viz [technologická rozhodnutí](TECHNOLOGICKA-ROZHODNUTI.md) a [benchmarkový plán](BENCHMARKY-TECHNOLOGII.md).
 
+## Pozdější rozhodnutí projektu
+
+**Aktualizace 21. 10. 2026:** Vite + React byl zvolen a G-00 web skutečně migrován. PostgreSQL bylo definitivně vybráno díky existujícímu samostatnému DB LXC. Následující srovnání SQLite, Next.js a dalších technologií je nyní **historická rešerše, nikoliv otevřená technologická volba**. G-04 teprve vytvoří vlastní V2 DB a ověří ji. Viz [ADR 0005](../adr/0005-vite-a-postgresql-v2.md).
+
 ## Shrnutí závěrů
 
 | Otázka | Odpověď pro tento projekt | Jistota | Podmínka |

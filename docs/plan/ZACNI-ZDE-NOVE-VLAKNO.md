@@ -17,7 +17,7 @@
 
 ## Technologie: důležitý rozdíl mezi plánem a kódem
 
-K 21. 10. 2026 je skutečný web stále **Next.js** a DB neexistuje. Technologická rešerše **doporučuje Vite + React**, ale migrace nebyla provedena. **SQLite WAL i PostgreSQL** zůstávají kandidáty do měřeného G-04 porovnání. Viz [průzkum](TECHNOLOGICKY-PRUZKUM.md), [benchmarky](BENCHMARKY-TECHNOLOGII.md), [cílová architektura](ARCHITEKTURA-V2.md).
+K 21. 10. 2026 webový skeleton běží na **Vite + React** a build produkuje statické `dist/`. **PostgreSQL je definitivní** volbou pro existující separátní DB LXC, ale vlastní databáze V2 a SQLx migrace budou vytvořeny až v G-04. Viz [průzkum](TECHNOLOGICKY-PRUZKUM.md), [benchmarky](BENCHMARKY-TECHNOLOGII.md), [cílová architektura](ARCHITEKTURA-V2.md).
 
 ## Co je skutečně dokončeno
 
