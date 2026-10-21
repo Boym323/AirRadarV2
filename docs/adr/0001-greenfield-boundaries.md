@@ -1,6 +1,6 @@
 # ADR 0001 — Samostatná architektura AirRadar V2
 
-**Stav:** přijato jako výchozí návrh; pravidelně ověřovat měřením.
+**Stav:** historické výchozí rozhodnutí G-00. **Revidováno průzkumem 21. 10. 2026**: živý Rust engine zůstává, web se doporučuje převést na Vite/React a databáze má otevřenou volbu. Viz [ADR 0003](0003-vyzkum-technologii-a-otevrene-brany.md) a [výsledná rozhodnutí](../plan/TECHNOLOGICKA-ROZHODNUTI.md).
 
 ## Rozhodnutí
 

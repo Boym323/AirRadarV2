@@ -7,12 +7,17 @@
 1. [AGENTS.md](../../AGENTS.md): pravidla, bezpečnost a český jazyk.
 2. [ZADANI-AIRRADAR-V2.md](ZADANI-AIRRADAR-V2.md): závazný cíl a architektura.
 3. [MODULY-A-ROZSAH.md](MODULY-A-ROZSAH.md): devět modulů a jejich přesná aktivní ID.
-4. [ETAPY-A-STAV.md](ETAPY-A-STAV.md): G-00 až G-13, doložený stav a návaznosti.
-5. `contracts/feature-matrix.json` a [MATICE-FUNKCI.md](MATICE-FUNKCI.md): **45 schválených funkcí**, při implementaci jen tento rozsah.
-6. [CO-NEPREBIRAT-Z-V1.md](CO-NEPREBIRAT-Z-V1.md): pravidla greenfield minimalismu.
-7. [CHANGELOG.md](../../CHANGELOG.md), pouze reporty související s aktuální etapou, a jediný úkol z `docs/ukoly/`.
+4. [TECHNOLOGICKA-ROZHODNUTI.md](TECHNOLOGICKA-ROZHODNUTI.md): co je potvrzené architektonicky, doporučení Vite a otevřená DB volba.
+5. [ETAPY-A-STAV.md](ETAPY-A-STAV.md): G-00 až G-13, doložený stav a návaznosti.
+6. `contracts/feature-matrix.json` a [MATICE-FUNKCI.md](MATICE-FUNKCI.md): **45 schválených funkcí**, při implementaci jen tento rozsah.
+7. [CO-NEPREBIRAT-Z-V1.md](CO-NEPREBIRAT-Z-V1.md): pravidla greenfield minimalismu.
+8. [CHANGELOG.md](../../CHANGELOG.md), pouze reporty související s aktuální etapou, a jediný úkol z `docs/ukoly/`.
 
 **Oddělený archiv budoucích návrhů není určen pro běžný vývoj**. Čti jej pouze na výslovnou žádost vlastníka, nikdy jej neimportuj do současné aplikace automaticky.
+
+## Technologie: důležitý rozdíl mezi plánem a kódem
+
+K 21. 10. 2026 je skutečný web stále **Next.js** a DB neexistuje. Technologická rešerše **doporučuje Vite + React**, ale migrace nebyla provedena. **SQLite WAL i PostgreSQL** zůstávají kandidáty do měřeného G-04 porovnání. Viz [průzkum](TECHNOLOGICKY-PRUZKUM.md), [benchmarky](BENCHMARKY-TECHNOLOGII.md), [cílová architektura](ARCHITEKTURA-V2.md).
 
 ## Co je skutečně dokončeno
 

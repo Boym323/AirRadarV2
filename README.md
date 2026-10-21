@@ -35,6 +35,10 @@ Měřený commit: [8b3c6d17](https://github.com/Boym323/AirRadarV2/commit/8b3c6d
 | Soubor | Účel |
 |---|---|
 | [Závazné zadání](docs/plan/ZADANI-AIRRADAR-V2.md) | Architektura místního radaru a provozní invarianty |
+| **[Technologický průzkum](docs/plan/TECHNOLOGICKY-PRUZKUM.md)** | Ověřené zdroje a odpovědi na výběr jazyků, webu, DB, streamu a LXC |
+| [Cílová architektura](docs/plan/ARCHITEKTURA-V2.md) | Doporučený Rust engine + lehký statický web a DB brána |
+| [Technologická rozhodnutí](docs/plan/TECHNOLOGICKA-ROZHODNUTI.md) | Co zachovat, co doporučit změnit a co ještě vyžaduje benchmark |
+| [Benchmarkový plán](docs/plan/BENCHMARKY-TECHNOLOGII.md) | Reprodukovatelná měření B01–B07; výsledky zatím nemáme |
 | [Aktivní matice 45 funkcí](docs/plan/MATICE-FUNKCI.md) | Jediný zdroj požadavků k implementaci |
 | [Katalog modulů](docs/plan/MODULY-A-ROZSAH.md) | Vlastnictví funkcí v 9 modulech |
 | [Podrobné popisy](docs/plan/PODROBNY-KATALOG-FUNKCI.md) | Co každá aktivní funkce skutečně dělá |
@@ -44,13 +48,15 @@ Měřený commit: [8b3c6d17](https://github.com/Boym323/AirRadarV2/commit/8b3c6d
 | [CHANGELOG](CHANGELOG.md) | Změny a důkazy v historii projektu |
 | [Archiv budoucích rozšíření](docs/backlog/FUNKCE-PRO-BUDOUCI-ROZSIRENI.md) | Oddělená evidence případných nových funkcí |
 
-## Aktuální architektura
+## Aktuální architektura a navržené změny
 
 - **Rust/Tokio/Axum:** readsb JSON a BEAST TCP, vlastní RAM letadel, bezpečné REST API a SSE.
 - **Next.js/React/MapLibre:** lehká česká mapa, seznam letadel, popisky, stopa a follow.
 - **PostgreSQL/SQLx:** oddělená databáze pro omezené vzorkování a potřebné agregace; historie V1 se nepřenáší.
 - **Jedno místní pokrytí:** uživatel pracuje vždy s daty místního přijímače, bez přepínače datových zdrojů.
 - **45 schválených funkcí:** žádná z nich zatím není potvrzena jako implementovaná. G-00 je pouze základ projektu.
+
+**Závěr výzkumu z 21. 10. 2026:** Rust/Tokio/Axum a MapLibre ponechat. **Doporučeno přejít z Next.js na Vite + React** se statickým webem; tato migrace **ještě neproběhla**. **SQLite WAL** je nyní první kandidát pro historická data, ale výběr proti PostgreSQL musí rozhodnout měřený G-04 test. Podrobnosti a zdroje v [rozhodnutích](docs/plan/TECHNOLOGICKA-ROZHODNUTI.md).
 
 API nyní vrací zkušební `NOT_IMPLEMENTED`. Nejsou zatím připojena živá ADS-B data, databáze ani veřejný release.
 

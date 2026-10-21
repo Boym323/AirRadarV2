@@ -9,7 +9,7 @@
 
 Postavit novou, jednoduchou a výkonnou aplikaci pro **místní letecký radar** z vlastních readsb JSON a BEAST TCP dat. Nejde o mechanický přepis V1. Projekt má vlastní GitHub repozitář, vývojové CI a v budoucnu vlastní LXC i PostgreSQL. V1, její historie, síťová konfigurace a služby zůstávají beze změny.
 
-**Základní architektura:** Rust/Tokio/Axum jako jediný vlastník příjmu a RAM state, Next.js/TypeScript/React/MapLibre jako tenký UI klient, PostgreSQL/SQLx jen pro nezbytnou vzorkovanou historii.
+**Dnešní G-00 implementace:** Rust/Tokio/Axum jako jediný vlastník příjmu a RAM state, Next.js/TypeScript/React jako webový základ a zatím nenasazená PostgreSQL/SQLx v návrhu. **Výsledek technologické rešerše:** pro statický web upřednostnit Vite + React/TypeScript + MapLibre; pro vzorkovanou historii porovnat SQLite WAL a PostgreSQL přes SQLx. Viz [technologický průzkum](TECHNOLOGICKY-PRUZKUM.md), [architektura](ARCHITEKTURA-V2.md) a [rozhodnutí](TECHNOLOGICKA-ROZHODNUTI.md). Žádná migrace webu ani DB zatím neproběhla.
 
 **Primární tok:** `readsb JSON nebo BEAST TCP → Rust parser a normalizace → RAM → HTTP/SSE → MapLibre`. Druhý nezávislý ingest ve webu se nesmí vytvořit. `RAM → bounded sampling queue → samostatná PostgreSQL` nikdy nesmí blokovat živý přenos.
 
@@ -29,7 +29,7 @@ Základní produkt tvoří: příjem readsb/BEAST, korektní identita a stav let
 
 ## 4. Výkon a databáze
 
-- Nová PostgreSQL začíná prázdná, stará historická data se nepřenášejí. Bez přímého uživatele dat nevytvářet tabulku, index ani pozadí worker.
+- Nové izolované V2 úložiště začne prázdné, stará historická data se nepřenášejí. **G-04 musí nejprve vybrat SQLite WAL nebo PostgreSQL na základě benchmarků a obnovy**; bez přímého uživatele dat nevytvářet tabulku, index ani pozadí worker.
 - SQLx migrace, bezpečná oprávnění, bounded zápisová fronta, vzorkování a dávkování, retence podle skutečných aktivních konzumentů.
 - Ověřovat `EXPLAIN (ANALYZE, BUFFERS)`, latence P95/P99, CPU/RSS, WAL a velikost dat; nepředstírat porovnání bez baseline.
 - Výpadek DB, meteorologického zdroje nebo UI klienta nesmí pozastavit vlastní příjem.

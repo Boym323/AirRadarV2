@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### Přidáno
+- Důkladná česká rešerše technologií a architektury: `TECHNOLOGICKY-PRUZKUM.md`, `ARCHITEKTURA-V2.md`, `BENCHMARKY-TECHNOLOGII.md` a `TECHNOLOGICKA-ROZHODNUTI.md`.
+- Rozhodovací brány a reprodukovatelné benchmarky Rust/Go/Node, Next.js/Vite, SQLite/PostgreSQL, BEAST/JSON, SSE a MapLibre.
+- Architektonické doporučení Vite/React místo produkčního Next.js serveru a podmíněný kandidát SQLite WAL; skutečný výběr DB a výkonové výsledky zůstávají neověřené.
+
 ### Změněno
 - Vývojová platforma modernizována na Node.js 26.12.0/npm 11, Next.js 16.4.2, React 19.3.1, TypeScript 6 (poslední podporovaná řada), ESLint 10 a Vitest 5. Regenerace lockfilu a CI neprovádí nasazení.
 - Produktový plán je nyní **místní radar s 45 aktivními funkcemi**. Rozšíření jsou přesunuta do jediného odděleného souboru pro budoucí posouzení; aktivní zdrojová matice neobsahuje nevybrané požadavky.

@@ -24,6 +24,13 @@
 - Node.js 26 a aktualizace webu: [zadání](../ukoly/G-00-AKTUALIZACE-STACKU.md), [report](../reports/G-00-AKTUALIZACE-STACKU-VYSLEDEK.md).
 - Stav: **HOTOVO**, výsledky doloženy [CI 39673418390](https://github.com/Boym323/AirRadarV2/actions/runs/39673418390) na `d59f98d4`. Nejde o novou produktovou etapu.
 
+## Technologický průzkum před pokračováním
+
+- Dokončené **zdrojované srovnání návrhů**: [průzkum](TECHNOLOGICKY-PRUZKUM.md), [cílová architektura](ARCHITEKTURA-V2.md), [rozhodnutí](TECHNOLOGICKA-ROZHODNUTI.md).
+- **Výkonové benchmarky zatím nebyly provedeny**. [Protokol B01–B07](BENCHMARKY-TECHNOLOGII.md) určuje společné vstupy, důkazy a přejímku.
+- Rust + Axum a MapLibre zůstávají. Doporučuje se Vite/React místo dnešního Next.js webového skeletonu; migrace se provede zvlášť a až s ověřenými testy. SQLite WAL je kandidát, nikoliv schválené produkční úložiště.
+- Číslování G-00 až G-13 se nemění; G-01 připraví fixture/kontrakty, G-04 uzavře volbu DB a G-05 ověří webovou migraci. Měření nikdy nespouštět na V1.
+
 ## Ověřená výchozí základna
 
 - G-00: Rust, Next.js, připnuté závislosti a skutečné HTTP smoke testy: [GitHub Actions 39659205202](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202).
