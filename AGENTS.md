@@ -8,7 +8,7 @@
 2. Pro aktuální etapu vytvoř nebo uprav **Markdown soubor** `docs/ukoly/G-XX-NAZEV.md` s rozsahem, závislostmi, scénáři ověření a výsledkem. Nespojuj několik etap do jednoho rozsáhlého neověřitelného zásahu.
 3. Při implementaci průběžně aktualizuj `docs/plan/ETAPY-A-STAV.md` a na závěr dolož skutečné testy, CI run, commit SHA, měření a blokéry v `docs/reports/G-XX-VYSLEDEK.md`. **Nikdy neoznač za hotové něco, co nebylo ověřeno.**
 4. Pokud změna trvale ovlivní architekturu, jazyk, bezpečnost, databázový model nebo provoz, zapiš důvod a alternativy jako české ADR v `docs/adr/`.
-5. Matice požadovaných funkcí je v `contracts/feature-matrix.json`; čitelný přehled je v `docs/plan/MATICE-FUNKCI.md`. Stav funkce aktualizuj až po skutečném testu a přidej odkaz na důkaz; Markdown matice musí zůstat synchronizovaná.
+5. Matice požadovaných funkcí je v `contracts/feature-matrix.json`; čitelný přehled je v `docs/plan/MATICE-FUNKCI.md` a **podrobné vysvětlení každé z 178 funkcí** v [`docs/plan/PODROBNY-KATALOG-FUNKCI.md`](docs/plan/PODROBNY-KATALOG-FUNKCI.md). Před návrhem nového modulu ověř, že byl výběr funkcí schválen; do té doby neber současný KEEP/REMOVE jako nezměnitelný. Stav funkce aktualizuj až po skutečném testu a přidej odkaz na důkaz; Markdown matice musí zůstat synchronizovaná.
 
 ## Závazná jazyková pravidla
 

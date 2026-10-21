@@ -15,6 +15,7 @@
 | `docs/runbooks/*.md` | Postupy provozu, záloh, LXC a obnovy |
 | `contracts/feature-matrix.json` | Strojový stav jednotlivých 79 KEEP a 99 REMOVE |
 | `docs/plan/MATICE-FUNKCI.md` | Automaticky vytvořená lidská matice z JSON |
+| `docs/plan/PODROBNY-KATALOG-FUNKCI.md` | Český popis všech 178 funkcí pro rozhodnutí co implementovat; výběr KEEP/REMOVE měň pouze po schválení |
 
 ## Při každé samostatné etapě
 

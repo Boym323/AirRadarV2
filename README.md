@@ -11,6 +11,7 @@ Nová generace leteckého radaru, budovaná **od nuly**. Tento repozitář je zc
 | **[Hlavní zadání AirRadar V2](docs/plan/ZADANI-AIRRADAR-V2.md)** | Úplné zadání, cíle, architektura, databáze, provoz a kritéria úspěchu |
 | [Plán etap a jejich stav](docs/plan/ETAPY-A-STAV.md) | Pořadí G-00 až G-15, závislosti a stav realizace |
 | [Matice všech funkcí](docs/plan/MATICE-FUNKCI.md) | 79 požadovaných funkcí a 99 vyřazených |
+| **[Podrobný katalog 178 funkcí](docs/plan/PODROBNY-KATALOG-FUNKCI.md)** | Vysvětlení, co každá funkce dělá; určeno k rozhodnutí KEEP/REMOVE |
 | [Pravidla práce s dokumentací](docs/plan/PRAVIDLA-DOKUMENTACE.md) | Jazyk, systém zadání, reportů a ADR |
 | [Zadání G-01](docs/ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) | Další samostatná implementační etapa |
 | [Výsledky G-00](docs/reports/G-00-BOOTSTRAP.md) | Ověřené testy a hranice aktuální implementace |

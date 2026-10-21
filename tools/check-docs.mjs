@@ -9,6 +9,7 @@ const required = [
   "README.md","AGENTS.md","docs/plan/ZADANI-AIRRADAR-V2.md",
   "docs/plan/ETAPY-A-STAV.md","docs/plan/PRAVIDLA-DOKUMENTACE.md",
   "docs/plan/GREENFIELD-BRIEF.md","docs/plan/MATICE-FUNKCI.md",
+  "docs/plan/PODROBNY-KATALOG-FUNKCI.md",
   "docs/ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md",
   "docs/sablony/ZADANI-ETAPY.md","docs/sablony/REPORT-ETAPY.md",
   "docs/reports/G-00-BOOTSTRAP.md",
@@ -30,6 +31,33 @@ try {
   execFileSync(process.execPath,[resolve(root,"tools/generate-feature-matrix.mjs"),"--check"],{stdio:"inherit"});
 } catch {
   errors.push("Vygenerovaná matice se liší od JSON.");
+}
+
+// Kontrola, že katalog vysvětluje právě všechny funkce v JSON, bez ztracených ID.
+// Popisy samy jsou produktovou interpretací, nikoli potvrzením implementace.
+const katalog = docs["docs/plan/PODROBNY-KATALOG-FUNKCI.md"];
+const boundary = "## Část II — nyní vyřazené funkce";
+const ending = "## Důležité závislosti a otevřené otázky";
+if (!katalog.includes(boundary) || !katalog.includes(ending)) {
+  errors.push("V katalogu chybí hranice sekcí KEEP/REMOVE.");
+} else {
+  const [keptPart, removedRest] = katalog.split(boundary);
+  const removedPart = removedRest.split(ending)[0];
+  const rawMatrix = JSON.parse(readFileSync(resolve(root, "contracts/feature-matrix.json"), "utf8"));
+  const extract = text => {
+    const rows = [...text.matchAll(/^\| \*\*([A-Z]\d{2})\*\* \| (.*?) \| (.*?) \|$/gm)];
+    for (const row of rows) {
+      if (row[3].trim().length < 45) errors.push("Příliš stručný popis: " + row[1]);
+    }
+    return rows.map(row => row[1]);
+  };
+  const actualKeep = extract(keptPart);
+  const actualRemove = extract(removedPart);
+  const expectedKeep = rawMatrix.features.filter(f => f.decision === "KEEP").map(f => f.id);
+  const expectedRemove = rawMatrix.features.filter(f => f.decision === "REMOVE").map(f => f.id);
+  if (JSON.stringify(actualKeep) !== JSON.stringify(expectedKeep)) errors.push("Sekce KEEP v katalogu se liší od matice.");
+  if (JSON.stringify(actualRemove) !== JSON.stringify(expectedRemove)) errors.push("Sekce REMOVE v katalogu se liší od matice.");
+  if (new Set([...actualKeep, ...actualRemove]).size !== rawMatrix.features.length) errors.push("V katalogu jsou chybějící nebo duplicitní ID.");
 }
 for (const e of errors) console.error(e);
 if (errors.length) process.exit(1);

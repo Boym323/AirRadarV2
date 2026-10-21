@@ -17,7 +17,7 @@ Toto je **povinný kontextový vstup** při zahájení nové konverzace, nového
 3. [Katalog modulů](MODULY-A-ROZSAH.md) — konkrétně co implementovat a ke kterým KEEP ID
 4. [Co nepřebírat z V1](CO-NEPREBIRAT-Z-V1.md) — seznam nechtěného dluhu
 5. [Etapy a stav](ETAPY-A-STAV.md) — co je skutečně hotové a co dál
-6. [Matice funkcí](MATICE-FUNKCI.md) a `contracts/feature-matrix.json` — 79 KEEP/99 REMOVE, pravdivý stav
+6. [Matice funkcí](MATICE-FUNKCI.md), [podrobné popisy všech 178 funkcí](PODROBNY-KATALOG-FUNKCI.md) a `contracts/feature-matrix.json` — rozsah k revizi, nikoli automaticky schválený implementační seznam
 7. [CHANGELOG](../../CHANGELOG.md) — dokončené změny a doložené vydané/verifikované výsledky
 8. **Jediné zadání G-XX**, na kterém máš právě pracovat, v `docs/ukoly/`, a případné související ADR/reports
 
