@@ -6,11 +6,11 @@
 
 ## Cíl
 
-Zprovoznit rychlou MapLibre mapu s jedním lokálním proudem letadel a minimem ovládacích prvků.
+Zprovoznit rychlou MapLibre mapu v **již migrovaném Vite + React webu** s jedním lokálním proudem letadel a minimem ovládacích prvků.
 
 ## Konkrétní práce
 
-1. MapLibre mapa, ikony podle typu/směru a čitelné popisky bez kolizí.
+1. MapLibre React komponenty ve Vite, ikony podle typu/směru a čitelné popisky bez kolizí.
 2. Aktuální seznam, filtrování a výběr letadla, živá stopa a sledování mapovou kamerou.
 3. Samostatná vrstva okolních letišť z katalogu a přepínání existujících mapových podkladů.
 4. Nevytvářet přepínač datového původu; radar je vždy lokální a jasně tak označený.

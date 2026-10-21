@@ -1,10 +1,10 @@
 # ADR 0001 — Samostatná architektura AirRadar V2
 
-**Stav:** historické výchozí rozhodnutí G-00. **Revidováno průzkumem 21. 10. 2026**: živý Rust engine zůstává, web se doporučuje převést na Vite/React a databáze má otevřenou volbu. Viz [ADR 0003](0003-vyzkum-technologii-a-otevrene-brany.md) a [výsledná rozhodnutí](../plan/TECHNOLOGICKA-ROZHODNUTI.md).
+**Stav:** historické výchozí rozhodnutí G-00. **Revidováno 21. 10. 2026**: web už byl převeden na Vite/React a PostgreSQL je definitivně zvolená pro existující samostatný DB LXC. Viz [ADR 0004](0004-vyzkum-technologii-a-otevrene-brany.md), [ADR 0005](0005-vite-a-postgresql-v2.md) a [rozhodnutí](../plan/TECHNOLOGICKA-ROZHODNUTI.md).
 
 ## Rozhodnutí
 
-AirRadar V2 má vlastní GitHub repozitář, budoucí samostatný LXC, služby a databázi. Rust/Tokio/Axum bude vlastníkem živého stavu a přijímačů; Next.js/React/MapLibre zajišťuje výhradně web a ovládání; PostgreSQL/SQLx obstará vzorkovanou historii, indexované dotazy a agregace. Historie z V1 se nepřenáší.
+AirRadar V2 má vlastní GitHub repozitář, budoucí samostatný LXC, služby a databázi. Rust/Tokio/Axum bude vlastníkem živého stavu a přijímačů; Vite/React/MapLibre zajišťuje výhradně web a ovládání; PostgreSQL/SQLx na separátním databázovém LXC obstará vzorkovanou historii, indexované dotazy a agregace. Historie z V1 se nepřenáší.
 
 ## Odůvodnění
 

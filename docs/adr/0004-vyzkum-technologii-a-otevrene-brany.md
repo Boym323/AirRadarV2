@@ -1,6 +1,6 @@
-# ADR 0003 — Technologické hodnocení a rozhodovací brány V2
+# ADR 0004 — Technologické hodnocení a rozhodovací brány V2
 
-**Datum:** 21. 10. 2026. **Stav:** doporučeno; dosud neimplementováno, bez vlastního benchmarku.
+**Datum:** 21. 10. 2026. **Stav:** historická technologická rešerše, později upřesněná závazným [ADR 0005](0005-vite-a-postgresql-v2.md). Web je již na Vite, PostgreSQL je definitivní volba; alternativy níže nejsou aktivními plány.
 
 ## Kontext
 

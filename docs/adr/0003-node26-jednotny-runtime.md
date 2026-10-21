@@ -15,3 +15,7 @@ Soubor `.node-version` určuje Node.js 26.12.0 ve vývoji i GitHub Actions. `app
 
 ## Následky
 Před přijetím požadujeme ověřený lockfile, lint, typy, testy, build a regresní API smoke. Aktualizace Node 26 na novou patch verzi opět projde CI.
+
+## Navazující rozhodnutí o webu
+
+Po ověřené migraci z Next.js na Vite/React platí stejný Node 26/npm 11 pro **sestavování a testy**, nikoliv pro trvale běžící server v LXC. Podrobnosti jsou v [ADR 0005](0005-vite-a-postgresql-v2.md).
