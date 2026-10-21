@@ -1,0 +1,38 @@
+name: Jednorázová synchronizace npm lockfilu
+
+on:
+  push:
+    branches: [chore/modernizace-node26-20261021]
+
+permissions:
+  contents: write
+
+jobs:
+  sync-lock:
+    if: github.repository == 'Boym323/AirRadarV2'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Synchronizace lockfilu bez spouštění instalačních skriptů
+        working-directory: apps/web
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Ověření npm ci
+        working-directory: apps/web
+        run: npm ci --no-audit --no-fund
+      - name: Uložit pouze npm lockfile do této větve
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add apps/web/package-lock.json
+          if git diff --cached --quiet; then
+            echo "Lockfile bez změny."
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "build: synchronizace lockfilu Node 26"
+          git push origin HEAD:chore/modernizace-node26-20261021
