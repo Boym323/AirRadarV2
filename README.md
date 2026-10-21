@@ -23,7 +23,7 @@ Nová generace leteckého radaru, budovaná **od nuly**. Tento repozitář je zc
 
 ![Historie řádků zdrojového kódu](docs/metrics/loc.svg)
 
-Měřený commit: [1c52f5c6](https://github.com/Boym323/AirRadarV2/commit/1c52f5c6c7f2bc6944df014d49d4e9bdc0561b08) · [Historie](docs/metrics/history.json) · [Metodika](docs/metrics/README.md) · [Výsledky CI](https://github.com/Boym323/AirRadarV2/actions/workflows/ci.yml).
+Měřený commit: [5c624d8f](https://github.com/Boym323/AirRadarV2/commit/5c624d8f5389fb1a7e0a5bce9893426b2dca746a) · [Historie](docs/metrics/history.json) · [Metodika](docs/metrics/README.md) · [Výsledky CI](https://github.com/Boym323/AirRadarV2/actions/workflows/ci.yml).
 
 > Jde o vývojové statistiky repozitáře, nikoli o výkon živého radaru. Funkce se počítají jen ze strojové matice s důkazem testu. Úspěšná CI sama o sobě nedokazuje dokončení funkcí.
 <!-- AIRRADAR_STATS_END -->
