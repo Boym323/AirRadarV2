@@ -1,128 +1,76 @@
-# AirRadar V2 — závazné zadání projektu na zelené louce
+# AirRadar V2 — závazné zadání greenfield projektu
 
-**Vytvořeno:** 21. října 2026  
-**Repozitář:** https://github.com/Boym323/AirRadarV2  
-**Referenční V1:** https://github.com/Boym323/AirRadar  
-**Stav:** založený projekt G-00; vývojové etapy G-01 až G-15 postupně realizovat, nikoliv předpokládat jejich dokončení.  
-**Jazyk:** **čeština je výchozí a závazný jazyk všech zadání, dokumentace, reportů a viditelných textů aplikace**. Překlad UI do angličtiny zůstává budoucí samostatnou funkcí U04.
+**Schválená volba produktu:** 21. 10. 2026; **46 KEEP / 132 REMOVE** podle [matice](../../contracts/feature-matrix.json).  
+**Repo:** https://github.com/Boym323/AirRadarV2; referenční V1: https://github.com/Boym323/AirRadar.  
+**Jazyk zadání, reportů a UI:** čeština, `cs-CZ`. Volitelná angličtina UI U04 zůstává v rozsahu.  
+**Stav kódu:** pouze G-00 scaffold s neprodukčními API; aktuální moduly ještě nejsou implementované.
 
-## 1. Poslání a rozsah
+## 1. Cíl a inženýrské hranice
 
-Vybudovat **skutečně nový AirRadar V2**, který přebírá poznatky z funkční V1, ale nezačne kopírováním jejího zdrojového stromu, architektonických kompromisů, rozsáhlých React komponent ani databázového modelu. Projekt musí mít vlastní GitHub repozitář, samostatné CI, nový LXC, oddělené služby a vlastní databázi. V1 zůstane běžet až do samostatně schváleného přechodu.
+Od nuly postavit úsporný a bezpečný **místní letecký radar** s použitím Rust + Tokio + Axum (jediný live state owner), Next.js + React + MapLibre (web) a nové PostgreSQL + SQLx (vzorkovaná historie). Nepřevádět zdrojový strom ani databázi V1. Celé V2 poběží v novém odděleném LXC, nikoli na produkčním V1.
 
-**Cílová funkčnost:** implementovat a individuálně ověřit **79 KEEP** funkcí ze [strojové matice](../../contracts/feature-matrix.json), přehledně popsaných v [české matici](MATICE-FUNKCI.md). Dalších **99 REMOVE** není součástí V2. Každá povinná funkce se stává hotovou až po skutečném behaviorálním testu, ne po vytvoření souboru nebo UI náhledu.
+Rozsah je **46 výslovně zachovaných funkcí**: každý bod v [MODULY-A-ROZSAH.md](MODULY-A-ROZSAH.md) a jednotlivé G-XX etapy. **132 REMOVE neimplementovat**, a to ani jako tajně přidaný „helper“, pokud by obcházel přímý produktový zákaz. J03 ve V2 je nativní Rust parser bez Node akcelerační vrstvy.
 
-**Historie:** staré historické lety, pozice a statistiky z V1 se **nepřenášejí**. Nová V2 databáze začne prázdná a bude vytvářet vlastní záznamy. Neodstraňuj data z V1.
+## 2. Skutečné datové toky
 
-**Pracovní metoda:** jednotlivé etapy G-00 až G-15 v oddělených českých Markdown zadáních; stav a důkazy průběžně ve [stavovém dokumentu](ETAPY-A-STAV.md) a v `docs/reports/`. Dodrž [pravidla dokumentace](PRAVIDLA-DOKUMENTACE.md) a [AGENTS.md](../../AGENTS.md).
+```text
+lokální readsb JSON / BEAST TCP ──→ Rust normalizace a validace
+                               └──→ jediný RAM stav letadel
+                                         ├──→ Rust REST + SSE full/delta ──→ web / MapLibre
+                                         └──→ bounded sampling ──→ PostgreSQL V2
+ČHMÚ radar / SIGMET ──→ samostatná cache ──→ pouze odpovídající UI/API
+Mode-S BDS počasí  ──→ oddělené dekódování ──→ W08/W09
+squawk 7500/7600/7700 ──→ bezpečný detektor L06 ──→ opt-in L11/L12
+```
 
-## 2. Povinná architektura a volba jazyků
+- **Bez externího ADS-B**: E01/E02/E03 a celý G-03 jsou pryč. R02 přepínač LOCAL/EXTENDED zůstává, ale bez externího zdroje musí transparentně ukazovat nedostupnost EXTENDED; žádná fiktivní network letadla.
+- **Bez OGN/FLARM a obohacení**: E04–E10, H03 a G-09 mimo rozsah. Nesmí se v runtime objevit nepotřebný internetový lookup každého letadla.
+- **Bez ATC a ATS analytiky**: R17/T08/T09/T13/T14 a další původní REMOVE se neobnovují. A01/A02/T10 katalog letišť/frekvencí a NAVAID zůstává jako lehký datový produkt; O13 automatická synchronizace je pryč.
+- **Bez historických profilů letadel, 7/30denních přehledů a coverage analýzy**: H07/H14/S02/S03/S04 jsou mimo rozsah. J09 dál ukládá potřebné nové vzorky pro S06/S09.
+- **Bez METAR/TAF** W01/W02; W03 ČHMÚ radar, W06 SIGMET a W08/W09 Mode-S meteorologie zůstávají samostatnými moduly. R18 univerzální weather+airspace overlay není potřeba.
+- **Bez systémového admin portálu a release produktu** O09–O13/O15; nezbytné testy, autentizace chráněných operací, zálohy a dokumentovaný bezpečný deployment jsou stále povinné inženýrské brány, nikoli důvod obnovovat jejich produktové ID.
 
-| Součást | Výchozí technologie | Provozní hranice |
-|---|---|---|
-| Živý backend a autoritativní stav letadel | **Rust, Tokio, Axum** | jediný vlastník stavu a jediná orchestrace přijímačů |
-| BEAST, Mode-S, CRC24, normalizace, deduplikace, geomet­rie | **Rust** | omezená paměť, validované rámce, profilované hot paths |
-| Web a responzivní mapa | **TypeScript, Next.js, React, MapLibre** | bez přímého čtení BEAST nebo paralelního stavu letadel |
-| Historie, agregace, indexy a retence | **PostgreSQL + SQLx / SQL** | asynchronní vzorkované zápisy, vhodné indexy, žádná závislost živého toku na DB |
-| Datové kontrakty | **OpenAPI / JSON Schema** | verzované API, generované typy klienta, integrační testy |
-| Offline importy a testovací data | **Python, Rust či TypeScript** | jen s odůvodněním; ne na živé kritické cestě |
-| Observabilita | strukturované logy, metriky, trasování | sledovat CPU, RAM, p95/p99, DB fronty a provider health |
+## 3. Živý příjem a veřejná rozhraní
 
-Jiné programovací jazyky jsou **povolené**, když měření, testy, provozní náklady a české ADR doloží přínos. Nezavádět automaticky Go služby, Kafka, Redis, Kubernetes nebo další databázi. Nepřidávat mikroservisy jen kvůli „modernosti“.
+- Přijímat readsb JSON a lokální BEAST TCP pouze read-only, validovat DF/CRC/čas, icao, polohu a kvalitu.
+- Jeden kanonický RAM state; continuity/TTL/stale guard; přepnutí BEAST/JSON bez duplicit.
+- Rust REST veřejná projekce s absolutně sanitizovanými DTO, žádné privátní souřadnice přijímače ani credentials.
+- SSE V1 snapshoty a SSE V2 initial+delta, heartbeat, per-client bounded queue, backpressure, sequence/reconnect, 503 při nedostatku kapacity.
+- MapLibre mapa, ikony a popisky, seznam a filtry, live trail/follow, letiště a mapové podklady. **Nevytvářet** vyřazené R05/R07/R10/R11/R15/R17/R18.
 
-### Základní datový tok
+## 4. PostgreSQL a úsporné statistiky
 
-`readsb JSON / lokální BEAST (read-only) → Rust ingest/normalizace → autoritativní RAM → Rust SSE/HTTP → Next.js/MapLibre`
+- Nová oddělená DB pro V2, žádná stará letová historie, žádný import V1 dat ani sdílené credentials.
+- Query-first minimální tabulky pro vzorkované lety/pozice J09, agregace S06/S09, případné nezbytné delivery stavy a omezené provozní metriky O06/O07.
+- SQLx migrace, bounded async queue, batch INSERT/UPSERT, retence, time-range indexy, žádný raw frame stream na disk.
+- `EXPLAIN (ANALYZE, BUFFERS)` v DEV, výkonnostní profily pro latenci dotazů, WAL a I/O. DB offline nesmí zastavit živý radar.
+- Statistické API pouze S01/S06/S09; chybějící typ/aerolinku bez E10 označovat jako neznámé, žádné domýšlené hodnoty.
 
-`RAM → omezená asynchronní fronta vzorků → PostgreSQL`
+## 5. Počasí, nouzové kódy a diagnostika
 
-Síťové providery (ADSBHub, ADSB.lol) dodávají samostatně označené záznamy. Počasí, identifikace letadel, ATC a OGN jsou izolované volitelné subsystémy. Výpadek databáze, počasí nebo doplňkových zdrojů nesmí přerušit živý radar.
+- ČHMÚ radar W03 s časovou osou, platný SIGMET/AirSIGMET W06, Mode-S/BDS 4,4 W08 a profil/kvalita měřeného počasí W09. Každý provider má bounded TTL/cache, volání nikdy neleží na ingest hot path.
+- Squawk 7500/7600/7700 z lokálních validních dat je jedinou explicitně schválenou detekcí L06. Zjistit stav, přechod a duplicitu; L11/L12 jsou volitelné transporty. **Ve výchozím stavu a shadow režimu zakázat skutečné odesílání**.
+- O01–O08: jednoduché stavové sondy jen pro aktivní subsystémy, diagnostické SSE, ochrana interních údajů, omezená historie výkonu.
+- Rust CPU/RSS/fronty měřit odlišně od Node.js event-loop/GC.
 
-### Samostatné provozní části
+## 6. Web a lokalizace
 
-1. `airradarv2-engine`: Rust služba pro příjem, canonical state, veřejné API a SSE; později také dávkovou historii, navigaci, metriky a notifikace.
-2. `airradarv2-web`: Next.js aplikace pro mapu, ovládání, panely a lokalizaci. Nevytváří vlastní ADS-B ingest ani samostatné zápisy historie.
-3. `airradar_v2`: samostatná PostgreSQL databáze a oprávnění. Sdílení fyzického DB serveru s V1 lze zvážit jen při doložené izolaci a kapacitě.
+Český výchozí web a volitelná angličtina U04, mobil/tablet/desktop U01, PWA U02, offline poslední známý stav U03 s označením zastarání, globální hledání U05 a zkratky U08. Žádné kopírování `globals.css` či monolitické mapové komponenty V1.
 
-## 3. Správnost živého radaru
+## 7. Testy, CI, provoz a LXC
 
-- Základní identitou je ICAO hex; callsign a registrace jsou pozorované vlastnosti, ne stabilní klíč.
-- Správně pracovat s ne-ICAO identifikátory readsb, validací zeměpisných pozic, časovými známkami, jejich přetečením a zastaráváním.
-- Příjem readsb JSON a BEAST oddělit. BEAST parser pokrývá odpovídající DF varianty, CRC24 a časovou kontinuitu. Při výpadku jedné cesty automaticky přejít na druhou bez falešné změny identity.
-- Rozlišovat **LOCAL** (místní příjem) a **EXTENDED** (externí síťové zdroje); poskytovat provenance a zachovat prioritu čerstvých lokálních údajů. Síťová data nesmějí být podvodně vydávána za lokální.
-- Omezit počet objektů, front, retry, velikosti odpovědí a paměť; při chybách zachovat stav pouze podle definovaných freshness pravidel.
-- Srovnávací testy použijí anonymizované fixní ADS-B záznamy; nezávisí na proměnlivých aktuálních letech.
+- Povinné Rust fmt/Clippy/tests, web lint/typecheck/Vitest/Playwright, kvalitní česká dokumentace v MD a strojová feature evidence.
+- Testy validních a chybně formátovaných paketů, 1×/2×/4× replay, 1/10/100 SSE klientů, DB restart, žádný memory leak, bezpečné Web Push/Pushover failure cases.
+- CI/testy se musí spouštět i při vyřazení O11 jako produktu. Změny dokumentace a vývoje patří do `CHANGELOG.md`, nikoliv do obnovené O14 aplikace.
+- Izolovaný nový LXC a V2 DB; až po ověření lze schválit bezpečný read-only shadow bez vlivu na V1.
+- G-15 smí připravit a po zvláštním schválení použít ruční release a rollback. **Nesmí automaticky měnit doménu, proxy, produkční V1, historická data ani tajemství**.
 
-## 4. API, streamování a bezpečnost
+## 8. Etapy a výstupy
 
-Navrhnout verzované Rust REST API a zdokumentovat jej v `contracts/openapi.yaml`. Cílové oblasti: `/api/v1/aircraft`, `/api/v1/aircraft/:id`, `/api/v1/stream`, historie, statistiky, navigace, počasí a system status. Konkrétní endpointy závazně schvalovat přes kontrakty, ne automaticky kopírovat V1.
+[Plán etap a stav](ETAPY-A-STAV.md) a samostatné `docs/ukoly/G-XX-*.md` jsou závazné implementační jednotky. **G-03 a G-09 jsou zrušené**; ostatní etapy jsou rozdělené podle devíti modulů. Každá dodává: změny, konkrétní KEEP ID, český report, automatické testy a skutečný výkonový důkaz, pokud výkon mění; nedokončené stavem ČÁSTEČNĚ/BLOKOVÁNO.
 
-SSE musí poskytovat výchozí celý snapshot a volitelný initial-snapshot + delta režim; zachovat pořadí a sekvence, heartbeat, reconnect, cleanup, bounded fanout/coalescing, ochranu před pomalým klientem a odmítnutí při kapacitním limitu. Nedovolit workload úměrný počtu klientů krát počet letadel při každém pollingu bez doložené nutnosti.
+**Vývojový princip:** stav `ACCEPTED` nedostane žádná funkce bez testu a důkazu. Počty KEEP/REMOVE a denní statistiky repo jsou od 21. 10. 2026 46/132; historické metriky před změnou se nemají retrospektivně přepisovat.
 
-Veřejné DTO nesmí obsahovat credentials, interní chyby ani nechtěnou přesnou polohu přijímače. Sanitizované read-only diagnostiky mohou být veřejné; privilegovaná data a administrační mutace vyžadují autentizaci a autorizaci. Obslužné texty API dokumentovat česky, názvy polí a stavových kódů držet stabilní.
+## 9. Pokyn pro nový Codex běh
 
-## 5. PostgreSQL V2 — nové schéma, bez přenosu staré historie
-
-Databázi navrhnout **podle reálně požadovaných dotazů**, ne kopírováním V1 Prisma modelů. Logické oblasti (nemusí to být stejnojmenná schémata): reference (letadla, letiště, ATC/ATS/NAVAID, verze), lety a vzorkované pozice, denní agregace/coverage, Navigation Integrity, notifikační fronta, omezená provozní telemetrie.
-
-Povinné optimalizace:
-
-- vzorkování, coalescing a dávkové INSERT/UPSERT místo ukládání všech zpráv;
-- bounded write queue, transakční dávky, odolnost vůči restartu a chybám DB;
-- časové rozsahy, stránkování, správné composite indexy, úsporné agregace v SQL, žádné N+1 či neregulované úplné `SELECT *`;
-- `EXPLAIN (ANALYZE, BUFFERS)` na DEV datech, měření p50/p95/p99, zápisů, WAL, dead tuples a paměti;
-- retence podle typu dat a potřeby UI (pozice, letové instance, agregace, anomálie a provozní diagnostiky);
-- partitioning/BRIN jen po benchmarku a zdůvodnění jejich složitosti;
-- nová vlastní správa migrací v SQLx; záloha a skutečný test obnovy před nasazením.
-
-Při výpadku DB zůstanou letadla v RAM dostupná. Neexistující historie a 7/30denní přehledy musí zobrazit korektní prázdný stav, dokud V2 nenasbírá nové údaje. **Nikdy neměnit, nepoužívat jako testovací cílovou DB a nemazat PostgreSQL V1.**
-
-## 6. Letecké a doplňkové subsystémy
-
-**ATC a navigace:** importovaný a verzovaný eAIP, prostorové indexy pro sektory, ATS tratě, NAVAID/FIX a Navigation Integrity. ATC assignment je pravděpodobné přiřazení podle polohy, výšky a času; neznamená skutečně naladěnou frekvenci letadla. Zachovat vybrané české a zahraniční ATS tratě dle matice.
-
-**Počasí:** aktuální METAR/TAF, ČHMÚ radar s časovou osou, SIGMET/AirSIGMET, Mode-S/BDS měření. Samostatné TTL cache a platnost časových intervalů; chyby providera nezastaví ADS-B.
-
-**OGN/FLARM:** oddělený ingest a public serializer. DDB privacy `noTracking` a nevyřešená identita musí být fail-closed; anonymní identifikátory nesmějí prozradit skutečné údaje. OGN nepatří do ADS-B statistiky ani běžné ADS-B historie.
-
-**Integrace:** ADSBHub, ADSB.lol raw/HTTP, RXW Hub, FlightAware, ADSBDB, Planespotters. Respektovat skutečné limity, licence, provenance, TTL a ceny; neprovádět neomezené síťové volání na kritické cestě.
-
-**Notifikace:** Web Push a Pushover s durable claim/retry automatem; nepodporovaný kanál nesmí skončit jako doručený. Shadow/test provoz nikdy nesmí vyvolat skutečné alerty uživatelům.
-
-**UI:** funkční MapLibre, seznam, výběr, detail, stopy, follow, vrstvy, responzivita, PWA, offline cache a command search dle matice. **České texty výchozí**; U04 později doplní volitelnou angličtinu.
-
-## 7. Samostatný LXC a nasazování
-
-Nový GitHub repo a nový LXC jsou nezávislé na V1. Předběžné neověřené rozměrování je 4 vCPU, 8 GB RAM a 60 GB disku; teprve zátěžový test určí provozní potřebu. Podrobnosti v [runbooku](../runbooks/LXC-SETUP.md).
-
-V2 engine používá předběžně `127.0.0.1:4101`, web `4100`, samostatné názvy systemd, samostatné secrets a účet. V CI jsou nejprve jen buildy/testy bez deploye. Pozdější release musí být vázaný na přesný SHA, mít rollback a **nesmí přepnout proxy, doménu, V1 LXC či databázi bez zvláštního schválení**.
-
-Živý readsb/BEAST feed může V2 číst pouze read-only a až po ověření, že další klient neovlivní V1. Do té doby se používá generovaný a anonymizovaný replay.
-
-## 8. Metriky a důkazní standard
-
-| Oblast | Doklad | Přijímací podmínka |
-|---|---|---|
-| Live freshness | replay / případně schválený shadow | žádné nevysvětlené zpoždění |
-| CPU a paměť | 1×, 2×, 4×, soak | bounded stav, žádný dlouhodobý růst |
-| SSE | 1 / 10 / 100 klientů | reconnect, backpressure, P95/P99 |
-| Databáze | query p95/p99, WAL, I/O, velikost indexů | měřená stabilita, bez vazby na hot path |
-| BEAST/JSON | golden fixtures a property tests | správnost a stejné identity |
-| Funkce | matice 79 ID + konkrétní test | žádné falešné „hotovo“ |
-| Bezpečnost | CodeQL, auth, OGN privacy, secrets | žádné kritické úniky |
-| Obnova | výpadek poskytovatele/DB, restart a DB restore | kontrolovaný návrat bez vlivu na V1 |
-
-Cílové číselné limity stanovit až po baseline. Nedeklarovat zrychlení z jednoho kolísajícího vzorku. Výsledky ukládat **v češtině** do `docs/reports/` s přesným SHA a linky na CI či naměřené artefakty.
-
-## 9. Etapy a definice dokončení
-
-Plný seznam a stav je v [ETAPY-A-STAV.md](ETAPY-A-STAV.md). Souhrn: G-00 základ repozitáře; G-01 kontrakty a fixture; G-02 lokální Rust ADS-B; G-03 síťový provoz; G-04 SSE; G-05 PostgreSQL; G-06 frontend mapa; G-07 ATC/ATS/navigation; G-08 počasí; G-09 OGN/integrace; G-10 notifikace/admin; G-11 statistiky/T58; G-12 dokončení UI/PWA/i18n; G-13 akceptace 79 funkcí; G-14 oddělený shadow; G-15 samostatně schválený přechod.
-
-Pro každou etapu požaduj: konkrétní změny, testy, výkonnostní měření (kde dává smysl), stabilní veřejný kontrakt, aktualizovaný stav funkcí, české dokumenty a report, případné blokéry a postup návratu. Etapy G-00 až G-14 **nesmí automaticky nasazovat do V1 ani měnit produkční provoz**.
-
-**G-15 je jediná etapa pro finální přechod**, a ani ona nezakládá automatický souhlas se změnou DNS, reverse proxy, vypnutím V1 nebo smazáním historických dat. Tato jednání musí mít samostatné výslovné schválení.
-
-## 10. Pokyn pro agenta / Codex
-
-> Pracuj v repozitáři https://github.com/Boym323/AirRadarV2. Nejdříve přečti `AGENTS.md`, `docs/plan/ZADANI-AIRRADAR-V2.md`, `docs/plan/ETAPY-A-STAV.md` a zadání vybrané G-XX etapy. Všechny dokumenty, reporty a viditelné UI texty piš **česky**. Implementuj vždy jen jednu etapu, prováděj skutečné testy, měř výkon a aktualizuj české Markdown dokumenty i matici funkcí. Původní AirRadar V1 a jeho LXC/databázi neměň. Neprováděj produkční release bez zvláštního souhlasu. V závěru uveď commit, ověřené výsledky, chybějící důkazy a stav etapy.
-
+> Nejdříve přečti `AGENTS.md`, `docs/plan/ZACNI-ZDE-NOVE-VLAKNO.md`, `docs/plan/ZADANI-AIRRADAR-V2.md` a `docs/plan/MODULY-A-ROZSAH.md`. Platí **46 KEEP / 132 REMOVE**, navrácena L06, G-03/G-09 zrušeny. Pracuj pouze na jedné následující etapě, zachovej Rust/Next.js/PostgreSQL hranice. Po implementaci proveď testy a aktualizuj český report, JSON/MD matici, stav etap a changelog. Bez změny V1 a bez produkčního deploye.

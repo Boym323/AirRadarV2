@@ -13,7 +13,7 @@
 | `docs/reports/G-XX-*.md` | Důkazy testů, měření, revize a blokéry |
 | `docs/adr/NNNN-*.md` | Trvalá architektonická rozhodnutí |
 | `docs/runbooks/*.md` | Postupy provozu, záloh, LXC a obnovy |
-| `contracts/feature-matrix.json` | Strojový stav jednotlivých 79 KEEP a 99 REMOVE |
+| `contracts/feature-matrix.json` | Strojový stav jednotlivých 46 KEEP a 132 REMOVE |
 | `docs/plan/MATICE-FUNKCI.md` | Automaticky vytvořená lidská matice z JSON |
 | `docs/plan/PODROBNY-KATALOG-FUNKCI.md` | Český popis všech 178 funkcí pro rozhodnutí co implementovat; výběr KEEP/REMOVE měň pouze po schválení |
 
@@ -41,4 +41,3 @@ node tools/generate-feature-matrix.mjs --check
 ~~~
 
 Při změně dokumentů uprav jejich relativní odkazy. Nezaměňuj akceptované dokumenty s implementovanými funkcemi: text požadavku nezaručuje existenci kódu.
-

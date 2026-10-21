@@ -4,14 +4,14 @@
 
 ## Co je povolené použít
 
-- Soubor `contracts/feature-matrix.json` v tomto repozitáři je autoritativní seznam **79 KEEP / 99 REMOVE** a aktuálních stavů.
+- Soubor `contracts/feature-matrix.json` v tomto repozitáři je autoritativní seznam **46 KEEP / 132 REMOVE** a aktuálních stavů.
 - V1 dokumentace může vysvětlovat uživatelské chování, formáty a známé chyby. Použij jen relevantní části a nezaměňuj historický audit za aktuální realitu.
 - Bezpečně vytvořené syntetické fixture, veřejné technické specifikace a ověřené provozní invarianty lze použít pro testy.
 - Referenční data obnovuj z aktuálního dokumentovaného zdroje s licencí a původem; nikdy slepě nekopíruj stávající provozní DB.
 
 ## Výchozí zákaz převzetí
 
-1. **99 funkcí označených REMOVE**, zejména staré statistické/recap a experimentální vrstvy, zaniklé dashboardy a nepoužívané API; i jejich závislosti jsou výchozím stavem mimo rozsah.
+1. **132 funkcí označených REMOVE**, zejména staré statistické/recap a experimentální vrstvy, zaniklé dashboardy a nepoužívané API; i jejich závislosti jsou výchozím stavem mimo rozsah.
 2. Kompletní složky `app/`, `components/`, `lib/`, `scripts/`, `prisma/`, `deploy/` z V1. Stejnojmenná nová složka ve V2 je v pořádku, ale nesmí jít o mechanickou kopii.
 3. Starý Next.js `AircraftStateService`, druhého nezávislého příjemce, neomezený polling a provázání databáze se živým ADS-B.
 4. Stará globální CSS pravidla, nepoužívané layouty, bývalé A/B varianty obrazovek, dřívější Airport Live Board experimenty a jednorázové script/benchmark soubory.
@@ -41,3 +41,7 @@ Pokud to nejde doložit, položku neimplementuj. Při nejasnostech v seznamu KEE
 - Specifikace a reporty jsou **v češtině**; technická terminologie/identifikátory zůstávají standardní.
 
 Odkazy: [katalog modulů](MODULY-A-ROZSAH.md), [hlavní zadání](ZADANI-AIRRADAR-V2.md), [matice funkcí](MATICE-FUNKCI.md).
+
+## Rozsah po revizi vlastníka 21. 10. 2026
+
+G-03 (ADSBHub/ADSB.lol) a G-09 (OGN/RXW/externí metadata) se nemají implementovat. Neobnovovat ATC/ATS analytiku, mapový detail, 7/30 statistiky, METAR/TAF, coverage dashboard a automatický eAIP importer. Podrobnosti v [aktuálním katalogu modulů](MODULY-A-ROZSAH.md). Emergency squawk L06 zůstává jediným explicitním spouštěčem upozornění; neposílat skutečné zprávy při testech.

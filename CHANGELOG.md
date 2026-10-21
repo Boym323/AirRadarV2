@@ -4,9 +4,14 @@ Tento soubor eviduje **skutečně dokončené a ověřené změny**, nikoli jen 
 
 ## [Nepublikováno]
 
+### Změněno
+- Rozsah na základě výslovného rozhodnutí vlastníka: **46 KEEP / 132 REMOVE**; odstraněno 34 dříve plánovaných funkcí, vrácena **L06 (squawk 7500/7600/7700)**.
+- Matice JSON, český katalog všech 178 funkcí, 9 logických modulů, etapový plán a implementační úkoly byly sladěny. Nevyřazené O11/O12 infrastruktury se drží jako technická povinnost, nikoli jako samostatný produkt.
+- Automatické statistiky repozitáře budou od změny zobrazovat jmenovatel 46, staré historické vzorky 79 zůstávají zachovány.
+
 ### Přidáno
-- České závazné zadání, katalog 13 implementačních modulů s přesným přiřazením 79 KEEP ID, anti-legacy pravidla a předávací instrukce pro nové vlákno.
-- Samostatná česká Markdown zadání etap G-02 až G-15 (G-01 už existovalo), proces vedení CHANGELOG a validace dokumentačních pravidel.
+- České závazné zadání, původní katalog modulů (nahrazen devíti logickými moduly s 46 KEEP ID), anti-legacy pravidla a předávací instrukce pro nové vlákno.
+- Samostatná česká Markdown zadání etap G-02 až G-15, včetně výslovného zrušení G-03 a G-09.
 
 ### Ověření
 - Aktuální dokumentační změny vyžadují CI na přesném commitu; nelze je automaticky prohlašovat za ověřenou produkční funkčnost.
@@ -26,7 +31,7 @@ Tento soubor eviduje **skutečně dokončené a ověřené změny**, nikoli jen 
 ### Ověřeno
 - [CI 39659205202](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202) — Rust a web včetně spuštění HTTP, commit `99df0456`.
 - [CI 39662365349](https://github.com/Boym323/AirRadarV2/actions/runs/39662365349) — Rust, Next.js a česká dokumentace, commit `d72fad1`.
-- **Neověřeno / nedodáno:** živá ADS-B data, MapLibre aplikace, PostgreSQL instance, produkční LXC, nasazení a všech 79 budoucích KEEP funkcí.
+- **Neověřeno / nedodáno:** živá ADS-B data, MapLibre aplikace, PostgreSQL instance, produkční LXC, nasazení a všech původně vybraných 79 KEEP funkcí (později rozsah zúžen na 46).
 
 ## Pravidla zápisu
 

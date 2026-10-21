@@ -17,17 +17,21 @@ Toto je **povinný kontextový vstup** při zahájení nové konverzace, nového
 3. [Katalog modulů](MODULY-A-ROZSAH.md) — konkrétně co implementovat a ke kterým KEEP ID
 4. [Co nepřebírat z V1](CO-NEPREBIRAT-Z-V1.md) — seznam nechtěného dluhu
 5. [Etapy a stav](ETAPY-A-STAV.md) — co je skutečně hotové a co dál
-6. [Matice funkcí](MATICE-FUNKCI.md), [podrobné popisy všech 178 funkcí](PODROBNY-KATALOG-FUNKCI.md) a `contracts/feature-matrix.json` — rozsah k revizi, nikoli automaticky schválený implementační seznam
+6. [Matice funkcí](MATICE-FUNKCI.md), [podrobné popisy všech 178 funkcí](PODROBNY-KATALOG-FUNKCI.md) a `contracts/feature-matrix.json` — aktuální výslovně schválený rozsah; další změna jen na pokyn vlastníka
 7. [CHANGELOG](../../CHANGELOG.md) — dokončené změny a doložené vydané/verifikované výsledky
 8. **Jediné zadání G-XX**, na kterém máš právě pracovat, v `docs/ukoly/`, a případné související ADR/reports
 
 **Nečti automaticky celou složku** `docs/` ani historické audity V1. Pokud konkrétní dokument chybí, oprav nejdřív dokumentaci, nevymýšlej obsah.
 
+## Rozhodnutí o rozsahu
+
+Výslovně schváleno **46 KEEP / 132 REMOVE** dne 21. 10. 2026. G-03 a G-09 zrušeny, **L06** je nově KEEP. Žádný z aktuálních 46 KEEP není zatím potvrzen jako dokončený. Historické odkazy na 79 jsou pouze původní stav.
+
 ## Aktuální bezpečný stav (reviduj vůči HEAD)
 
 - **G-00:** ověřený základ Rust HTTP a Next.js s lockfile, [CI 39662365349](https://github.com/Boym323/AirRadarV2/actions/runs/39662365349) úspěšně na `d72fad1` (platí pro tento konkrétní SHA).
 - **G-01:** kontrakty/fixture zatím `NEZAHÁJENO`; [zadání](../ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md).
-- **G-02 až G-15:** zadání existují, implementace zatím nebyla potvrzena. Přesný stav vždy ověř v `ETAPY-A-STAV.md` a kódu.
+- **G-02 až G-15:** zadání existují; G-03 a G-09 jsou výslovně vyřazeny, ostatní neimplementované. Přesný stav vždy ověř v `ETAPY-A-STAV.md` a kódu.
 - G-00 `/api/v1/health` vrací `bootstrap`; `/api/v1/aircraft` vrací `NOT_IMPLEMENTED`; nic z toho neprokazuje živý příjem.
 - Žádný produkční deploy, změna DNS/proxy, čtení V1 DB, nové alerty či V1 LXC.
 - Důkazy o vývoji ukládej do **českých MD** a aktualizuj `CHANGELOG.md`; netvrď GO/PASS bez stejného SHA CI.

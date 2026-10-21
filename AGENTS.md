@@ -8,7 +8,7 @@
 2. Pro aktuální etapu vytvoř nebo uprav **Markdown soubor** `docs/ukoly/G-XX-NAZEV.md` s rozsahem, závislostmi, scénáři ověření a výsledkem. Nespojuj několik etap do jednoho rozsáhlého neověřitelného zásahu.
 3. Při implementaci průběžně aktualizuj `docs/plan/ETAPY-A-STAV.md` a na závěr dolož skutečné testy, CI run, commit SHA, měření a blokéry v `docs/reports/G-XX-VYSLEDEK.md`. **Nikdy neoznač za hotové něco, co nebylo ověřeno.**
 4. Pokud změna trvale ovlivní architekturu, jazyk, bezpečnost, databázový model nebo provoz, zapiš důvod a alternativy jako české ADR v `docs/adr/`.
-5. Matice požadovaných funkcí je v `contracts/feature-matrix.json`; čitelný přehled je v `docs/plan/MATICE-FUNKCI.md` a **podrobné vysvětlení každé z 178 funkcí** v [`docs/plan/PODROBNY-KATALOG-FUNKCI.md`](docs/plan/PODROBNY-KATALOG-FUNKCI.md). Před návrhem nového modulu ověř, že byl výběr funkcí schválen; do té doby neber současný KEEP/REMOVE jako nezměnitelný. Stav funkce aktualizuj až po skutečném testu a přidej odkaz na důkaz; Markdown matice musí zůstat synchronizovaná.
+5. Matice požadovaných funkcí je v `contracts/feature-matrix.json`; čitelný přehled je v `docs/plan/MATICE-FUNKCI.md` a **podrobné vysvětlení každé z 178 funkcí** v [`docs/plan/PODROBNY-KATALOG-FUNKCI.md`](docs/plan/PODROBNY-KATALOG-FUNKCI.md). Výběr 46 KEEP / 132 REMOVE byl potvrzen vlastníkem 21. 10. 2026; změny pouze na další výslovný pokyn. Stav funkce aktualizuj až po skutečném testu a přidej odkaz na důkaz; Markdown matice musí zůstat synchronizovaná.
 
 ## Závazná jazyková pravidla
 
@@ -25,8 +25,8 @@
 - **Jediným vlastníkem živého stavu letadel bude Rust engine.** Next.js nesmí implementovat nezávislý ingest ani zápisy historie.
 - Kritická cesta zůstává `readsb/BEAST → Rust RAM → SSE/HTTP → web`. Výpadek PostgreSQL, počasí nebo metadat nesmí zastavit živá letadla.
 - V2 začne bez staré letové historie; nové vzorkované záznamy se budou ukládat až v etapě G-05. Nezasahuj do historie V1.
-- Cílový rozsah je **79 zachovat (KEEP)** a **99 nezařazovat (REMOVE)**, nikoli automatické kopírování starých modulů. Žádná z 79 funkcí nesmí být prohlášena za implementovanou bez ověření.
-- Soukromí OGN, rozlišení LOCAL/EXTENDED, identita ICAO, časové známky, ochrana veřejných DTO a autentizace administrace jsou povinné.
+- Cílový rozsah je **46 zachovat (KEEP)** a **132 nezařazovat (REMOVE)**, nikoli automatické kopírování starých modulů. Žádná ze 46 funkcí nesmí být prohlášena za implementovanou bez ověření.
+- Identita ICAO a pravdivý stav LOCAL/EXTENDED (bez externího providera se nesmějí předstírat EXTENDED cíle), časové známky, ochrana veřejných DTO a autentizace administrace jsou povinné.
 - Etapa G-00 je **pouze funkční základ aplikace**, nikoliv živý radar. API vrací `NOT_IMPLEMENTED`; nezaměňuj jej za provozní data.
 - Žádný produkční deploy, změna DNS/reverse proxy, konfigurace V1, skutečné odesílání notifikací ani práce s tajemstvími bez výslovného samostatného povolení.
 - Volba jazyků: Rust/Tokio/Axum backend, TypeScript/Next.js/MapLibre web, PostgreSQL/SQLx data; další technologie pouze s naměřeným přínosem a českým ADR.
@@ -37,3 +37,10 @@ Rust `cargo fmt --all -- --check`, `cargo clippy --locked --workspace --all-targ
 
 **Report používej v češtině se stavem HOTOVO / ČÁSTEČNĚ / BLOKOVÁNO**, skutečným SHA a odkazy na důkazy. Pokud výsledky nejsou k dispozici, napiš „neověřeno“, nevymýšlej měření.
 
+
+## Přesné vyřazení a inženýrské výjimky
+
+- Vyřazené **E01–E10, H03, R17, T08/T09/T13/T14, W01/W02, S02/S03/S04, O09–O13/O15** neobnovuj jako podpůrné runtime moduly. Viz [katalog modulů](docs/plan/MODULY-A-ROZSAH.md).
+- L06 se vrací: squawk 7500/7600/7700. Ponechané L11/L12 nesmějí automaticky začít skutečně odesílat.
+- O11 a O12 jsou vyřazené **produktové funkce**, ale CI, testy, bezpečný release a rollback jsou povinné vývojové brány. Žádné produkční nasazení bez schválení.
+- Statistiky README počítají nyní **46**, staré historické hodnoty v `docs/metrics/history.json` ponechat historické.

@@ -35,8 +35,9 @@ Měřený commit: [8b3c6d17](https://github.com/Boym323/AirRadarV2/commit/8b3c6d
 | Dokument | Účel |
 |---|---|
 | **[Hlavní zadání AirRadar V2](docs/plan/ZADANI-AIRRADAR-V2.md)** | Úplné zadání, cíle, architektura, databáze, provoz a kritéria úspěchu |
+| [Katalog implementačních modulů](docs/plan/MODULY-A-ROZSAH.md) | 9 logických modulů, jednotlivá vlastněná KEEP ID a vyřazené oblasti |
 | [Plán etap a jejich stav](docs/plan/ETAPY-A-STAV.md) | Pořadí G-00 až G-15, závislosti a stav realizace |
-| [Matice všech funkcí](docs/plan/MATICE-FUNKCI.md) | 79 požadovaných funkcí a 99 vyřazených |
+| [Matice všech funkcí](docs/plan/MATICE-FUNKCI.md) | 46 požadovaných funkcí a 132 vyřazených |
 | **[Podrobný katalog 178 funkcí](docs/plan/PODROBNY-KATALOG-FUNKCI.md)** | Vysvětlení, co každá funkce dělá; určeno k rozhodnutí KEEP/REMOVE |
 | [Pravidla práce s dokumentací](docs/plan/PRAVIDLA-DOKUMENTACE.md) | Jazyk, systém zadání, reportů a ADR |
 | [Zadání G-01](docs/ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) | Další samostatná implementační etapa |
@@ -51,7 +52,7 @@ Měřený commit: [8b3c6d17](https://github.com/Boym323/AirRadarV2/commit/8b3c6d
 - **Rust / Tokio / Axum:** samostatný engine pro budoucí ADS-B/BEAST příjem, jednotný stav letadel a SSE.
 - **TypeScript / Next.js / React / MapLibre:** mapa a klientská část (živá mapa začíná až v G-06).
 - **PostgreSQL + SQLx:** nová izolovaná databáze; ukládaná historie začne od nuly v G-05.
-- **79 KEEP / 99 REMOVE:** plánovaný funkční rozsah, nikoliv počet aktuálně dokončených funkcí.
+- **46 KEEP / 132 REMOVE:** plánovaný funkční rozsah, nikoliv počet aktuálně dokončených funkcí.
 
 G-00 obsahuje pouze zkušební Rust API `/api/v1/health`, neimplementovaný výpis letadel a SSE se stavem `NOT_IMPLEMENTED`. Web je informační úvodní stránka. **Neexistuje zatím skutečný přijímač, živá mapa, aktivní databáze ani notifikace.**
 
@@ -84,7 +85,6 @@ npm test
 npm run build
 ~~~
 
-Závislosti jsou připnuté v `Cargo.lock` a `apps/web/package-lock.json`. [CI běh 39659205202](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202) ověřil na commitu `99df0456` Rust, Next.js a HTTP smoke testy; podrobný [report](docs/reports/G-00-BOOTSTRAP.md). Pozdější změny dokumentace a českého úvodu se ověřují samostatným CI.
+Rozsah byl rozhodnutím vlastníka zúžen na **46 KEEP / 132 REMOVE**. Stále není implementován žádný z požadovaných živých modulů. Závislosti jsou připnuté v `Cargo.lock` a `apps/web/package-lock.json`. [CI běh 39659205202](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202) ověřil na commitu `99df0456` Rust, Next.js a HTTP smoke testy; podrobný [report](docs/reports/G-00-BOOTSTRAP.md). Pozdější změny dokumentace a českého úvodu se ověřují samostatným CI.
 
 **Není nakonfigurováno žádné produkční nasazení.** Samostatný LXC zajistí vlastník projektu; V1 zůstává dostupná pro srovnávání.
-
