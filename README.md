@@ -5,27 +5,27 @@ Nová generace leteckého radaru, budovaná **od nuly**. Tento repozitář je zc
 **Stav:** dokončen a ověřen základ G-00; **nejde ještě o živý radar**. G-01 a další etapy zatím nejsou realizovány.
 
 <!-- AIRRADAR_STATS_START -->
-## Statistiky vývoje
+## Statistiky vývoje (automaticky aktualizované)
 
 ![Stav CI](https://github.com/Boym323/AirRadarV2/actions/workflows/ci.yml/badge.svg?branch=main)
 
-| Ukazatel | Výchozí měření k 885cd06c |
+| Ukazatel | Stav |
 |---|---:|
-| Řádky zdrojového kódu (včetně prázdných) | **376** |
+| Řádky zdrojového kódu, včetně prázdných | **496** |
 | Rust | 149 |
-| TypeScript / JavaScript / CSS | 227 |
-| Soubory zdrojového kódu | 11 |
-| Testovací soubory | 1 |
-| Dokončené etapy | 1/16 |
-| Ověřené KEEP funkce | 0/79 |
+| TypeScript / JavaScript / CSS | 347 |
+| Soubory zdrojového kódu | 12 |
+| Testovací soubory (ne počet testů) | 1 |
+| Dokumenty Markdown | 21 |
+| Všechny sledované soubory | 48 |
+| Dokončené etapy | **1/16** (6,3 %) |
+| Ověřené KEEP funkce | **0/79** (0,0 %) |
 
-![Historie řádků kódu](docs/metrics/loc.svg)
+![Historie řádků zdrojového kódu](docs/metrics/loc.svg)
 
-Počáteční měření ze [zdrojového commitu](https://github.com/Boym323/AirRadarV2/commit/885cd06c71db0971df414a62df0f2fd3cbace19e).
-Další měření aktualizuje [GitHub Actions](.github/workflows/development-metrics.yml).
-[Historie](docs/metrics/history.json) · [Metodika](docs/metrics/README.md).
+Měřený commit: [1c52f5c6](https://github.com/Boym323/AirRadarV2/commit/1c52f5c6c7f2bc6944df014d49d4e9bdc0561b08) · [Historie](docs/metrics/history.json) · [Metodika](docs/metrics/README.md) · [Výsledky CI](https://github.com/Boym323/AirRadarV2/actions/workflows/ci.yml).
 
-> Jde o statistiky repozitáře, nikoli důkaz, že je živý radar hotový.
+> Jde o vývojové statistiky repozitáře, nikoli o výkon živého radaru. Funkce se počítají jen ze strojové matice s důkazem testu. Úspěšná CI sama o sobě nedokazuje dokončení funkcí.
 <!-- AIRRADAR_STATS_END -->
 
 ## Dokumentace a zadání — vše česky
