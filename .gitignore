@@ -1,11 +1,11 @@
 .env
 .env.*
 !.env.example
-.next/
 node_modules/
 target/
 dist/
+apps/web/dist/
+coverage/
 *.log
 .DS_Store
-apps/web/next-env.d.ts
-apps/web/tsconfig.tsbuildinfo
+*.tsbuildinfo

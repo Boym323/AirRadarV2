@@ -28,8 +28,8 @@ for (const file of required) {
   if (read(file).length < 50) fail("Chybí povinná česká dokumentace: " + file);
 }
 if (!read("AGENTS.md").includes("češtině")) fail("Chybí české pravidlo AGENTS.");
-if (!read("apps/web/app/layout.tsx").includes('lang="cs"')) fail("Web nemá lang=cs.");
-if (!read("apps/web/app/page.tsx").includes("Není připojen živý provoz")) fail("Úvodní stránka není česky.");
+if (!read("apps/web/index.html").includes('lang="cs"')) fail("Web nemá lang=cs.");
+if (!read("apps/web/src/App.tsx").includes("Není připojen živý provoz")) fail("Úvodní stránka není česky.");
 execFileSync(process.execPath, [resolve(root,"tools/generate-feature-matrix.mjs"),"--check"], {stdio:"inherit"});
 
 const activeData = JSON.parse(read("contracts/feature-matrix.json"));

@@ -60,7 +60,7 @@ jobs:
           curl -fsS http://127.0.0.1:4101/api/v1/aircraft -o /tmp/airradar-v2-aircraft.json
           python3 -c 'import json; data=json.load(open("/tmp/airradar-v2-aircraft.json")); assert data["status"] == "NOT_IMPLEMENTED" and data["aircraft"] == []'
 
-  nextjs-web:
+  vite-web:
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -70,15 +70,24 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-      - name: Instalace webových závislostí podle lockfilu
-        run: npm ci --no-audit --no-fund
+      - name: Jednorázové přepočítání npm lockfile při přechodu na Vite
+        run: npm install --no-audit --no-fund
+      - name: Zápis npm lockfile pro připnutí ve finálním commitu
+        if: always()
+        run: |
+          if test -f package-lock.json; then
+            echo 'AIRRADAR_VITE_LOCK_BEGIN'
+            base64 -w0 package-lock.json
+            echo
+            echo 'AIRRADAR_VITE_LOCK_END'
+          fi
       - name: Lint
         run: npm run lint
       - name: TypeScript
         run: npm run typecheck
       - name: Jednotkové testy
         run: npm test
-      - name: Sestavení vývojové stránky
+      - name: Sestavení statického Vite webu
         run: npm run build
       - name: Zkušební HTTP kontrola českého webu
         shell: bash
@@ -99,5 +108,7 @@ jobs:
             cat /tmp/airradar-v2-web.log
             exit 1
           fi
-          grep -q "Není připojen živý provoz" /tmp/airradar-v2-home.html
+          grep -q "<div id=\"root\"></div>" /tmp/airradar-v2-home.html
+          grep -q "Není připojen živý provoz" dist/assets/*.js
+          test -s dist/index.html
           grep -q 'lang="cs"' /tmp/airradar-v2-home.html
