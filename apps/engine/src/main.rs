@@ -3,12 +3,10 @@ use std::{convert::Infallible, net::SocketAddr, time::Duration};
 
 use axum::{
     Json, Router,
-    body::{Body, to_bytes},
-    http::{Request, StatusCode},
     response::sse::{Event, KeepAlive, Sse},
     routing::get,
 };
-use futures_util::{stream, StreamExt};
+use futures_util::{StreamExt, stream};
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -41,13 +39,14 @@ async fn aircraft() -> Json<serde_json::Value> {
 }
 
 async fn stream_stub() -> Sse<impl futures_util::Stream<Item = Result<Event, Infallible>>> {
-    let initial = Event::default()
-        .event("snapshot")
-        .data(serde_json::json!({
+    let initial = Event::default().event("snapshot").data(
+        serde_json::json!({
             "sequence": 0,
             "status": "NOT_IMPLEMENTED",
             "aircraft": []
-        }).to_string());
+        })
+        .to_string(),
+    );
 
     let events = stream::once(async { Ok::<Event, Infallible>(initial) })
         .chain(stream::pending::<Result<Event, Infallible>>());
@@ -55,7 +54,7 @@ async fn stream_stub() -> Sse<impl futures_util::Stream<Item = Result<Event, Inf
     Sse::new(events).keep_alive(
         KeepAlive::new()
             .interval(Duration::from_secs(15))
-            .text("heartbeat")
+            .text("heartbeat"),
     )
 }
 
@@ -68,11 +67,13 @@ fn app() -> Router {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let bind = std::env::var("AIRRADAR_V2_BIND")
-        .unwrap_or_else(|_| "127.0.0.1:4101".to_owned());
+    let bind = std::env::var("AIRRADAR_V2_BIND").unwrap_or_else(|_| "127.0.0.1:4101".to_owned());
     let address: SocketAddr = bind.parse()?;
     let listener = tokio::net::TcpListener::bind(address).await?;
-    println!("AirRadar V2 G-00 stub listening on {}", listener.local_addr()?);
+    println!(
+        "AirRadar V2 G-00 stub listening on {}",
+        listener.local_addr()?
+    );
     axum::serve(listener, app())
         .with_graceful_shutdown(async {
             let _ = tokio::signal::ctrl_c().await;
@@ -84,16 +85,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use axum::{
+        body::{Body, to_bytes},
+        http::{Request, StatusCode},
+    };
     use tower::ServiceExt;
 
     #[tokio::test]
     async fn health_explicitly_reports_no_live_ingest() {
-        let response = app().oneshot(
-            Request::builder()
-                .uri("/api/v1/health")
-                .body(Body::empty())
-                .expect("request"),
-        ).await.expect("response");
+        let response = app()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/health")
+                    .body(Body::empty())
+                    .expect("request"),
+            )
+            .await
+            .expect("response");
         assert_eq!(response.status(), StatusCode::OK);
         let body = to_bytes(response.into_body(), 1024).await.expect("body");
         let json: serde_json::Value = serde_json::from_slice(&body).expect("json");
@@ -103,12 +111,15 @@ mod tests {
 
     #[tokio::test]
     async fn empty_aircraft_must_not_be_confused_with_live_data() {
-        let response = app().oneshot(
-            Request::builder()
-                .uri("/api/v1/aircraft")
-                .body(Body::empty())
-                .expect("request"),
-        ).await.expect("response");
+        let response = app()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/aircraft")
+                    .body(Body::empty())
+                    .expect("request"),
+            )
+            .await
+            .expect("response");
         assert_eq!(response.status(), StatusCode::OK);
         let body = to_bytes(response.into_body(), 4096).await.expect("body");
         let json: serde_json::Value = serde_json::from_slice(&body).expect("json");
@@ -118,13 +129,21 @@ mod tests {
 
     #[tokio::test]
     async fn stream_uses_sse_content_type() {
-        let response = app().oneshot(
-            Request::builder()
-                .uri("/api/v1/stream")
-                .body(Body::empty())
-                .expect("request"),
-        ).await.expect("response");
+        let response = app()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/stream")
+                    .body(Body::empty())
+                    .expect("request"),
+            )
+            .await
+            .expect("response");
         assert_eq!(response.status(), StatusCode::OK);
-        assert!(response.headers()["content-type"].to_str().unwrap().starts_with("text/event-stream"));
+        assert!(
+            response.headers()["content-type"]
+                .to_str()
+                .unwrap()
+                .starts_with("text/event-stream")
+        );
     }
 }
