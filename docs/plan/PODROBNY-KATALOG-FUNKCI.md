@@ -1,12 +1,10 @@
-# Podrobný katalog všech funkcí AirRadar V1 pro rozhodnutí o V2
+# Podrobný katalog všech 178 funkcí pro AirRadar V2
 
-**Datum revize:** 21. 10. 2026  
-**Zdroj seznamu:** [`contracts/feature-matrix.json`](../../contracts/feature-matrix.json) — aktuálně 79 KEEP a 99 REMOVE.  
-**Způsob práce:** tento katalog **vysvětluje zamýšlený význam jednotlivých položek**, nikoli potvrzenou aktuální implementaci ve V1 nebo funkční stav ve V2. Podrobný rozsah z V1 nebyl pro každé ID znovu testován; popisy jsou pracovní produktovou interpretací názvů a projektových požadavků.
+**Výběr potvrzen vlastníkem 21. 10. 2026.** Aktuálně **46 KEEP a 132 REMOVE** podle [JSON matice](../../contracts/feature-matrix.json). U každého ID je popis zamýšlené funkce, nikoli důkaz její implementace v nové V2.
 
-Popis je napsaný tak, aby bylo možné odpovědět „ponechat / vyřadit / zjednodušit“ bez otevírání starého zdrojového kódu. **Dokud vlastník projektový výběr neschválí, neměň volbu KEEP/REMOVE ani nepřidávej podpůrné moduly automaticky.**
+**Změna oproti původnímu výběru:** vyřazeno 34 ID: `R05`, `R07`, `R10`, `R11`, `R15`, `R17`, `R18`, `H03`, `H07`, `H14`, `T08`, `T09`, `T13`, `T14`, `W01`, `W02`, `E01`, `E02`, `E03`, `E04`, `E05`, `E06`, `E07`, `E09`, `E10`, `S02`, `S03`, `S04`, `O09`, `O10`, `O11`, `O12`, `O13`, `O15`. **Vráceno `L06`** — detekce nouzových kódů 7500/7600/7700.
 
-## Část I — nyní vybrané funkce (KEEP: 79)
+## Část I — nyní vybrané funkce (KEEP: 46)
 
 ### Příjem ADS-B a základní provoz — J (10)
 
@@ -23,7 +21,7 @@ Popis je napsaný tak, aby bylo možné odpovědět „ponechat / vyřadit / zje
 | **J09** | Ukládání vzorkované historie do PostgreSQL | Vzorkuje vybrané letové pozice a ukládá je do nové PostgreSQL pro profily, statistiky a budoucí historii; neukládá každý ADS-B rámec. |
 | **J11** | Kontinuita identity letadel, detekce výpadků a deduplikace · základ systému | Spojuje pozorování stejného cíle, řeší změnu volacího znaku, duplikáty a krátké výpadky, aby letadla na mapě nepřeskakovala mezi identitami. |
 
-### Mapa a práce s letadly — R (16)
+### Mapa a práce s letadly — R (9)
 
 | ID | Funkce | K čemu slouží |
 |---|---|---|
@@ -31,26 +29,11 @@ Popis je napsaný tak, aby bylo možné odpovědět „ponechat / vyřadit / zje
 | **R02** | Přepínání LOCAL / EXTENDED pokrytí | Přepíná zobrazení pouze lokálně přijatých letadel a rozšířeného provozu z externích zdrojů, s jasným označením původu. |
 | **R03** | Ikony letadel podle typu a směru | Volí symbol podle známé kategorie letadla a otáčí jej podle směru letu; při neznámém typu použije bezpečnou obecnou ikonu. |
 | **R04** | Popisky letadel a řízení jejich kolizí | Zobrazuje u letadel stručné popisky, například callsign či výšku, a omezuje jejich překrývání ve zhuštěném provozu. |
-| **R05** | Barevné režimy letadel podle provozních údajů | Barví značky podle zvoleného provozního údaje, například výšky, vertikálního pohybu či zdroje; legendou vysvětluje význam. |
 | **R06** | Živý seznam provozu a filtrování letadel | Nabízí živý seznam letadel s hledáním, řazením a filtry například podle callsignu, typu či zdroje příjmu. |
-| **R07** | Detail vybraného letadla v mapovém panelu | Otevírá panel s aktuálními údaji vybraného letadla přímo vedle mapy; nejde automaticky o samostatnou historickou stránku. |
 | **R08** | Zobrazení živé letové stopy (trail) | Kreslí nedávnou posloupnost skutečně přijatých poloh vybraného letadla; nejde o predikovanou budoucí trasu. |
 | **R09** | Sledování letadla kamerou mapy (follow) | Udržuje vybrané letadlo v záběru mapové kamery, dokud uživatel automatické sledování nevypne. |
-| **R10** | Současné sledování více letadel | Umožňuje označit a současně sledovat více letadel, případně zobrazovat jejich oddělené základní informace. |
-| **R11** | Zobrazení trasy mezi letišti a jejího průběhu | Zobrazuje spojení a průběh trasy mezi letišti, pokud jsou známa ověřená data o původu a cíli; nejde o výpočet ETA. |
 | **R12** | Vrstvy okolních letišť | Zobrazuje značky okolních letišť jako samostatně ovladatelnou mapovou vrstvu a umožňuje přejít na detail. |
 | **R14** | Mapové podklady, vzhled a předvolby vrstev | Umožňuje výběr mapového podkladu, vzhledu a zapamatovaných předvoleb viditelných vrstev. |
-| **R15** | Mapová HUD lišta a rychlé akce | Poskytuje kompaktní ovládací lištu mapy, například rychlý přístup k filtrům, vrstvám, vycentrování a panelům. |
-| **R17** | ATC sektory a vysílače přímo v mapě | Vykresluje vybrané ATC sektory a polohy vysílačů přímo do mapy. Vyžaduje dořešit zdroj minimálních dat, protože T01/T03 jsou REMOVE. |
-| **R18** | Volitelné počasí a vzdušné prostory přímo v mapě | Zapíná a vypíná meteorologické překryvy a vzdušné prostory nad mapou; jednotlivé vrstvy musí mít doložený datový zdroj. |
-
-### Informace o letadle a historie — H (3)
-
-| ID | Funkce | K čemu slouží |
-|---|---|---|
-| **H03** | Fotografie letadel z Planespotters | Načítá dostupnou fotografii konkrétního letadla od Planespotters podle registrace či jiné podporované identity. |
-| **H07** | Výškový, rychlostní a vertikální profil letu | Zobrazuje časový graf skutečně zaznamenané výšky, rychlosti a stoupání či klesání během letu. |
-| **H14** | Souhrny letadla za 7/30 dní a celé období | Počítá souhrny z nových záznamů V2 pro jedno letadlo za 7 a 30 dní a za celé období od spuštění V2. |
 
 ### Letiště — A (2)
 
@@ -59,60 +42,38 @@ Popis je napsaný tak, aby bylo možné odpovědět „ponechat / vyřadit / zje
 | **A01** | Katalog letišť a vyhledávání podle ICAO | Udržuje katalog letišť a umožňuje je vyhledávat podle ICAO kódu, názvu či dalších podporovaných údajů. |
 | **A02** | Detail letiště – dráhy, poloha, vybavení a frekvence | Zobrazuje polohu letiště, dráhy, vybrané technické vybavení a publikované frekvence podle doložených zdrojů. |
 
-### ATC, ATS a navigace — T (5)
+### ATC, ATS a navigace — T (1)
 
 | ID | Funkce | K čemu slouží |
 |---|---|---|
-| **T08** | ATS tratě České republiky | Zobrazuje české ATS tratě a jejich publikovanou geometrii pro navigační orientaci. |
-| **T09** | ATS tratě Slovenska a Rakouska | Doplňuje ATS tratě Slovenska a Rakouska jako regionální rozšíření; neznamená automaticky obnovu ATC SK/AT. |
 | **T10** | NAVAID/FIX databáze a navigační průzkumník | Zpřístupňuje navigační body FIX a prostředky NAVAID v katalogu, vyhledávání a mapovém průzkumníku. |
-| **T13** | Navigation Integrity – podezřelé anomálie ADS-B | Vyhodnocuje podezřelé skoky a nekonzistence ADS-B polohy či návazných údajů; výsledek označuje jako anomálii, ne potvrzený útok. |
-| **T14** | Navigation Integrity – regionální mapa, historie a analýza | Zobrazuje oblasti, vývoj v čase a přehled historicky zaznamenaných Navigation Integrity anomálií z nových dat V2. |
 
-### Počasí — W (6)
+### Počasí — W (4)
 
 | ID | Funkce | K čemu slouží |
 |---|---|---|
-| **W01** | Aktuální METAR a TAF letišť | Načítá a zobrazuje aktuální zprávy METAR a předpovědi TAF pro vybraná letiště. |
-| **W02** | METAR značky a informace přímo v mapě | Přidává na mapu meteorologické značky letišť a rychlý přehled podmínek z METAR. |
 | **W03** | Meteorologický radar ČHMÚ s časovou osou | Zobrazuje snímky meteorologického radaru ČHMÚ v mapě a umožňuje procházet jejich časovou osu. |
 | **W06** | SIGMET a AirSIGMET výstrahy | Zobrazuje prostorově i časově platné výstrahy SIGMET a AirSIGMET včetně jejich významu a platnosti. |
 | **W08** | Počasí měřené letadly z Mode-S / BDS 4,4 | Dekóduje meteorologické údaje dostupné ze zpráv Mode-S / BDS 4,4 u letadel, která je skutečně vysílají. |
 | **W09** | Profil a kvalita počasí pozorovaného letadlem | Zobrazuje vývoj a důvěryhodnost meteorologických pozorování konkrétního letadla; neodhaduje chybějící měření jako fakta. |
 
-### Oznámení a sledování — L (2)
+### Oznámení a sledování — L (3)
 
 | ID | Funkce | K čemu slouží |
 |---|---|---|
 | **L11** | Push notifikace do prohlížeče | Umožňuje přihlášení prohlížeče k Web Push a technické doručení oznámení; samo neurčuje, jaká událost má zprávu vyvolat. |
 | **L12** | Externí Pushover upozornění | Odesílá oznámení přes službu Pushover, eviduje reakci poskytovatele a stav doručení; pravidla spouštění nejsou automaticky součástí. |
+| **L06** | Emergency squawk 7500/7600/7700 | Rozpoznává nouzové transpondérové kódy 7500, 7600 a 7700 a nabízí navázaná upozornění. |
 
-### Externí datové zdroje — E (9)
-
-| ID | Funkce | K čemu slouží |
-|---|---|---|
-| **E01** | ADSBHub – příjem externího síťového provozu | Přijímá okolní síťový provoz z ADSBHub a odděleně jej označuje jako externí zdroj. |
-| **E02** | ADSB.lol – surový BEAST/SBS stream | Přijímá živá BEAST/SBS data z ADSB.lol, hlídá výpadky a omezuje zdrojové přetížení. |
-| **E03** | ADSB.lol – HTTP geografická záloha | Při selhání streamového spojení používá geografické HTTP dotazy ADSB.lol s časovým omezením a limity. |
-| **E04** | OGN/FLARM – letadla, kluzáky a další cíle | Samostatně zpracovává OGN/FLARM cíle, například kluzáky a další vysílače, a zobrazuje je odděleně od ADS-B. |
-| **E05** | OGN Device Database – identifikace a ochrana soukromí | Používá databázi OGN zařízení k rozpoznání typu a hlavně k dodržení příznaků ochrany soukromí, včetně noTracking. |
-| **E06** | SoftRF SQLite – nouzová OGN whitelist databáze | Poskytuje lokální záložní SQLite seznam SoftRF/OGN identit pro určené nouzové scénáře; neobchází pravidla soukromí. |
-| **E07** | ACARS/VDL2 metadata přes RXW Hub | Zobrazuje nebo doplňuje informace z ACARS/VDL2 přes RXW Hub, nikoliv automaticky mapové waypointy z ACARS H1/FPN. |
-| **E09** | FlightAware – doplňování letových plánů a diagnostika využití | Na požádání doplňuje dostupné letové plány či metadata z FlightAware a měří využití či omezení API. |
-| **E10** | ADSBDB – externí metadata letadel | Načítá pomocné informace o letadlech z ADSBDB, například typ či registraci, v mezích dostupnosti poskytovatele. |
-
-### Statistiky a pokrytí — S (6)
+### Statistiky a pokrytí — S (3)
 
 | ID | Funkce | K čemu slouží |
 |---|---|---|
 | **S01** | Aktuální počítadla letadel a zpráv za sekundu | Zobrazuje okamžitý počet sledovaných letadel a rychlost příjmu ADS-B zpráv za sekundu. |
-| **S02** | Denní/7denní/30denní agregované statistiky – API | Vypočítává denní a souhrnné statistiky za 7 a 30 dní z dat nově získaných V2 a zpřístupňuje je přes API. |
-| **S03** | Receiver Coverage – polární mapa dosahu | Vytváří polární mapu geografického dosahu přijímače podle skutečně lokálně přijatých poloh a směrů. |
-| **S04** | Analýza slabých sektorů a spolehlivosti příjmu | Vyhodnocuje slabší směrové sektory, dostupnost signálu a stabilitu místního příjmu z měřitelných ukazatelů. |
 | **S06** | Statistiky typů letadel, aerolinek a tratí – API | Připravuje agregované přehledy podle typu letadla, aerolinky či tratě, pokud mají záznamy dostatek identifikačních dat. |
 | **S09** | Logbook a agregované souhrny přijímače | Zpřístupňuje logbook a přehledy činnosti přijímače, například denní počet pozorování, typy a průběh sběru. |
 
-### Provoz, administrace a diagnostika — O (14)
+### Provoz, administrace a diagnostika — O (8)
 
 | ID | Funkce | K čemu slouží |
 |---|---|---|
@@ -124,12 +85,6 @@ Popis je napsaný tak, aby bylo možné odpovědět „ponechat / vyřadit / zje
 | **O06** | Historie výkonu a aktuálních bottlenecků | Ukládá omezenou časovou řadu výkonu a identifikuje aktuální úzká místa, bez neomezeného monitorovacího archivu. |
 | **O07** | Databázová latence, fronty a diagnostika zapisování | Ukazuje latence SQL, počet čekajících zápisů, vytížení connection poolu a chybovost databázové persistence. |
 | **O08** | Systémové diagnostické SSE streamy | Posílá aktuální stav diagnostiky přes SSE, aby panel nemusel pravidelně znovu dotazovat všechny sondy. |
-| **O09** | T58 production soak, stall canary a CPU profiling | Umožňuje řízený dlouhodobý provozní test T58, sledování zaseknutí a profilování CPU na bezpečné testovací zátěži. |
-| **O10** | Výkonové benchmarky a zátěžové testy | Poskytuje opakovatelné benchmarky a zátěžové testy pro ingest, SSE, UI a databázi s porovnatelnými vstupy. |
-| **O11** | Automatické CI, testy, CodeQL a bezpečnostní kontroly · základ systému | Zajišťuje automatické testy, lint, CodeQL či obdobný bezpečnostní audit a kontrolu přesného commitu v GitHub Actions. |
-| **O12** | Automatické nasazení, health check a rollback · základ systému | Připravuje automatizované sestavení a nasazení samostatné V2 s kontrolami health, možností návratu a bez zásahu do V1. |
-| **O13** | Import/synchronizace eAIP, ATS a letištních dat | Bezpečně synchronizuje a verzovaně importuje publikovaná eAIP, ATS a letištní data, s kontrolou původu. |
-| **O15** | Správa přihlášení administrátora a bezpečnostních oprávnění · základ systému | Zajišťuje přihlášení správce, role/oprávnění a ochranu neveřejných API a administračních operací. |
 
 ### Uživatelské rozhraní — U (6)
 
@@ -142,9 +97,7 @@ Popis je napsaný tak, aby bylo možné odpovědět „ponechat / vyřadit / zje
 | **U05** | Globální Command Search a navigace | Poskytuje rychlé globální vyhledání letadla, letiště, příkazu nebo části aplikace z jednoho pole. |
 | **U08** | Klávesové zkratky a rychlé ovládání | Povoluje běžné akce klávesami, například přechod do hledání, výběr panelu či ovládání mapy. |
 
-## Část II — nyní vyřazené funkce (REMOVE: 99)
-
-**REMOVE neznamená, že se funkce nesmí vrátit.** Znamená to pouze, že nebude budována bez nového rozhodnutí. Některé funkce mohou být užitečné v jednodušší podobě.
+## Část II — nyní vyřazené funkce (REMOVE: 132)
 
 ### Příjem ADS-B a základní provoz — J (1)
 
@@ -152,17 +105,27 @@ Popis je napsaný tak, aby bylo možné odpovědět „ponechat / vyřadit / zje
 |---|---|---|
 | **J10** | Demo provoz se simulovanými letadly | Generuje fiktivní letadla a pohyb pro demonstrační režim uživatelského radaru; to není totéž co neveřejné syntetické fixture pro testy. |
 
-### Mapa a práce s letadly — R (2)
+### Mapa a práce s letadly — R (9)
 
 | ID | Funkce | K čemu slouží |
 |---|---|---|
+| **R05** | Barevné režimy letadel podle provozních údajů | Barví značky podle zvoleného provozního údaje, například výšky, vertikálního pohybu či zdroje; legendou vysvětluje význam. |
+| **R07** | Detail vybraného letadla v mapovém panelu | Otevírá panel s aktuálními údaji vybraného letadla přímo vedle mapy; nejde automaticky o samostatnou historickou stránku. |
+| **R10** | Současné sledování více letadel | Umožňuje označit a současně sledovat více letadel, případně zobrazovat jejich oddělené základní informace. |
+| **R11** | Zobrazení trasy mezi letišti a jejího průběhu | Zobrazuje spojení a průběh trasy mezi letišti, pokud jsou známa ověřená data o původu a cíli; nejde o výpočet ETA. |
+| **R15** | Mapová HUD lišta a rychlé akce | Poskytuje kompaktní ovládací lištu mapy, například rychlý přístup k filtrům, vrstvám, vycentrování a panelům. |
+| **R17** | ATC sektory a vysílače přímo v mapě | Vykresluje vybrané ATC sektory a polohy vysílačů přímo do mapy. Vyžaduje dořešit zdroj minimálních dat, protože T01/T03 jsou REMOVE. |
+| **R18** | Volitelné počasí a vzdušné prostory přímo v mapě | Zapíná a vypíná meteorologické překryvy a vzdušné prostory nad mapou; jednotlivé vrstvy musí mít doložený datový zdroj. |
 | **R13** | Poloha přijímače, kružnice dosahu a měřítko | Zobrazuje pozici přijímače, vzdálenostní kružnice a mapové měřítko; přesná soukromá lokalita vyžaduje zvláštní ochranu. |
 | **R16** | Režim prezentace mapy | Zjednodušuje mapové rozhraní do prezentačního režimu například pro velkou obrazovku. |
 
-### Informace o letadle a historie — H (11)
+### Informace o letadle a historie — H (14)
 
 | ID | Funkce | K čemu slouží |
 |---|---|---|
+| **H03** | Fotografie letadel z Planespotters | Načítá dostupnou fotografii konkrétního letadla od Planespotters podle registrace či jiné podporované identity. |
+| **H07** | Výškový, rychlostní a vertikální profil letu | Zobrazuje časový graf skutečně zaznamenané výšky, rychlosti a stoupání či klesání během letu. |
+| **H14** | Souhrny letadla za 7/30 dní a celé období | Počítá souhrny z nových záznamů V2 pro jedno letadlo za 7 a 30 dní a za celé období od spuštění V2. |
 | **H01** | Samostatný detail letadla – registrace, typ, operátor | Otevírá samostatnou stránku profilu letadla s registrací, typem, operátorem a dalšími základními údaji. |
 | **H02** | Katalog a automatické doplňování metadat letadel | Udržuje katalog identit a metadat letadel a automaticky doplňuje chybějící údaje od externích zdrojů. |
 | **H04** | Letový plán, volací znak a letiště OD/DO | Zobrazuje dostupný letový plán, callsign a letiště odletu/příletu u samostatného detailu letadla. |
@@ -190,10 +153,14 @@ Popis je napsaný tak, aby bylo možné odpovědět „ponechat / vyřadit / zje
 | **A11** | Porovnání letišť | Srovnává vybraná letiště podle metrik, například počtu pozorovaných letů nebo podmínek. |
 | **A12** | Historická statistika provozu letiště za 7/30 dní | Vytváří archivní přehled provozu jednoho letiště za posledních 7 či 30 dní. |
 
-### ATC, ATS a navigace — T (9)
+### ATC, ATS a navigace — T (13)
 
 | ID | Funkce | K čemu slouží |
 |---|---|---|
+| **T08** | ATS tratě České republiky | Zobrazuje české ATS tratě a jejich publikovanou geometrii pro navigační orientaci. |
+| **T09** | ATS tratě Slovenska a Rakouska | Doplňuje ATS tratě Slovenska a Rakouska jako regionální rozšíření; neznamená automaticky obnovu ATC SK/AT. |
+| **T13** | Navigation Integrity – podezřelé anomálie ADS-B | Vyhodnocuje podezřelé skoky a nekonzistence ADS-B polohy či návazných údajů; výsledek označuje jako anomálii, ne potvrzený útok. |
+| **T14** | Navigation Integrity – regionální mapa, historie a analýza | Zobrazuje oblasti, vývoj v čase a přehled historicky zaznamenaných Navigation Integrity anomálií z nových dat V2. |
 | **T01** | ATC sektory včetně geometrie a výškových hranic | Ukládá nebo načítá ATC sektory jako přesné polygony s výškovými hranicemi a platností. |
 | **T02** | Samostatný detail ATC sektoru | Zobrazuje samostatný detail vybraného ATC sektoru, jeho výšky a publikované služby. |
 | **T03** | ATC frekvence, vysílače a publikované služby | Zpřístupňuje publikované ATC frekvence, polohy vysílačů a rozsah příslušných služeb. |
@@ -204,10 +171,12 @@ Popis je napsaný tak, aby bylo možné odpovědět „ponechat / vyřadit / zje
 | **T11** | Letové procedury SID/STAR a procedurální data | Udržuje a zobrazuje publikované postupy SID/STAR a další procedury odletu/příletu. |
 | **T12** | AUP/UUP – plánovaná aktivace vzdušného prostoru | Zobrazuje plánované aktivace, omezení či vyhrazení vzdušných prostorů podle AUP/UUP. |
 
-### Počasí — W (8)
+### Počasí — W (10)
 
 | ID | Funkce | K čemu slouží |
 |---|---|---|
+| **W01** | Aktuální METAR a TAF letišť | Načítá a zobrazuje aktuální zprávy METAR a předpovědi TAF pro vybraná letiště. |
+| **W02** | METAR značky a informace přímo v mapě | Přidává na mapu meteorologické značky letišť a rychlý přehled podmínek z METAR. |
 | **W04** | Echo Top – výška radarových odrazů | Zobrazuje odhad maximální výšky radarových odrazů (Echo Top), pokud poskytovatel takový produkt skutečně dodává; není to běžný 2D radarový snímek. |
 | **W05** | Model větru ICON-EU v různých letových hladinách | Načítá modelovaný vítr ICON-EU pro zvolené hladiny a zobrazuje jeho prostorový průběh. |
 | **W07** | PIREP/AIREP hlášení pilotů | Zobrazuje meteorologická hlášení z letadel podaná piloty (PIREP/AIREP), odlišná od automatických BDS dat. |
@@ -217,7 +186,7 @@ Popis je napsaný tak, aby bylo možné odpovědět „ponechat / vyřadit / zje
 | **W13** | Historické mapové počasí v Time Machine | V režimu historického přehrávání synchronizuje mapové počasí s historickým časem. |
 | **W14** | Weather Corridor – počasí v předpokládaném koridoru | Přepočítává očekávané počasí v budoucím koridoru predikovaného letu. |
 
-### Oznámení a sledování — L (13)
+### Oznámení a sledování — L (12)
 
 | ID | Funkce | K čemu slouží |
 |---|---|---|
@@ -226,7 +195,6 @@ Popis je napsaný tak, aby bylo možné odpovědět „ponechat / vyřadit / zje
 | **L03** | Upozornění podle vzdálenosti od přijímače | Vyvolává upozornění při dosažení definované vzdálenosti cíle od přijímače. |
 | **L04** | Fleet Explorer – vlastní sledované flotily | Umožňuje sestavit vlastní flotily a prohlížet či sledovat jejich členy jako skupinu. |
 | **L05** | Geofencing – vlastní sledované geografické oblasti | Umožňuje vlastní geografické zóny a upozornění při vstupu či výstupu letadla. |
-| **L06** | Emergency squawk 7500/7600/7700 | Rozpoznává nouzové transpondérové kódy 7500, 7600 a 7700 a nabízí navázaná upozornění. |
 | **L07** | Historie upozornění a událostí | Ukládá a zobrazuje časovou historii vytvořených upozornění a událostí. |
 | **L08** | Pravidla cooldownu a odstranění duplicit | Uplatňuje časovou prodlevu a deduplikaci, aby stejná událost neposílala opakovaně oznámení. |
 | **L09** | Notification Center – přijaté/nepřečtené zprávy | Nabízí centrum zpráv s označením přečtených a nepřečtených upozornění. |
@@ -235,24 +203,42 @@ Popis je napsaný tak, aby bylo možné odpovědět „ponechat / vyřadit / zje
 | **L14** | Alert Rule Simulator – testování pravidel | Simuluje průchod pravidly na zkušebních datech bez skutečného odesílání zpráv. |
 | **L15** | Alert Effectiveness Analytics – účinnost upozornění | Měří užitečnost a výsledky vyvolaných upozornění, například podíl relevantních a duplicitních. |
 
-### Externí datové zdroje — E (1)
+### Externí datové zdroje — E (10)
 
 | ID | Funkce | K čemu slouží |
 |---|---|---|
+| **E01** | ADSBHub – příjem externího síťového provozu | Přijímá okolní síťový provoz z ADSBHub a odděleně jej označuje jako externí zdroj. |
+| **E02** | ADSB.lol – surový BEAST/SBS stream | Přijímá živá BEAST/SBS data z ADSB.lol, hlídá výpadky a omezuje zdrojové přetížení. |
+| **E03** | ADSB.lol – HTTP geografická záloha | Při selhání streamového spojení používá geografické HTTP dotazy ADSB.lol s časovým omezením a limity. |
+| **E04** | OGN/FLARM – letadla, kluzáky a další cíle | Samostatně zpracovává OGN/FLARM cíle, například kluzáky a další vysílače, a zobrazuje je odděleně od ADS-B. |
+| **E05** | OGN Device Database – identifikace a ochrana soukromí | Používá databázi OGN zařízení k rozpoznání typu a hlavně k dodržení příznaků ochrany soukromí, včetně noTracking. |
+| **E06** | SoftRF SQLite – nouzová OGN whitelist databáze | Poskytuje lokální záložní SQLite seznam SoftRF/OGN identit pro určené nouzové scénáře; neobchází pravidla soukromí. |
+| **E07** | ACARS/VDL2 metadata přes RXW Hub | Zobrazuje nebo doplňuje informace z ACARS/VDL2 přes RXW Hub, nikoliv automaticky mapové waypointy z ACARS H1/FPN. |
+| **E09** | FlightAware – doplňování letových plánů a diagnostika využití | Na požádání doplňuje dostupné letové plány či metadata z FlightAware a měří využití či omezení API. |
+| **E10** | ADSBDB – externí metadata letadel | Načítá pomocné informace o letadlech z ADSBDB, například typ či registraci, v mezích dostupnosti poskytovatele. |
 | **E08** | ACARS H1/FPN waypointy a mapová vrstva | Převádí ACARS zprávy H1/FPN obsahující waypointy na mapovou vrstvu plánované či oznámené trasy. |
 
-### Statistiky a pokrytí — S (3)
+### Statistiky a pokrytí — S (6)
 
 | ID | Funkce | K čemu slouží |
 |---|---|---|
+| **S02** | Denní/7denní/30denní agregované statistiky – API | Vypočítává denní a souhrnné statistiky za 7 a 30 dní z dat nově získaných V2 a zpřístupňuje je přes API. |
+| **S03** | Receiver Coverage – polární mapa dosahu | Vytváří polární mapu geografického dosahu přijímače podle skutečně lokálně přijatých poloh a směrů. |
+| **S04** | Analýza slabých sektorů a spolehlivosti příjmu | Vyhodnocuje slabší směrové sektory, dostupnost signálu a stabilitu místního příjmu z měřitelných ukazatelů. |
 | **S05** | Rekordy vzdálenosti a přijatých letadel | Udržuje rekordní hodnoty, například nejvzdálenější zachycené letadlo nebo historický maximální počet. |
 | **S07** | Historická heatmapa a profil provozu – API | Vytváří historickou heatmapu intenzity příjmu či provozu a další časové profily přes API. |
 | **S08** | Denní a týdenní recap – zbývající API | Automaticky sestavuje denní nebo týdenní rekapitulaci provozu; odlišuje se od jednoduchého S09 logbooku. |
 
-### Provoz, administrace a diagnostika — O (1)
+### Provoz, administrace a diagnostika — O (7)
 
 | ID | Funkce | K čemu slouží |
 |---|---|---|
+| **O09** | T58 production soak, stall canary a CPU profiling | Umožňuje řízený dlouhodobý provozní test T58, sledování zaseknutí a profilování CPU na bezpečné testovací zátěži. |
+| **O10** | Výkonové benchmarky a zátěžové testy | Poskytuje opakovatelné benchmarky a zátěžové testy pro ingest, SSE, UI a databázi s porovnatelnými vstupy. |
+| **O11** | Automatické CI, testy, CodeQL a bezpečnostní kontroly · základ systému | Zajišťuje automatické testy, lint, CodeQL či obdobný bezpečnostní audit a kontrolu přesného commitu v GitHub Actions. |
+| **O12** | Automatické nasazení, health check a rollback · základ systému | Připravuje automatizované sestavení a nasazení samostatné V2 s kontrolami health, možností návratu a bez zásahu do V1. |
+| **O13** | Import/synchronizace eAIP, ATS a letištních dat | Bezpečně synchronizuje a verzovaně importuje publikovaná eAIP, ATS a letištní data, s kontrolou původu. |
+| **O15** | Správa přihlášení administrátora a bezpečnostních oprávnění · základ systému | Zajišťuje přihlášení správce, role/oprávnění a ochranu neveřejných API a administračních operací. |
 | **O14** | Automatická dokumentace, changelog a metriky růstu kódu | Automaticky generuje část projektové dokumentace, changelog a grafy velikosti či růstu zdrojového kódu. Ručně vedený CHANGELOG může existovat i bez této funkce. |
 
 ### Uživatelské rozhraní — U (2)
@@ -310,27 +296,19 @@ Popis je napsaný tak, aby bylo možné odpovědět „ponechat / vyřadit / zje
 | **P14** | Kalibrace a porovnání predikcí s výsledky | Kalibruje predikční modely podle skutečných následně přijatých výsledků a porovnává jejich přesnost. |
 | **P15** | Predictive Operations Center – souhrn předpovědí | Nabízí souhrnnou obrazovku všech predikovaných provozních situací pro operátora. |
 
-## Důležité závislosti a otevřené otázky před schválením
+## Důležité závislosti a otevřené otázky
 
-1. **R17 vs T01/T03:** ATC sektory a vysílače mají být v mapě, ale geometrii sektorů a databázi publikovaných frekvencí nynější výběr vylučuje. Buď vrať minimální podkladové ATC funkce, nebo R17 zjednoduš.
-2. **L11/L12 bez L01–L10:** Push/Pushover jsou doručovací kanály; bez pravidel či jiné schválené události neexistuje jednoznačný původce oznámení. Rozhodni, zda chcete pouze transport, nebo i konkrétní spouštěče.
-3. **R11 vs H04 a P04:** „Trasa mezi letišti“ je zachována, ale samostatný letový plán a jeho interpretace nejsou. Trasu lze ukázat jen tehdy, pokud je O/D skutečně známé z dovoleného zdroje; není důvod domýšlet plánovaný průběh.
-4. **R07 vs H01/H02:** Mapový detail může zobrazovat dostupné informace, ale není to automaticky podpora samostatné profilové stránky ani kompletního katalogu letadel.
-5. **H07/H14 vs H05/H09:** Profily a 7/30denní souhrny vyžadují záznamy, nikoli nutně seznam všech historických letů. Nová V2 databáze se plní od nuly.
-6. **J03 Rust ve V2:** cílem je přímo nativní parser bez mezivrstvy Node, nikoli mechanicky převzatá „akcelerace“ staré implementace.
-7. **O05 Rust vs Node:** `event-loop` a `GC` se týkají Node.js části; Rust engine se má měřit vhodnými CPU/RSS, latencí a frontovými metrikami.
-8. **O14 vs CHANGELOG:** Automatický generátor dokumentace a metrik růstu kódu je REMOVE, ale ručně vedený `CHANGELOG.md` a Git historie jsou už součástí běžného vývoje V2.
-9. **J10 demo vs testovací fixture:** vyřazený veřejný simulovaný provoz nevylučuje syntetické replay záznamy pro offline testy.
-10. **Datové podklady a licence:** ATC, eAIP, ADSBHub, ADSB.lol, OGN, RXW a meteorologické služby mohou mít přístupové či licenční podmínky. Samotné zachování ID neznamená automaticky dostupný klíč či povolení veřejného šíření dat.
+1. **R02 LOCAL/EXTENDED zůstává KEEP**, ale **E01–E03 se vyřazují**. EXTENDED musí ukazovat „externí zdroj není nastaven“, nesmí simulačně nebo neoznačeně přidávat síťová data. Pokud ho neplánujeme v budoucnu využít, lze R02 později vyřadit.
+2. **L06 je znovu KEEP**: detekuje skutečně přijatý squawk 7500/7600/7700. Pro Web Push/Pushover (`L11`/`L12`) je to jediný explicitně schválený spouštěč. Nesmí se znovu vybudovat univerzální watchlist nebo alert rules engine.
+3. **R08/R09** zůstávají — stopa a kamera používají vybrané letadlo, přestože **R07** detailní mapový panel už není požadován. Základní výběr letadla je součást navigace mapy/R06.
+4. **W03/W06/W08/W09** zůstávají. Nevyvíjet **W01/W02** METAR/TAF ani všeobecný weather overlay **R18**; ČHMÚ radar a SIGMET mohou mít jen úzce zaměřenou ovládací vrstvu.
+5. **A01/A02/T10** stále vyžadují katalogy letišť, frekvencí a NAVAID. **O13** automatický import byl vyřazen: použij explicitně schválený verzovaný statický import bez plánované synchronizace.
+6. **O11/O12/O15** jsou produktově REMOVE. To **neznamená** zákaz nezbytného CI, testů, přístupových kontrol, záloh, opakovatelného sestavení a dokumentovaného bezpečného nasazení. Nevyvíjet jejich samostatné dashboardy či nadstavbové funkce.
+7. **O09/O10** jako samostatné provozní produkty jsou REMOVE; při vývoji musí i nadále probíhat bezpečné benchmarky a regresní testy relevantních změn.
+8. **H03/H07/H14** a **S02/S03/S04** jsou pryč. DB zůstává pro nové vzorky J09 a úsporná data, která používají S06/S09.
+9. **O14** je REMOVE; základní `CHANGELOG.md` a samostatné vývojové statistiky jsou běžná součást dokumentačního procesu, ne znovuobnovení staré produktové funkcionality.
+10. **J03 ve V2** znamená přímo Rust BEAST dekodér bez potřeby „akcelerovat“ Node.js parser.
 
-## Jak potvrdit výběr
+## Jak později změnit rozsah
 
-Vlastník může poslat pouze změny, například:
-
-> Z KEEP vyřaď: H14, W09.  
-> Z REMOVE vrať: T01, T03, L06, H01.  
-> O14 ponech jako REMOVE, ale běžný CHANGELOG zachovej.  
-> Ostatní neměň.
-
-Po potvrzení nejdříve aktualizuj `contracts/feature-matrix.json`, tento katalog a `docs/plan/MATICE-FUNKCI.md`. Až potom konkretizuj seznam modulů, úkoly G-XX a akceptační testy. **Nepřenášej automaticky celé složky staré V1.**
-
+Jakoukoliv další úpravu KEEP/REMOVE proveď pouze na základě explicitního požadavku vlastníka. Současně aktualizuj strojovou matici, generované MD, katalog modulů, návazná zadání a changelog. Nezaváděj vyřazené moduly skrytě jako závislosti.

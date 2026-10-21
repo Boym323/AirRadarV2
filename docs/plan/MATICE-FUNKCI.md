@@ -2,7 +2,7 @@
 
 **Výchozí jazyk: čeština.** Tento soubor se generuje ze `contracts/feature-matrix.json`; neupravuj jej ručně. Použij `node tools/generate-feature-matrix.mjs`.
 
-**Rozsah:** 79 požadovaných funkcí (KEEP) a 99 vyřazených funkcí (REMOVE). Označení `NOT_STARTED` znamená, že funkce dosud není implementovaná.
+**Rozsah:** 46 požadovaných funkcí (KEEP) a 132 vyřazených funkcí (REMOVE). Označení `NOT_STARTED` znamená, že funkce dosud není implementovaná.
 
 ## Požadované funkce
 
@@ -22,49 +22,21 @@
 | `R02` | Mapa a vizualizace | Přepínání LOCAL / EXTENDED pokrytí | `NOT_STARTED` | — |
 | `R03` | Mapa a vizualizace | Ikony letadel podle typu a směru | `NOT_STARTED` | — |
 | `R04` | Mapa a vizualizace | Popisky letadel a řízení jejich kolizí | `NOT_STARTED` | — |
-| `R05` | Mapa a vizualizace | Barevné režimy letadel podle provozních údajů | `NOT_STARTED` | — |
 | `R06` | Mapa a vizualizace | Živý seznam provozu a filtrování letadel | `NOT_STARTED` | — |
-| `R07` | Mapa a vizualizace | Detail vybraného letadla v mapovém panelu | `NOT_STARTED` | — |
 | `R08` | Mapa a vizualizace | Zobrazení živé letové stopy (trail) | `NOT_STARTED` | — |
 | `R09` | Mapa a vizualizace | Sledování letadla kamerou mapy (follow) | `NOT_STARTED` | — |
-| `R10` | Mapa a vizualizace | Současné sledování více letadel | `NOT_STARTED` | — |
-| `R11` | Mapa a vizualizace | Zobrazení trasy mezi letišti a jejího průběhu | `NOT_STARTED` | — |
 | `R12` | Mapa a vizualizace | Vrstvy okolních letišť | `NOT_STARTED` | — |
 | `R14` | Mapa a vizualizace | Mapové podklady, vzhled a předvolby vrstev | `NOT_STARTED` | — |
-| `R15` | Mapa a vizualizace | Mapová HUD lišta a rychlé akce | `NOT_STARTED` | — |
-| `R17` | Mapa a vizualizace | ATC sektory a vysílače přímo v mapě | `NOT_STARTED` | — |
-| `R18` | Mapa a vizualizace | Volitelné počasí a vzdušné prostory přímo v mapě | `NOT_STARTED` | — |
-| `H03` | Detail letadla | Fotografie letadel z Planespotters | `NOT_STARTED` | — |
-| `H07` | Detail letadla | Výškový, rychlostní a vertikální profil letu | `NOT_STARTED` | — |
-| `H14` | Detail letadla | Souhrny letadla za 7/30 dní a celé období | `NOT_STARTED` | — |
 | `A01` | Letiště | Katalog letišť a vyhledávání podle ICAO | `NOT_STARTED` | — |
 | `A02` | Letiště | Detail letiště – dráhy, poloha, vybavení a frekvence | `NOT_STARTED` | — |
-| `T08` | ATC, ATS a navigace | ATS tratě České republiky | `NOT_STARTED` | — |
-| `T09` | ATC, ATS a navigace | ATS tratě Slovenska a Rakouska | `NOT_STARTED` | — |
 | `T10` | ATC, ATS a navigace | NAVAID/FIX databáze a navigační průzkumník | `NOT_STARTED` | — |
-| `T13` | ATC, ATS a navigace | Navigation Integrity – podezřelé anomálie ADS-B | `NOT_STARTED` | — |
-| `T14` | ATC, ATS a navigace | Navigation Integrity – regionální mapa, historie a analýza | `NOT_STARTED` | — |
-| `W01` | Počasí | Aktuální METAR a TAF letišť | `NOT_STARTED` | — |
-| `W02` | Počasí | METAR značky a informace přímo v mapě | `NOT_STARTED` | — |
 | `W03` | Počasí | Meteorologický radar ČHMÚ s časovou osou | `NOT_STARTED` | — |
 | `W06` | Počasí | SIGMET a AirSIGMET výstrahy | `NOT_STARTED` | — |
 | `W08` | Počasí | Počasí měřené letadly z Mode-S / BDS 4,4 | `NOT_STARTED` | — |
 | `W09` | Počasí | Profil a kvalita počasí pozorovaného letadlem | `NOT_STARTED` | — |
 | `L11` | Upozornění | Push notifikace do prohlížeče | `NOT_STARTED` | — |
 | `L12` | Upozornění | Externí Pushover upozornění | `NOT_STARTED` | — |
-| `E01` | Datové zdroje a integrace | ADSBHub – příjem externího síťového provozu | `NOT_STARTED` | — |
-| `E02` | Datové zdroje a integrace | ADSB.lol – surový BEAST/SBS stream | `NOT_STARTED` | — |
-| `E03` | Datové zdroje a integrace | ADSB.lol – HTTP geografická záloha | `NOT_STARTED` | — |
-| `E04` | Datové zdroje a integrace | OGN/FLARM – letadla, kluzáky a další cíle | `NOT_STARTED` | — |
-| `E05` | Datové zdroje a integrace | OGN Device Database – identifikace a ochrana soukromí | `NOT_STARTED` | — |
-| `E06` | Datové zdroje a integrace | SoftRF SQLite – nouzová OGN whitelist databáze | `NOT_STARTED` | — |
-| `E07` | Datové zdroje a integrace | ACARS/VDL2 metadata přes RXW Hub | `NOT_STARTED` | — |
-| `E09` | Datové zdroje a integrace | FlightAware – doplňování letových plánů a diagnostika využití | `NOT_STARTED` | — |
-| `E10` | Datové zdroje a integrace | ADSBDB – externí metadata letadel | `NOT_STARTED` | — |
 | `S01` | Statistiky | Aktuální počítadla letadel a zpráv za sekundu | `NOT_STARTED` | — |
-| `S02` | Statistiky | Denní/7denní/30denní agregované statistiky – API | `NOT_STARTED` | — |
-| `S03` | Statistiky | Receiver Coverage – polární mapa dosahu | `NOT_STARTED` | — |
-| `S04` | Statistiky | Analýza slabých sektorů a spolehlivosti příjmu | `NOT_STARTED` | — |
 | `S06` | Statistiky | Statistiky typů letadel, aerolinek a tratí – API | `NOT_STARTED` | — |
 | `S09` | Statistiky | Logbook a agregované souhrny přijímače | `NOT_STARTED` | — |
 | `O01` | Diagnostika a provoz | System Dashboard – stav všech komponent | `NOT_STARTED` | — |
@@ -75,18 +47,13 @@
 | `O06` | Diagnostika a provoz | Historie výkonu a aktuálních bottlenecků | `NOT_STARTED` | — |
 | `O07` | Diagnostika a provoz | Databázová latence, fronty a diagnostika zapisování | `NOT_STARTED` | — |
 | `O08` | Diagnostika a provoz | Systémové diagnostické SSE streamy | `NOT_STARTED` | — |
-| `O09` | Diagnostika a provoz | T58 production soak, stall canary a CPU profiling | `NOT_STARTED` | — |
-| `O10` | Diagnostika a provoz | Výkonové benchmarky a zátěžové testy | `NOT_STARTED` | — |
-| `O11` | Diagnostika a provoz | Automatické CI, testy, CodeQL a bezpečnostní kontroly · základ systému | `NOT_STARTED` | — |
-| `O12` | Diagnostika a provoz | Automatické nasazení, health check a rollback · základ systému | `NOT_STARTED` | — |
-| `O13` | Diagnostika a provoz | Import/synchronizace eAIP, ATS a letištních dat | `NOT_STARTED` | — |
-| `O15` | Diagnostika a provoz | Správa přihlášení administrátora a bezpečnostních oprávnění · základ systému | `NOT_STARTED` | — |
 | `U01` | Uživatelské rozhraní | Responzivní rozhraní mobil/tablet/desktop · základ systému | `NOT_STARTED` | — |
 | `U02` | Uživatelské rozhraní | Instalovatelná PWA aplikace | `NOT_STARTED` | — |
 | `U03` | Uživatelské rozhraní | Offline cache posledního známého stavu | `NOT_STARTED` | — |
 | `U04` | Uživatelské rozhraní | Česká a anglická lokalizace | `NOT_STARTED` | — |
 | `U05` | Uživatelské rozhraní | Globální Command Search a navigace | `NOT_STARTED` | — |
 | `U08` | Uživatelské rozhraní | Klávesové zkratky a rychlé ovládání | `NOT_STARTED` | — |
+| `L06` | Upozornění | Emergency squawk 7500/7600/7700 | `NOT_STARTED` | — |
 
 ## Funkce mimo rozsah
 
@@ -94,6 +61,40 @@ Tyto funkce mají v JSON stav `EXCLUDED` a nebudou do V2 automaticky přenášen
 
 | ID | Funkce |
 |---|---|
+| `R05` | Barevné režimy letadel podle provozních údajů |
+| `R07` | Detail vybraného letadla v mapovém panelu |
+| `R10` | Současné sledování více letadel |
+| `R11` | Zobrazení trasy mezi letišti a jejího průběhu |
+| `R15` | Mapová HUD lišta a rychlé akce |
+| `R17` | ATC sektory a vysílače přímo v mapě |
+| `R18` | Volitelné počasí a vzdušné prostory přímo v mapě |
+| `H03` | Fotografie letadel z Planespotters |
+| `H07` | Výškový, rychlostní a vertikální profil letu |
+| `H14` | Souhrny letadla za 7/30 dní a celé období |
+| `T08` | ATS tratě České republiky |
+| `T09` | ATS tratě Slovenska a Rakouska |
+| `T13` | Navigation Integrity – podezřelé anomálie ADS-B |
+| `T14` | Navigation Integrity – regionální mapa, historie a analýza |
+| `W01` | Aktuální METAR a TAF letišť |
+| `W02` | METAR značky a informace přímo v mapě |
+| `E01` | ADSBHub – příjem externího síťového provozu |
+| `E02` | ADSB.lol – surový BEAST/SBS stream |
+| `E03` | ADSB.lol – HTTP geografická záloha |
+| `E04` | OGN/FLARM – letadla, kluzáky a další cíle |
+| `E05` | OGN Device Database – identifikace a ochrana soukromí |
+| `E06` | SoftRF SQLite – nouzová OGN whitelist databáze |
+| `E07` | ACARS/VDL2 metadata přes RXW Hub |
+| `E09` | FlightAware – doplňování letových plánů a diagnostika využití |
+| `E10` | ADSBDB – externí metadata letadel |
+| `S02` | Denní/7denní/30denní agregované statistiky – API |
+| `S03` | Receiver Coverage – polární mapa dosahu |
+| `S04` | Analýza slabých sektorů a spolehlivosti příjmu |
+| `O09` | T58 production soak, stall canary a CPU profiling |
+| `O10` | Výkonové benchmarky a zátěžové testy |
+| `O11` | Automatické CI, testy, CodeQL a bezpečnostní kontroly · základ systému |
+| `O12` | Automatické nasazení, health check a rollback · základ systému |
+| `O13` | Import/synchronizace eAIP, ATS a letištních dat |
+| `O15` | Správa přihlášení administrátora a bezpečnostních oprávnění · základ systému |
 | `A03` | Airport Live Board – přehled provozu letiště |
 | `A04` | Odvozené přílety, odlety a průlety |
 | `A05` | Vyhodnocení použitých přistávacích drah |
@@ -145,7 +146,6 @@ Tyto funkce mají v JSON stav `EXCLUDED` a nebudou do V2 automaticky přenášen
 | `L03` | Upozornění podle vzdálenosti od přijímače |
 | `L04` | Fleet Explorer – vlastní sledované flotily |
 | `L05` | Geofencing – vlastní sledované geografické oblasti |
-| `L06` | Emergency squawk 7500/7600/7700 |
 | `L07` | Historie upozornění a událostí |
 | `L08` | Pravidla cooldownu a odstranění duplicit |
 | `L09` | Notification Center – přijaté/nepřečtené zprávy |

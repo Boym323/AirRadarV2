@@ -39,9 +39,9 @@ const matrix = JSON.parse(readFileSync(jsonPath, "utf8"));
 const keep = matrix.features.filter(x => x.decision === "KEEP");
 const removed = matrix.features.filter(x => x.decision === "REMOVE");
 const ids = new Set(matrix.features.map(x => x.id));
-if (keep.length !== 79 || removed.length !== 99 || ids.size !== matrix.features.length ||
+if (keep.length !== 46 || removed.length !== 132 || ids.size !== matrix.features.length ||
     matrix.counts.KEEP !== keep.length || matrix.counts.REMOVE !== removed.length) {
-  throw new Error("Matice musí obsahovat 79 KEEP, 99 REMOVE a jedinečná ID.");
+  throw new Error("Matice musí obsahovat 46 KEEP, 132 REMOVE a jedinečná ID.");
 }
 for (const x of matrix.features) {
   if (!["NOT_STARTED","IN_PROGRESS","TESTED","ACCEPTED","EXCLUDED"].includes(x.status)) throw new Error("Neznámý stav: " + x.id);
@@ -51,7 +51,7 @@ for (const x of matrix.features) {
 const output = render(matrix);
 if (process.argv.includes("--check")) {
   if (readFileSync(outputPath, "utf8") !== output) throw new Error("Markdown matice neodpovídá JSON; spusť generátor.");
-  console.log("Matice 79 KEEP / 99 REMOVE souhlasí.");
+  console.log("Matice 46 KEEP / 132 REMOVE souhlasí.");
 } else {
   writeFileSync(outputPath, output);
   console.log("Česká matice funkcí vytvořena.");

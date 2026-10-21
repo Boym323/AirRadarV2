@@ -14,8 +14,8 @@
     "EXCLUDED"
   ],
   "counts": {
-    "KEEP": 79,
-    "REMOVE": 99
+    "KEEP": 46,
+    "REMOVE": 132
   },
   "features": [
     {
@@ -133,10 +133,10 @@
     {
       "id": "R05",
       "name": "Barevné režimy letadel podle provozních údajů",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "R06",
@@ -149,10 +149,10 @@
     {
       "id": "R07",
       "name": "Detail vybraného letadla v mapovém panelu",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "R08",
@@ -173,18 +173,18 @@
     {
       "id": "R10",
       "name": "Současné sledování více letadel",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "R11",
       "name": "Zobrazení trasy mezi letišti a jejího průběhu",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "R12",
@@ -205,50 +205,50 @@
     {
       "id": "R15",
       "name": "Mapová HUD lišta a rychlé akce",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "R17",
       "name": "ATC sektory a vysílače přímo v mapě",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "R18",
       "name": "Volitelné počasí a vzdušné prostory přímo v mapě",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "H03",
       "name": "Fotografie letadel z Planespotters",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "H07",
       "name": "Výškový, rychlostní a vertikální profil letu",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "H14",
       "name": "Souhrny letadla za 7/30 dní a celé období",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "A01",
@@ -269,18 +269,18 @@
     {
       "id": "T08",
       "name": "ATS tratě České republiky",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "T09",
       "name": "ATS tratě Slovenska a Rakouska",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "T10",
@@ -293,34 +293,34 @@
     {
       "id": "T13",
       "name": "Navigation Integrity – podezřelé anomálie ADS-B",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "T14",
       "name": "Navigation Integrity – regionální mapa, historie a analýza",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "W01",
       "name": "Aktuální METAR a TAF letišť",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "W02",
       "name": "METAR značky a informace přímo v mapě",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "W03",
@@ -373,74 +373,74 @@
     {
       "id": "E01",
       "name": "ADSBHub – příjem externího síťového provozu",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "E02",
       "name": "ADSB.lol – surový BEAST/SBS stream",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "E03",
       "name": "ADSB.lol – HTTP geografická záloha",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "E04",
       "name": "OGN/FLARM – letadla, kluzáky a další cíle",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "E05",
       "name": "OGN Device Database – identifikace a ochrana soukromí",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "E06",
       "name": "SoftRF SQLite – nouzová OGN whitelist databáze",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "E07",
       "name": "ACARS/VDL2 metadata přes RXW Hub",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "E09",
       "name": "FlightAware – doplňování letových plánů a diagnostika využití",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "E10",
       "name": "ADSBDB – externí metadata letadel",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "S01",
@@ -453,26 +453,26 @@
     {
       "id": "S02",
       "name": "Denní/7denní/30denní agregované statistiky – API",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "S03",
       "name": "Receiver Coverage – polární mapa dosahu",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "S04",
       "name": "Analýza slabých sektorů a spolehlivosti příjmu",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "S06",
@@ -557,50 +557,50 @@
     {
       "id": "O09",
       "name": "T58 production soak, stall canary a CPU profiling",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "O10",
       "name": "Výkonové benchmarky a zátěžové testy",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "O11",
       "name": "Automatické CI, testy, CodeQL a bezpečnostní kontroly · základ systému",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "O12",
       "name": "Automatické nasazení, health check a rollback · základ systému",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "O13",
       "name": "Import/synchronizace eAIP, ATS a letištních dat",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "O15",
       "name": "Správa přihlášení administrátora a bezpečnostních oprávnění · základ systému",
-      "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "decision": "REMOVE",
+      "status": "EXCLUDED",
       "tests": [],
-      "notes": ""
+      "notes": "Vyřazeno rozhodnutím vlastníka dne 2026-10-21 při zúžení rozsahu V2."
     },
     {
       "id": "U01",
@@ -1061,10 +1061,10 @@
     {
       "id": "L06",
       "name": "Emergency squawk 7500/7600/7700",
-      "decision": "REMOVE",
-      "status": "EXCLUDED",
+      "decision": "KEEP",
+      "status": "NOT_STARTED",
       "tests": [],
-      "notes": ""
+      "notes": "Vráceno rozhodnutím vlastníka dne 2026-10-21; pouze detekce squawk 7500/7600/7700, doručení až po bezpečném schválení."
     },
     {
       "id": "L07",
@@ -1442,5 +1442,53 @@
       "tests": [],
       "notes": ""
     }
-  ]
+  ],
+  "scopeReview": {
+    "date": "2026-10-21",
+    "decision": "Výslovné změny rozsahu AirRadar V2",
+    "removedIds": [
+      "R05",
+      "R07",
+      "R10",
+      "R11",
+      "R15",
+      "R17",
+      "R18",
+      "H03",
+      "H07",
+      "H14",
+      "T08",
+      "T09",
+      "T13",
+      "T14",
+      "W01",
+      "W02",
+      "E01",
+      "E02",
+      "E03",
+      "E04",
+      "E05",
+      "E06",
+      "E07",
+      "E09",
+      "E10",
+      "S02",
+      "S03",
+      "S04",
+      "O09",
+      "O10",
+      "O11",
+      "O12",
+      "O13",
+      "O15"
+    ],
+    "restoredIds": [
+      "L06"
+    ],
+    "originalCounts": {
+      "KEEP": 79,
+      "REMOVE": 99
+    },
+    "note": "Nejde o implementaci ani povolení produkčního nasazení; historické metriky neměnit."
+  }
 }

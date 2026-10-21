@@ -19,7 +19,7 @@ const sum = (items) => items.reduce((n, f) => n + countLines(f), 0);
 const features = JSON.parse(readFileSync(p("contracts/feature-matrix.json"), "utf8")).features;
 const keep = features.filter((f) => f.decision === "KEEP");
 const removed = features.filter((f) => f.decision === "REMOVE");
-if (keep.length !== 79 || removed.length !== 99) throw new Error("Nesouhlasí matice funkcí 79/99.");
+if (keep.length !== 46 || removed.length !== 132) throw new Error("Nesouhlasí matice funkcí 46/132.");
 const accepted = keep.filter((f) => ["TESTED", "ACCEPTED"].includes(f.status));
 if (accepted.some((f) => !f.tests?.length)) throw new Error("Ověřená funkce postrádá důkaz.");
 const stages = readFileSync(p("docs/plan/ETAPY-A-STAV.md"), "utf8")
