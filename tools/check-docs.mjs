@@ -59,6 +59,41 @@ if (!katalog.includes(boundary) || !katalog.includes(ending)) {
   if (JSON.stringify([...actualRemove].sort()) !== JSON.stringify([...expectedRemove].sort())) errors.push("Sekce REMOVE v katalogu se liší od matice.");
   if (new Set([...actualKeep, ...actualRemove]).size !== rawMatrix.features.length) errors.push("V katalogu jsou chybějící nebo duplicitní ID.");
 }
+
+// Kontrola jediného odpovědného modulu pro každé ze 46 schválených ID.
+const moduly = readFileSync(resolve(root, "docs/plan/MODULY-A-ROZSAH.md"), "utf8");
+const maticeModulu = JSON.parse(readFileSync(resolve(root, "contracts/feature-matrix.json"), "utf8"));
+const moduloveRadky = [...moduly.matchAll(/^- \*\*Primární vlastněná KEEP ID \(\d+\):\*\* ([^\n]+)$/gm)];
+if (moduloveRadky.length !== 9) errors.push("Očekáváno devět definovaných modulů.");
+const prirazenaId = moduloveRadky.flatMap(m => [...m[1].matchAll(/[A-Z]\d{2}/g)].map(x => x[0]));
+const povinnaId = maticeModulu.features.filter(f => f.decision === "KEEP").map(f => f.id);
+if (prirazenaId.length !== povinnaId.length ||
+    new Set(prirazenaId).size !== povinnaId.length ||
+    JSON.stringify([...prirazenaId].sort()) !== JSON.stringify([...povinnaId].sort())) {
+  errors.push("Moduly neobsahují právě všech 46 KEEP ID bez duplicit.");
+}
+const zadaniEtap = [
+  "G-02-LOKALNI-INGEST","G-03-EXTERNI-ZDROJE-ZRUSENO","G-04-API-A-SSE",
+  "G-05-POSTGRESQL-HISTORIE","G-06-ZIVA-MAPA","G-07-LETISTE-NAVAID",
+  "G-08-VYBRANE-POCASI","G-09-OGN-INTEGRACE-ZRUSENO",
+  "G-10-NOUZOVE-KODY-A-NOTIFIKACE","G-11-STATISTIKY-DIAGNOSTIKA",
+  "G-12-PWA-LOKALIZACE","G-13-ZAVERECNE-TESTOVANI",
+  "G-14-ODDELENY-SHADOW","G-15-BEZPECNY-RELEASE"
+];
+for (const zadani of zadaniEtap) {
+  const cesta = "docs/ukoly/" + zadani + ".md";
+  let obsah = "";
+  try { obsah = readFileSync(resolve(root, cesta), "utf8"); }
+  catch { errors.push("Chybí české zadání: " + cesta); continue; }
+  if (!obsah.startsWith("# " + zadani.slice(0, 4))) {
+    errors.push("Nesprávná hlavička zadání " + cesta);
+  }
+}
+for (const kod of ["G-03", "G-09"]) {
+  if (!readFileSync(resolve(root, "docs/plan/ETAPY-A-STAV.md"), "utf8").includes("| " + kod + " |")) {
+    errors.push("Chybí evidovaná zrušená etapa " + kod);
+  }
+}
 for (const e of errors) console.error(e);
 if (errors.length) process.exit(1);
 console.log("České dokumenty a jejich požadovaná struktura souhlasí.");
