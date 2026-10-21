@@ -56,7 +56,7 @@ API nyní vrací zkušební `NOT_IMPLEMENTED`. Nejsou zatím připojena živá A
 
 ## Lokální vývoj
 
-Vyžaduje Rust stable, Node.js 22.18+ a npm 10+. Nepoužívej produkční checkout AirRadar V1.
+Vyžaduje Rust stable, **Node.js 26.12.0 a npm 11.20.0**. Soubor `.node-version` sjednocuje lokální vývoj a GitHub CI. Nepoužívej produkční checkout AirRadar V1.
 
 ~~~bash
 cargo run --locked -p airradarv2-engine

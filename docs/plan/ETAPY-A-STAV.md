@@ -19,6 +19,11 @@
 | G-12 | [Oddělený shadow provoz](../ukoly/G-12-ODDELENY-SHADOW.md) | NEZAHÁJENO |
 | G-13 | [Schválené nasazení a rollback](../ukoly/G-13-BEZPECNY-RELEASE.md) | NEZAHÁJENO |
 
+## Technologická údržba G-00 (bez změny funkčního rozsahu)
+
+- Node.js 26 a aktualizace webu: [zadání](../ukoly/G-00-AKTUALIZACE-STACKU.md), [report](../reports/G-00-AKTUALIZACE-STACKU-VYSLEDEK.md).
+- Stav: **ČÁSTEČNĚ**, do úspěšného CI na finálním commitu. Nejde o novou produktovou etapu.
+
 ## Ověřená výchozí základna
 
 - G-00: Rust, Next.js, připnuté závislosti a skutečné HTTP smoke testy: [GitHub Actions 39659205202](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202).
