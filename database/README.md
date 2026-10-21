@@ -2,7 +2,7 @@
 
 **Stav G-00: databáze nebyla vytvořena, nebyla provedena žádná migrace.**
 
-V G-04 vznikne vlastní PostgreSQL `airradar_v2` s odděleným účtem a SQLx migracemi. Nová databáze začne **bez historických letů z V1**. Nikdy ji nenastavuj na produkční `DATABASE_URL` původního AirRadaru.
+V G-04 vznikne vlastní PostgreSQL `airradar_v2` **v již existujícím samostatném databázovém LXC** s odděleným účtem a SQLx migracemi. Nová databáze začne **bez historických letů z V1**. Nikdy ji nenastavuj na produkční `DATABASE_URL` původního AirRadaru.
 
 ## Zásady
 
@@ -15,3 +15,5 @@ V G-04 vznikne vlastní PostgreSQL `airradar_v2` s odděleným účtem a SQLx mi
 - Prázdná historie po spuštění V2 není chyba; UI musí zobrazovat pravdivé „zatím nejsou data“.
 
 Podrobné požadavky: [hlavní zadání](../docs/plan/ZADANI-AIRRADAR-V2.md) a etapa [G-04](../docs/plan/ETAPY-A-STAV.md).
+
+Bezpečné připojení a role: [POSTGRES-LXC.md](POSTGRES-LXC.md). Skutečný DB LXC nebyl touto změnou upraven.

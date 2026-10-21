@@ -51,12 +51,12 @@ Měřený commit: [8b3c6d17](https://github.com/Boym323/AirRadarV2/commit/8b3c6d
 ## Aktuální architektura a navržené změny
 
 - **Rust/Tokio/Axum:** readsb JSON a BEAST TCP, vlastní RAM letadel, bezpečné REST API a SSE.
-- **Next.js/React/MapLibre:** lehká česká mapa, seznam letadel, popisky, stopa a follow.
-- **PostgreSQL/SQLx:** oddělená databáze pro omezené vzorkování a potřebné agregace; historie V1 se nepřenáší.
+- **Vite/React/MapLibre:** lehká česká mapa, seznam letadel, popisky, stopa a follow.
+- **PostgreSQL/SQLx:** samostatná V2 databáze na existujícím odděleném DB LXC; historie V1 se nepřenáší.
 - **Jedno místní pokrytí:** uživatel pracuje vždy s daty místního přijímače, bez přepínače datových zdrojů.
 - **45 schválených funkcí:** žádná z nich zatím není potvrzena jako implementovaná. G-00 je pouze základ projektu.
 
-**Závěr výzkumu z 21. 10. 2026:** Rust/Tokio/Axum a MapLibre ponechat. **Doporučeno přejít z Next.js na Vite + React** se statickým webem; tato migrace **ještě neproběhla**. **SQLite WAL** je nyní první kandidát pro historická data, ale výběr proti PostgreSQL musí rozhodnout měřený G-04 test. Podrobnosti a zdroje v [rozhodnutích](docs/plan/TECHNOLOGICKA-ROZHODNUTI.md).
+**Zvoleno a implementováno:** Vite + React/TypeScript pro webový skeleton. **PostgreSQL/SQLx** na existujícím samostatném DB LXC jako definitivní databáze; V2 DB ani migrace ještě nevznikly. Viz [ADR 0005](docs/adr/0005-vite-a-postgresql-v2.md).
 
 API nyní vrací zkušební `NOT_IMPLEMENTED`. Nejsou zatím připojena živá ADS-B data, databáze ani veřejný release.
 
@@ -89,6 +89,10 @@ npm test
 npm run build
 ~~~
 
-Pro vývoj je nyní schváleno **45 aktivních funkcí**. Žádný produkční modul ještě není implementován. Závislosti jsou připnuté v `Cargo.lock` a `apps/web/package-lock.json`. [CI běh 39659205202](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202) ověřil na commitu `99df0456` Rust, Next.js a HTTP smoke testy; podrobný [report](docs/reports/G-00-BOOTSTRAP.md). Pozdější změny dokumentace a českého úvodu se ověřují samostatným CI.
+Pro vývoj je nyní schváleno **45 aktivních funkcí**. Žádný produkční modul ještě není implementován. Závislosti jsou připnuté v `Cargo.lock` a `apps/web/package-lock.json`. [CI běh 39659205202](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202) ověřil na commitu `99df0456` Rust, Vite a HTTP smoke testy; podrobný [report](docs/reports/G-00-BOOTSTRAP.md). Pozdější změny dokumentace a českého úvodu se ověřují samostatným CI.
 
 **Není nakonfigurováno žádné produkční nasazení.** Samostatný LXC zajistí vlastník projektu; V1 zůstává dostupná pro srovnávání.
+
+## PostgreSQL a statický provoz
+
+PostgreSQL v existujícím separátním LXC potřebuje vlastní databázi/role a bezpečně omezený síťový přístup: [postup](database/POSTGRES-LXC.md). Žádná DB nebyla v této etapě změněna. Vite produkuje `apps/web/dist/`, který bude v produkci poskytovat reverse proxy bez Node serveru; `npm run preview` je pouze kontrola buildu.

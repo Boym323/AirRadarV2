@@ -13,12 +13,12 @@
 ## Kritické technické hranice
 
 - `Boym323/AirRadar`, jeho LXC, historie, PostgreSQL, porty, CI a konfigurace jsou **nedotknutelné**.
-- V2 má vlastní nový LXC a vlastní úložiště, které začíná prázdné. **Databáze není definitivně vybraná**: SQLx + SQLite WAL se musí férově srovnat s PostgreSQL v G-04. Žádné migrace staré historie.
+- V2 má vlastní aplikační LXC a **PostgreSQL v již existujícím separátním databázovém LXC**. Nové V2 databáze, role a SQLx migrace patří až do G-04; není povoleno měnit jinou DB, používat SQLite ani migrovat historii V1.
 - Živá letadla mají jediného vlastníka — Rust RAM; web přijímá pouze verzovaná HTTP/SSE DTO. Fronty a retry jsou ohraničené.
 - Radar přijímá místní readsb/BEAST. Web nikdy nepotřebuje volit zdroj dat.
 - DB, počasí ani notifikační doručení nesmějí blokovat živý příjem. Ve vývojových/replay/shadow testech nikdy neposílej reálné upozornění.
 - Ochrana soukromí veřejných DTO, bezpečná práce s tajemstvími, přístupová ochrana mutací, zálohy a rollback jsou povinné i bez zvláštní produktové funkce.
-- CI nyní provádí Rust fmt/Clippy/test, **dosud Next.js** lint/typecheck/test/build a `node tools/check-docs.mjs`. Po skutečné otestované migraci webu změň CI i příkazy v MD současně na Vite. Další kontrakt/E2E/load testy zaváděj podle etapy.
+- CI nyní provádí Rust fmt/Clippy/test, **Vite/React** lint/typecheck/test/build a `node tools/check-docs.mjs`. CI používá čisté npm ci, Vite build a kontrolu statického webu. Další kontrakt/E2E/load testy zaváděj podle etapy.
 - Nevyžaduj ani nevymýšlej hesla a interní adresy; nevytvářej produkční deploy bez výslovného schválení.
 
 ## Průběžná evidence

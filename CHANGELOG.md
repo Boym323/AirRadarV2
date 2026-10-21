@@ -4,6 +4,12 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### Změněno
+- Webový základ G-00 převeden na **Vite + React + TypeScript** se statickým `dist/`, českým UI a HTTP smoke.
+- Odstraněn Next.js runtime a závislosti; CI používá uzamčené `npm ci`.
+- PostgreSQL definitivně zvolena na existujícím separátním DB LXC; nové V2 připojení a migrace až G-04.
+- Žádný produkční deploy ani změna LXC/DB nebyly provedeny.
+
 ### Přidáno
 - Důkladná česká rešerše technologií a architektury: `TECHNOLOGICKY-PRUZKUM.md`, `ARCHITEKTURA-V2.md`, `BENCHMARKY-TECHNOLOGII.md` a `TECHNOLOGICKA-ROZHODNUTI.md`.
 - Rozhodovací brány a reprodukovatelné benchmarky Rust/Go/Node, Next.js/Vite, SQLite/PostgreSQL, BEAST/JSON, SSE a MapLibre.
