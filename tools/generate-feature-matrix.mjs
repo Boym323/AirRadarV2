@@ -1,58 +1,24 @@
 #!/usr/bin/env node
-// Vytváření čitelného českého přehledu požadavků z JSON.
+// Generátor české matice výhradně z aktivních požadavků.
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-
 const root = resolve(import.meta.dirname, "..");
-const jsonPath = resolve(root, "contracts/feature-matrix.json");
-const outputPath = resolve(root, "docs/plan/MATICE-FUNKCI.md");
-const categories = {
-  J: "Živý příjem a stav", R: "Mapa a vizualizace", H: "Detail letadla",
-  A: "Letiště", T: "ATC, ATS a navigace", W: "Počasí",
-  L: "Upozornění", E: "Datové zdroje a integrace",
-  S: "Statistiky", O: "Diagnostika a provoz", U: "Uživatelské rozhraní",
-};
-function render(d) {
-  const rows = [
-    "# Matice funkcí AirRadar V2",
-    "",
-    "**Výchozí jazyk: čeština.** Tento soubor se generuje ze `contracts/feature-matrix.json`; neupravuj jej ručně. Použij `node tools/generate-feature-matrix.mjs`.",
-    "",
-    "**Rozsah:** " + d.counts.KEEP + " požadovaných funkcí (KEEP) a " + d.counts.REMOVE + " vyřazených funkcí (REMOVE). Označení `NOT_STARTED` znamená, že funkce dosud není implementovaná.",
-    "",
-    "## Požadované funkce",
-    "",
-    "| ID | Oblast | Funkce | Stav | Důkazy |",
-    "|---|---|---|---|---|",
-  ];
-  for (const x of d.features.filter(x => x.decision === "KEEP")) {
-    rows.push("| `" + x.id + "` | " + (categories[x.id[0]] || "Další oblast") + " | " + x.name.replaceAll("|", "\\|") + " | `" + x.status + "` | " + (x.tests?.length ? x.tests.join(", ") : "—") + " |");
-  }
-  rows.push("", "## Funkce mimo rozsah", "", "Tyto funkce mají v JSON stav `EXCLUDED` a nebudou do V2 automaticky přenášeny.", "", "| ID | Funkce |", "|---|---|");
-  for (const x of d.features.filter(x => x.decision === "REMOVE")) {
-    rows.push("| `" + x.id + "` | " + x.name.replaceAll("|", "\\|") + " |");
-  }
-  rows.push("", "## Údržba", "", "- Aktualizuj skutečně ověřený stav v `contracts/feature-matrix.json`.", "- Pro `TESTED` nebo `ACCEPTED` je nutný důkaz v poli `tests`.", "- Spusť `node tools/generate-feature-matrix.mjs` a v CI ověř `node tools/generate-feature-matrix.mjs --check`.", "", "Stav vývoje najdeš v [plánu etap](ETAPY-A-STAV.md).", "");
-  return rows.join("\n");
+const data = JSON.parse(readFileSync(resolve(root, "contracts/feature-matrix.json"), "utf8"));
+if (!Array.isArray(data.features) || !data.features.length || data.features.length !== data.counts.KEEP || new Set(data.features.map(f => f.id)).size !== data.features.length) throw Error("Neplatná aktivní matice.");
+for (const f of data.features) {
+  if (f.decision !== "KEEP" || !["NOT_STARTED","IN_PROGRESS","TESTED","ACCEPTED"].includes(f.status)) throw Error("Neaktivní funkce ve zdrojové matici: " + f.id);
+  if (["TESTED","ACCEPTED"].includes(f.status) && !f.tests?.length) throw Error("Funkce bez testu: " + f.id);
 }
-const matrix = JSON.parse(readFileSync(jsonPath, "utf8"));
-const keep = matrix.features.filter(x => x.decision === "KEEP");
-const removed = matrix.features.filter(x => x.decision === "REMOVE");
-const ids = new Set(matrix.features.map(x => x.id));
-if (keep.length !== 46 || removed.length !== 132 || ids.size !== matrix.features.length ||
-    matrix.counts.KEEP !== keep.length || matrix.counts.REMOVE !== removed.length) {
-  throw new Error("Matice musí obsahovat 46 KEEP, 132 REMOVE a jedinečná ID.");
-}
-for (const x of matrix.features) {
-  if (!["NOT_STARTED","IN_PROGRESS","TESTED","ACCEPTED","EXCLUDED"].includes(x.status)) throw new Error("Neznámý stav: " + x.id);
-  if (x.decision === "REMOVE" && x.status !== "EXCLUDED") throw new Error("Chybné vyřazení: " + x.id);
-  if (x.decision === "KEEP" && ["TESTED","ACCEPTED"].includes(x.status) && !x.tests?.length) throw new Error("Chybí důkaz: " + x.id);
-}
-const output = render(matrix);
+const groups = {J:"Místní příjem",R:"Mapa",A:"Letiště",T:"Navigace",W:"Počasí",L:"Upozornění",S:"Statistiky",O:"Provoz",U:"Uživatelské prostředí"};
+const rows = ["# Aktivní matice funkcí AirRadar V2","","Tento soubor se generuje ze `contracts/feature-matrix.json` a obsahuje výhradně aktuálně schválené funkce.","","**Rozsah: " + data.features.length + " aktivních funkcí.** Budoucí rozšíření eviduje [oddělený archiv](../backlog/FUNKCE-PRO-BUDOUCI-ROZSIRENI.md).","","| ID | Oblast | Funkce | Stav | Testovací důkazy |","|---|---|---|---|---|"];
+for (const f of data.features) rows.push("| `"+f.id+"` | "+(groups[f.id[0]]||"Ostatní")+" | "+f.name.replaceAll("|","\\|")+" | `"+f.status+"` | "+(f.tests?.length?f.tests.join(", "):"—")+" |");
+rows.push("","## Aktualizace","","- Jednotlivá KEEP ID musí mít právě jeden vlastní modul.","- Stav `TESTED` nebo `ACCEPTED` musí mít doklad v poli `tests`.","- Používej `node tools/generate-feature-matrix.mjs` a kontrolu `--check`.","");
+const output = rows.join("\n");
+const dest = resolve(root, "docs/plan/MATICE-FUNKCI.md");
 if (process.argv.includes("--check")) {
-  if (readFileSync(outputPath, "utf8") !== output) throw new Error("Markdown matice neodpovídá JSON; spusť generátor.");
-  console.log("Matice 46 KEEP / 132 REMOVE souhlasí.");
+  if (readFileSync(dest,"utf8") !== output) throw Error("Generovaná matice neodpovídá JSON.");
+  console.log("Matice v pořádku: " + data.features.length);
 } else {
-  writeFileSync(outputPath, output);
-  console.log("Česká matice funkcí vytvořena.");
+  writeFileSync(dest,output);
+  console.log("Česká matice aktualizována.");
 }

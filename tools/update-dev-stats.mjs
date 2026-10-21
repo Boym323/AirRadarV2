@@ -18,13 +18,12 @@ const countLines = (f) => {
 const sum = (items) => items.reduce((n, f) => n + countLines(f), 0);
 const features = JSON.parse(readFileSync(p("contracts/feature-matrix.json"), "utf8")).features;
 const keep = features.filter((f) => f.decision === "KEEP");
-const removed = features.filter((f) => f.decision === "REMOVE");
-if (keep.length !== 46 || removed.length !== 132) throw new Error("Nesouhlasí matice funkcí 46/132.");
+if (keep.length !== features.length || !keep.length) throw new Error("Aktivní matice obsahuje neschválenou funkci.");
 const accepted = keep.filter((f) => ["TESTED", "ACCEPTED"].includes(f.status));
 if (accepted.some((f) => !f.tests?.length)) throw new Error("Ověřená funkce postrádá důkaz.");
 const stages = readFileSync(p("docs/plan/ETAPY-A-STAV.md"), "utf8")
   .split("\n").filter((line) => /^\|\s*G-\d\d\s*\|/.test(line));
-if (stages.length !== 16) throw new Error("Chybí jedna z etap G-00 až G-15.");
+if (stages.length !== 14) throw new Error("Chybí jedna z etap G-00 až G-13.");
 const stagesDone = stages.filter((line) => /\bHOTOVO\b/.test(line.split("|")[3] || "")).length;
 const snap = {
   sha: git("rev-parse", "HEAD"),
