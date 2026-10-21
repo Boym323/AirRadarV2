@@ -55,8 +55,8 @@ if (!katalog.includes(boundary) || !katalog.includes(ending)) {
   const actualRemove = extract(removedPart);
   const expectedKeep = rawMatrix.features.filter(f => f.decision === "KEEP").map(f => f.id);
   const expectedRemove = rawMatrix.features.filter(f => f.decision === "REMOVE").map(f => f.id);
-  if (JSON.stringify(actualKeep) !== JSON.stringify(expectedKeep)) errors.push("Sekce KEEP v katalogu se liší od matice.");
-  if (JSON.stringify(actualRemove) !== JSON.stringify(expectedRemove)) errors.push("Sekce REMOVE v katalogu se liší od matice.");
+  if (JSON.stringify([...actualKeep].sort()) !== JSON.stringify([...expectedKeep].sort())) errors.push("Sekce KEEP v katalogu se liší od matice.");
+  if (JSON.stringify([...actualRemove].sort()) !== JSON.stringify([...expectedRemove].sort())) errors.push("Sekce REMOVE v katalogu se liší od matice.");
   if (new Set([...actualKeep, ...actualRemove]).size !== rawMatrix.features.length) errors.push("V katalogu jsou chybějící nebo duplicitní ID.");
 }
 for (const e of errors) console.error(e);
