@@ -21,7 +21,7 @@ Aktualizace statistik: **denně ve 03:17 (Europe/Prague)** a ručně na vyžád�
 | Dokumenty Markdown | 21 |
 | Všechny sledované soubory | 48 |
 | Dokončené etapy | **1/16** (6,3 %) |
-| Ověřené KEEP funkce | **0/46** (0,0 %) |
+| Ověřené KEEP funkce | **0/45** (0,0 %) |
 
 ![Historie řádků zdrojového kódu](docs/metrics/loc.svg)
 
@@ -30,31 +30,29 @@ Měřený commit: [8b3c6d17](https://github.com/Boym323/AirRadarV2/commit/8b3c6d
 > Jde o vývojové statistiky repozitáře, nikoli o výkon živého radaru. Funkce se počítají jen ze strojové matice s důkazem testu. Úspěšná CI sama o sobě nedokazuje dokončení funkcí.
 <!-- AIRRADAR_STATS_END -->
 
-## Dokumentace a zadání — vše česky
+## Česká zadání a vývoj
 
-| Dokument | Účel |
+| Soubor | Účel |
 |---|---|
-| **[Hlavní zadání AirRadar V2](docs/plan/ZADANI-AIRRADAR-V2.md)** | Úplné zadání, cíle, architektura, databáze, provoz a kritéria úspěchu |
-| [Katalog implementačních modulů](docs/plan/MODULY-A-ROZSAH.md) | 9 logických modulů, jednotlivá vlastněná KEEP ID a vyřazené oblasti |
-| [Plán etap a jejich stav](docs/plan/ETAPY-A-STAV.md) | Pořadí G-00 až G-15, závislosti a stav realizace |
-| [Matice všech funkcí](docs/plan/MATICE-FUNKCI.md) | 46 požadovaných funkcí a 132 vyřazených |
-| **[Podrobný katalog 178 funkcí](docs/plan/PODROBNY-KATALOG-FUNKCI.md)** | Vysvětlení, co každá funkce dělá; určeno k rozhodnutí KEEP/REMOVE |
-| [Pravidla práce s dokumentací](docs/plan/PRAVIDLA-DOKUMENTACE.md) | Jazyk, systém zadání, reportů a ADR |
-| [Zadání G-01](docs/ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) | Další samostatná implementační etapa |
-| [Výsledky G-00](docs/reports/G-00-BOOTSTRAP.md) | Ověřené testy a hranice aktuální implementace |
-| [Příprava nového LXC](docs/runbooks/LXC-SETUP.md) | Oddělené vývojové a budoucí provozní prostředí |
-| [Pokyny pro Codex](AGENTS.md) | Závazné postupy, čeština a bezpečnost |
+| [Závazné zadání](docs/plan/ZADANI-AIRRADAR-V2.md) | Architektura místního radaru a provozní invarianty |
+| [Aktivní matice 45 funkcí](docs/plan/MATICE-FUNKCI.md) | Jediný zdroj požadavků k implementaci |
+| [Katalog modulů](docs/plan/MODULY-A-ROZSAH.md) | Vlastnictví funkcí v 9 modulech |
+| [Podrobné popisy](docs/plan/PODROBNY-KATALOG-FUNKCI.md) | Co každá aktivní funkce skutečně dělá |
+| [Etapy a stav](docs/plan/ETAPY-A-STAV.md) | 14 navazujících etap G-00 až G-13 |
+| [Začít v novém vlákně](docs/plan/ZACNI-ZDE-NOVE-VLAKNO.md) | Kontext projektu a práce s Markdown dokumenty |
+| [Pravidla pro Codex](AGENTS.md) | Čeština, izolace, testy a evidence |
+| [CHANGELOG](CHANGELOG.md) | Změny a důkazy v historii projektu |
+| [Archiv budoucích rozšíření](docs/backlog/FUNKCE-PRO-BUDOUCI-ROZSIRENI.md) | Oddělená evidence případných nových funkcí |
 
-**Veškerá nová projektová dokumentace, zadání a výchozí uživatelské rozhraní jsou česky.** Identifikátory API, jazyky programování a názvy proměnných zůstávají standardní. Volitelná angličtina uživatelského rozhraní bude později součástí požadavku U04.
+## Aktuální architektura
 
-## Navržená architektura
+- **Rust/Tokio/Axum:** readsb JSON a BEAST TCP, vlastní RAM letadel, bezpečné REST API a SSE.
+- **Next.js/React/MapLibre:** lehká česká mapa, seznam letadel, popisky, stopa a follow.
+- **PostgreSQL/SQLx:** oddělená databáze pro omezené vzorkování a potřebné agregace; historie V1 se nepřenáší.
+- **Jedno místní pokrytí:** uživatel pracuje vždy s daty místního přijímače, bez přepínače datových zdrojů.
+- **45 schválených funkcí:** žádná z nich zatím není potvrzena jako implementovaná. G-00 je pouze základ projektu.
 
-- **Rust / Tokio / Axum:** samostatný engine pro budoucí ADS-B/BEAST příjem, jednotný stav letadel a SSE.
-- **TypeScript / Next.js / React / MapLibre:** mapa a klientská část (živá mapa začíná až v G-06).
-- **PostgreSQL + SQLx:** nová izolovaná databáze; ukládaná historie začne od nuly v G-05.
-- **46 KEEP / 132 REMOVE:** plánovaný funkční rozsah, nikoliv počet aktuálně dokončených funkcí.
-
-G-00 obsahuje pouze zkušební Rust API `/api/v1/health`, neimplementovaný výpis letadel a SSE se stavem `NOT_IMPLEMENTED`. Web je informační úvodní stránka. **Neexistuje zatím skutečný přijímač, živá mapa, aktivní databáze ani notifikace.**
+API nyní vrací zkušební `NOT_IMPLEMENTED`. Nejsou zatím připojena živá ADS-B data, databáze ani veřejný release.
 
 ## Lokální vývoj
 
@@ -85,6 +83,6 @@ npm test
 npm run build
 ~~~
 
-Rozsah byl rozhodnutím vlastníka zúžen na **46 KEEP / 132 REMOVE**. Stále není implementován žádný z požadovaných živých modulů. Závislosti jsou připnuté v `Cargo.lock` a `apps/web/package-lock.json`. [CI běh 39659205202](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202) ověřil na commitu `99df0456` Rust, Next.js a HTTP smoke testy; podrobný [report](docs/reports/G-00-BOOTSTRAP.md). Pozdější změny dokumentace a českého úvodu se ověřují samostatným CI.
+Pro vývoj je nyní schváleno **45 aktivních funkcí**. Žádný produkční modul ještě není implementován. Závislosti jsou připnuté v `Cargo.lock` a `apps/web/package-lock.json`. [CI běh 39659205202](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202) ověřil na commitu `99df0456` Rust, Next.js a HTTP smoke testy; podrobný [report](docs/reports/G-00-BOOTSTRAP.md). Pozdější změny dokumentace a českého úvodu se ověřují samostatným CI.
 
 **Není nakonfigurováno žádné produkční nasazení.** Samostatný LXC zajistí vlastník projektu; V1 zůstává dostupná pro srovnávání.

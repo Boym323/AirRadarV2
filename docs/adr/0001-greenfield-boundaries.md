@@ -12,7 +12,7 @@ V1 obsahovala příliš těsné vazby mezi webem, příjmem, historií, diagnost
 
 ## Hranice
 
-Rust poskytuje kontrakty HTTP/SSE. Web nečte readsb ani nezapisuje letovou historii. API je verzované, OGN privacy fail-closed a data LOCAL/EXTENDED mají jednoznačný původ. Výpadky externích služeb nesmějí zastavit živý radar.
+Rust poskytuje kontrakty HTTP/SSE. Web nečte readsb ani nezapisuje letovou historii. API je verzované, přenos sanitizuje veřejné DTO a stav letadel pochází výhradně z místního přijímače. Výpadky podpůrných služeb nesmějí zastavit živý radar.
 
 ## Zvažované alternativy
 
@@ -21,4 +21,3 @@ Výhradně TypeScript byl možný, ale Rust se předběžně jeví vhodnější 
 ## Rizika a ověření
 
 Rust přidává nároky na build a dva běžící procesy vyžadují smlouvu API. Před nasazením ověřit graceful shutdown, SSE backpressure, maximální paměť, restart, databázové výpadky, kompatibilitu LXC a rollback. Je-li jiná technologie prokazatelně lepší, zdůvodni změnu novým ADR.
-

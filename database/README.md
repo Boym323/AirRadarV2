@@ -2,7 +2,7 @@
 
 **Stav G-00: databáze nebyla vytvořena, nebyla provedena žádná migrace.**
 
-V G-05 vznikne vlastní PostgreSQL `airradar_v2` s odděleným účtem a SQLx migracemi. Nová databáze začne **bez historických letů z V1**. Nikdy ji nenastavuj na produkční `DATABASE_URL` původního AirRadaru.
+V G-04 vznikne vlastní PostgreSQL `airradar_v2` s odděleným účtem a SQLx migracemi. Nová databáze začne **bez historických letů z V1**. Nikdy ji nenastavuj na produkční `DATABASE_URL` původního AirRadaru.
 
 ## Zásady
 
@@ -11,8 +11,7 @@ V G-05 vznikne vlastní PostgreSQL `airradar_v2` s odděleným účtem a SQLx mi
 - Vzorkované pozice a letové instance zapisovat přes ohraničenou frontu a dávkové transakce.
 - Retenci a indexy stanovit po měření: velikost dat, CPU, WAL, rychlost INSERT, četnost SELECT a p95/p99.
 - Začít s jednoduchým SQL a SQLx migracemi, oddělit integritu a přístupová práva.
-- **Žádný automatický přesun či mazání dat V1**. Pro G-05 použít jen DEV databázi se samostatným účtem.
-- Prázdná 7/30denní historie po spuštění V2 není chyba; UI musí zobrazovat pravdivé „zatím nejsou data“.
+- **Žádný automatický přesun či mazání dat V1**. Pro G-04 použít jen DEV databázi se samostatným účtem.
+- Prázdná historie po spuštění V2 není chyba; UI musí zobrazovat pravdivé „zatím nejsou data“.
 
-Podrobné požadavky: [hlavní zadání](../docs/plan/ZADANI-AIRRADAR-V2.md) a etapa [G-05](../docs/plan/ETAPY-A-STAV.md).
-
+Podrobné požadavky: [hlavní zadání](../docs/plan/ZADANI-AIRRADAR-V2.md) a etapa [G-04](../docs/plan/ETAPY-A-STAV.md).

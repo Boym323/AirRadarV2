@@ -1,50 +1,30 @@
-# ZAČNI ZDE — předání AirRadar V2 do nového vlákna
+# ZAČNI ZDE — nové vlákno nebo Codex běh AirRadar V2
 
-Toto je **povinný kontextový vstup** při zahájení nové konverzace, nového Codex běhu nebo předání mezi vývojovými agenty. **Není potřeba načítat historii předchozího chatu.** Nejdříve přečti uvedené soubory v tomto repozitáři, aktuální HEAD a související zdrojový kód.
+**Repozitář:** https://github.com/Boym323/AirRadarV2. **Výchozí jazyk: čeština.** Jde o nový samostatný projekt; V1 je jen read-only reference. Celý implementační kontext je dostupný z GitHubu, není nutná historie chatu.
 
-## Kde se pracuje
+## Povinné soubory a pořadí
 
-- Nový GitHub: https://github.com/Boym323/AirRadarV2, vývoj `main`, výchozí jazyk **čeština**.
-- Starý GitHub: https://github.com/Boym323/AirRadar — **jen read-only reference**, v jeho produkčním LXC ani databázi nic neměň.
-- Pro V2 je určen **jiný, vlastní LXC**; jeho založení, IP/SSH přístup a produkční deployment nejsou v aktuálním repozitáři doloženy. Nevymýšlej host/uživatele/credentials; tajemství nepatří do GitHubu.
-- V2 starou historickou databázi z V1 nepřebírá. Nová historie bude záznamy ukládat až při G-05.
-- Stack: Rust/Tokio/Axum jako jediný vlastník RAM state a streamu; Next.js/React/MapLibre pro UI; PostgreSQL/SQLx pro vzorkovanou historii. Volitelné jazyky pouze s naměřeným přínosem.
+1. [AGENTS.md](../../AGENTS.md): pravidla, bezpečnost a český jazyk.
+2. [ZADANI-AIRRADAR-V2.md](ZADANI-AIRRADAR-V2.md): závazný cíl a architektura.
+3. [MODULY-A-ROZSAH.md](MODULY-A-ROZSAH.md): devět modulů a jejich přesná aktivní ID.
+4. [ETAPY-A-STAV.md](ETAPY-A-STAV.md): G-00 až G-13, doložený stav a návaznosti.
+5. `contracts/feature-matrix.json` a [MATICE-FUNKCI.md](MATICE-FUNKCI.md): **45 schválených funkcí**, při implementaci jen tento rozsah.
+6. [CO-NEPREBIRAT-Z-V1.md](CO-NEPREBIRAT-Z-V1.md): pravidla greenfield minimalismu.
+7. [CHANGELOG.md](../../CHANGELOG.md), pouze reporty související s aktuální etapou, a jediný úkol z `docs/ukoly/`.
 
-## Přečti v tomto pořadí (povinné)
+**Oddělený archiv budoucích návrhů není určen pro běžný vývoj**. Čti jej pouze na výslovnou žádost vlastníka, nikdy jej neimportuj do současné aplikace automaticky.
 
-1. [AGENTS.md](../../AGENTS.md) — český jazyk, bezpečnost a evidence
-2. [Závazné zadání](ZADANI-AIRRADAR-V2.md) — produkt a architektura
-3. [Katalog modulů](MODULY-A-ROZSAH.md) — konkrétně co implementovat a ke kterým KEEP ID
-4. [Co nepřebírat z V1](CO-NEPREBIRAT-Z-V1.md) — seznam nechtěného dluhu
-5. [Etapy a stav](ETAPY-A-STAV.md) — co je skutečně hotové a co dál
-6. [Matice funkcí](MATICE-FUNKCI.md), [podrobné popisy všech 178 funkcí](PODROBNY-KATALOG-FUNKCI.md) a `contracts/feature-matrix.json` — aktuální výslovně schválený rozsah; další změna jen na pokyn vlastníka
-7. [CHANGELOG](../../CHANGELOG.md) — dokončené změny a doložené vydané/verifikované výsledky
-8. **Jediné zadání G-XX**, na kterém máš právě pracovat, v `docs/ukoly/`, a případné související ADR/reports
+## Co je skutečně dokončeno
 
-**Nečti automaticky celou složku** `docs/` ani historické audity V1. Pokud konkrétní dokument chybí, oprav nejdřív dokumentaci, nevymýšlej obsah.
+- G-00: Rust/Next.js scaffold, lockfily, build, testy a HTTP smoke — [historický důkaz GitHub CI](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202).
+- G-01: první neimplementovaná etapa. Rozpracuj kontrakty/fixture, teprve potom příjem.
+- V2 nemá prokázaný živý ingest, aktivní PostgreSQL ani release do samostatného LXC.
+- Produkční V1, její DB i LXC se nesmějí měnit.
 
-## Rozhodnutí o rozsahu
+## Postup při navazování
 
-Výslovně schváleno **46 KEEP / 132 REMOVE** dne 21. 10. 2026. G-03 a G-09 zrušeny, **L06** je nově KEEP. Žádný z aktuálních 46 KEEP není zatím potvrzen jako dokončený. Historické odkazy na 79 jsou pouze původní stav.
+Ověř aktuální HEAD/branch/CI. V izolovaném checkoutu implementuj pouze schválenou etapu. Proveď Rust fmt/Clippy/testy, Next.js lint/typecheck/test/build, dokumentační kontrolu a případné integrační testy. Aktualizuj český `.md` report etapy, `ETAPY-A-STAV.md`, `CHANGELOG.md` a důkazy u aktivních KEEP. Závěr musí uvést skutečný commit, měření, PASS/FAIL a rizika.
 
-## Aktuální bezpečný stav (reviduj vůči HEAD)
+## Zadání k vložení do dalšího vlákna
 
-- **G-00:** ověřený základ Rust HTTP a Next.js s lockfile, [CI 39662365349](https://github.com/Boym323/AirRadarV2/actions/runs/39662365349) úspěšně na `d72fad1` (platí pro tento konkrétní SHA).
-- **G-01:** kontrakty/fixture zatím `NEZAHÁJENO`; [zadání](../ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md).
-- **G-02 až G-15:** zadání existují; G-03 a G-09 jsou výslovně vyřazeny, ostatní neimplementované. Přesný stav vždy ověř v `ETAPY-A-STAV.md` a kódu.
-- G-00 `/api/v1/health` vrací `bootstrap`; `/api/v1/aircraft` vrací `NOT_IMPLEMENTED`; nic z toho neprokazuje živý příjem.
-- Žádný produkční deploy, změna DNS/proxy, čtení V1 DB, nové alerty či V1 LXC.
-- Důkazy o vývoji ukládej do **českých MD** a aktualizuj `CHANGELOG.md`; netvrď GO/PASS bez stejného SHA CI.
-
-## Postup při každém novém vlákně
-
-1. Ověř `git branch --show-current`, `git rev-parse HEAD`, `git status --short` a aktuální GitHub Actions.
-2. Zjisti jednu následující neuzavřenou etapu a její KEEP ID. Nesměš přeskočit závislosti.
-3. V izolovaném vývojovém checkoutu implementuj **pouze schválený rozsah**. Starý kód neimportuj plošně.
-4. Proveď Rust fmt/clippy/testy, web lint/typecheck/test/build a `node tools/check-docs.mjs`. U DB/SSE/UI přidej odpovídající integrační testy.
-5. Doplň české Markdown zadání/report, matici s důkazy, stav etap a changelog. CI musí běžet na přesném commitu.
-6. Připrav stručný závěrečný report: změny, testy a CI s SHA, měření, regrese, chybějící důkazy a rozhodnutí HOTOVO / ČÁSTEČNĚ / BLOKOVÁNO.
-
-## Prompt k vložení do nového vlákna
-
-> Pracuj na **AirRadar V2** v repozitáři https://github.com/Boym323/AirRadarV2. Přečti `AGENTS.md` a `docs/plan/ZACNI-ZDE-NOVE-VLAKNO.md`, potom jen relevantní zadání etapy, katalog modulů, matici funkcí a poslední changelog. Všechny pracovní dokumenty i viditelné texty aplikace piš **česky**. Ověř aktuální `main` a GitHub CI, pokračuj pouze v první nedokončené bezpečně realizovatelné etapě. Aktualizuj `docs/plan/ETAPY-A-STAV.md`, český report, `CHANGELOG.md` a skutečně ověřené KEEP ID. Nedělej nic v AirRadar V1 ani jeho databázi/LXC. Nepoužívej staré moduly bez testovaného důvodu a žádný produkční deploy bez výslovného samostatného souhlasu.
+> Pracuj v `Boym323/AirRadarV2`. Přečti `AGENTS.md`, `docs/plan/ZACNI-ZDE-NOVE-VLAKNO.md`, aktuální plán a jediný následující úkol. Aplikace je nový **místní ADS-B radar**, má pouze **45 aktivních funkcí**, žádné volby zdroje dat. Všechny dokumenty i výchozí uživatelské texty piš česky. Nepřebírej zdrojový strom V1. Zkontroluj aktuální main/CI, implementuj vybranou etapu s testy, aktualizuj `CHANGELOG.md` a český etapový report. Původní V1 a její DB/LXC neměň a bez samostatného souhlasu nic nenasazuj do produkce.

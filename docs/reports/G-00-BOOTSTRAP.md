@@ -15,7 +15,7 @@
 
 ## Skutečně vytvořeno
 
-Samostatný GitHub repo, Rust/Tokio/Axum HTTP základ (`health`, neimplementovaná letadla a testovací SSE s heartbeat), statický úvodní Next.js web, OpenAPI, funkční matice 79 KEEP / 99 REMOVE, připnuté závislosti a CI **bez deploye**.
+Samostatný GitHub repo, Rust/Tokio/Axum HTTP základ (`health`, neimplementovaná letadla a testovací SSE s heartbeat), statický úvodní Next.js web, OpenAPI, výchozí matice požadavků (později aktualizovaná podle rozhodnutí vlastníka), připnuté závislosti a CI **bez deploye**.
 
 ## Co zatím neexistuje
 
@@ -33,4 +33,3 @@ Původní kód, CI, PostgreSQL, reverse proxy a starý LXC nebyly změněny. V2 
 - **NENÍ PŘIPRAVENO** k produkčnímu provozu či nahrazení V1.
 - Příprava LXC čeká na zřízení a autorizovaný přístup; není nutná pro práci na G-01.
 - Zbývá formální rozhodnutí o licenci před veřejným vydáním distribuovaných buildů.
-

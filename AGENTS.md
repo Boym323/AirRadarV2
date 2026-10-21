@@ -1,46 +1,26 @@
-# Pravidla vývoje AirRadar V2 pro Codex a další agenty
+# AGENTS.md — závazná pravidla pro AirRadar V2
 
-**Výchozí jazyk projektu: čeština (cs-CZ).** Nejde o přepis AirRadar V1; V2 vzniká na zelené louce v samostatném repozitáři `Boym323/AirRadarV2`.
+**Veškerá nová zadání, Markdown dokumentace, reporty, ADR a výchozí UI musí být v češtině (`cs-CZ`).** Technické identifikátory API, SQL a kódu zůstávají běžně anglicky.
 
-## Povinné pořadí práce
+## Před každou změnou
 
-1. Před změnami přečti [hlavní české zadání](docs/plan/ZADANI-AIRRADAR-V2.md), [stav etap](docs/plan/ETAPY-A-STAV.md), [pravidla dokumentace](docs/plan/PRAVIDLA-DOKUMENTACE.md) a pouze dokumentaci související s právě řešenou etapou.
-2. Pro aktuální etapu vytvoř nebo uprav **Markdown soubor** `docs/ukoly/G-XX-NAZEV.md` s rozsahem, závislostmi, scénáři ověření a výsledkem. Nespojuj několik etap do jednoho rozsáhlého neověřitelného zásahu.
-3. Při implementaci průběžně aktualizuj `docs/plan/ETAPY-A-STAV.md` a na závěr dolož skutečné testy, CI run, commit SHA, měření a blokéry v `docs/reports/G-XX-VYSLEDEK.md`. **Nikdy neoznač za hotové něco, co nebylo ověřeno.**
-4. Pokud změna trvale ovlivní architekturu, jazyk, bezpečnost, databázový model nebo provoz, zapiš důvod a alternativy jako české ADR v `docs/adr/`.
-5. Matice požadovaných funkcí je v `contracts/feature-matrix.json`; čitelný přehled je v `docs/plan/MATICE-FUNKCI.md` a **podrobné vysvětlení každé z 178 funkcí** v [`docs/plan/PODROBNY-KATALOG-FUNKCI.md`](docs/plan/PODROBNY-KATALOG-FUNKCI.md). Výběr 46 KEEP / 132 REMOVE byl potvrzen vlastníkem 21. 10. 2026; změny pouze na další výslovný pokyn. Stav funkce aktualizuj až po skutečném testu a přidej odkaz na důkaz; Markdown matice musí zůstat synchronizovaná.
+1. Ověř aktuální `main`, pracovní strom, `AGENTS.md`, [začátek pro nové vlákno](docs/plan/ZACNI-ZDE-NOVE-VLAKNO.md), [hlavní zadání](docs/plan/ZADANI-AIRRADAR-V2.md) a relevantní jeden úkol v `docs/ukoly/`.
+2. `contracts/feature-matrix.json` je **pouze seznam aktivních 45 funkcí**. Každá má vlastníka v [MODULY-A-ROZSAH.md](docs/plan/MODULY-A-ROZSAH.md). Rozšíření nemíchej do tohoto seznamu ani do kódu; jejich jediným záznamem je [oddělený archiv](docs/backlog/FUNKCE-PRO-BUDOUCI-ROZSIRENI.md), který se otevírá pouze na výslovnou žádost.
+3. Při přidávání souboru, modulu, tabulky, závislosti, datového zdroje nebo UI prvku uveď konkrétní aktivní ID, konzumenta a test. Nemá-li přínos nebo přidává zbytečné komplikace, neimplementuj jej.
+4. Každou etapu uzavírej českým `docs/reports/G-XX-VYSLEDEK.md`, aktualizovaným `docs/plan/ETAPY-A-STAV.md`, `CHANGELOG.md` a testovacími důkazy v aktivní matici.
+5. Protržení hranic architektury či datových modelů vyžaduje české ADR.
 
-## Závazná jazyková pravidla
+## Kritické technické hranice
 
-- **Veškeré nové a upravované zadání, dokumentace, ADR, návody, reporty, plán práce, pull-request popisy a uživatelská vysvětlení piš česky.**
-- **Všechny nové viditelné texty aplikace a výchozí nastavení jazyka piš česky.** HTML má `lang="cs"`; časová a číselná prezentace podle `cs-CZ`.
-- Komentáře vysvětlující obchodní logiku a věcné popisy testů piš přednostně česky. Zachovej anglické identifikátory kódu, názvy technologií, HTTP cesty, JSON klíče, API/OpenAPI `operationId`, SQL názvy, standardizované stavové kódy a příkazy.
-- Funkce **U04** stále požaduje budoucí volitelnou češtinu **i angličtinu v aplikaci**. Výchozí lokalizace je `cs-CZ`; angličtina je až sekundární překlad s vlastními testy. Technické a projektové dokumenty i poté zůstávají česky.
-- Vlastní Git commit zprávy udržuj stručné a přehledné; český popis je upřednostněn. Nepropisuj překlady do strojových kontraktů bez kompatibilitního testu.
+- `Boym323/AirRadar`, jeho LXC, historie, PostgreSQL, porty, CI a konfigurace jsou **nedotknutelné**.
+- V2 má vlastní nový LXC a samostatnou PostgreSQL, která začíná prázdná. Žádné migrace staré historie.
+- Živá letadla mají jediného vlastníka — Rust RAM; web přijímá pouze verzovaná HTTP/SSE DTO. Fronty a retry jsou ohraničené.
+- Radar přijímá místní readsb/BEAST. Web nikdy nepotřebuje volit zdroj dat.
+- DB, počasí ani notifikační doručení nesmějí blokovat živý příjem. Ve vývojových/replay/shadow testech nikdy neposílej reálné upozornění.
+- Ochrana soukromí veřejných DTO, bezpečná práce s tajemstvími, přístupová ochrana mutací, zálohy a rollback jsou povinné i bez zvláštní produktové funkce.
+- CI provádí Rust fmt/Clippy/test, Next.js lint/typecheck/test/build a `node tools/check-docs.mjs`. Další kontrakt/E2E/load testy zaváděj podle příslušné etapy.
+- Nevyžaduj ani nevymýšlej hesla a interní adresy; nevytvářej produkční deploy bez výslovného schválení.
 
-## Kritické provozní a bezpečnostní hranice
+## Průběžná evidence
 
-- AirRadar V1 (`Boym323/AirRadar`) včetně jeho LXC, databáze, služeb, CI/CD, portů a historie **neměň ani nemaž**.
-- V2 bude mít samostatný nový LXC a databázi; podmínky jsou v [návodu LXC](docs/runbooks/LXC-SETUP.md). Nesmí se použít V1 credentials, adresář služby ani deploy runner.
-- **Jediným vlastníkem živého stavu letadel bude Rust engine.** Next.js nesmí implementovat nezávislý ingest ani zápisy historie.
-- Kritická cesta zůstává `readsb/BEAST → Rust RAM → SSE/HTTP → web`. Výpadek PostgreSQL, počasí nebo metadat nesmí zastavit živá letadla.
-- V2 začne bez staré letové historie; nové vzorkované záznamy se budou ukládat až v etapě G-05. Nezasahuj do historie V1.
-- Cílový rozsah je **46 zachovat (KEEP)** a **132 nezařazovat (REMOVE)**, nikoli automatické kopírování starých modulů. Žádná ze 46 funkcí nesmí být prohlášena za implementovanou bez ověření.
-- Identita ICAO a pravdivý stav LOCAL/EXTENDED (bez externího providera se nesmějí předstírat EXTENDED cíle), časové známky, ochrana veřejných DTO a autentizace administrace jsou povinné.
-- Etapa G-00 je **pouze funkční základ aplikace**, nikoliv živý radar. API vrací `NOT_IMPLEMENTED`; nezaměňuj jej za provozní data.
-- Žádný produkční deploy, změna DNS/reverse proxy, konfigurace V1, skutečné odesílání notifikací ani práce s tajemstvími bez výslovného samostatného povolení.
-- Volba jazyků: Rust/Tokio/Axum backend, TypeScript/Next.js/MapLibre web, PostgreSQL/SQLx data; další technologie pouze s naměřeným přínosem a českým ADR.
-
-## Povinné kontroly
-
-Rust `cargo fmt --all -- --check`, `cargo clippy --locked --workspace --all-targets -- -D warnings`, `cargo test --locked --workspace`; web `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`; [kontrola dokumentace](tools/check-docs.mjs) a později integrační/Playwright/performance testy dle etapy.
-
-**Report používej v češtině se stavem HOTOVO / ČÁSTEČNĚ / BLOKOVÁNO**, skutečným SHA a odkazy na důkazy. Pokud výsledky nejsou k dispozici, napiš „neověřeno“, nevymýšlej měření.
-
-
-## Přesné vyřazení a inženýrské výjimky
-
-- Vyřazené **E01–E10, H03, R17, T08/T09/T13/T14, W01/W02, S02/S03/S04, O09–O13/O15** neobnovuj jako podpůrné runtime moduly. Viz [katalog modulů](docs/plan/MODULY-A-ROZSAH.md).
-- L06 se vrací: squawk 7500/7600/7700. Ponechané L11/L12 nesmějí automaticky začít skutečně odesílat.
-- O11 a O12 jsou vyřazené **produktové funkce**, ale CI, testy, bezpečný release a rollback jsou povinné vývojové brány. Žádné produkční nasazení bez schválení.
-- Statistiky README počítají nyní **46**, staré historické hodnoty v `docs/metrics/history.json` ponechat historické.
+Všechna čísla skutečného výkonu uváděj s metodikou a přesným SHA. Stav `TESTED`/`ACCEPTED` se udělí jen při doloženém testu. Po každé změně matice regeneruj český Markdown a spusť `node tools/check-docs.mjs`. Chybějící důkazy označ `NEOVĚŘENO`, nikoli `HOTOVO`.

@@ -30,13 +30,12 @@ Jde o **odhad pro začátek vývoje, ne změřené minimální požadavky**. Sku
 2. Doplnit skutečné parametry do **neveřejné provozní evidence**; do veřejného GitHubu nedávat citlivé údaje.
 3. Nainstalovat požadovaný stabilní Rust a Node a ověřit projekt pouze s testovacími daty.
 4. Otestovat HTTP health, statickou stránku, stop/start, dostupnost logů a paměťové limity.
-5. Teprve při G-05 připravit V2 databázi a bezpečné migrace s otestovanou obnovou.
-6. Teprve při G-14 uvažovat o **read-only** připojení druhého konzumenta k readsb/BEAST, po měření dopadu na V1.
-7. Vlastní release, veřejnou doménu a proxy řešit samostatně až v G-15 s výslovným souhlasem a návratovým plánem.
+5. Teprve při G-04 připravit V2 databázi a bezpečné migrace s otestovanou obnovou.
+6. Teprve při G-12 uvažovat o **read-only** připojení druhého konzumenta k readsb/BEAST, po měření dopadu na V1.
+7. Vlastní release, veřejnou doménu a proxy řešit samostatně až v G-13 s výslovným souhlasem a návratovým plánem.
 
 ## Co se nesmí stát
 
 V2 nesmí převzít port, adresář, DB, systemd název, GitHub runner ani hesla V1. Nesmí vysílat demo upozornění skutečným uživatelům ani zapisovat historie do V1.
 
 **Přejímka:** obě instalace mohou běžet odděleně; po vypnutí V2 je V1 beze změn; záloha V2 se dá obnovit bez zásahu do staré DB.
-
