@@ -4,10 +4,10 @@
 
 **Out of scope:** actual live ADS-B, data tracking, MapLibre map, database creation, real alerts, V1 modification, LXC deployment, production DNS/proxy cutover.
 
-**Initial validation state:** `NOT RUN` (toolchain unavailable in authoring environment; GitHub Actions is the subsequent source of evidence). Do not mark `DONE` until all checks pass on a matching SHA.
+**Validation:** initial CI `39657981782` failed Rust formatting; corrected build `39658242976` passed both Rust and web checks; follow-up `39658530749` produced pinned lockfiles. Final pinned-dependency CI status must be checked against its own SHA before marking `DONE`.
 
 **Known blockers:**
-- Generate and commit `Cargo.lock` and `apps/web/package-lock.json`, then use `cargo --locked` and `npm ci`; CI currently generates them during execution.
+- Lockfiles are committed from resolved successful CI bootstrap jobs. Confirm a new run uses `cargo --locked` and `npm ci` successfully on the final SHA.
 - Review CI run on the exact commit and correct build/lint/typecheck issues.
 - Owner provisioning and connectivity for the separate LXC are pending and should not be faked.
 - Set explicit license only when selected.

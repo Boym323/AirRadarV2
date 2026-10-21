@@ -31,7 +31,7 @@ cargo run -p airradarv2-engine
 
 ~~~sh
 cd apps/web
-npm install
+npm ci
 npm run dev
 # http://127.0.0.1:4100
 ~~~
@@ -45,7 +45,7 @@ cargo test --workspace
 cd apps/web && npm run lint && npm run typecheck && npm test && npm run build
 ~~~
 
-**Bootstrap reproducibility TODO:** Generate and commit `Cargo.lock` and `apps/web/package-lock.json` using a registry-connected build environment, then use `cargo --locked` and `npm ci` in CI. G-00 remains **PARTIAL** until these files and exact SHA CI checks are verified. Do not represent CI jobs or builds as passed without their actual results.
+Pinned `Cargo.lock` and `apps/web/package-lock.json` are tracked. CI uses `cargo --locked` and `npm ci` and never runs a deploy job. G-00 is **PARTIAL** until the exact committed SHA passes CI and runtime smoke checks are evidenced.
 
 ## Isolation
 

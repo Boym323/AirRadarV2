@@ -24,18 +24,9 @@ jobs:
       - name: Rust format
         run: cargo fmt --all -- --check
       - name: Rust lint
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --locked --workspace --all-targets -- -D warnings
       - name: Engine tests
-        run: cargo test --workspace
-      - name: Emit generated Cargo.lock for initial pinning
-        if: always()
-        run: |
-          if test -f Cargo.lock; then
-            echo 'AIRRADAR_V2_CARGO_LOCK_BEGIN'
-            base64 -w0 Cargo.lock
-            echo
-            echo 'AIRRADAR_V2_CARGO_LOCK_END'
-          fi
+        run: cargo test --locked --workspace
 
   nextjs-web:
     runs-on: ubuntu-24.04
@@ -47,8 +38,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install isolated web dependencies (bootstrap only)
-        run: npm install --no-audit --no-fund
+      - name: Install pinned web dependencies
+        run: npm ci --no-audit --no-fund
       - name: Lint
         run: npm run lint
       - name: TypeScript
@@ -57,12 +48,3 @@ jobs:
         run: npm test
       - name: Build static placeholder
         run: npm run build
-      - name: Emit generated package-lock for initial pinning
-        if: always()
-        run: |
-          if test -f package-lock.json; then
-            echo 'AIRRADAR_V2_NPM_LOCK_BEGIN'
-            base64 -w0 package-lock.json
-            echo
-            echo 'AIRRADAR_V2_NPM_LOCK_END'
-          fi
