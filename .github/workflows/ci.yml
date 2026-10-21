@@ -27,6 +27,28 @@ jobs:
         run: cargo clippy --locked --workspace --all-targets -- -D warnings
       - name: Engine tests
         run: cargo test --locked --workspace
+      - name: Bootstrap API runtime smoke (receiver disabled)
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cargo run --locked -p airradarv2-engine >/tmp/airradar-v2-engine.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:4101/api/v1/health -o /tmp/airradar-v2-health.json 2>/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 0.2
+          done
+          if test "$ready" != "1"; then
+            cat /tmp/airradar-v2-engine.log
+            exit 1
+          fi
+          python3 -c 'import json; data=json.load(open("/tmp/airradar-v2-health.json")); assert data["status"] == "bootstrap" and data["live_ingest"] is False and data["database_connected"] is False'
+          curl -fsS http://127.0.0.1:4101/api/v1/aircraft -o /tmp/airradar-v2-aircraft.json
+          python3 -c 'import json; data=json.load(open("/tmp/airradar-v2-aircraft.json")); assert data["status"] == "NOT_IMPLEMENTED" and data["aircraft"] == []'
 
   nextjs-web:
     runs-on: ubuntu-24.04
@@ -48,3 +70,23 @@ jobs:
         run: npm test
       - name: Build static placeholder
         run: npm run build
+      - name: Bootstrap website runtime smoke (not live)
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm run start >/tmp/airradar-v2-web.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:4100/ -o /tmp/airradar-v2-home.html 2>/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 0.2
+          done
+          if test "$ready" != "1"; then
+            cat /tmp/airradar-v2-web.log
+            exit 1
+          fi
+          grep -q "Not connected to live aircraft" /tmp/airradar-v2-home.html
