@@ -5,14 +5,14 @@
 ## 1. Ověř připojení z DEV LXC (ne z Macu ani V1)
 
 ~~~bash
-timeout 4 bash -c ': </dev/tcp/192.168.1.50/30005' \
+timeout 4 bash -c ': </dev/tcp/PRIVATNI_IP_ADRESA_PRIJIMACE/30005' \
   && echo 'BEAST OUTPUT 30005 dostupný'
 ~~~
 
 Standardní BEAST output port readsb je 30005; port 30004 je vstupní a je zakázaný. Pokud spojení neprojde, nic na přijímači ani V1 nepřekonfigurovávej bez souhlasu. Volitelný JSON diagnostický endpoint tar1090 lze vyzkoušet bezpečným GET:
 
 ~~~bash
-curl -fsS --max-time 4 http://192.168.1.50/tar1090/data/aircraft.json | head -c 300
+curl -fsS --max-time 4 http://PRIVATNI_IP_ADRESA_PRIJIMACE/tar1090/data/aircraft.json | head -c 300
 ~~~
 
 JSON endpoint nemusí existovat. Samotný G-02 live ingest umí BEAST TCP; JSON adapter nyní očekává lokální readsb JSON soubor, proto není HTTP GET automaticky připojení druhého transportu.
@@ -42,7 +42,7 @@ systemd-run --unit=airradarv2-g02-live-soak \
   --property=MemoryMax=384M --property=CPUQuota=50% \
   --property=CPUWeight=10 --property=RuntimeMaxSec=3900 \
   /usr/bin/python3 /usr/local/libexec/airradarv2-g02-live-soak.py \
-    --receiver 192.168.1.50 --port 30005 \
+    --receiver PRIVATNI_IP_ADRESA_PRIJIMACE --port 30005 \
     --sha d0cefc4a5c3332eadccf8ab21c96bae51987abe9 --seconds 3600
 ~~~
 
