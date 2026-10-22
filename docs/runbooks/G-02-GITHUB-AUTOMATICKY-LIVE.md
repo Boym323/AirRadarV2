@@ -20,7 +20,7 @@ Při jednorázové aktivaci vezmi **aktuální plný ověřený SHA z PR #7** (n
 SOURCE_SHA=NAHRAD_40ZNAKOVYM_OVERENYM_SHA_PR7
 curl -fsSLo /root/g02-live-installer.sh \
   "https://raw.githubusercontent.com/Boym323/AirRadarV2/$SOURCE_SHA/deploy/install-g02-live-auto.sh"
-G02_SOURCE_REF="$SOURCE_SHA" bash /root/g02-live-installer.sh 192.168.1.50
+G02_SOURCE_REF="$SOURCE_SHA" bash /root/g02-live-installer.sh PRIVATNI_IP_ADRESA_PRIJIMACE
 ~~~
 
 Instalátor na správném Debian 13 x86_64 ověří již nainstalovaný G-02 auto timer, existenci V2 enginu a účet \`airradarv2\`; stáhne skripty pod týmž immutable SHA, kontroluje Python syntaxi a založí pouze **novou** oneshot službu a timer. Limity: \`NoNewPrivileges=yes\`, \`ProtectSystem=strict\`, \`ProtectHome=yes\`, \`CPUQuota=50%\`, \`MemoryMax=384M\`, \`RuntimeMaxSec=3900\`, zapisuje jen do vlastních \`/var/lib/airradar-v2/g02-auto\` a \`/var/cache/airradarv2-g02-public\`. Neinstaluje další démon, Docker, SSH ani GitHub token.
@@ -45,7 +45,7 @@ Poznámka: standardní GitHub Actions job nemůže automaticky oznámit výslede
 ## Bezpečnostní hranice a otevřená akceptace
 
 - Příjem je jen čtení BEAST, nikoli připojení na vstupní port 30004; JSON lokální soubor se záměrně nepřepíná v rámci této etapy.
-- Jeden fyzický receiver na 192.168.1.50 zůstává pod kontrolou současného readsb; stream ke konzumentům se nemění.
+- Jeden fyzický receiver na PRIVATNI_IP_ADRESA_PRIJIMACE zůstává pod kontrolou současného readsb; stream ke konzumentům se nemění.
 - Agent se **nikdy** nespustí z pouhé nové verze zdrojového kódu: potřebuje explicitní GitHub user kliknutí a schválenou immutable release značku.
 - Při preflight FAIL nebo nedostatku živých frame končí zkouška bez G-02 11/11; výsledky nelze dopředu předpokládat.
 - Zbývá posoudit skutečné CPU/RAM, ztráty a omezenou instrumentaci P95 živé RF cesty. Závěr se zapíše do přejímacího reportu G-02, nikoli automaticky do matice.

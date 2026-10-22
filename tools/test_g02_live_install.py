@@ -14,7 +14,7 @@ class TestInstaller(unittest.TestCase):
             "OnUnitInactiveSec=3min", "G02_SOURCE_REF", "python3 -m py_compile",
         ]:
             self.assertIn(needed, s)
-        self.assertNotIn("192.168.1.50", s.replace("# Usage: G02_SOURCE_REF=verified_full_sha bash install-g02-live-auto.sh 192.168.1.50", ""))
+        self.assertNotIn("192.168.1.50", s)
 
 
 if __name__ == "__main__":

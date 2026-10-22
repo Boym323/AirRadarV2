@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # G-02.11: one-time installer of outbound-only GitHub live acceptance poller.
-# Usage: G02_SOURCE_REF=verified_full_sha bash install-g02-live-auto.sh 192.168.1.50
+# Usage: G02_SOURCE_REF=verified_full_sha bash install-g02-live-auto.sh PRIVATE_IPV4_RECEIVER
 set -Eeuo pipefail
 if (( EUID != 0 )) || [[ "$#" -ne 1 ]]; then
   echo "Run as root on V2 DEV LXC with full G02_SOURCE_REF SHA and receiver IP" >&2
@@ -11,7 +11,7 @@ if [[ "$ID" != "debian" || "$VERSION_ID" != 13 || "$(uname -m)" != "x86_64" ]]; 
   echo "G-02: only Debian 13 x86_64 separate DEV LXC" >&2
   exit 1
 fi
-[[ "$G02_SOURCE_REF" =~ ^[0-9a-f]{40}$ ]] || {
+[[ "${G02_SOURCE_REF:-}" =~ ^[0-9a-f]{40}$ ]] || {
   echo "G-02: G02_SOURCE_REF must be immutable full SHA" >&2
   exit 1
 }
