@@ -10,11 +10,11 @@ mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
 
-def logs(source="Beast", updates=2, channel=0, capacity=0):
+def logs(source="Beast", updates=2, channel=0, capacity=0, duplicates=1):
     return [
         "G-02 RAM tracks=1 updates=1 duplicates=0 conflicts=0 "
         "capacity_drops=0 channel_drops=0 preferred=Beast",
-        f"G-02 RAM tracks=2 updates={updates} duplicates=1 conflicts=0 "
+        f"G-02 RAM tracks=2 updates={updates} duplicates={duplicates} conflicts=0 "
         f"capacity_drops={capacity} channel_drops={channel} preferred={source}",
     ]
 
@@ -40,7 +40,7 @@ class SoakTests(unittest.TestCase):
     def test_missing_frames_short_run_and_drops_rejected(self):
         cases = [
             (logs(source="Offline"), 3600, 5000, False, "PASS_LIVE_BEAST_60MIN"),
-            (logs(updates=1), 3600, 5000, False, "INCONCLUSIVE"),
+            (logs(updates=1, duplicates=0, source="Offline"), 3600, 5000, False, "INCONCLUSIVE"),
             (logs(channel=1), 3600, 5000, False, "FAIL"),
             (logs(capacity=1), 3600, 5000, False, "FAIL"),
             (logs(), 5, 5000, False, "FAIL"),

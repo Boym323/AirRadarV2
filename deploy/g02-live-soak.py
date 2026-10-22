@@ -108,7 +108,8 @@ def fetch_engine(agent, sha, dest):
             or release.get("tag_name") != f"g02-dev-{sha}"):
         raise ValueError("Vydání není immutable G-02 DEV kandidát pro očekávané SHA")
     ref = json.loads(agent.download(f"{agent.API}/git/ref/tags/g02-dev-{sha}", 100_000))
-    if ref.get("object") != {"type": "commit", "sha": sha}:
+    if (ref.get("object", {}).get("type") != "commit"
+            or ref.get("object", {}).get("sha") != sha):
         raise ValueError("Tag neukazuje na požadovaný commit")
     filename = f"airradarv2-dev-linux-amd64-{sha[:12]}.tar.gz"
     assets = {asset["name"]: asset for asset in release["assets"]}
