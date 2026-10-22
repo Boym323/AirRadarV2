@@ -253,6 +253,52 @@ async def benchmark(binary: Path, temp: Path) -> list[dict]:
                         *(c.writer.wait_closed() for c in clients), return_exceptions=True
                     )
 
+            # G-03.07: 90 navázaných klientů záměrně nečte žádné SSE body.
+            # Jediný rychlý konzument musí stále dostávat všechna nová data;
+            # ověříme skutečný Rust RSS budget, nikoli OS socket buffery.
+            write_fixture(fixture, 5000, 400, compact=True)
+            await await_live(5000)
+            rss_before_slow = proc_stats(engine.pid)[1]
+            unread = await asyncio.gather(*(connect() for _ in range(90)))
+            assert all(status == 200 for status, _ in unread)
+            healthy_status, healthy = await connect()
+            assert healthy_status == 200
+            slow_peak = rss_before_slow
+            try:
+                initial = await healthy.event(seconds=20)
+                assert initial["kind"] == "snapshot"
+                last_seq = initial["body"]["seq"]
+                for update_no in range(5):
+                    write_fixture(fixture, 5000, 401 + update_no, compact=True)
+                    while True:
+                        message = await healthy.event(seconds=20)
+                        if message["kind"] in ("delta", "snapshot") and message["body"]["seq"] > last_seq:
+                            last_seq = message["body"]["seq"]
+                            break
+                    slow_peak = max(slow_peak, proc_stats(engine.pid)[1])
+                growth = slow_peak - rss_before_slow
+                assert growth <= 25 * 1024, (
+                    f"90 nečtoucích klientů: Rust RSS narostlo o {growth} KiB, limit 25 MiB"
+                )
+                print("G03_SSE_SLOW_CLIENTS=" + json.dumps({
+                    "unread_clients": 90,
+                    "healthy_clients": 1,
+                    "delivered_updates_to_healthy": 5,
+                    "rust_rss_growth_kib": growth,
+                    "rust_rss_peak_kib": slow_peak,
+                    "rust_rss_budget_kib": 25 * 1024,
+                    "os_tcp_socket_buffers": "not_measured",
+                }, sort_keys=True), flush=True)
+            finally:
+                healthy.close()
+                for _, client in unread:
+                    client.close()
+                await asyncio.gather(
+                    healthy.writer.wait_closed(),
+                    *(client.writer.wait_closed() for _, client in unread),
+                    return_exceptions=True,
+                )
+
             # G-03.09: chybný/částečný readsb JSON nepoškodí živý RAM snapshot.
             status, malformed_client = await connect()
             assert status == 200

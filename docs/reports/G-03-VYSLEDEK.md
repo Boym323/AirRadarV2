@@ -131,3 +131,7 @@ PASS: všechna doručení 1/10/100, 101. klient HTTP 503, uvolnění capacity, m
 | 100 | 5000 sparse | 2033 | 2110 | 12,15 | 43396 | 44411539 |
 
 **Přijímací omezení:** CI 5000/100 PASS neprokazuje 256KiB celkových TCP bufferů na klienta, odpojení skutečného pomalého socketu, browser EventSource, zátěž cílového DEV LXC ani atomické vrácení systemd režimu G-00. G-03.07/.08/.10 zůstávají nezaškrtnuté; G-03 **7/10 TESTED** a **NO-GO pro merge do main** do cílové provozní přejímky.
+
+## G-03.07 — reálná síťová zkouška nečtoucích SSE klientů (nově zařazena do CI)
+
+Test nyní drží **90 TCP SSE spojení bez jakéhokoliv čtení odpovědi**, ve stejnou chvíli musí zdravý SSE klient dostat pět aktualizací 5 000 kompaktních cílů. Zaznamenává a ověřuje přírůstek **Rust VmRSS ≤25 MiB** oproti době před připojením nečtoucích klientů. Kernel TCP receive/send buffery se z VmRSS Rust procesu **nezapočítávají**; samostatně platí sdílený payload + 16KiB chunky, 30s aplikační poll watchdog a Nginx `send_timeout 30s`. Test čeká na zelené CI; dokud neprojde, neoznačovat G-03.07 za přijaté.

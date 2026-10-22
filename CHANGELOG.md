@@ -4,6 +4,9 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-03.07 — 90 skutečně nečtoucích SSE klientů
+- Syntetický HTTP TCP zátěžový test drží 90 spojení bez čtení body a kontroluje 5 úplných aktualizací zdravého klienta nad 5k cíli při přírůstku Rust RSS ≤25 MiB. Test odlišuje Rust RSS od OS socket bufferů; čeká na CI a cílovou DEV přejímku.
+
 ### G-03.07/.08 — nečtoucí prohlížeče a rychlejší reálný browser CI
 - Do připraveného DEV Nginx SSE vzoru přidán downstream `send_timeout 30s`, zatímco heartbeat a 75s upstream proxy timeout zůstávají. Chromium browser smoke používá Playwright s nainstalovaným Google Chrome na izolovaném GitHub runneru, bez stahování vlastní browser binárky; nezměnilo to uživatelský PC ani DEV LXC.
 
