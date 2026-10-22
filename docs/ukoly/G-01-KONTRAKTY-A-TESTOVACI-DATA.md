@@ -74,3 +74,7 @@ Všechny kroky mají skutečné odkazy na důkazy a všechny této etapě primá
 - [Playwright browser smoke plán](../technical/PLAYWRIGHT-BROWSEROVE-TESTY.md)
 
 Výchozí číselné limity jsou **neověřené konfigurace pro první test**, nikoli PASS. Všechny checkboxy a stav KEEP zachovat, dokud nevznikne reálný kód, fixture a testovací důkazy.
+
+## Minimální původ lokálního příjmu — pravidlo návrhu (ADR 0008)
+
+V kontraktu normalizovaného lokálního pozorování odděl `receiverId` (stabilní neveřejný konfigurační identifikátor skutečného příjmu) od `transport` (readsb JSON / BEAST). **Nesmí se měnit identita letadla při fallbacku a jedna stanice nesmí být započtena dvakrát.** Jde o minimální obecný typ pro současných 45 funkcí, nikoli o nový produktový modul nebo úkolový krok. Přejímací fixture: `icao:abc123` přes oba transporty jednoho `receiverId` stále pouze jeden RAM track a bez duplicitního SQL vzorku. Viz [ADR 0008](../adr/0008-identita-puvodu-lokalniho-prijmu.md).

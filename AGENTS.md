@@ -32,3 +32,7 @@ Při každé práci na G-01 až G-11 zkontroluj [závazný rozcestník](docs/pla
 ## Úspornost provozu jako závazné pravidlo
 
 Před G-01/G-02/G-04/G-09 přečti [RAM-first deduplikaci a adaptivní sampler](docs/technical/RAM-CACHE-A-DEDUP-ZAPISU.md), [revidovaný DB model](database/POSTGRES-DATOVY-MODEL.md) a [ADR 0007](docs/adr/0007-ram-first-deduplikace-a-usporny-zapis.md). Neimplementuj pevný 15s INSERT, per-aircraft SQL query, nekonečné SQL fronty, cache server navíc ani druhý SQL index/partition bez měření. Testovací model `node tools/check-eco-sampling.mjs` není důkaz reálných IOPS; uživatelskou kvalitu historie a bezpečnou obnovu musí doložit G-04.
+
+## Identita původu lokálního přijímače
+
+Při G-01/G-02 dodrž [ADR 0008](docs/adr/0008-identita-puvodu-lokalniho-prijmu.md): `receiverId` není `transport` a ani jedno není `aircraftKey`. Dvě cesty JSON/BEAST téhož readsb tvoří **jednu RF stanici**; nezdvojovat letadla, statistiky ani SQL vzorky. Tento minimální kontrakt **nepovoluje** žádné další datové kanály či UI; případné návrhy jsou izolovány výhradně v jediném archivu budoucích rozšíření.

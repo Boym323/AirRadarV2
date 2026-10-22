@@ -4,6 +4,12 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### Pravidla původu lokálního příjmu — 22. 10. 2026
+- [ADR 0008](docs/adr/0008-identita-puvodu-lokalniho-prijmu.md): oddělit stabilní neveřejný `receiverId` od JSON/BEAST transportu; stejný readsb nezapočítávat jako dvě RF stanice a nespojovat receiver s identitou letadla.
+- Scénáře dalších přijímačů a případných externích služeb jsou zapsány **jen v odděleném backlogu**, mimo 45 aktivních funkcí. Původní přepínač LOCAL/EXTENDED se nevrací.
+- Jde výhradně o úpravu specifikací a o budoucí akceptační test, nikoli o implementaci, připojení dalšího zdroje nebo zásah do infrastruktury.
+
+
 ### Návrh RAM-first a ochrany SSD — 22. 10. 2026
 - Audit návrhu G-04: SQL unikátní klíč chránil jen stejný 15s časový bucket, ale nezabraňoval zbytečným zápisům nezměněné polohy mezi buckety.
 - Návrh revidován na **primární deduplikaci v Rust RAM**, adaptivní sampling (běžně nejdříve 60s; významné manévry nejdříve 30s), coalescing max 2048 pending/30s, dávkování max 128 vzorků/5s a pouze nezbytný výchozí SQL PK.

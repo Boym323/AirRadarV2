@@ -107,3 +107,11 @@ AircraftObservation {
 ## Důsledek deduplikace pro SQL a šetření SSD
 
 Kanonická RAM identita a pole `lastPositionAt` jsou základ pro [úsporný adaptivní sampler](RAM-CACHE-A-DEDUP-ZAPISU.md). JSON/BEAST opakovaně reportující již známou polohu **nesmí vytvořit nový PostgreSQL vzorek**, i kdyby se měnil čas posledního příjmu zprávy. Primární SQL unikátní `(bucket_at,aircraft_key)` s 30s bucketem je druhá ochrana, nikoli hlavní filtr. Čítače zpráv a běžné SSE aktualizace se agregují v RAM, bez SQL na každý rámec.
+
+## Minimální provenance již pro jeden lokální přijímač (ADR 0008)
+
+**Závazná terminologie pro G-01/G-02:** `receiverId` je stabilní neveřejná identita **jednoho fyzického/logického místa příjmu** definovaná v důvěryhodné konfiguraci Rust enginu; `transport` je `readsb_json` nebo `beast_tcp`. Tyto pojmy nejsou zaměnitelné. Obě cesty z jediného readsb mají shodné `receiverId` a **nikdy nejsou započtené jako dvě nezávislé RF stanice**. Historický `source: "json"|"beast"` v ukázkové struktuře znamená jen transport a v nové skutečné G-01 definici se nahradí explicitním `transport`.
+
+`receiverId` dnes stačí pevně nastavený `rx-primary`. `aircraftKey` zůstává nezávislý na receiveru; `icao` a `nonicao` zůstávají rozlišeny. Přesný čas polohy a jeho validita mají přednost před příchodem paketu. V testech musí `readsb_json` a `beast_tcp` jedné stanice vést ke **stejnému AircraftState**, s korektními počty přijatých zpráv a maximálně jedním způsobilým historickým vzorkem po deduplikaci.
+
+`receiverId` a interní konfigurace nejsou ve veřejném API odhalovány; neukládat přesnou polohu ani IP přijímače do veřejného DTO. **Nejde o schválení další datové služby, UI či SQL tabulky**. Úplné odůvodnění: [ADR 0008](../adr/0008-identita-puvodu-lokalniho-prijmu.md).

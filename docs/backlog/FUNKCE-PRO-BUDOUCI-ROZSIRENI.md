@@ -214,3 +214,52 @@
 ## Důvod zachování archivu
 
 Nechceme přijít o dřívější nápady, ale nechceme je ani držet v aktivních zadáních, testovacích maticích nebo infrastrukturním plánu. Historie verzí a V1 zůstává nedotčená. Inženýrské minimum (regresní testy, bezpečnost, zálohy a návrat) platí bez ohledu na to, zda někdy vzniknou samostatné produktové rozšiřující funkce.
+
+## Návrh rozšíření příjmu a pokrytí — pouze odložený koncept (22. 10. 2026)
+
+**Status:** NEROZHODNUTO / NENÍ VE 45 AKTIVNÍCH FUNKCÍCH. Tento záznam není povolením implementace, nasazení, síťového připojení, ani automatickým znovuzařazením jakékoli odložené funkce. Stávající seznam 133 ID a jejich počet se nemění; jde o nový scénář k budoucímu posouzení, nikoli o nové schválené ID.
+
+### A. Druhá vlastní vzdálená stanice — preferovaná první varianta rozšíření
+
+```text
+rx-primary (readsb JSON/BEAST) ─┐
+                                ├─ [jeden centrální Rust engine] → RAM stav → SSE/Mapa
+rx-remote-2 (readsb BEAST) ─ VPN ┘                       └─ adaptivní vzorky → PostgreSQL
+```
+
+- Další fyzický ADS-B přijímač má vlastní `receiverId`, vlastní readsb/SDR a **žádnou vlastní databázi AirRadar**. Do centrály se BEAST rámce posílají přes ověřený soukromý kanál (preferenčně WireGuard VPN s minimálními právy); nevystavovat nezabezpečený TCP port `30005` do veřejného internetu.
+- Dvě stanice přijímající jednu ADS-B zprávu **nevytvoří dvě letadla** ani dva historické řádky; kanonický `aircraftKey` zůstává společný. Každé pozorování má `receiverId` a oddělené `transport`.
+- JSON a BEAST na jedné stanici **nejsou dva nezávislé přijímače**. Při připojení remote BEAST zachovat vazbu na příslušnou stanici z autentizovaného VPN/socket profilu; nespoléhat na volně dodaný ID v payloadu.
+- BEAST MLAT čítače z různých stanic nelze navzájem porovnávat jako UTC a prostým rozdílem počítat polohu. Vlastní **MLAT algoritmus nespadá do tohoto návrhu**; potřebuje synchronizované přijímače, další práci a samostatné rozhodnutí.
+- Stejná zpráva z různých stanic: transportní dedup zvlášť pro každou stanici, pozorovací slučování podle platného ICAO/non-ICAO, skutečné časové čerstvosti a fyzikální plausibility. **Nikdy nezprůměrovávat** nesouhlasné pozice; rozdíly mohou znamenat chybu, MLAT odlišné kvality, zpoždění nebo spoofing. U nevysvětlitelného konfliktu označit nejistotu a nevkládat sporný bod do historie.
+- Konkrétní data o dostupnosti stanice, RSSI a dosahu držet ve výchozím stavu jen v **bounded RAM metrikách**. Nezapisovat každou zprávu nebo RSSI do PostgreSQL. Nezveřejňovat přesné umístění vzdálené stanice.
+- Ověření před schválením: výpadek a obnova jedné lokality; překryv pokrytí, 10× opakované zprávy, síťový jitter 0–5 s; chyba hodin; duplicitní hex s fyzikálně nemožnou vzdáleností; nárůst RSS, CPU, frame/s, SSE, DB write/s; oddělení ostatních aplikací v DB LXC.
+
+**Architektonické cesty:** (1) centrální Rust přijímá autentizované samostatné BEAST TCP streamy s `receiverId` — lepší provenance a diagnostika; (2) centrální readsb kombinuje více Beast feedů a Rust čte jeho JSON — nejmenší implementační náklad, ale **je nutné ověřit, zda verze readsb zachová identitu zdrojové stanice v použitém výstupu**. Pokud centrální JSON provenance ztratí, nepředstírat historii jednotlivých stanic.
+
+Oficiální readsb dokumentace: https://manpages.debian.org/unstable/readsb/readsb.1.en.html — více instancí `--net-connector`; BEAST technický čas: https://github.com/firestuff/adsb-tools/blob/master/protocols/beast.md.
+
+### B. Síťová třetí strana — až samostatné rozhodnutí a licenční prověrka
+
+Externí data nejsou totéž co vlastní RF pozorování. Zdroj může poskytovat **agregovaný JSON snapshot**, BEAST/SBS, **MLAT**, částečně odhadnutou polohu nebo pouze metadata. Je nutné samostatné povolení každého poskytovatele pro live zobrazení, uchování historie, odvozenou databázi a veřejnou redistribuci.
+
+| Poskytovatel | Potenciál | Omezení, která musí být vyřešena před aktivací |
+|---|---|---|
+| **adsb.lol** | Veřejné síťové API, data pod **ODbL 1.0**, možné pokrytí mimo naše přijímače | Posoudit share-alike/odvozenou databázi, veřejnou atribuci, aktuální přístupové klíče a vhodnost produkčního provozu; výslovně kontaktovat správce při produkční závislosti. https://www.adsb.lol/docs/open-data/api/ |
+| **OpenSky Network** | Síťové stavové vektory včetně oblasti/času | Podle aktuálních podmínek **provozní využití REST API vyžaduje předchozí písemnou dohodu** i pro nekomerční projekt; komerční licence zvlášť. https://opensky-network.org/about/terms-of-use |
+| **adsb.fi** | Veřejná otevřená data a API, možná geografická oblast | **Osobní nekomerční použití**, 1 request/s na veřejném API, povinná atribuce; nesplňovat jiné podmínky znamená nepoužít. https://github.com/adsbfi/opendata |
+| **ADS-B Exchange** | Rozsáhlé pokrytí a API | Smluvní použití, omezení dalšího zpřístupňování či redistribuce; vyžaduje posouzení licence a způsobu provozu. https://support.adsbexchange.com/hc/en-us/articles/37364077703693-What-is-ADS-B-Exchange-s-data-use-policy |
+| **Airplanes.live** | API pro polohy a další údaje | Samotná dokumentace API neurčuje licenci na kopírování/redistribuci leteckých dat; před implementací získat aktuální podmínky a provozní limity. https://airplanes.live/api-docs/ |
+
+**Nezaměňovat otevřený zdrojový kód API s licencí samotných letových dat.** Některé zdroje umožňují osobní zobrazování, ale zakazují redistribuci/veřejné uložení. Při smíšení více zdrojů může být nutné zachovat data oddělená a respektovat nejpřísnější smluvní omezení.
+
+Potenciální návrh až po schválení: adaptér s `providerId`, informací o povoleném účelu (`display`, `store`, `redistribute`), TTL/stáří, limitu geografické oblasti, `positionOrigin` (ADS-B/MLAT/odhad/neznámé), explicitní degradací na poslední platnou lokální polohu a samostatnou cache. Zdroj bez důvěryhodných souřadnic se nesmí vydávat za čerstvé místní RF pozorování. Každý zdroj má vlastní rate limit, timeout a bounded cache; nikdy nesmí zastavit Rust ingest ani zaplavit SQL.
+
+### C. Co při budoucím schvalování zvážit
+
+1. Začít **jednou další vlastní stanicí**, ne integrací všech externích API najednou; měřit skutečně rozšířené pokrytí bez přidání duplicit a bez růstu SQL.
+2. Rozhodnout, zda vzdálené stanice poskytují pouze přijaté ADS-B zprávy, nebo mají také GPS čas potřebný pro **skutečné multilaterace**; MLAT bez synchronizace neslibovat.
+3. V rámci licence rozhodnout, co smíme jen zobrazovat a co trvale uchovávat v PostgreSQL; obecně externí display-only data **neukládat do J09**.
+4. Zachovat **jednu mapu a jeden AircraftState**; neobnovovat přepínač LOCAL/EXTENDED. Původ zdroje a nejistota může být v budoucnu zobrazena nenápadnou ikonou/textem, až bude konkrétně schváleno.
+5. Před implementací vytvořit akceptační testy identity, priority stáří/pravděpodobnosti, redundantní stanice, výpadků, licence, vypnutí provideru a paměťových limitů.
+6. Produktové rozšíření přesunout do aktivních 45 funkcí **pouze na nové výslovné schválení vlastníka**, s úpravou matice, plánů, ADR, testů a changelogu. Dokud nebude schváleno, žádné importy ani nové datové zdroje do běžícího V2.

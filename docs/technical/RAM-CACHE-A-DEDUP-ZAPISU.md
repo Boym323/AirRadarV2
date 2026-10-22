@@ -121,3 +121,9 @@ Porovnat **baseline 15 s** a adaptivní profily **30 s/60 s** nad stejnou anonym
 - [WAL a full_page_writes](https://www.postgresql.org/docs/current/runtime-config-wal.html)
 - [Asynchronous commit — durabilita](https://www.postgresql.org/docs/current/wal-async-commit.html)
 - [Statistiky PostgreSQL](https://www.postgresql.org/docs/current/monitoring-stats.html)
+
+## Původ lokálního příjmu — bez zdvojení RAM a SQL (ADR 0008)
+
+Kanonický RAM stav pracuje se stabilním `aircraftKey` nezávislým na transportu. Každá normalizovaná lokální observace má **neveřejný `receiverId` a explicitní `transport`**. Pro dnešní jedinou instalaci mají `readsb_json` a `beast_tcp` jeden stejný `receiverId`; při změně transportu se nevytváří další letadlo ani další watermark uložené pozice. Čítače a kvalita pozorování se nesmějí dvojmo násobit pouze proto, že stejný readsb poskytl JSON i BEAST. `receiverId` není součást identifikátoru letadla ani primárního SQL klíče.
+
+Viz [ADR 0008](../adr/0008-identita-puvodu-lokalniho-prijmu.md). Toto pravidlo nepřidává nový síťový feed, další tabulku ani frontendový ovladač.
