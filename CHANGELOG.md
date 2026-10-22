@@ -4,6 +4,12 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### P1/P2 audit G-03 — práce v izolované větvi
+- Sdílené SSE payloady a 16KiB odesílací chunky, explicitní 503/degraded/unavailable při překročení 1MiB a návrat novým full snapshotem.
+- Stage-aware G-03 kontrola bez falešného bootstrap PASS: direct SSE + Nginx snapshot/heartbeat, fail-closed preflight root instalátoru. První systemd/config rollback stále NO-GO, žádná produkční změna.
+- Stav G-00/G-01/G-02 a rozpracované G-03 opraven v úvodní dokumentaci.
+
+
 ### G-03 — průběžná dílčí přejímka 7/10 TESTED (22. 10. 2026)
 - [CI #39835102766](https://github.com/Boym323/AirRadarV2/actions/runs/39835102766) pro `db4078fa`: Rust, web, dokumentace 3/3 PASS; SSE 1/10/100 klientů, validní delta/snapshot, 15s heartbeat přes skutečný testový Nginx, 101. klient 503, JSON invalid/recovery.
 - Pro 100 souběžných SSE klientů a 250 syntetických letadel p95 **1 786 ms** od JSON rename do přijetí (včetně dvou 1Hz cyklů), RSS peak **11 448 KiB**, CPU **72,39 % jednoho jádra** na GitHub runneru. Není to výkon cílového DEV LXC.
