@@ -109,9 +109,10 @@ cat >/etc/systemd/system/airradarv2-main-deploy.timer <<'TIMER'
 [Unit]
 Description=AirRadar V2 DEV — automatická aktualizace z ověřeného GitHub main
 [Timer]
-OnBootSec=3min
-OnUnitInactiveSec=5min
-RandomizedDelaySec=20s
+OnBootSec=1min
+OnUnitInactiveSec=1min
+RandomizedDelaySec=0
+AccuracySec=1s
 Persistent=true
 Unit=airradarv2-main-deploy.service
 [Install]

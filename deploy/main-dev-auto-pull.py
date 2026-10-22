@@ -18,9 +18,13 @@ import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
+import xml.etree.ElementTree as ET
 
 REPOSITORY = "Boym323/AirRadarV2"
 API = "https://api.github.com/repos/" + REPOSITORY
+ATOM_URL = f"https://github.com/{REPOSITORY}/commits/main.atom"
+ATOM_NS = "{http://www.w3.org/2005/Atom}"
+HEAD_LINK = re.compile(r"https://github\.com/Boym323/AirRadarV2/commit/([0-9a-f]{40})")
 STATE = Path("/var/lib/airradar-v2/main-deploy")
 PUBLIC = Path("/var/cache/airradarv2-main-deploy/status.json")
 CURRENT_VERSION = Path("/opt/airradar-v2/current/VERSION")
@@ -62,6 +66,73 @@ def target_main_sha() -> str:
     if not SHA.fullmatch(sha):
         raise ValueError("GitHub main does not provide immutable SHA")
     return sha
+
+
+def atom_main_sha(xml: bytes) -> str:
+    """The public GitHub Atom feed requires no REST token/rate-limit budget."""
+    root = ET.fromstring(xml)
+    if root.tag != ATOM_NS + "feed":
+        raise ValueError("Unexpected commit feed format")
+    entry = root.find(ATOM_NS + "entry")
+    if entry is None:
+        raise ValueError("Commit feed contains no main commits")
+    ident = entry.findtext(ATOM_NS + "id", default="")
+    match = re.search(r"(?:^|/)([0-9a-f]{40})$", ident)
+    if not match:
+        raise ValueError("Commit feed has no immutable id")
+    sha = match.group(1)
+    links = [
+        link.attrib.get("href", "")
+        for link in entry.findall(ATOM_NS + "link")
+        if link.attrib.get("rel") in (None, "alternate")
+    ]
+    if not any(HEAD_LINK.fullmatch(link) and HEAD_LINK.fullmatch(link).group(1) == sha
+               for link in links):
+        raise ValueError("GitHub feed id and commit permalink disagree")
+    return sha
+
+
+def poll_main_sha() -> str:
+    # A systemd timer running every minute must NOT call unauthenticated
+    # api.github.com/heads/main every 60 s (60 req/h shared IP budget).
+    # One public Atom request/min; before executing any downloaded code the
+    # agent independently validates the current main via the REST API.
+    return atom_main_sha(fetch(ATOM_URL, 1_000_000))
+
+
+def release_lookup_due(main_sha: str, now: dt.datetime) -> bool:
+    """Avoid endless REST 404 requests if a main commit never passes CI."""
+    path = STATE / "pending-release.json"
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return True
+    if record.get("sha") != main_sha:
+        return True
+    missing = int(record.get("missing", 0))
+    if missing < 10:
+        return True  # the first ten 1-minute checks keep the short feedback loop
+    try:
+        last = dt.datetime.fromisoformat(record["lastCheckedAtUtc"])
+        return (now - last).total_seconds() >= 300
+    except (KeyError, TypeError, ValueError):
+        return True
+
+
+def record_missing_release(main_sha: str, now: dt.datetime) -> None:
+    path = STATE / "pending-release.json"
+    try:
+        old = json.loads(path.read_text(encoding="utf-8"))
+        count = int(old.get("missing", 0)) if old.get("sha") == main_sha else 0
+    except (OSError, ValueError):
+        count = 0
+    tmp = path.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps({
+        "sha": main_sha, "missing": min(count + 1, 1000),
+        "lastCheckedAtUtc": now.isoformat(),
+    }) + "\n", encoding="utf-8")
+    os.chmod(tmp, 0o600)
+    tmp.replace(path)
 
 
 def eligible_release(release: dict, main_sha: str) -> tuple:
@@ -196,7 +267,7 @@ def run() -> int:
     preflight()
     STATE.mkdir(parents=True, exist_ok=True, mode=0o700)
     os.chmod(STATE, 0o700)
-    main_sha = target_main_sha()
+    main_sha = poll_main_sha()
     if current_sha() == main_sha:
         write_status("DEPLOYED", main_sha)
         print("DEV already at current main:", main_sha)
@@ -213,13 +284,21 @@ def run() -> int:
         write_status("POSTPONED_G02_ACCEPTANCE", main_sha, "LIVE acceptance takes priority")
         return 0
     tag = "g02-dev-" + main_sha
+    now = dt.datetime.now(dt.timezone.utc)
+    if not release_lookup_due(main_sha, now):
+        write_status("WAITING_FOR_CI", main_sha, "Release not yet available; throttled retry")
+        return 0
     try:
         release = github_json("/releases/tags/" + tag)
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
+            record_missing_release(main_sha, now)
             write_status("WAITING_FOR_CI", main_sha, "No tested release for current main")
             return 0
         raise
+    pending = STATE / "pending-release.json"
+    if pending.exists():
+        pending.unlink()
     selected_tag, filename, bundle, checksum = eligible_release(release, main_sha)
     ref = github_json("/git/ref/tags/" + selected_tag)
     if ref.get("object", {}).get("type") != "commit" or ref["object"]["sha"] != main_sha:

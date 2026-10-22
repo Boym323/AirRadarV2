@@ -4,6 +4,9 @@ import io
 from pathlib import Path
 import tarfile
 import unittest
+from unittest import mock
+import datetime as dt
+import tempfile
 
 ROOT = Path(__file__).resolve().parent.parent
 spec = importlib.util.spec_from_file_location("auto_dev", ROOT / "deploy/main-dev-auto-pull.py")
@@ -86,6 +89,34 @@ class MainDeploySafety(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     agent.check_archive(bad, SHA)
 
+    def test_public_atom_detects_head_without_rest_api_budget(self):
+        feed = (f'<feed xmlns="http://www.w3.org/2005/Atom">'
+                f'<entry><id>tag:github.com,2008:Grit::Commit/{SHA}</id>'
+                f'<link rel="alternate" type="text/html" '
+                f'href="https://github.com/Boym323/AirRadarV2/commit/{SHA}"/>'
+                f'</entry></feed>').encode("utf-8")
+        self.assertEqual(agent.atom_main_sha(feed), SHA)
+        with mock.patch.object(agent, "fetch", return_value=feed) as fetch:
+            self.assertEqual(agent.poll_main_sha(), SHA)
+        fetch.assert_called_once_with(agent.ATOM_URL, 1_000_000)
+        for bad in (feed.replace(SHA.encode(), b"b"*40, 1),
+                    b"<feed xmlns='http://www.w3.org/2005/Atom'/>",
+                    b"not xml"):
+            with self.subTest(bad=bad[:40]):
+                with self.assertRaises((ValueError, agent.ET.ParseError)):
+                    agent.atom_main_sha(bad)
+
+    def test_missing_release_uses_safe_bounded_api_retry(self):
+        now = dt.datetime(2026, 10, 22, 16, 30, tzinfo=dt.timezone.utc)
+        with tempfile.TemporaryDirectory() as root:
+            with mock.patch.object(agent, "STATE", Path(root)):
+                self.assertTrue(agent.release_lookup_due(SHA, now))
+                for i in range(10):
+                    agent.record_missing_release(SHA, now + dt.timedelta(minutes=i))
+                self.assertFalse(agent.release_lookup_due(SHA, now + dt.timedelta(minutes=10)))
+                self.assertTrue(agent.release_lookup_due(SHA, now + dt.timedelta(minutes=14)))
+                self.assertTrue(agent.release_lookup_due("b"*40, now + dt.timedelta(minutes=10)))
+
     def test_install_script_hardening_and_timer(self):
         install = (ROOT / "deploy/install-dev-bundle.sh").read_text()
         poll = (ROOT / "deploy/install-main-dev-auto.sh").read_text()
@@ -99,7 +130,7 @@ class MainDeploySafety(unittest.TestCase):
         for keyword in (
             "TimeoutStartSec=300", "Type=oneshot", "NoNewPrivileges=yes",
             "ProtectSystem=strict", "ProtectHome=yes", "MemoryMax=768M",
-            "OnUnitInactiveSec=5min", "User=root",
+            "OnUnitInactiveSec=1min", "AccuracySec=1s", "User=root",
             "G13_SOURCE_REF", "airradarv2-main-deploy.timer",
         ):
             self.assertIn(keyword, poll)
