@@ -1,0 +1,50 @@
+name: AirRadar V2 — G-04 izolovaný PostgreSQL test
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'database/migrations/**'
+      - 'tools/test_g04_migrations.sh'
+      - '.github/workflows/g04-postgres-migrations.yml'
+  pull_request:
+    paths:
+      - 'database/migrations/**'
+      - 'tools/test_g04_migrations.sh'
+      - '.github/workflows/g04-postgres-migrations.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-postgres:
+    name: G-04.04 — migrace a SQL integrita (jen CI)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: airradar_v2_dev
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-temporary-not-a-real-secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d airradar_v2_dev"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGDATABASE: airradar_v2_dev
+      PGUSER: postgres
+      PGPASSWORD: ci-temporary-not-a-real-secret
+      # Pouze izolovaný lokální kontejner bez TLS. Skutečný DB LXC musí verify-full.
+      PGSSLMODE: disable
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalovat PostgreSQL klienta
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+      - name: Ověřit migraci, integritu a oddělení práv
+        run: bash tools/test_g04_migrations.sh

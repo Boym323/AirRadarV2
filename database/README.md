@@ -1,6 +1,6 @@
-# Databáze AirRadar V2 — připravovaný návrh
+# Databáze AirRadar V2 — návrh a první SQLx migrace
 
-**Stav G-00: databáze nebyla vytvořena, nebyla provedena žádná migrace.**
+**Stav G-04.04:** SQLx migrační soubory jsou připravené v [migrations](migrations/), jejich izolovaný PostgreSQL 18 CI test čeká na výsledek. Provozní databáze ani DEV DB na existujícím LXC nebyla vytvořena a migrace tam nebyla spuštěna.
 
 V G-04 vznikne vlastní PostgreSQL `airradar_v2` **v již existujícím samostatném databázovém LXC** s odděleným účtem a SQLx migracemi. Nová databáze začne **bez historických letů z V1**. Nikdy ji nenastavuj na produkční `DATABASE_URL` původního AirRadaru.
 

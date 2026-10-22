@@ -4,6 +4,10 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-04.04 — zahájení izolované PostgreSQL historie (CI k ověření)
+- Přidána skutečná SQLx migrace s jednou J09 tabulkou, 30s UTC bucketem a jediným PK. Reverzibilní SQL a separátní CI workflow pro PostgreSQL 18 testují integritu, nezměnitelnost historie, role a rollback pouze ve vytvořené efemérní DB.
+- Žádné spojení se skutečným DB LXC, žádné nasazení; G-04.01–.03, reálný TLS, writer, retence a měření zůstávají otevřené. Podrobnosti v [průběžném reportu](docs/reports/G-04-VYSLEDEK.md).
+
 ### Audit P0 před G-03 merge: fail-closed hlavní release pipeline
 - Doloženo riziko: každý push do `main` by jinak zveřejnil G-03 prerelease a pokusil se spustit automatický DEV deployment bez ověřeného systemd/rollbacku. Workflow nyní bezpečně rozlišuje obsah G-03 balíčku, při G-03 publikuje **jen Github Actions artefakt** a zablokuje prerelease i závislý self-hosted deployment. Přidána regresní kontrola release topologie; G-03 kód lze sloučit bez živého cutoveru.
 
