@@ -29,9 +29,13 @@ Obě odpovědi byly doloženy skutečným `curl` na loopback Rust API. `NOT_IMPL
 - **Bezpečnostní omezení:** tento výpis neprokazuje zákaz veřejného IPv6 provozu na všech *ostatních* portech ani pravidla Proxmox firewallu. To je oddělená síťová kontrola.
 - **Podklad:** výpis konzole DEV LXC, poskytnutý správcem dne 22. 10. 2026. Přístup ChatGPT k LXC nebyl použit.
 
+## Potvrzení přístupu z klientského zařízení
+
+- Správce 22. 10. 2026 potvrdil, že vývojový web se **úspěšně otevírá v prohlížeči na klientském zařízení v LAN**.
+- Jedná se o uživatelské potvrzení, nikoli o nezávislé automatické browserové E2E měření. Na živý ingest/DB se tím nic nemění.
+
 ## Co ještě nebylo doloženo
 
-- Interaktivní otevření webu v prohlížeči uživatele přes LAN (zatím není potvrzené).
 - Kontrola pravidel firewallu Proxmoxu včetně IPv6 (nebyla provedena); listenery služeb na příslušných portech byly ověřeny níže.
 - Dlouhodobý soak, restart LXC a provozní metriky.
 - Živý readsb/BEAST, SSE a PostgreSQL: tyto funkce **zatím nemají implementaci**.

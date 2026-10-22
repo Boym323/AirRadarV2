@@ -70,4 +70,4 @@ Připraven [ruční balíčkovací workflow](../../.github/workflows/dev-package
 
 ## První skutečné DEV LXC nasazení — 22. 10. 2026
 
-[**Záznam nasazení a důkazy**](../reports/DEV-LXC-PRVNI-NASAZENI-2026-10-22.md): artefakt `227a8619b590d2c536761ffefc75cd0a5633936c`, SHA-256 OK, systemd Rust/Nginx active, health `bootstrap`, aircraft `NOT_IMPLEMENTED`. **Web v prohlížeči, IPv6 firewall a soak nebyly zatím ověřeny.** G-02 až G-13 stále NEZAHÁJENO; nedotčeno V1, PostgreSQL a externí zdroje.
+[**Záznam nasazení a důkazy**](../reports/DEV-LXC-PRVNI-NASAZENI-2026-10-22.md): artefakt `227a8619b590d2c536761ffefc75cd0a5633936c`, SHA-256 OK, systemd Rust/Nginx active, health `bootstrap`, aircraft `NOT_IMPLEMENTED`. **Web v prohlížeči v LAN uživatel potvrdil jako funkční; IPv6 firewall a dlouhodobý soak ještě nejsou ověřeny.** G-02 až G-13 stále NEZAHÁJENO; nedotčeno V1, PostgreSQL a externí zdroje.
