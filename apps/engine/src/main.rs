@@ -4,6 +4,9 @@
 #[allow(dead_code)]
 mod contract;
 
+#[allow(dead_code)]
+mod ingest;
+
 use std::{convert::Infallible, net::SocketAddr, time::Duration};
 
 use axum::{
@@ -72,6 +75,18 @@ fn app() -> Router {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Opt-in G-02 kontrola bez zapojení V1, bez HTTP, bez DB a bez mapy.
+    if std::env::args().any(|arg| arg == "--g02-replay") {
+        let state = ingest::supervisor::replay()?;
+        println!("G-02 fixture replay: tracks={} updated={} duplicates={} conflicts={}",
+            state.tracks.len(), state.counters.updated, state.counters.duplicates, state.counters.conflicts);
+        return Ok(());
+    }
+    // Jen ruční diagnostický režim; běžný systemd vždy zůstává G-00 stub.
+    if std::env::args().any(|arg| arg == "--g02-live") {
+        let config = ingest::supervisor::Config::from_env()?;
+        return ingest::supervisor::run(config).await;
+    }
     let bind = std::env::var("AIRRADAR_V2_BIND").unwrap_or_else(|_| "127.0.0.1:4101".to_owned());
     let address: SocketAddr = bind.parse()?;
     let listener = tokio::net::TcpListener::bind(address).await?;

@@ -6,7 +6,7 @@
 |---|---|---|
 | G-00 | Samostatný základ Rust + Vite/React | **HOTOVO — pouze scaffold** |
 | G-01 | [Kontrakty a deterministické fixture](../ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) | **HOTOVO — 10/10, CI PASS** |
-| G-02 | [Lokální ADS-B ingest a RAM](../ukoly/G-02-LOKALNI-INGEST.md) | NEZAHÁJENO |
+| G-02 | [Lokální ADS-B ingest a RAM](../ukoly/G-02-LOKALNI-INGEST.md) | **ROZPRACOVÁNO — Rust runtime a fixture testy** |
 | G-03 | [Verzované HTTP API a SSE](../ukoly/G-03-API-A-SSE.md) | NEZAHÁJENO |
 | G-04 | [Úsporná historie](../ukoly/G-04-POSTGRESQL-HISTORIE.md) | NEZAHÁJENO |
 | G-05 | [Živá mapa a základní ovládání](../ukoly/G-05-ZIVA-MAPA.md) | NEZAHÁJENO |

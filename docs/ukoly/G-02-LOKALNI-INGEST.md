@@ -1,6 +1,6 @@
 # G-02 — Lokální readsb/BEAST ingest a jediný RAM state
 
-**Stav:** NEZAHÁJENO (podrobné zadání; nejde o implementaci).  
+**Stav:** **ROZPRACOVÁNO** — první Rust JSON/BEAST/CPR/RAM/supervisor implementace, **testy a výkonnostní měření jsou průběžné**; nepovažovat za HOTOVO.  
 **Odpovědnost:** M01 — Rust/Tokio.  
 **Závislosti:** G-01 kontrakty a golden fixtures.  
 **Primární KEEP ID:** `J01`, `J02`, `J03`, `J04`, `J05`, `J11`.  

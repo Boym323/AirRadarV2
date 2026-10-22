@@ -4,6 +4,12 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-02 — první izolovaná implementace readsb/BEAST (22. 10. 2026)
+- Implementovány Rust moduly pro bounded JSON snapshoty, inkrementální BEAST TCP framing, konzervativní DF17 CRC/CPR párování, jediný RAM state, TTL/dedup a oddělený bounded Tokio supervisor.
+- Přidán `--g02-replay` pro offline syntetický test a explicitní `--g02-live` pouze na ruční vyžádání s konfigurací zdroje; běžný systemd HTTP stále poctivě G-00 bootstrap a žádný skutečný receiver se automaticky nepřipojuje.
+- **Etapa zůstává rozpracována** do ověření CI, testů, výkonnostních měření a přejímacích funkcí. Nový build se do LXC nenasadil.
+
+
 ### První úspěšné DEV LXC nasazení — 22. 10. 2026
 - Správce potvrdil i otevření vývojového webu v prohlížeči z LAN. Zbývají kontroly Proxmox firewallu a dlouhodobého běhu; G-02 není zatím implementována.
 - Dodatečný konzolový HTTP test potvrdil českou HTML stránku přes Nginx a `ss -lntp` prokázal lokální Rust `127.0.0.1:4101` a Nginx jen na privátní IPv4:8080, bez IPv6 listeneru na těchto portech. Přístup z jiného LAN zařízení a Proxmox firewall/IPv6 pravidla zůstávají neověřené.
