@@ -43,6 +43,7 @@ Měřený commit: [8b3c6d17](https://github.com/Boym323/AirRadarV2/commit/8b3c6d
 | [Katalog modulů](docs/plan/MODULY-A-ROZSAH.md) | Vlastnictví funkcí v 9 modulech |
 | [Podrobné popisy](docs/plan/PODROBNY-KATALOG-FUNKCI.md) | Co každá aktivní funkce skutečně dělá |
 | [Etapy a stav](docs/plan/ETAPY-A-STAV.md) | 14 navazujících etap G-00 až G-13 |
+| **[140 konkrétních implementačních kroků](docs/plan/KROKOVY-IMPLEMENTACNI-PLAN.md)** | Detailní návaznosti, testovací brány a odkazy na G-01 až G-13 |
 | [Začít v novém vlákně](docs/plan/ZACNI-ZDE-NOVE-VLAKNO.md) | Kontext projektu a práce s Markdown dokumenty |
 | [Pravidla pro Codex](AGENTS.md) | Čeština, izolace, testy a evidence |
 | [CHANGELOG](CHANGELOG.md) | Změny a důkazy v historii projektu |

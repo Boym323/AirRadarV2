@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### Přidáno
+- Detailní český krokový implementační plán `docs/plan/KROKOVY-IMPLEMENTACNI-PLAN.md`: **140 konkrétních kroků** v G-01 až G-13 s návaznostmi, definicí výstupu a odpovídajícími testy.
+- Všech 13 etapových MD zadání rozšířeno o zaškrtávací kroky `G-XX.YY`, bezpečnostní hranice a pravidla evidence PASS/FAIL; žádná z 45 funkcí není touto dokumentací označena jako hotová.
+- Automatická kontrola úplnosti a jednoznačnosti kroku, evidence vlastnictví 45 ID a rozcestník pro nová vlákna.
+
 ### Změněno
 - Webový základ G-00 převeden na **Vite + React + TypeScript** se statickým `dist/`, českým UI a HTTP smoke.
 - Odstraněn Next.js runtime a závislosti; CI používá uzamčené `npm ci`.

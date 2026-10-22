@@ -15,6 +15,7 @@ const required = [
   "docs/plan/MATICE-FUNKCI.md",
   "docs/plan/PODROBNY-KATALOG-FUNKCI.md",
   "docs/plan/ETAPY-A-STAV.md",
+  "docs/plan/KROKOVY-IMPLEMENTACNI-PLAN.md",
   "docs/plan/ZACNI-ZDE-NOVE-VLAKNO.md",
   "docs/plan/CO-NEPREBIRAT-Z-V1.md",
   "docs/plan/PRAVIDLA-DOKUMENTACE.md",
@@ -81,4 +82,40 @@ for(const path of gitFiles){
      !/\.(md|json|yaml|yml|mjs|ts|tsx|rs)$/.test(path)) continue;
   if(deferredPattern.test(read(path))) fail("Odložená funkce se znovu objevila mimo archiv: "+path);
 }
+
+// Krokový plán: každá G-01..G-13 má souvislé identifikátory G-XX.YY.
+// Checkbox [x] není automatická akceptace; mění se pouze po skutečné implementaci.
+let totalImplementationSteps = 0;
+const primaryStepIds = [];
+for (const file of taskFiles) {
+  const stageMatch = file.match(/^G-(\d{2})-/);
+  if (!stageMatch) continue;
+  const stage = stageMatch[1];
+  const textTask = read("docs/ukoly/" + file);
+  const matches = [...textTask.matchAll(/^- \[[ x]\] \*\*G-(\d{2})\.(\d{2}) — ([^\n*]+)\*\*/gm)];
+  if (matches.length < 7) fail("Nedostatečně rozepsaná etapa: " + file);
+  for (let i = 0; i < matches.length; i++) {
+    if (matches[i][1] !== stage || matches[i][2] !== String(i + 1).padStart(2, "0")) {
+      fail("Nesouvislé či chybně přiřazené kroky: " + file);
+    }
+  }
+  if (!textTask.includes("**Ověření:**")) fail("Chybí ověřovací scénáře v " + file);
+  totalImplementationSteps += matches.length;
+  if (Number(stage) >= 2 && Number(stage) <= 10) {
+    const match = textTask.match(/^\*\*Primární KEEP ID:\*\* ([^\n]+)\.$/m);
+    if (!match) fail("Chybí primární aktivní ID v " + file);
+    primaryStepIds.push(...[...match[1].matchAll(/`([A-Z]\d{2})`/g)].map(x => x[1]));
+  }
+}
+const activeSorted = active.map(f=>f.id).sort();
+if (primaryStepIds.length !== active.length ||
+  new Set(primaryStepIds).size !== active.length ||
+  JSON.stringify(primaryStepIds.sort()) !== JSON.stringify(activeSorted)) {
+  fail("Zadání G-02 až G-10 musí vlastnit právě všech 45 aktivních ID.");
+}
+const roadmapSteps = read("docs/plan/KROKOVY-IMPLEMENTACNI-PLAN.md");
+if (!roadmapSteps.includes("Celkem " + totalImplementationSteps + " implementačních")) {
+  fail("Počet kroků v hlavním přehledu nesouhlasí s etapami.");
+}
+
 console.log("Česká dokumentace a rozsah ověřeny: "+active.length+" aktivních, "+deferred.length+" odložených; 9 modulů, 14 etap.");

@@ -33,7 +33,7 @@ Základní produkt tvoří: příjem readsb/BEAST, korektní identita a stav let
 - SQLx migrace, bezpečná oprávnění, bounded zápisová fronta, vzorkování a dávkování, retence podle skutečných aktivních konzumentů.
 - Ověřovat `EXPLAIN (ANALYZE, BUFFERS)`, latence P95/P99, CPU/RSS, WAL a velikost dat; nepředstírat porovnání bez baseline.
 - Výpadek DB, meteorologického zdroje nebo UI klienta nesmí pozastavit vlastní příjem.
-- Rust a Next.js mají oddělené runtime metriky, datový kontrakt i řízené restarty.
+- Rust runtime a statický Vite web mají oddělené provozní hranice; dlouhodobý Node server neběží a diagnostika musí zobrazovat jen skutečné procesy.
 
 ## 5. Mapa, počasí a bezpečnost
 
@@ -46,10 +46,10 @@ Základní produkt tvoří: příjem readsb/BEAST, korektní identita a stav let
 ## 6. Testy, dokumentace a instalace
 
 - Výchozí jazyk každého MD, zadání, ADR, reportu a viditelného UI je čeština. Klíče API, technické názvy a stabilní identifikátory zůstávají anglické.
-- Povinné GitHub CI: Rust fmt/Clippy/testy a Next.js lint/typecheck/test/build, kontrola českých MD a vazeb na aktivní rozsah.
+- Povinné GitHub CI: Rust fmt/Clippy/testy a Vite/React lint/typecheck/test/build, kontrola českých MD a vazeb na aktivní rozsah.
 - Syntetický replay, kontraktové testy, UI E2E a odpovídající výkonnostní testy se tvoří dle reálných etap. Bez doložených výsledků funkce nemůže mít status `ACCEPTED`.
 - V2 má vlastní aplikační LXC, porty a účet. Samostatná databáze bude v existujícím PostgreSQL LXC s izolovaným přístupem, zálohami a rollbackem. Žádné produkční přesměrování či změna V1 bez výslovného souhlasu.
 
 ## 7. Etapy a navázání nového vlákna
 
-Realizace probíhá po jednotlivých českých zadáních [G-00 až G-13](ETAPY-A-STAV.md). Při každé etapě se aktualizuje `docs/reports/`, `CHANGELOG.md`, strojová matice, generovaný Markdown a měření. Ve vlákně začni čtením `AGENTS.md` a [ZAČNI ZDE](ZACNI-ZDE-NOVE-VLAKNO.md), nikoliv kopírováním starého projektu.
+Realizace probíhá po jednotlivých českých zadáních [G-00 až G-13](ETAPY-A-STAV.md) a [140 konkrétních krocích G-XX.YY](KROKOVY-IMPLEMENTACNI-PLAN.md). Při každé etapě se aktualizuje `docs/reports/`, `CHANGELOG.md`, strojová matice, generovaný Markdown a měření. Ve vlákně začni čtením `AGENTS.md` a [ZAČNI ZDE](ZACNI-ZDE-NOVE-VLAKNO.md), nikoliv kopírováním starého projektu.

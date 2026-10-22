@@ -13,6 +13,7 @@
 | `docs/plan/MATICE-FUNKCI.md` | Automaticky generovaná česká matice |
 | `docs/plan/PODROBNY-KATALOG-FUNKCI.md` | Slovní popisy aktivních funkcí |
 | `docs/plan/ETAPY-A-STAV.md` | Aktuální 14etapový plán |
+| `docs/plan/KROKOVY-IMPLEMENTACNI-PLAN.md` | Rozcestník 140 ověřitelných kroků `G-XX.YY` |
 | `docs/ukoly/G-XX-*.md` | Jednotlivá proveditelná zadání |
 | `docs/reports/G-XX-*.md` | Skutečné výsledky a důkazy |
 | `CHANGELOG.md` | Evidované změny vývoje |
@@ -20,7 +21,7 @@
 
 ## Postup
 
-1. Přečíst jen požadovanou etapu, její aktivní ID a související kód.
+1. Přečíst krokový plán, požadovanou etapu, jeden konkrétní `G-XX.YY` krok, jeho aktivní ID a související kód.
 2. Při změnách doplnit testy, bezpečnostní invarianty, vlastníka a odhad provozní ceny.
 3. Po práci aktualizovat český report, matici, etapový plán i `CHANGELOG.md` se skutečným testovacím důkazem.
 4. Spustit `node tools/generate-feature-matrix.mjs --check` a `node tools/check-docs.mjs`.

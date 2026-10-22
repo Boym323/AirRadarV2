@@ -4,9 +4,9 @@
 
 ## Před každou změnou
 
-1. Ověř aktuální `main`, pracovní strom, `AGENTS.md`, [začátek pro nové vlákno](docs/plan/ZACNI-ZDE-NOVE-VLAKNO.md), [hlavní zadání](docs/plan/ZADANI-AIRRADAR-V2.md), [technologická rozhodnutí](docs/plan/TECHNOLOGICKA-ROZHODNUTI.md) a relevantní jeden úkol v `docs/ukoly/`. Před migrací frontend/DB prostuduj také [průzkum](docs/plan/TECHNOLOGICKY-PRUZKUM.md) a [benchmarkový plán](docs/plan/BENCHMARKY-TECHNOLOGII.md).
+1. Ověř aktuální `main`, pracovní strom, `AGENTS.md`, [začátek pro nové vlákno](docs/plan/ZACNI-ZDE-NOVE-VLAKNO.md), [hlavní zadání](docs/plan/ZADANI-AIRRADAR-V2.md), [technologická rozhodnutí](docs/plan/TECHNOLOGICKA-ROZHODNUTI.md) [krokový plán](docs/plan/KROKOVY-IMPLEMENTACNI-PLAN.md) a relevantní jeden úkol v `docs/ukoly/`. Před migrací frontend/DB prostuduj také [průzkum](docs/plan/TECHNOLOGICKY-PRUZKUM.md) a [benchmarkový plán](docs/plan/BENCHMARKY-TECHNOLOGII.md).
 2. `contracts/feature-matrix.json` je **pouze seznam aktivních 45 funkcí**. Každá má vlastníka v [MODULY-A-ROZSAH.md](docs/plan/MODULY-A-ROZSAH.md). Rozšíření nemíchej do tohoto seznamu ani do kódu; jejich jediným záznamem je [oddělený archiv](docs/backlog/FUNKCE-PRO-BUDOUCI-ROZSIRENI.md), který se otevírá pouze na výslovnou žádost.
-3. Při přidávání souboru, modulu, tabulky, závislosti, datového zdroje nebo UI prvku uveď konkrétní aktivní ID, konzumenta a test. Nemá-li přínos nebo přidává zbytečné komplikace, neimplementuj jej.
+3. Při přidávání souboru, modulu, tabulky, závislosti, datového zdroje nebo UI prvku uveď konkrétní krok `G-XX.YY`, aktivní ID, konzumenta a test. Checkbox `[x]` je pravdivý pouze s důkazem implementace. Nemá-li přínos nebo přidává zbytečné komplikace, neimplementuj jej.
 4. Každou etapu uzavírej českým `docs/reports/G-XX-VYSLEDEK.md`, aktualizovaným `docs/plan/ETAPY-A-STAV.md`, `CHANGELOG.md` a testovacími důkazy v aktivní matici.
 5. Protržení hranic architektury či datových modelů vyžaduje české ADR.
 

@@ -1,6 +1,6 @@
 # Plán etap a aktuální stav AirRadar V2
 
-**Aktualizováno 21. 10. 2026.** Tento plán řeší **pouze 45 aktuálně vybraných funkcí**, bez vedlejších a nepoužívaných modulů. Výchozí jazyk: čeština. Zápis „NEZAHÁJENO“ není nedostatečný test — práce ještě nezačala.
+**Aktualizováno 22. 10. 2026.** Tento plán řeší **pouze 45 aktuálně vybraných funkcí**, bez vedlejších a nepoužívaných modulů. Výchozí jazyk: čeština. Zápis „NEZAHÁJENO“ není nedostatečný test — práce ještě nezačala.
 
 | Etapa | Výstup a zadání | Stav |
 |---|---|---|
@@ -30,6 +30,10 @@
 - **Výkonové benchmarky zatím nebyly provedeny**. [Protokol B01–B07](BENCHMARKY-TECHNOLOGII.md) určuje společné vstupy, důkazy a přejímku.
 - Rust + Axum a MapLibre zůstávají. **G-00 web je převeden na Vite/React**, se statickým výstupem a npm lockfile. **PostgreSQL byla zvolena definitivně** na již existujícím DB LXC, ale žádné V2 DB schéma zatím neexistuje.
 - Číslování G-00 až G-13 se nemění; G-01 připraví fixture/kontrakty, G-04 připraví oddělenou PostgreSQL databázi V2 a G-05 implementuje MapLibre ve Vite webu. Měření nikdy nespouštět na V1.
+
+## Podrobné implementační kroky
+
+Každá níže uvedená etapa G-01 až G-13 má konkrétní kroky `G-XX.YY` s checkboxem, testovacím výsledkem a kritériem převzetí. Souhrn pořadí a vazeb: **[KROKOVY-IMPLEMENTACNI-PLAN.md](KROKOVY-IMPLEMENTACNI-PLAN.md)** — 140 kroků, dosud nepovažovaných za provedené. V plánových dokumentech nebyl při této změně implementován žádný nový produktový modul.
 
 ## Ověřená výchozí základna
 
