@@ -18,6 +18,7 @@ pub struct Observation {
     pub transport: String,
     pub aircraft_key: String,
     pub received_at_utc: f64,
+    pub message_at_utc: f64,
     pub time_basis: String,
     pub position_origin: String,
     pub position_at_utc: Option<f64>,
@@ -71,7 +72,10 @@ pub fn normalize_readsb(
         else {
             continue;
         };
-        if !matches!(safe_age(row.get("seen")), Some(age) if age <= 60.0) {
+        let Some(seen) = safe_age(row.get("seen")) else {
+            continue;
+        };
+        if seen > 60.0 {
             continue;
         }
         let squawk = match row.get("squawk").and_then(Value::as_str) {
@@ -118,6 +122,7 @@ pub fn normalize_readsb(
             transport: "readsb_json".to_owned(),
             aircraft_key: key,
             received_at_utc: now,
+            message_at_utc: now - seen,
             time_basis: if time.is_some() {
                 "derived_readsb"
             } else {
@@ -152,6 +157,7 @@ pub fn beast_arrival(hex: &str, timestamp: f64, position: Position) -> Option<Ob
         transport: "beast_tcp".to_owned(),
         aircraft_key: aircraft_key(hex)?,
         received_at_utc: timestamp,
+        message_at_utc: timestamp,
         time_basis: "server_arrival".to_owned(),
         position_origin: "adsb".to_owned(),
         position_at_utc: Some(timestamp),
@@ -169,7 +175,7 @@ pub fn eligible_for_sql(o: &Observation) -> bool {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct PublicAircraft {
     pub id: String,
     pub last_message_at: f64,
@@ -186,7 +192,7 @@ pub fn merge(state: &mut BTreeMap<String, PublicAircraft>, o: &Observation) -> &
         .entry(o.aircraft_key.clone())
         .or_insert(PublicAircraft {
             id: o.aircraft_key.clone(),
-            last_message_at: o.received_at_utc,
+            last_message_at: o.message_at_utc,
             last_position_at: None,
             position: None,
             position_origin: o.position_origin.clone(),
@@ -194,7 +200,7 @@ pub fn merge(state: &mut BTreeMap<String, PublicAircraft>, o: &Observation) -> &
             callsign: None,
             squawk: None,
         });
-    item.last_message_at = item.last_message_at.max(o.received_at_utc);
+    item.last_message_at = item.last_message_at.max(o.message_at_utc);
     if let Some(name) = &o.callsign {
         item.callsign = Some(name.clone());
     }
@@ -288,16 +294,20 @@ pub fn beast_envelope(s: &str) -> Result<(u8, u64, u8, Vec<u8>), &'static str> {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(tag = "kind", rename_all = "lowercase")]
+#[serde(tag = "kind", rename_all = "lowercase", deny_unknown_fields)]
 pub enum StreamEvent {
     Snapshot {
         epoch: String,
         seq: u64,
+        #[serde(rename = "generatedAt")]
+        generated_at: String,
         aircraft: Vec<PublicAircraft>,
     },
     Delta {
         epoch: String,
         seq: u64,
+        #[serde(rename = "generatedAt")]
+        generated_at: String,
         upsert: Vec<PublicAircraft>,
         removed: Vec<String>,
     },
@@ -317,6 +327,7 @@ impl Replica {
                 epoch,
                 seq,
                 aircraft,
+                ..
             } => {
                 let mut next = BTreeMap::new();
                 for item in aircraft {
@@ -333,6 +344,7 @@ impl Replica {
                 seq,
                 upsert,
                 removed,
+                ..
             } => {
                 if self.epoch.as_deref() != Some(epoch.as_str())
                     || self.seq.and_then(|s| s.checked_add(1)) != Some(seq)

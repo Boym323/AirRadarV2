@@ -8,6 +8,7 @@
     "transport",
     "aircraftKey",
     "receivedAtUtc",
+    "messageAtUtc",
     "timeBasis",
     "positionOrigin",
     "positionAtUtc",
@@ -101,6 +102,11 @@
           "pattern": "^[0-7]{4}$"
         }
       ]
+    },
+    "messageAtUtc": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Skutečný čas poslední readsb zprávy (now-seen), nikdy implicitní poloha."
     }
   },
   "allOf": [

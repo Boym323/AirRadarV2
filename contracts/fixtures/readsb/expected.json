@@ -14,7 +14,8 @@
       },
       "callsign": "TEST123",
       "squawk": "7600",
-      "receiverId": "rx-primary"
+      "receiverId": "rx-primary",
+      "messageAtUtc": 1792627199.8
     },
     {
       "aircraftKey": "nonicao:abc123",
@@ -26,7 +27,8 @@
       "position": null,
       "callsign": "GROUND",
       "squawk": null,
-      "receiverId": "rx-primary"
+      "receiverId": "rx-primary",
+      "messageAtUtc": 1792627198
     },
     {
       "aircraftKey": "icao:def456",
@@ -41,7 +43,8 @@
       },
       "callsign": null,
       "squawk": "0001",
-      "receiverId": "rx-primary"
+      "receiverId": "rx-primary",
+      "messageAtUtc": 1792627199.7
     }
   ],
   "repeatPositionAtUtc": 1792627198.5,

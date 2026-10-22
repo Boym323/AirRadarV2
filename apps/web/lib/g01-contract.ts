@@ -7,6 +7,7 @@ export type Observation = {
   transport: "readsb_json" | "beast_tcp";
   aircraftKey: string;
   receivedAtUtc: number;
+  messageAtUtc: number;
   timeBasis: TimeBasis;
   positionOrigin: PositionOrigin;
   positionAtUtc: number | null;
@@ -88,6 +89,7 @@ export function normalizeReadsb(input: unknown, receiverId: string, receivedAt: 
     const callsign = typeof row.flight === "string" ? row.flight.trim() : "";
     output.push({
       receiverId, transport: "readsb_json", aircraftKey: id, receivedAtUtc: now,
+      messageAtUtc: now - row.seen,
       timeBasis: position ? "derived_readsb" : "unknown",
       positionOrigin: observedOrigin(row.type),
       positionAtUtc: position ? now - (row.seen_pos as number) : null,
