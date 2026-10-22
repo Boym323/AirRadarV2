@@ -1,6 +1,6 @@
 # G-01 — Kontrakty a deterministická testovací data
 
-**Stav:** ROZPRACOVÁNO — 9/10 kroků testováno (viz [report](../reports/G-01-VYSLEDEK.md)); G-01.07 zatím bez nezávislého OpenAPI validátoru.  
+**Stav:** **HOTOVO — 10/10 kontraktových kroků**, viz [doložený G-01 report](../reports/G-01-VYSLEDEK.md) a [CI 39748325104](https://github.com/Boym323/AirRadarV2/actions/runs/39748325104).  
 **Odpovědnost:** Průřezový kontrakt pro všech 45 aktivních funkcí (neznamená jejich implementaci).  
 **Závislosti:** G-00; schválená matice a Vite/Rust scaffold.  
 **Primární KEEP ID:** průřezový kontrakt všech aktivních funkcí; nepřebírá vlastnictví modulů.  
@@ -38,7 +38,7 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Implementace:** Napiš scénáře BEAST→JSON→BEAST, reconnect, deduplikaci, změnu callsign, TTL a letadlo bez platné polohy.  
   **Ověření:** Každý scénář má deterministický očekávaný state diff a hranici pro stale data.
 
-- [ ] **G-01.07 — Uzavřít API OpenAPI**  
+- [x] **G-01.07 — Uzavřít API OpenAPI**  
   **Implementace:** V contracts/openapi.yaml doplň /api/v1/aircraft, health, verzi a chyby; DTO jsou veřejná a bezpečně sanitizovaná.  
   **Ověření:** Validátor OpenAPI a fixture pro odpověď prokážou stabilní tvar a absenci interních secrets.
 
@@ -81,4 +81,8 @@ V kontraktu normalizovaného lokálního pozorování odděl `receiverId` (stabi
 
 ## Důkazy první implementace
 
-Aktuální schémata, golden fixtures, Rust a TypeScript testy a 45 akceptačních scénářů popisuje [G-01 report](../reports/G-01-VYSLEDEK.md). Testy jsou doloženy [CI 39747410591](https://github.com/Boym323/AirRadarV2/actions/runs/39747410591), commit `06e7fdf5`. Krok **G-01.07 není zaškrtnut**, protože statické kontroly OpenAPI ještě nenahrazují skutečný nezávislý validátor.
+Aktuální schémata, golden fixtures, Rust a TypeScript testy a 45 akceptačních scénářů popisuje [G-01 report](../reports/G-01-VYSLEDEK.md). Testy jsou doloženy [CI 39747410591](https://github.com/Boym323/AirRadarV2/actions/runs/39747410591), commit `06e7fdf5`. Krok **G-01.07 je ověřený skutečným validátorem**: `tools/validate-g01-schemas.py` kontroluje duplicitní YAML klíče, OpenAPI 3.1, Draft 2020-12 a pozitivní i negativní fixture v CI.
+
+## Uzavření G-01
+
+G-01.01–G-01.10 jsou **10/10 PASS**, důkazem je [finální běh formálního validátoru a Rust/TS testů #39748325104](https://github.com/Boym323/AirRadarV2/actions/runs/39748325104), commit `14f591c4`. Veřejné API stále vrací G-00 stub. **Atomický živý SSE producer není výsledkem G-01**, pouze specifikovaný požadavek pro G-03; TCP BEAST streaming a RAM owner patří do G-02. Všech 45 produktových ID zůstává `NOT_STARTED` a bez změn.

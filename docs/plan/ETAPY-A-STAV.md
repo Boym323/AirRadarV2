@@ -5,7 +5,7 @@
 | Etapa | Výstup a zadání | Stav |
 |---|---|---|
 | G-00 | Samostatný základ Rust + Vite/React | **HOTOVO — pouze scaffold** |
-| G-01 | [Kontrakty a deterministické fixture](../ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) | **ROZPRACOVÁNO — část kontraktů a testů** |
+| G-01 | [Kontrakty a deterministické fixture](../ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) | **HOTOVO — 10/10, CI PASS** |
 | G-02 | [Lokální ADS-B ingest a RAM](../ukoly/G-02-LOKALNI-INGEST.md) | NEZAHÁJENO |
 | G-03 | [Verzované HTTP API a SSE](../ukoly/G-03-API-A-SSE.md) | NEZAHÁJENO |
 | G-04 | [Úsporná historie](../ukoly/G-04-POSTGRESQL-HISTORIE.md) | NEZAHÁJENO |
@@ -59,3 +59,7 @@ Audit úspornosti vedl k [adaptivní deduplikaci v Rust RAM](../technical/RAM-CA
 ## Audit před přejímkou G-01 — 22. 10. 2026
 
 [**Úplný architektonický audit**](../audits/ARCHITEKTONICKY-AUDIT-AIRRADAR-V2-2026-10-22.md) konstatuje **GO pro zahájení G-01**, avšak **NO-GO pro její převzetí**, dokud nebudou testem doloženy: (1) `timeBasis/positionOrigin` a BEAST-only režim, (2) slučování identit a konfliktních pozorování, (3) formální DTO a atomický SSE snapshot/delta. Navazující úkoly G-04/G-08/G-09 mají další nezávislé brány. G-01 až G-13 jsou nadále NEZAHÁJENO.
+
+## Dokončení G-01 — 22. 10. 2026
+
+[Finální G-01 report](../reports/G-01-VYSLEDEK.md) a [CI 39748325104](https://github.com/Boym323/AirRadarV2/actions/runs/39748325104) prokazují OpenAPI 3.1, Draft 2020-12, readsb/BEAST/Mode-S a SSE golden fixtures i Rust/TypeScript kontraktové testy. **G-01 = HOTOVO**, G-02 až G-13 beze změny NEZAHÁJENO. Číslo 45 označuje budoucí produktové funkce, nikoli 45 implementovaných funkcí.

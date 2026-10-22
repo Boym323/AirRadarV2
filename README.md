@@ -111,3 +111,7 @@ PostgreSQL v existujícím separátním LXC potřebuje vlastní databázi/role a
 ## Architektonický audit před implementací
 
 [**Audit 22. 10. 2026 — uzavřená rozhodnutí a zbývající rizika**](docs/audits/ARCHITEKTONICKY-AUDIT-AIRRADAR-V2-2026-10-22.md) potvrzuje stabilní stack Rust/Vite/PostgreSQL, ale dokumentuje otevřené kontrakty časových značek, integrity pozorování, SSE atomického snapshotu, logbooku, notifikačních oprávnění a skutečné DB infrastruktury. **G-01 lze zahájit; jeho převzetí vyžaduje tři blokující kontraktové testy.** Zelené G-00 CI není potvrzení implementace 45 funkcí.
+
+## Dokončená G-01: datové kontrakty
+
+Dne 22. 10. 2026 byla dokončena **G-01**: [report](docs/reports/G-01-VYSLEDEK.md), [CI 39748325104](https://github.com/Boym323/AirRadarV2/actions/runs/39748325104) (Rust, web i nezávislý OpenAPI/JSON Schema validátor PASS). Následuje G-02 ingest. Kontrakty jsou hotové, **živý radar, PostgreSQL připojení ani produkční release nejsou**.

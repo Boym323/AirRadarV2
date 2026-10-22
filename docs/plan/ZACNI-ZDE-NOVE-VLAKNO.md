@@ -41,3 +41,7 @@ Ověř aktuální HEAD/branch/CI. V izolovaném checkoutu implementuj pouze konk
 ## Aktuální audit před vývojem
 
 Před převzetím G-01 použij [audit architektury z 22. 10. 2026](../audits/ARCHITEKTONICKY-AUDIT-AIRRADAR-V2-2026-10-22.md): P0-01 čas a původ polohy, P0-02 identita/konflikty, P0-03 SSE atomické DTO. Neznamená změnu 45 aktivních funkcí ani implementaci dalších zdrojů.
+
+## Aktuální dokončená etapa
+
+**G-01 HOTOVO — 10/10**, doklady v [G-01 reportu](../reports/G-01-VYSLEDEK.md) a [GitHub Actions 39748325104](https://github.com/Boym323/AirRadarV2/actions/runs/39748325104). Navazuj **G-02 lokální readsb/BEAST ingest a jediný Rust RAM stav**. Neimplementuj externí feedy, produkční DB ani mapu před vlastní etapou. Veřejné API je stále G-00 stub; G-01 přinesla jen smlouvy a syntetická data. G-03 musí realizovat atomický SSE snapshot boundary popsaný v kontraktu.

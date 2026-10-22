@@ -1,36 +1,40 @@
-# G-01 — Výsledek kontraktů a deterministických dat
+# G-01 — Závěrečný report: kontrakty a deterministická data
 
-**Datum:** 22. 10. 2026. **Stav:** **ROZPRACOVÁNO — 9 z 10 dílčích kroků je doložených**.  
-**Baseline:** `a437c820`. **Úspěšný ověřený commit:** `06e7fdf58b34f2cc9f7eec275fe749deb2caf25e`.  
-**CI:** [GitHub Actions #39747410591](https://github.com/Boym323/AirRadarV2/actions/runs/39747410591) — **PASS rust-engine, vite-web a česká dokumentace**.
+**Datum:** 22. 10. 2026. **Stav:** **HOTOVO — 10/10 kroků G-01.01–G-01.10**.  
+**Výchozí kontrolovaný commit:** `a437c820`. **Výsledný ověřený commit:** `14f591c461cbb6b1af6eca8d71327e86479bdc84`.  
+**Ověření:** [GitHub Actions #39748325104](https://github.com/Boym323/AirRadarV2/actions/runs/39748325104), **3/3 PASS**: Rust engine, Vite/TS web, česká dokumentace a nezávislý validátor OpenAPI 3.1 / JSON Schema 2020-12.
 
-## Co skutečně existuje
+## Doložená implementace
 
-- `apps/engine/src/contract.rs` — Rust kontrakty, normalizace readsb JSON, validační limity a nepřítomná pole, oddělení ICAO/non-ICAO a JSON/BEAST; kontrola časů, kvality původu pozice, deduplikace a plausibility. Dále BEAST frame envelope/CRC a model klientské SSE repliky.
-- `apps/web/lib/g01-contract.ts` a `apps/web/tests/g01-contract.test.ts` — TypeScript typy, readsb normalizace a testy SSE snapshot/delta/restart, bezpečné veřejné DTO.
-- `contracts/fixtures/readsb/{initial,repeated,changed,invalid,empty,expected}.json` — deterministické vstupy i očekávané výstupy s ne-ICAO cílem, chybějícími polohami a časovým posunem.
-- `contracts/fixtures/beast/cases.json` — BEAST typy 31/32/33, escaped `0x1a`, syntetické DF17/CRC24, CPR even/odd, chybné či zkrácené rámce a omezení samotného BEAST timestampu.
-- `contracts/fixtures/sse/sequence.json` — snapshot, upsert delta, odstranění, chybějící sekvence a nový epoch.
-- `contracts/{readsb-json,aircraft-observation,aircraft-public,sse-v1}.schema.json` — deklarované JSON Schema pro vývojové kontrakty.
-- `contracts/openapi.yaml` — připravené budoucí DTO a odpovědi, aniž by se současné **G-00 stub endpointy** vydávaly za hotový ingest.
-- `docs/plan/G-01-MATICE-AKCEPTACE.md` a `contracts/g01-acceptance.json` — všech **45 aktivních funkcí** má vlastníka a plánovaný důkaz; jejich skutečný status zůstává `NOT_STARTED`.
-- `contracts/G-01-ROZHODNUTI.md` — explicitní P0 rozhodnutí o původu, čase polohy, konfliktu identit a pravidlech SSE.
+| Krok | Výstup a skutečný důkaz | Výsledek |
+|---|---|---|
+| G-01.01 | 45 KEEP ID, 9 unikátních vlastníků, kontrola `tools/check-g01-contracts.mjs` | PASS |
+| G-01.02 | Doménové typy/validation: `apps/engine/src/contract.rs`, `apps/web/lib/g01-contract.ts`, JSON Schema | PASS |
+| G-01.03 | Identita, původ ADS-B/MLAT/TIS-B, `receiverId`, časová sémantika, validace squawk/poloh | PASS |
+| G-01.04 | `contracts/fixtures/readsb/{initial,repeated,changed,invalid,empty,expected}.json` | PASS |
+| G-01.05 | `contracts/fixtures/beast/cases.json`: escaped 0x1A, 31/32/33, DF17/CRC24 a CPR even/odd, poškozené rámce | PASS |
+| G-01.06 | Testované stavové scénáře identity, výpadku, duplicit, neplatných poloh a konfliktů v Rust/TS | PASS |
+| G-01.07 | `contracts/openapi.yaml`, čtyři Draft 2020-12 schémata a `tools/validate-g01-schemas.py` — skutečná OpenAPI 3.1 validace, kontrola YAML duplicit, pozitivní/negativní fixtures | PASS |
+| G-01.08 | `contracts/fixtures/sse/sequence.json`; snapshot/delta/upsert/removed, gap/epoch restart a kontrakt resync | PASS |
+| G-01.09 | `cargo fmt`, `cargo clippy -D warnings`, `cargo test`, `npm run lint/typecheck/test/build`, Node fixture smoke a nezávislý schema validátor | PASS |
+| G-01.10 | `docs/plan/G-01-MATICE-AKCEPTACE.md` a `contracts/g01-acceptance.json`: plánovaný PASS/FAIL scénář pro všech 45 produktových ID, stavy `NOT_STARTED` zachovány | PASS |
 
-## Skutečně ověřené kontroly
+## Přijaté doménové hranice
 
-- Rust `cargo fmt --all -- --check`, Clippy `-D warnings`, unit testy včetně golden readsb/BEAST, parity a SSE repliky.
-- TypeScript lint, typecheck, Vitest a Vite build; G-00 web dál pravdivě uvádí, že nepřijímá živá data.
-- Node `tools/check-g01-contracts.mjs` kontroluje 45 funkcí, 9 vlastníků, JSON Schema strukturu, readsb časovou sémantiku, BEAST/CRC/CPR, SSE posloupnost a plánované OpenAPI komponenty.
-- Kontrola archivovaných požadavků a celkem 140 etapových kroků; žádná produktová funkce nebyla označena za implementovanou.
+- **P0-01:** Čas zprávy `now-seen` se nikdy nevydává za čas polohy `now-seen_pos`. BEAST receiver ticks bez ověřeného UTC mapování nejsou legitimní SQL position timestamp. Původ polohy a časová základna jsou povinné součásti důvěryhodného DTO.
+- **P0-02:** ICAO a ne-ICAO identity jsou odlišné; `receiverId` není `transport`; JSON/BEAST z téhož readsb neznamenají dva přijímače. Zjevně nesmyslný skok není destruktivní update. Budoucí externí integrace nejsou schválené.
+- **P0-03:** Formát SSE používá `epoch/seq`, snapshot a delta s `removed` a pravidlem pro vynucený resync. **G-03 musí skutečně zajistit atomickou registraci odběratele a počáteční snapshot**, jinak může vzniknout závod mezi snapshotem a deltou; tato runtime část do G-01 nepatří.
 
-## Zbývající blokace úplného převzetí
+## Důležité omezení — co G-01 záměrně neimplementovala
 
-**G-01.07 — formální validátor OpenAPI/JSON Schema.** Současný kontrolní skript testuje jejich důležitou strukturu a vazby, **nejde ale o plnohodnotnou nezávislou validaci OpenAPI 3.1 ani úplnou JSON Schema validaci všech fixture**. Před označením G-01 jako HOTOVO je nutné použít deklarovaný validátor se skutečnými pozitivními i negativními payloady a jeho PASS doložit na přesném commit SHA.
+- **Živý příjem readsb/BEAST**, TCP streaming parser a autoritativní RAM radar: **G-02**, ne dnešní etapový kontrakt.
+- **Skutečný Axum REST/SSE provoz se snapshot/delta:** **G-03**. Současný G-00 endpoint pravdivě vrací `NOT_IMPLEMENTED`.
+- **PostgreSQL + SQLx schema, adaptivní vzorkování, backups:** **G-04**. Existující DB LXC nebyl kontaktován ani upraven.
+- **MapLibre, počasí, notifikace, Playwright browser E2E a produkční release:** až následné etapy. Žádné produkční upozornění, registrace nebo mapový live rendering nebyly spouštěny.
+- 45 aktivních ID bylo pouze **kontraktově připraveno**. Stavy v `contracts/feature-matrix.json` zůstávají `NOT_STARTED`.
 
-Implementace skutečného TCP streaming BEAST parseru, serverového SSE producenta se zárukou atomické hranice a SQLx writeru jsou až **G-02/G-03/G-04**; jejich absence není falešně počítána mezi G-01 PASS. Po připojení runtime je nutné testovat jeho soulad s nynějšími kontrakty, včetně backpressure a restartu.
+## Rizika před G-02 a G-03
 
-## Bezpečnost a rozsah
+Překládat toto kontraktové ověření do skutečného runtime musí přísně zachovat jednoho vlastníka RAM, správné CRC/parity podle DF, CPR časovou platnost, memory bounds a load/backpressure testy. Formální schema validace neprokazuje fyzikální výkon, robustnost binárního TCP parseru ani atomický multi-client SSE producer. G-02/G-03 potřebují samostatné implementační testy a reporty.
 
-Žádný zásah do produkčního AirRadar V1, readsb přijímače, PostgreSQL LXC ani V2 deploymentu. Nejsou implementovány externí feedy, další stanice, notifikační doručování ani odložené funkce. Web stále obsahuje zkušební G-00 endpointy a nemá živý letový provoz.
-
-**Závěr:** plnohodnotné kontraktové základy a golden testy jsou v main, CI PASS; etapa je **9/10, ROZPRACOVÁNO** do dokončení formální validace G-01.07.
+**Závěr:** G-01 předána do G-02. V1, jeho produkce, PostgreSQL a LXC jsou beze změny.

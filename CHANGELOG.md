@@ -4,11 +4,13 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
-### G-01 — první implementace kontraktů (22. 10. 2026)
-- Ověřený [CI 39747410591](https://github.com/Boym323/AirRadarV2/actions/runs/39747410591) se všemi třemi joby PASS a aktualizovaná česká evidence G-01: **9/10** kroků, otevřený nezávislý validátor OpenAPI 3.1. Kontrakty a fixture jsou testované, nikoli živě připojené.
+### G-01 — dokončené kontrakty a syntetické testy (22. 10. 2026)
+- **G-01 HOTOVO — 10/10 kroků**. Validátor v izolované GitHub CI kontrole ověřuje OpenAPI 3.1 bez duplicitních YAML klíčů, JSON Schema Draft 2020-12 a pozitivní/negativní fixtures. [CI 39748325104](https://github.com/Boym323/AirRadarV2/actions/runs/39748325104) 3/3 PASS na commitu `14f591c4`.
+- Pouze smlouvy a testy; 45 produktových funkcí nadále `NOT_STARTED`, runtime příjem a SSE až G-02/G-03, databáze G-04.
+- Ověřený [CI 39747410591](https://github.com/Boym323/AirRadarV2/actions/runs/39747410591) se všemi třemi joby PASS a aktualizovaná česká evidence G-01: **10/10** kroků; nezávislý validátor OpenAPI 3.1 dodán a doložen CI. Kontrakty a fixture jsou testované, nikoli živě připojené.
 - Doplněny JSON Schema veřejného AircraftV1/SSE snapshot/delta, cílové OpenAPI komponenty při zachování pravdivého G-00 stubu a syntetické BEAST/stream fixture.
 - Přidány sdílené syntetické JSON golden případy, Rust/TS validace identity, provenance, času a bezpečných SQL vzorků; modelové testy sekvence SSE.
-- G-01 je **rozpracováno**, skutečný BEAST parser, plné OpenAPI schéma, E2E a runtime SSE nejsou hotové; 45 produktových funkcí není touto změnou dokončeno.
+- G-01 je dokončena jako kontraktová etapa; skutečný streaming BEAST parser, browserové E2E a runtime SSE se teprve implementují v navazujících etapách. 45 produktových funkcí se tím nestalo dokončenými.
 
 
 ### Architektonický audit 22. 10. 2026
