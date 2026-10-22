@@ -75,17 +75,16 @@ mod tests {
                 .unwrap()
                 .as_nanos()
         ));
-        let content=serde_json::json!({
+        let content = serde_json::json!({
             "now":wall_seconds(), "messages":1,
             "aircraft":[{"hex":"abc123","seen":0.0}]
         });
-        tokio::fs::write(&file,content.to_string()).await.unwrap();
-        let observations=read_snapshot(&file,"rx-primary").await.unwrap();
-        assert_eq!(observations.len(),1);
-        assert_eq!(observations[0].aircraft_key,"icao:abc123");
-        tokio::fs::write(&file,b"{").await.unwrap();
-        assert!(read_snapshot(&file,"rx-primary").await.is_err());
+        tokio::fs::write(&file, content.to_string()).await.unwrap();
+        let observations = read_snapshot(&file, "rx-primary").await.unwrap();
+        assert_eq!(observations.len(), 1);
+        assert_eq!(observations[0].aircraft_key, "icao:abc123");
+        tokio::fs::write(&file, b"{").await.unwrap();
+        assert!(read_snapshot(&file, "rx-primary").await.is_err());
         tokio::fs::remove_file(&file).await.unwrap();
     }
-
 }
