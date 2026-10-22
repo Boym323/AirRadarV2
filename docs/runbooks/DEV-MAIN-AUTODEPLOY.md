@@ -99,6 +99,14 @@ Odstraněná historická workflow (stále dostupná v Gitu): `dev-package.yml` b
 
 Postup ověření: PR CI (tři PASS joby); potom kontrola, že jeden nový push main spustí jen **DEV release workflow**, které nejprve zavolá reusable CI, sestaví a ověří release a provede Runner deployment se healthcheckem. **Znovunasazení samostatného LXC nebo změna V1 se neprovádí.**
 
+## P0 — bezpečné sloučení G-03 do main bez automatického DEV cutoveru (22. 10. 2026)
+
+G-03 má 10/10 izolovaných CI testů a lze sloučit **pouze implementační kód** do `main`. Workflow `g02-dev-candidate.yml` po merge spustí sdílené CI a sestaví SHA-bound artefakt pro prohlížení v Actions, ale step `G-03 — bezpečná stage gate před publikací` nastaví výstup `g03_runtime=true` při existenci `contracts/openapi.g03.yaml` a povinného `web/g03-runtime-required.txt`. Job `publish-dev-candidate` má `if: ... g03_runtime == 'false'`, takže se nepublikuje žádný `g02-dev-<SHA>` prerelease; závislý `deploy-dev` je přes `needs:` rovněž SKIPPED. Vlastní G-00 DEV služba dál běží bez restartu.
+
+**Toto je politika bez přepínače:** její změna vyžaduje separátní auditovaný PR po instalaci a testu root-owned runtime verifieru, skutečného G-03 systemd nastavení, Nginx streamu a atomického G-03↔G-00 rollbacku; není povoleno nastavit pouze repository variable a nasazení tím obejít. Automatický puller nevydá G-03 bez odpovídajícího prerelease; jeho stav a služby musí zůstat beze změny.
+
+**Kontrola po merge:** očekávat v GitHub Actions `validate=PASS`, `test-and-build=PASS`, `publish-dev-candidate=SKIPPED`, `deploy-dev=SKIPPED`. Pokud by publish/deploy běžel, je to P0 incident: zastavit workflow před kontaktem s DEV LXC.
+
 ## P1 — stage-aware přejímka budoucí G-03 (připraveno, neaktivováno)
 
 SHA-připnutý balíček s `contracts/openapi.g03.yaml` dostane při buildu `web/g03-runtime-required.txt`. Před deploymentem Runner ověřuje přítomnost nainstalovaného root instalátoru `G03_STAGE_GATE_V1` a verifikátoru `verify-g03-runtime.py`; pokud chybí, deploy odmítne **před přepnutím symlinku**. Instalátor vyžaduje aktivní systemd `--g03-live-api` a následně ověřuje HTTP health `stage=G-03`, pravdivý `live`/`waiting_for_observations`, nový `snapshot` s epoch/seq, stream přes DEV Nginx a 15s heartbeat do 20s. `bootstrap` ani `degraded` nesmí projít. Chyba G-03 streamu ještě uvnitř root EXIT trap vyvolá rollback.
