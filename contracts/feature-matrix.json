@@ -19,41 +19,51 @@
       "id": "J01",
       "name": "Příjem lokálních letadel přes readsb JSON · základ systému",
       "decision": "KEEP",
-      "status": "NOT_STARTED",
-      "tests": [],
-      "notes": ""
+      "status": "TESTED",
+      "tests": [
+        "G-02 JSON fixture+temp-file a společný replay, CI #39769323592"
+      ],
+      "notes": "Testováno výhradně v izolovaném CI; G-02 provozní přejímka DEV LXC zbývá."
     },
     {
       "id": "J02",
       "name": "Přímý příjem lokálních BEAST TCP rámců",
       "decision": "KEEP",
-      "status": "NOT_STARTED",
-      "tests": [],
-      "notes": ""
+      "status": "TESTED",
+      "tests": [
+        "G-02 BEAST TCP fragmentation+loopback reconnect, CI #39769323592"
+      ],
+      "notes": "Testováno výhradně v izolovaném CI; G-02 provozní přejímka DEV LXC zbývá."
     },
     {
       "id": "J03",
       "name": "Rust akcelerace BEAST parseru a CRC24",
       "decision": "KEEP",
-      "status": "NOT_STARTED",
-      "tests": [],
-      "notes": ""
+      "status": "TESTED",
+      "tests": [
+        "G-02 DF17 CRC24, TC19, CPR a negativní parity, CI #39769323592"
+      ],
+      "notes": "Testováno výhradně v izolovaném CI; G-02 provozní přejímka DEV LXC zbývá."
     },
     {
       "id": "J04",
       "name": "Automatické přepínání BEAST / JSON při výpadku",
       "decision": "KEEP",
-      "status": "NOT_STARTED",
-      "tests": [],
-      "notes": ""
+      "status": "TESTED",
+      "tests": [
+        "G-02 JSON/BEAST interleaving, connect/disconnect a source health, CI #39769323592"
+      ],
+      "notes": "Testováno výhradně v izolovaném CI; G-02 provozní přejímka DEV LXC zbývá."
     },
     {
       "id": "J05",
       "name": "Správa živého stavu letadel v RAM · základ systému",
       "decision": "KEEP",
-      "status": "NOT_STARTED",
-      "tests": [],
-      "notes": ""
+      "status": "TESTED",
+      "tests": [
+        "G-02 jediný RadarState, TTL a stres 5000 identit, CI #39769323592"
+      ],
+      "notes": "Testováno výhradně v izolovaném CI; G-02 provozní přejímka DEV LXC zbývá."
     },
     {
       "id": "J06",
@@ -91,9 +101,11 @@
       "id": "J11",
       "name": "Kontinuita identity letadel, detekce výpadků a deduplikace · základ systému",
       "decision": "KEEP",
-      "status": "NOT_STARTED",
-      "tests": [],
-      "notes": ""
+      "status": "TESTED",
+      "tests": [
+        "G-02 identita, dedup, plausibilita, neplatné CRC a stale polohy, CI #39769323592"
+      ],
+      "notes": "Testováno výhradně v izolovaném CI; G-02 provozní přejímka DEV LXC zbývá."
     },
     {
       "id": "R01",

@@ -2,7 +2,7 @@
 
 **Datum:** 22. 10. 2026. **Stav:** **ROZPRACOVÁNO; zatím NEPŘEVZATO jako celá etapa**.  
 **Nasazená verze v DEV LXC:** `227a8619b590d2c536761ffefc75cd0a5633936c` — zůstává G-00/G-01, tento nový G-02 kód **není nasazen**.  
-**Ověřený GitHub základ G-02:** [`18fcbed9039207b3b83fcc28558ca6c5b0cc363f`](https://github.com/Boym323/AirRadarV2/commit/18fcbed9039207b3b83fcc28558ca6c5b0cc363f).  
+**Ověřený historický základ G-02:** [`18fcbed9039207b3b83fcc28558ca6c5b0cc363f`](https://github.com/Boym323/AirRadarV2/commit/18fcbed9039207b3b83fcc28558ca6c5b0cc363f).  
 **CI:** [#39762483657](https://github.com/Boym323/AirRadarV2/actions/runs/39762483657), všechny **3/3 joby PASS**, 22 Rust testů PASS, Rustfmt, Clippy, Vite/TS a kontrakty. Bez reálného ADS-B receiveru a DB.
 
 ## Doložená implementace
@@ -58,3 +58,24 @@ Tyto hodnoty měří **opakování fixture**, nikoli skutečné 1×/2×/4× ADS-
 Při revizi bylo opraveno **uvolňování interní mapy `position_quality` společně s expirovaným `tracks`**. Bez toho mohla tato pomocná RAM evidence růst s počtem historicky pozorovaných identit i po vypršení 60s TTL. Regresní test `ingest::state::tests::replay_dedup_and_ttl` nyní kontroluje, že po expiraci jsou **obě mapy prázdné**. Důkaz: [CI 39763140573](https://github.com/Boym323/AirRadarV2/actions/runs/39763140573), **3/3 PASS** na [commitu `be564960`](https://github.com/Boym323/AirRadarV2/commit/be56496015f744a2d5b16fd68bebb1f8ca0d815d). Tento konkrétní test neprokazuje dlouhodobý soak ani všechny podmínky G-02.11.
 
 **Stav zůstává ROZPRACOVÁNO**: dokončené a ověřené jsou pouze uvedené dílčí kroky, nasazené LXC stále provozuje dřívější stabilní základ.
+
+## Implementační dokončení a měření CI — 22. 10. 2026
+
+**Kód SHA:** [`81a27295d78753a6a3d987e7d68d6b8394c12ef5`](https://github.com/Boym323/AirRadarV2/commit/81a27295d78753a6a3d987e7d68d6b8394c12ef5). **Testy:** [GitHub Actions #39769323592](https://github.com/Boym323/AirRadarV2/actions/runs/39769323592), 3/3 joby PASS; `cargo fmt`, Clippy `-D warnings`, **26 Rust testů**, offline JSON+BEAST replay, Vite lint/typecheck/test/build a dokumentační validace PASS.
+
+**Nově doložené G-02.04/.05/.06/.08/.10:** konzervativní DF17 CRC a barometrická výška (Q=1), TC19 rychlost/heading/vertikální rychlost; odmítnutí nedůvěryhodných AP rámců, lokální CPR jen s čerstvou trusted JSON polohou; typovaná validovaná readsb telemetrie; jeden RAM konzument pro oba transporty; test přechodu JSON/BEAST, TCP reconnectu a zdraví zdrojů. Deterministické CLI `--g02-replay` nyní pokrývá oba transporty a chybný CRC případ.
+
+### GitHub CI syntetické replay měření (debug profil, Ubuntu 24.04 x86-64, nikoli cílové LXC)
+
+| Test | Opakování/pozorování | Celkem | p95 | RSS na konci | CPU ticks |
+|---|---:|---:|---:|---:|---:|
+| Fixture 1× | 1 000 průchodů | 174,7 ms | 182 µs/průchod | 5 920 KiB | 18 |
+| Fixture 2× | 2 000 průchodů | 348,6 ms | 182 µs/průchod | 5 944 KiB | 34 |
+| Fixture 4× | 4 000 průchodů | 697,4 ms | 181 µs/průchod | 5 972 KiB | 70 |
+| 5 000 identit 1× | 45 000 syntetických pozorování | 101,8 ms | 10 808 µs/dávka 5 000 | 8 812 KiB | 10 |
+| 5 000 identit 2× | 85 000 syntetických pozorování | 184,7 ms | 10 708 µs/dávka 5 000 | 8 812 KiB | 18 |
+| 5 000 identit 4× | 165 000 syntetických pozorování | 355,5 ms | 10 812 µs/dávka 5 000 | 8 812 KiB | 36 |
+
+**Metodika:** `--g02-benchmark` čte `/proc/self/status` pro RSS a `/proc/self/stat` jako raw ticks. První tři řádky časují celý syntetický JSON+BEAST replay 3 letadel. Poslední tři řádky časují dávky 5 000 unikátních identit během 8/16/32 cyklů (bez SDR, TCP, databáze a webu); po naplnění stavu úmyslně vloží 5 001. identitu a ověří 1 odmítnutí kapacity i úplné TTL odstranění. Nejde o měření skutečného rádio toku ani o důkaz provozního CPU/RAM limitu cílového 1vCPU DEV LXC. Žádná úspora SSD/IOPS nebyla měřena. Šest funkcí M01 je **TESTED**, ne **ACCEPTED**.
+
+**Zbývající povinná přejímka G-02.11:** bezpečně a izolovaně spustit tuto binárku `--g02-benchmark` a dlouhodobý soak/reconnect na cílovém DEV LXC; zaznamenat SHA binárky, počet vCPU/RAM, CPU/RSS, ztráty a p95 a ověřit chování na vybraném lokálním testovacím vstupu. Stávající službu G-00/G-01 zatím nevyměňovat. Bez testu na cílovém LXC **není G-02 finálně HOTOVO**.

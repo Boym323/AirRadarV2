@@ -4,6 +4,13 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-02 — rozšíření testového pokrytí na 10/11 kroků (22. 10. 2026)
+- [CI #39769323592](https://github.com/Boym323/AirRadarV2/actions/runs/39769323592), commit `81a27295d78753a6a3d987e7d68d6b8394c12ef5`: Rustfmt, Clippy, 26 Rust testů a 3/3 joby PASS.
+- Doplněna validovaná letová telemetrie, TC19 rychlost/heading/vertikální rychlost, DF17 výška, lokální CPR s trusted reference, source health a test JSON↔BEAST fallbacku.
+- Offline replay nyní zahrnuje JSON i BEAST, negativní CRC a syntetickou zátěž 5 000 identit při 1×/2×/4× bez připojení na V1.
+- Šest KEEP funkcí M01 označeno `TESTED`, nikoli `ACCEPTED`. **G-02 není HOTOVO**, dokud nebude změřena G-02.11 na izolovaném 1vCPU DEV LXC. Nebylo nasazeno do LXC.
+
+
 ### G-02 — první izolovaná implementace readsb/BEAST (22. 10. 2026)
 - Opraven úklid per-aircraft `position_quality` pomocné RAM mapy při TTL, regresně ověřeno [CI 39763140573](https://github.com/Boym323/AirRadarV2/actions/runs/39763140573) 3/3 PASS na `be564960`.
 - [Průběžný G-02 report](docs/reports/G-02-VYSLEDEK.md) a [CI 39762483657](https://github.com/Boym323/AirRadarV2/actions/runs/39762483657): 22 Rust testů PASS, syntetický TCP reconnect, JSON temp-file, DF17/CPR a 1×/2×/4× CPU/RSS/p95 replay. **5/11 úkolů bezpečně potvrzeno, G-02 dosud HOTOVO není**.

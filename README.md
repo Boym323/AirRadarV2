@@ -127,3 +127,7 @@ Správce dne 22. 10. 2026 doložil první úspěšné **ruční DEV LXC nasazen�
 ## První testovaná implementace G-02
 
 [Průběžný report](docs/reports/G-02-VYSLEDEK.md) a [CI 39762483657](https://github.com/Boym323/AirRadarV2/actions/runs/39762483657): lokální JSON/BEAST, DF17/CPR, RAM a bounded supervisor, offline syntetický replay; **G-02 je ROZPRACOVÁNO**, zbývají metadata, širší dekódování a výkonnostní prověrky. Záměrně **není nasazeno do DEV LXC**, G-00/G-01 verze zůstává funkční.
+
+## Rozšířená G-02 implementace (22. 10. 2026)
+
+[CI #39769323592](https://github.com/Boym323/AirRadarV2/actions/runs/39769323592): 26 Rust testů, 3/3 joby PASS. DF17/CPR, letová telemetrie readsb/TC19, jeden RAM stav, JSON+BEAST replay, 5 000 cílů syntetický 1×/2×/4× benchmark. V matici je šest M01 funkcí `TESTED`. **G-02 = 10/11 kroků, zbývá povinná G-02.11 přejímka přímo na DEV LXC.** G-02 stále není nasazena do DEV a veřejný G-00/G-01 web není živý radar. [Report](docs/reports/G-02-VYSLEDEK.md).

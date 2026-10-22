@@ -6,7 +6,7 @@
 |---|---|---|
 | G-00 | Samostatný základ Rust + Vite/React | **HOTOVO — pouze scaffold** |
 | G-01 | [Kontrakty a deterministické fixture](../ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) | **HOTOVO — 10/10, CI PASS** |
-| G-02 | [Lokální ADS-B ingest a RAM](../ukoly/G-02-LOKALNI-INGEST.md) | **ROZPRACOVÁNO — Rust runtime a fixture testy** |
+| G-02 | [Lokální ADS-B ingest a RAM](../ukoly/G-02-LOKALNI-INGEST.md) | **10/11 testově ověřeno — čeká G-02.11 DEV LXC** |
 | G-03 | [Verzované HTTP API a SSE](../ukoly/G-03-API-A-SSE.md) | NEZAHÁJENO |
 | G-04 | [Úsporná historie](../ukoly/G-04-POSTGRESQL-HISTORIE.md) | NEZAHÁJENO |
 | G-05 | [Živá mapa a základní ovládání](../ukoly/G-05-ZIVA-MAPA.md) | NEZAHÁJENO |
@@ -75,3 +75,7 @@ Připraven [ruční balíčkovací workflow](../../.github/workflows/dev-package
 ## Průběžný G-02 replay — 22. 10. 2026
 
 [Report G-02](../reports/G-02-VYSLEDEK.md): 5/11 kontrolovaných kroků PASS, zbytek rozpracován. [CI 39762483657](https://github.com/Boym323/AirRadarV2/actions/runs/39762483657) 3/3 PASS včetně 22 Rust testů a syntetických 1×/2×/4× měření. Nasazený LXC stále používá stabilní G-00/G-01 release. Žádné V1/readsb/DB změny.
+
+## Novější CI G-02 a oddělená přejímka
+
+Kód `81a27295d78753a6a3d987e7d68d6b8394c12ef5` má [CI #39769323592](https://github.com/Boym323/AirRadarV2/actions/runs/39769323592) **3/3 PASS**, **26 Rust testů PASS** a benchmark 5 000 syntetických identit. Kódy `J01/J02/J03/J04/J05/J11` mají v aktivní matici `TESTED`. Implementačních 10/11 kroků má testové důkazy. **G-02.11 a celá etapa zůstávají ROZPRACOVÁNO**, protože nebyla ověřena skutečná zátěž na cílovém DEV LXC. Současná instalace DEV LXC je nadále G-00/G-01, produkční V1 nedotčena.
