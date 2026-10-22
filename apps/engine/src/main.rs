@@ -1,4 +1,6 @@
 //! AirRadar V2 G-00 stub API. No receiver or flight state exists yet.
+mod contract;
+
 use std::{convert::Infallible, net::SocketAddr, time::Duration};
 
 use axum::{
