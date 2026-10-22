@@ -28,6 +28,7 @@ jobs:
           cargo test --locked --workspace
           cargo run --locked --quiet -p airradarv2-engine -- --g02-replay
           cargo run --locked --quiet -p airradarv2-engine -- --g02-benchmark
+          # --g02-benchmark now runs a real localhost TCP/JSON reconnect soak.
           node tools/check-docs.mjs
           python3 -m py_compile deploy/g02-auto-pull.py
           python3 -m unittest discover -s tools -p 'test_g02_auto_pull.py'

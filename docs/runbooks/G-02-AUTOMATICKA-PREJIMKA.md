@@ -54,3 +54,7 @@ Trvalý příjem **živého** BEAST/readsb, dlouhodobý reconnect/soak, výpadek
 ## Potvrzená první automatická přejímka
 
 Uživatel dodal 22. 10. 2026 HTTP výstup z veřejné reverzní proxy: `/g02-status.json` vrací `PASS_SYNTHETIC_LXC` (14:02 SELČ, SHA `daa15703`, replay i benchmark PASS). **Potvrzuje to dostupnost status endpointu i funkční testovací řetězec z pohledu uživatelova Macu**. Z prostředí asistenta nemohl být endpoint nezávisle načten. Nyní je status rovněž veřejně dostupný přes `https://airradarv2.pomykal.cz/g02-status.json`, nejen v LAN; neuváděj do něj interní IP, tajemství ani diagnostické údaje mimo přejímku. Druhá brána live-soak nadále neproběhla.
+
+## Další automatický test při novém GitHub commitu
+
+Nová release binárka G-02.11 spouští po syntetickém 5 000-track benchmarku též integrovaný **loopback JSON/BEAST reconnect soak** bez externího přijímače. Není nutná opětovná instalace Python časovače, protože jeho stávající `--g02-benchmark` nyní zahrnuje i tento scénář. V `/g02-status.json` kontroluj v `benchmarkLog` řádek `G-02 isolated-loopback soak PASS: ...`, nikoli jen `status=PASS_SYNTHETIC_LXC`. Až tento řádek opravdu vznikne **na cílovém LXC**, doplníme číselné výsledky a rozhodneme o provozním live-soak. Tento test nenahrazuje test skutečného RF toku.

@@ -274,6 +274,170 @@ async fn poll_beast(addr: &str, sender: mpsc::Sender<Ingress>, dropped: Arc<Atom
         delay = (delay * 2).min(30);
     }
 }
+/// G-02.11: skutečný asynchronní JSON poll + BEAST TCP/fragmentace/reconnect,
+/// ale výhradně na soukromém loopback 127.0.0.1 s generovanými testovacími daty.
+/// Nerozpoznává ani nekontaktuje produkční readsb, nemá DB/HTTP/notifikace.
+pub async fn loopback_soak() -> Result<(), &'static str> {
+    use std::time::Instant;
+    use tokio::{io::AsyncWriteExt, net::TcpListener};
+    let fixture: serde_json::Value =
+        serde_json::from_str(include_str!("../../../../contracts/fixtures/beast/cases.json"))
+            .map_err(|_| "soak fixture")?;
+    let frame = crate::contract::hex_decode(
+        fixture["valid"][0]["hex"].as_str().ok_or("soak beast frame")?,
+    )?;
+    let listener = TcpListener::bind("127.0.0.1:0")
+        .await
+        .map_err(|_| "soak loopback bind")?;
+    let address = listener.local_addr().map_err(|_| "soak addr")?.to_string();
+
+    let path = std::env::temp_dir().join(format!(
+        "airradar-g02-loopback-{}-{}.json",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|_| "soak clock")?
+            .as_nanos()
+    ));
+    fn snapshot() -> String {
+        format!(
+            r#"{{"now":{},"messages":1,"aircraft":[{{"hex":"abc123","seen":0.0,"seen_pos":0.0,"lat":49.9,"lon":15.3,"flight":"TEST123"}}]}}"#,
+            wall_seconds()
+        )
+    }
+    tokio::fs::write(&path, snapshot())
+        .await
+        .map_err(|_| "soak temp JSON")?;
+
+    // Po šesti úmyslných EOF musí skutečný poll_beast znovu navázat TCP.
+    // Zprávu záměrně fragmentujeme přes escapovaný 0x1a bajt.
+    let server = tokio::spawn(async move {
+        for _ in 0..6 {
+            let (mut socket, _) = time::timeout(Duration::from_secs(14), listener.accept())
+                .await
+                .map_err(|_| "soak tcp accept timeout")?
+                .map_err(|_| "soak tcp accept")?;
+            socket.write_all(&frame[..9]).await.map_err(|_| "soak fragment")?;
+            time::sleep(Duration::from_millis(15)).await;
+            socket.write_all(&frame[9..]).await.map_err(|_| "soak payload")?;
+            time::sleep(Duration::from_millis(50)).await;
+            drop(socket);
+        }
+        Ok::<(), &'static str>(())
+    });
+    let (tx, mut rx) = mpsc::channel::<Ingress>(2048);
+    let drops = Arc::new(AtomicU64::new(0));
+    let beast_handle = {
+        let tx = tx.clone();
+        let drops = Arc::clone(&drops);
+        tokio::spawn(async move { poll_beast(&address, tx, drops).await })
+    };
+    let json_handle = {
+        let tx = tx.clone();
+        let drops = Arc::clone(&drops);
+        let path = path.clone();
+        tokio::spawn(async move { poll_json(&path, tx, drops).await })
+    };
+    drop(tx);
+    let clock = Instant::now();
+    let mut state = RadarState::default();
+    let mut cpr = CprCache::default();
+    let mut sources = SourceArbiter::default();
+    let mut links_up = 0_u64;
+    let mut links_down = 0_u64;
+    let mut beast_messages = 0_u64;
+    let mut json_ok = 0_u64;
+    let mut json_bad = 0_u64;
+    let mut malformed = false;
+    let mut recovered = false;
+    let mut latencies_us = Vec::new();
+    let result = time::timeout(Duration::from_secs(23), async {
+        loop {
+            let elapsed = clock.elapsed();
+            if elapsed >= Duration::from_secs(2) && !malformed {
+                tokio::fs::write(&path, b"{")
+                    .await
+                    .map_err(|_| "soak corrupt JSON")?;
+                malformed = true;
+            }
+            if elapsed >= Duration::from_secs(5) && !recovered {
+                tokio::fs::write(&path, snapshot())
+                    .await
+                    .map_err(|_| "soak recover JSON")?;
+                recovered = true;
+            }
+            if links_up >= 4
+                && links_down >= 3
+                && beast_messages >= 4
+                && json_bad >= 1
+                && json_ok >= 2
+                && recovered
+            {
+                return Ok::<(), &'static str>(());
+            }
+            if let Ok(Some(item)) = time::timeout(Duration::from_millis(200), rx.recv()).await {
+                match &item {
+                    Ingress::BeastLink { connected, .. } => {
+                        if *connected {
+                            links_up += 1;
+                        } else {
+                            links_down += 1;
+                        }
+                    }
+                    Ingress::Beast { at, .. } => {
+                        beast_messages += 1;
+                        latencies_us.push(((wall_seconds() - *at).max(0.0) * 1_000_000.0) as u64);
+                    }
+                    Ingress::JsonHealth { ok, .. } => {
+                        if *ok {
+                            json_ok += 1;
+                        } else {
+                            json_bad += 1;
+                        }
+                    }
+                    Ingress::Json(_) => {}
+                }
+                consume(item, &mut state, &mut cpr, &mut sources);
+                if state.tracks.len() > 1 {
+                    return Err("soak duplicate identity");
+                }
+            }
+        }
+    })
+    .await;
+    // Žádná další síťová aktivita nebo otevřený testovací soubor po skončení.
+    beast_handle.abort();
+    json_handle.abort();
+    server.abort();
+    let _ = tokio::fs::remove_file(path).await;
+    result.map_err(|_| "soak recovery timeout")??;
+    if state.tracks.len() != 1
+        || !state.tracks.contains_key("icao:abc123")
+        || drops.load(Ordering::Relaxed) != 0
+    {
+        return Err("soak RAM/backpressure invariant");
+    }
+    state.cleanup(wall_seconds() + 61.0);
+    if !state.tracks.is_empty() {
+        return Err("soak TTL leak");
+    }
+    latencies_us.sort_unstable();
+    let p95 = latencies_us[(latencies_us.len() * 95 / 100).min(latencies_us.len() - 1)];
+    println!(
+        "G-02 isolated-loopback soak PASS: duration_ms={} tcp_connects={} tcp_eofs={} beast_frames={} json_ok={} json_fail={} queue_drops={} p95_receive_us={} tracks_after_ttl={} receiver=127.0.0.1(no V1/DB)",
+        clock.elapsed().as_millis(),
+        links_up,
+        links_down,
+        beast_messages,
+        json_ok,
+        json_bad,
+        drops.load(Ordering::Relaxed),
+        p95,
+        state.tracks.len()
+    );
+    Ok(())
+}
+
 /// Bez síťového IO a bez SQL: deterministický replay pro G-02.10.
 pub fn replay() -> Result<RadarState, &'static str> {
     let mut state = RadarState::default();
