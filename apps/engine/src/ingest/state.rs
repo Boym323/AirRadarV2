@@ -96,14 +96,13 @@ mod tests {
             state.tracks["icao:abc123"].position.as_ref().unwrap().lat,
             49.91
         );
-        assert_eq!(
+        assert!(
             state
                 .snapshot(1792627222.0)
                 .iter()
                 .find(|x| x.id == "icao:abc123")
                 .unwrap()
-                .stale,
-            true
+                .stale
         );
         state.cleanup(1792627300.0);
         assert!(state.tracks.is_empty());
