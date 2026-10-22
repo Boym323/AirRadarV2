@@ -1,6 +1,4 @@
 //! G-01: důvěryhodné datové kontrakty; runtime ingest vznikne teprve v G-02.
-#![allow(dead_code)]
-
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::BTreeMap;
