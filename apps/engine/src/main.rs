@@ -76,6 +76,10 @@ fn app() -> Router {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Opt-in G-02 kontrola bez zapojení V1, bez HTTP, bez DB a bez mapy.
+    if std::env::args().any(|arg| arg == "--g02-benchmark") {
+        ingest::supervisor::benchmark()?;
+        return Ok(());
+    }
     if std::env::args().any(|arg| arg == "--g02-replay") {
         let state = ingest::supervisor::replay()?;
         println!(

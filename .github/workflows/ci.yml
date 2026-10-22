@@ -44,6 +44,10 @@ jobs:
         run: cargo clippy --locked --workspace --all-targets -- -D warnings
       - name: Testy Rust enginu
         run: cargo test --locked --workspace
+      - name: G-02 skutečný offline Rust replay a benchmark (bez živého přijímače)
+        run: |
+          cargo run --locked --quiet -p airradarv2-engine -- --g02-replay
+          cargo run --locked --quiet -p airradarv2-engine -- --g02-benchmark
       - name: Zkušební spuštění API bez přijímače
         shell: bash
         run: |

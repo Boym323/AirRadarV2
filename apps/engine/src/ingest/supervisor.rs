@@ -159,6 +159,42 @@ pub fn replay() -> Result<RadarState, &'static str> {
     }
     Ok(state)
 }
+/// G-02.11: srovnatelné syntetické 1×/2×/4× na stejných fixture.
+/// Všechny hodnoty jsou měřeny na stroji CI; NEJSOU to metriky z DEV LXC.
+pub fn benchmark() -> Result<(), &'static str> {
+    use std::{hint::black_box,time::Instant};
+    fn cpu_ticks() -> Option<u64> {
+        let stat=std::fs::read_to_string("/proc/self/stat").ok()?;
+        let fields=stat.split_once(") ")?.1.split_whitespace().collect::<Vec<_>>();
+        Some(fields.get(11)?.parse::<u64>().ok()?+fields.get(12)?.parse::<u64>().ok()?)
+    }
+    fn rss_kib() -> Option<u64> {
+        let status=std::fs::read_to_string("/proc/self/status").ok()?;
+        status.lines().find(|l|l.starts_with("VmRSS:"))?
+            .split_whitespace().nth(1)?.parse().ok()
+    }
+    for ratio in [1,2,4] {
+        let mut micros=Vec::with_capacity(ratio*1000);
+        let wall=Instant::now();
+        let cpu_begin=cpu_ticks();
+        for _ in 0..ratio*1000 {
+            let start=Instant::now();
+            let state=replay()?;
+            black_box(&state.tracks);
+            micros.push(start.elapsed().as_micros() as u64);
+        }
+        let total=wall.elapsed().as_secs_f64();
+        micros.sort_unstable();
+        let p95=micros[(micros.len()*95/100).min(micros.len()-1)];
+        let cpu_delta=cpu_begin.and_then(|b|cpu_ticks().map(|a|a.saturating_sub(b)));
+        println!(
+            "G-02 bench {ratio}x: runs={} elapsed_ms={:.1} replay_p95_us={} rss_kib={:?} cpu_ticks={:?} (Linux /proc, HZ se zde nepředpokládá)",
+            micros.len(),total*1000.0,p95,rss_kib(),cpu_delta
+        );
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -185,4 +221,23 @@ mod tests {
                 != "rx-primary"
         );
     }
+    #[tokio::test]
+    async fn beast_tcp_loopback_fragments_and_reconnect() {
+        use tokio::{io::AsyncWriteExt,net::TcpListener};
+        let listener=TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr=listener.local_addr().unwrap().to_string();
+        let (tx,mut rx)=mpsc::channel(8);
+        let handle=tokio::spawn(async move { poll_beast(&addr,tx).await; });
+        let fixture:serde_json::Value=serde_json::from_str(include_str!("../../../../contracts/fixtures/beast/cases.json")).unwrap();
+        let f=crate::contract::hex_decode(fixture["valid"][0]["hex"].as_str().unwrap()).unwrap();
+        for _ in 0..2 {
+            let (mut socket,_)=time::timeout(Duration::from_secs(4),listener.accept()).await.unwrap().unwrap();
+            socket.write_all(&f[..7]).await.unwrap();
+            socket.write_all(&f[7..]).await.unwrap();
+            assert_eq!(time::timeout(Duration::from_secs(2),rx.recv()).await.unwrap().unwrap().aircraft_key,"icao:abc123");
+            drop(socket);
+        }
+        handle.abort();
+    }
+
 }
