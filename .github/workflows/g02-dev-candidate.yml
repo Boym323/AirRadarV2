@@ -148,7 +148,8 @@ jobs:
           PY
           current_main="$(curl -fsSL -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${GH_TOKEN}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" | jq -r '.object.sha')"
           test "$current_main" = "$GITHUB_SHA"
-          tar -tzf "$staging/$name" | grep -Eq '^\./(VERSION|airradarv2-engine|web/index\.html)$'
+          tar -tzf "$staging/$name" > "$staging/archive.list"
+          grep -Eq '^\./(VERSION|airradarv2-engine|web/index\.html)$' "$staging/archive.list"
       - name: Nasadit nebo bezpečně čekat na dokončení G-02
         shell: bash
         run: |
