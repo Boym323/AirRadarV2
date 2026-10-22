@@ -69,3 +69,11 @@ data: {"epoch":"epoch123","seq":18002,"generatedAt":"...Z",
 - 256KiB aplikační budget **nezahrnuje OS TCP socket buffer**; skutečný RSS/p95/p99 pro 1/10/100 klientů na DEV stále vyžaduje provozní přejímku.
 - Více než 1MiB serializovaného full snapshotu nebo 5000 veřejných cílů: `health=degraded`, `GET aircraft/stream = 503 CAPACITY_EXCEEDED`, existující stream dostane `event: unavailable` a skončí. Starý validní stav se nikdy neposílá jako nové LIVE údaje.
 - Po obnově pod limit server emituje nový plný snapshot, ne delta proti zahozenému stavu. Vlastní Rust RAM ingest se neodřezává. Testy jsou připraveny pro 5000 úsporných a 5000 plných objektů.
+
+## G-03.07 návrhové provozní hranice a test po 22. 10. 2026
+
+Bez vlastního TCP writeru nemůže aplikace spolehlivě vynutit uzavření nečteného socketu do pevného času; nová regrese proto testuje **nezávislé uvolnění aplikačního SSE permitu** při 30s nečinnosti. Každý z max. 100 klientů drží jen jednu sdílenou `Bytes` referenci, 16KiB blok na jeden poll, a jeden lehký dozorovací task přes `Weak`. Když hyper kvůli socket backpressure nepolluje Body, watchdog uvolní místo novému klientovi. Pokud klient později obnoví čtení, stream se uzavře. Vnější TCP send buffer a vývoj RSS vyžadují LXC/OS měření, takže parametr 256KiB per-client zatím není tvrzením o celkovém transportu.
+
+## G-03.10 ověřený syntetický rozsah (CI #39845031595)
+
+Při jediném readsb JSON souboru s 5000 validními řádky musí Rust ingest zpracovat celý snapshot atomicky jako jednu dávku. 2048-elementová BEAST FIFO se **nepřetěžuje 5000 jednotlivými JSON `try_send`**. Fronta může mít nanejvýš jednu čekající JSON dávku díky `AtomicBool`, další se v přetížení zahodí celá (s přesným počtem dropů); nikdy se nehromadí mnoho 4MiB payloadů. Důkaz `g03_10_json_batch_preserves_all_5000_tracks_without_fifo_loss` a CI scénáře 1/10/100 klientů × 5000 sparse tracků v GitHub Actions #39845031595. Naměřený Rust VmRSS peak 43396 KiB při 100 klientů; neznamená hranici paměti síťového jádra ani cílového LXC. Další brána: reálný pomalý TCP konzument a reálný Nginx/Browser na DEV.

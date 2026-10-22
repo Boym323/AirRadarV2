@@ -39,6 +39,7 @@ jobs:
           python3 -m unittest discover -s tools -p 'test_workflows_layout.py'
           python3 -m py_compile deploy/verify-g03-runtime.py
           python3 -m unittest discover -s tools -p 'test_verify_g03_runtime.py'
+          python3 -m unittest discover -s tools -p 'test_benchmark_g03_sse.py'
       - name: G-03.08 statická kontrola proxy (bez instalace)
         run: node tools/check-g03-network.mjs
       - name: Formální validace OpenAPI a JSON Schema G-01
@@ -117,7 +118,7 @@ jobs:
             http://127.0.0.1:4102/api/v1/stream -o /tmp/g03-heartbeat.txt || test "$?" -eq 28
           grep -q ': heartbeat' /tmp/g03-heartbeat.txt
 
-      - name: G-03.07/.09/.10 syntetický 1/10/100 HTTP SSE load
+      - name: G-03.07/.09/.10 syntetický 1/10/100 SSE load, včetně 5000 letadel
         shell: bash
         run: |
           set -Eeuo pipefail

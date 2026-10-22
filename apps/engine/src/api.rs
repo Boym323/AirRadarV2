@@ -15,10 +15,13 @@ use serde::Serialize;
 use std::{
     collections::BTreeMap,
     convert::Infallible,
-    sync::Arc,
+    sync::{Arc, Mutex, Weak},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
-use tokio::sync::{Semaphore, watch};
+use tokio::{
+    sync::{OwnedSemaphorePermit, Semaphore, watch},
+    time::{self, Instant},
+};
 
 const MAX_SNAPSHOT_BYTES: usize = 1024 * 1024;
 const MAX_CLIENTS: usize = 100;
@@ -28,6 +31,10 @@ const MAX_CLIENT_PENDING_BYTES: usize = 256 * 1024;
 const SSE_CHUNK_BYTES: usize = 16 * 1024;
 const _: () = assert!(SSE_CHUNK_BYTES <= MAX_CLIENT_PENDING_BYTES);
 const HEARTBEAT: &[u8] = b": heartbeat\n\n";
+// G-03.07: poll inactivity is tracked independently of HTTP socket backpressure.
+// A blocked HTTP body must not hold one of the 100 application permits forever.
+const SLOW_CLIENT_DEADLINE: Duration = Duration::from_secs(30);
+const SLOW_CLIENT_CHECK_INTERVAL: Duration = Duration::from_secs(5);
 const CAPACITY_ERROR: &str = "Snímek překročil bezpečný limit; živý stav je dočasně nedostupný.";
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -369,7 +376,60 @@ struct SseCursor {
     offset: usize,
     seq: u64,
     closing: bool,
-    _permit: tokio::sync::OwnedSemaphorePermit,
+    // The watchdog releases the permit even if the HTTP server never polls
+    // a blocked stream again. The stream ends at the next available poll.
+    lease: Arc<ClientLease>,
+}
+
+/// G-03.07: at most one owned permit per SSE response, with a monotonic
+/// inactivity deadline. A Weak reference makes the watcher disappear when the
+/// HTTP body is dropped. No sender, queue or extra copy of a full SSE frame.
+struct ClientLease {
+    state: Mutex<ClientLeaseState>,
+}
+struct ClientLeaseState {
+    permit: Option<OwnedSemaphorePermit>,
+    last_poll: Instant,
+    expired: bool,
+}
+impl ClientLease {
+    fn new(permit: OwnedSemaphorePermit, deadline: Duration, check: Duration) -> Arc<Self> {
+        let lease = Arc::new(Self {
+            state: Mutex::new(ClientLeaseState {
+                permit: Some(permit),
+                last_poll: Instant::now(),
+                expired: false,
+            }),
+        });
+        let weak: Weak<Self> = Arc::downgrade(&lease);
+        tokio::spawn(async move {
+            loop {
+                time::sleep(check).await;
+                let Some(active) = weak.upgrade() else { break };
+                let mut state = active.state.lock().unwrap_or_else(|e| e.into_inner());
+                if state.expired {
+                    break;
+                }
+                if state.last_poll.elapsed() >= deadline {
+                    state.expired = true;
+                    // When the TCP socket has no room, the HTTP body may never
+                    // be polled. Release capacity without waiting for it.
+                    state.permit.take();
+                    break;
+                }
+            }
+        });
+        lease
+    }
+
+    fn touch(&self) -> bool {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        if state.expired {
+            return false;
+        }
+        state.last_poll = Instant::now();
+        true
+    }
 }
 
 async fn events(State(state): State<ApiState>, query: RawQuery) -> Response {
@@ -402,9 +462,14 @@ async fn events(State(state): State<ApiState>, query: RawQuery) -> Response {
         offset: 0,
         seq: start.snapshot.seq,
         closing: false,
-        _permit: permit,
+        lease: ClientLease::new(permit, SLOW_CLIENT_DEADLINE, SLOW_CLIENT_CHECK_INTERVAL),
     };
     let chunks = stream::unfold(cursor, |mut cursor| async move {
+        // Called only when the downstream HTTP body requests more bytes.
+        // If the socket stalled longer than the lease deadline, stop here.
+        if !cursor.lease.touch() {
+            return None;
+        }
         loop {
             if let Some(payload) = &cursor.payload {
                 if cursor.offset < payload.len() {
@@ -876,6 +941,56 @@ mod tests {
         drop(stream);
         assert_eq!(feed.clients.available_permits(), MAX_CLIENTS);
     }
+    #[tokio::test]
+    async fn g03_07_deadline_releases_permit_without_any_body_poll() {
+        // Simulate a client whose TCP receive window is blocked: an SSE response
+        // may be held for arbitrarily long without polling Body::next().
+        let (feed, _publisher) = new();
+        let capacity = Arc::clone(&feed.clients);
+        let permit = capacity.clone().try_acquire_owned().unwrap();
+        let lease = ClientLease::new(
+            permit,
+            Duration::from_millis(100),
+            Duration::from_millis(20),
+        );
+        assert_eq!(capacity.available_permits(), MAX_CLIENTS - 1);
+        // Keep the response equivalent alive: capacity must nevertheless free.
+        time::timeout(Duration::from_secs(3), async {
+            while capacity.available_permits() != MAX_CLIENTS {
+                time::sleep(Duration::from_millis(10)).await;
+            }
+        })
+        .await
+        .expect("stalled reader cannot monopolize SSE permit");
+        assert!(
+            !lease.touch(),
+            "expired connection must not send another frame"
+        );
+        // It must be safe to acquire a new connection immediately.
+        let new_permit = capacity.clone().try_acquire_owned().unwrap();
+        drop(new_permit);
+        assert_eq!(capacity.available_permits(), MAX_CLIENTS);
+    }
+
+    #[tokio::test]
+    async fn g03_07_active_reader_refreshes_deadline_and_drop_cleans_up() {
+        let (feed, _publisher) = new();
+        let capacity = Arc::clone(&feed.clients);
+        let permit = capacity.clone().try_acquire_owned().unwrap();
+        let lease = ClientLease::new(
+            permit,
+            Duration::from_millis(180),
+            Duration::from_millis(15),
+        );
+        for _ in 0..4 {
+            time::sleep(Duration::from_millis(50)).await;
+            assert!(lease.touch(), "active SSE client must remain connected");
+            assert_eq!(capacity.available_permits(), MAX_CLIENTS - 1);
+        }
+        drop(lease);
+        assert_eq!(capacity.available_permits(), MAX_CLIENTS);
+    }
+
     #[tokio::test]
     async fn five_thousand_aircraft_shared_snapshot_is_chunked_under_16k() {
         let (feed, mut publisher) = new();

@@ -17,7 +17,7 @@ import time
 
 
 HOST, PORT = "127.0.0.1", 4102
-SCENARIOS = ((1, 25), (10, 250), (100, 250), (10, 1000), (1, 5000), (100, 5000))
+SCENARIOS = ((1, 25), (10, 250), (100, 250), (10, 1000), (1, 5000), (10, 5000), (100, 5000))
 
 
 def write_fixture(path: Path, count: int, step: int, compact: bool = False) -> None:
