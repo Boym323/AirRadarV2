@@ -113,3 +113,7 @@ PASS: všechna doručení 1/10/100, 101. klient HTTP 503, uvolnění capacity, m
 - Nový verifikátor stage-aware DEV má regresní negativní testy: `bootstrap` a `degraded` se nesmí přijmout jako G-03, SSE musí mít atomické `epoch:seq`. Statický test a syntetický Nginx heartbeat prošly v CI; **nainstalovaná root-owned G-03 brána v DEV LXC nebyla ověřena**.
 - Ověřený syntetický 1/10/100 klientů nad izolovaným 127.0.0.1 Rust procesem z výsledného buildu. Jde o CI hardware, ne cílový 1vCPU LXC a ne browserový test. Tento PASS neznamená důkaz OS socket budgetu 256KiB/klient.
 - **G-03 zůstává 7/10 TESTED a NO-GO pro merge do main**, dokud se nedokončí skutečné DEV provozní SSE měření a atomický rollback režimu systemd/binary. G-02, V1 a databáze zůstaly bez zásahu.
+
+## Nová brána G-03.10 — až 5 000 letadel
+
+Do izolované CI zátěže přidány varianty **1 a 100 klientů × 5 000 kompaktních letadel**. Zůstává deklarovaný limit **1 MiB serializovaného veřejného snapshotu** — u plných objektů s telemetrií je správnou odpovědí explicitní 503, nikoli zkrácený či zatuhlý starý stav. Při 5 000 kompaktních objektech má být snapshot menší než 1 MiB, jako ověřuje Rust unit test. Tyto nové případy zatím nemají novou výsledkovou CI, neoznačovat G-03.10 za TESTED.

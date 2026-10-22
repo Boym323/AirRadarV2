@@ -4,6 +4,9 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-03.10 — skutečný test 5 000 kompaktních letadel (CI)
+- Syntetický readsb replay rozšířen o 5 000 kompaktích letadel pro 1 a 100 souběžných klientů, report CPU/RSS/p95/p99/bytes/s se explicitním čítačem nedoručených aktualizací. Přetížení nad 1 MiB ověřuje separátní Rust regresní test; plný produkční stav pěti tisíc letadel nelze garantovat při deklarovaném 1MiB limitu.
+
 ### P1/P2 audit G-03 — CI ověřeno, zatím pouze draft G-03
 - Sdílené SSE payloady a 16KiB odesílací chunky, explicitní 503/degraded/unavailable při překročení 1MiB a návrat novým full snapshotem.
 - Stage-aware G-03 kontrola bez falešného bootstrap PASS: direct SSE + Nginx snapshot/heartbeat, fail-closed preflight root instalátoru. První systemd/config rollback stále NO-GO, žádná produkční změna.

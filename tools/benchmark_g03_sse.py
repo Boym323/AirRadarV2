@@ -17,26 +17,29 @@ import time
 
 
 HOST, PORT = "127.0.0.1", 4102
-SCENARIOS = ((1, 25), (10, 250), (100, 250), (10, 1000))
+SCENARIOS = ((1, 25), (10, 250), (100, 250), (10, 1000), (1, 5000), (100, 5000))
 
 
-def write_fixture(path: Path, count: int, step: int) -> None:
+def write_fixture(path: Path, count: int, step: int, compact: bool = False) -> None:
     now = time.time()
-    aircraft = [
-        {
+    aircraft = []
+    for i in range(count):
+        row = {
             "hex": f"{i + 1:06x}",
             "type": "adsb_icao",
             "seen": 0.0,
-            "seen_pos": 0.0,
-            "lat": 49.0 + i * 0.00001 + step * 0.000001,
-            "lon": 16.0 + i * 0.00001,
-            "flight": f"T{i:06d}",
-            "alt_baro": 10000,
-            "gs": 160,
-            "track": 270,
         }
-        for i in range(count)
-    ]
+        if not compact:
+            row.update({
+                "seen_pos": 0.0,
+                "lat": 49.0 + i * 0.00001 + step * 0.000001,
+                "lon": 16.0 + i * 0.00001,
+                "flight": f"T{i:06d}",
+                "alt_baro": 10000,
+                "gs": 160,
+                "track": 270,
+            })
+        aircraft.append(row)
     data = {"now": now, "messages": count * (step + 1), "aircraft": aircraft}
     temporary = path.with_suffix(".tmp")
     temporary.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
@@ -131,7 +134,7 @@ async def connect() -> tuple[int, SseClient]:
 async def await_live(count: int) -> None:
     import urllib.request
 
-    for _ in range(40):
+    for _ in range(180):
         try:
             with urllib.request.urlopen(
                 f"http://{HOST}:{PORT}/api/v1/aircraft", timeout=2
@@ -172,7 +175,7 @@ async def benchmark(binary: Path, temp: Path) -> list[dict]:
             await await_live(25)
             results = []
             for index, (connections, count) in enumerate(SCENARIOS, 1):
-                write_fixture(fixture, count, index * 2)
+                write_fixture(fixture, count, index * 2, compact=count >= 5000)
                 await await_live(count)
                 opened = await asyncio.gather(*(connect() for _ in range(connections)))
                 assert all(status == 200 for status, _ in opened), "SSE HTTP 200 očekáváno"
@@ -201,7 +204,7 @@ async def benchmark(binary: Path, temp: Path) -> list[dict]:
 
                     watcher = asyncio.create_task(sample_rss())
                     started = time.perf_counter()
-                    write_fixture(fixture, count, index * 2 + 1)
+                    write_fixture(fixture, count, index * 2 + 1, compact=count >= 5000)
 
                     async def receive_change(client: SseClient, seq: int) -> float:
                         while True:
@@ -224,6 +227,9 @@ async def benchmark(binary: Path, temp: Path) -> list[dict]:
                         "clients": connections,
                         "aircraft": count,
                         "events": len(latencies),
+                        "lost_updates": connections - len(latencies),
+                        "measured_from": "atomic_json_rename",
+                        "slow_consumers_excluded_from_latency": True,
                         "latency_p95_ms": percentile(latencies, 0.95),
                         "latency_p99_ms": percentile(latencies, 0.99),
                         "bytes_per_sec": round(
@@ -310,7 +316,7 @@ def main() -> int:
                 print(log.read_text(encoding="utf-8", errors="replace")[-6000:])
             raise
     assert len(results) == len(SCENARIOS)
-    print("PASS G-03: izolované 1/10/100 klientů, žádné DB/V1/readsb TCP.")
+    print("PASS G-03: izolované 1/10/100 klientů až s 5000 kompaktními cíli, žádné DB/V1/readsb TCP.")
     return 0
 
 
