@@ -1,0 +1,55 @@
+{
+  "cases": [
+    {
+      "name": "initial",
+      "payload": {
+        "kind": "snapshot",
+        "epoch": "fixture-epoch-a",
+        "seq": 1,
+        "aircraft": [
+          {
+            "aircraftKey": "icao:abc123",
+            "position": {
+              "lat": 49.9,
+              "lon": 15.3
+            },
+            "positionAtMs": 1792627199000,
+            "stale": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "change",
+      "payload": {
+        "kind": "delta",
+        "epoch": "fixture-epoch-a",
+        "seq": 2,
+        "upsert": [
+          {
+            "aircraftKey": "icao:abc123",
+            "position": {
+              "lat": 49.91,
+              "lon": 15.31
+            },
+            "positionAtMs": 1792627200000,
+            "stale": false
+          }
+        ],
+        "removed": []
+      }
+    },
+    {
+      "name": "remove",
+      "payload": {
+        "kind": "delta",
+        "epoch": "fixture-epoch-a",
+        "seq": 3,
+        "upsert": [],
+        "removed": [
+          "icao:abc123"
+        ]
+      }
+    }
+  ]
+}

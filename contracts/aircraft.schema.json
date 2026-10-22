@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AirRadar V2 G-01 veřejné letadlo",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "aircraftKey",
+    "position",
+    "positionAtMs",
+    "stale"
+  ],
+  "properties": {
+    "aircraftKey": {
+      "type": "string",
+      "pattern": "^(icao|nonicao):[0-9a-f]{6}$"
+    },
+    "position": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "lat",
+            "lon"
+          ],
+          "properties": {
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "lon": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          }
+        }
+      ]
+    },
+    "positionAtMs": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "stale": {
+      "type": "boolean"
+    }
+  }
+}

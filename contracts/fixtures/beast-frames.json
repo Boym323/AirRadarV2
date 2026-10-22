@@ -1,0 +1,31 @@
+{
+  "description": "Syntetické BEAST streamy; první DF17 zpráva je veřejně používaný technický referenční příklad, nikoliv soukromý příjem uživatele.",
+  "cases": [
+    {
+      "name": "df17_valid_single",
+      "hex": "1a330000000000017f8d40621d58c382d690c8ac2863a7",
+      "expectedType": "long",
+      "expectedMessageHex": "8d40621d58c382d690c8ac2863a7",
+      "valid": true
+    },
+    {
+      "name": "escaped_timestamp",
+      "hex": "1a3300001a1a0000017f8d40621d58c382d690c8ac2863a7",
+      "expectedType": "long",
+      "expectedMessageHex": "8d40621d58c382d690c8ac2863a7",
+      "valid": true
+    },
+    {
+      "name": "truncated",
+      "hex": "1a330000000000017f8d4062",
+      "expectedType": "long",
+      "valid": false
+    },
+    {
+      "name": "unknown_type",
+      "hex": "1a350000000000017f8d40621d58c382d690c8ac2863a7",
+      "expectedType": null,
+      "valid": false
+    }
+  ]
+}

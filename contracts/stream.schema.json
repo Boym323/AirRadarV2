@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AirRadar V2 G-01 událost SSE",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "epoch",
+        "seq",
+        "aircraft"
+      ],
+      "properties": {
+        "kind": {
+          "const": "snapshot"
+        },
+        "epoch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "aircraft": {
+          "type": "array",
+          "items": {
+            "$ref": "aircraft.schema.json"
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "epoch",
+        "seq",
+        "upsert",
+        "removed"
+      ],
+      "properties": {
+        "kind": {
+          "const": "delta"
+        },
+        "epoch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "upsert": {
+          "type": "array",
+          "items": {
+            "$ref": "aircraft.schema.json"
+          }
+        },
+        "removed": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^(icao|nonicao):[0-9a-f]{6}$"
+          }
+        }
+      }
+    }
+  ]
+}

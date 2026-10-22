@@ -5,6 +5,7 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 ## [Nepublikováno]
 
 ### G-01 — první implementace kontraktů (22. 10. 2026)
+- Doplněny JSON Schema veřejného AircraftV1/SSE snapshot/delta, cílové OpenAPI komponenty při zachování pravdivého G-00 stubu a syntetické BEAST/stream fixture.
 - Přidány sdílené syntetické JSON golden případy, Rust/TS validace identity, provenance, času a bezpečných SQL vzorků; modelové testy sekvence SSE.
 - G-01 je **rozpracováno**, skutečný BEAST parser, plné OpenAPI schéma, E2E a runtime SSE nejsou hotové; 45 produktových funkcí není touto změnou dokončeno.
 
