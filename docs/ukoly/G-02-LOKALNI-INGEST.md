@@ -89,3 +89,5 @@ Při předchozí kontrole byly G-02.04/.05/.06/.08/.10/.11 pouze částečně ov
 - **G-02.11: nedokončeno.** GitHub CI měří navíc 5 000 různých identit při 1×/2×/4× syntetické zátěži; skutečné profilování na samostatném DEV LXC s 1 vCPU, stabilita při přetížení a dlouhodobý soak zatím nedoloženy.
 - `J01/J02/J03/J04/J05/J11` mají stav **TESTED**, nikoli `ACCEPTED`; celá etapa se do `HOTOVO` nepřeklápí před skutečnou G-02.11 přejímkou.
 - Nevznikla žádná produkční integrace, nasazení G-02 na DEV LXC ani změna V1, databáze či readsb.
+
+**Postup zbývajícího měření:** [G-02.11 — bezpečná DEV LXC přejímka](../runbooks/G-02-DEV-LXC-PREJIMKA.md).

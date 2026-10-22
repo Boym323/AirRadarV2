@@ -226,9 +226,15 @@ mod tests {
         beast.squawk = Some("7777".into());
         beast.telemetry.ground_speed_kt = Some(999.0);
         state.apply(&beast);
-        assert_eq!(state.tracks["icao:abc123"].callsign.as_deref(), Some("TEST123"));
+        assert_eq!(
+            state.tracks["icao:abc123"].callsign.as_deref(),
+            Some("TEST123")
+        );
         assert_eq!(state.tracks["icao:abc123"].squawk.as_deref(), Some("7600"));
-        assert_eq!(state.tracks["icao:abc123"].telemetry.ground_speed_kt, Some(180.0));
+        assert_eq!(
+            state.tracks["icao:abc123"].telemetry.ground_speed_kt,
+            Some(180.0)
+        );
         assert_eq!(
             state.tracks["icao:abc123"].position.as_ref().unwrap().lat,
             49.9
@@ -238,8 +244,14 @@ mod tests {
         beast.position_at_utc = Some(1792627220.0);
         assert_eq!(state.apply(&beast), "updated");
         // Po vypršení důvěryhodné JSON freshness může převzít údaje BEAST.
-        assert_eq!(state.tracks["icao:abc123"].callsign.as_deref(), Some("SPOOF"));
-        assert_eq!(state.tracks["icao:abc123"].telemetry.ground_speed_kt, Some(999.0));
+        assert_eq!(
+            state.tracks["icao:abc123"].callsign.as_deref(),
+            Some("SPOOF")
+        );
+        assert_eq!(
+            state.tracks["icao:abc123"].telemetry.ground_speed_kt,
+            Some(999.0)
+        );
         assert_eq!(
             state.tracks["icao:abc123"].position.as_ref().unwrap().lat,
             49.901
