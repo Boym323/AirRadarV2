@@ -64,3 +64,28 @@ Optimalizované `--g02-benchmark` nyní obsahuje **180 sekund** syntetického BE
 ## Automatické vzdálené potvrzení bez dalších zásahů
 
 Nový samostatný GitHub Actions job `verify-dev-lxc` po úspěšném vydání balíčku pravidelně **pouze čte** veřejný HTTPS `https://airradarv2.pomykal.cz/g02-status.json`. Porovnává plné `sha` s právě vydaným commitem a vyžaduje `replay=PASS`, `benchmark=PASS`, všech šest zátěžových variant a izolovaný TCP/JSON soak >=180 000 ms, TCP reconnect, JSON recovery, nulové `queue_drops`, platné RSS i vyčištěný TTL. Nejvýše 25 jednou za minutu opakovaných pokusů; žádné SSH, CI tokeny v LXC ani zásah do prod V1. Když není nový report, brána FAIL/NEOVĚŘENO, ne falšovaný PASS. Kontrola výsledků je stále pouze *syntetická*. Reálný hodinový test autorizovaného readsb zůstává otevřeným rizikem.
+
+## Oprava pořadí GitHub Releases — 22. 10. 2026
+
+Zjištěn blokátor: veřejné GitHub API vrací releases mimo časové pořadí.
+Původně nainstalovaný Python agent bral první platný balíček (staré SHA `daa15703`),
+a proto nemusel vůbec spustit novější 180sekundový G-02.11 test.
+Opraven `deploy/g02-auto-pull.py`: vybírá nejnovější validní release podle `published_at`;
+regresní test ověřuje několik různých pořadí.
+
+**Stávající DEV LXC vyžaduje jednorázovou aktualizaci pouze tohoto skriptu.**
+GitHub sám neumí automaticky přepsat lokálně nainstalovaný Python agent.
+Na ověřeném **DEV LXC** jako root spusť (po úspěšné CI posledního commitu):
+
+~~~bash
+set -euo pipefail
+curl -fsSLo /root/g02-auto-pull-new.py \
+  https://raw.githubusercontent.com/Boym323/AirRadarV2/codex/g02-auto-lxc-20261022/deploy/g02-auto-pull.py
+python3 -m py_compile /root/g02-auto-pull-new.py
+install -o root -g root -m 0755 /root/g02-auto-pull-new.py /usr/local/libexec/airradarv2-g02-pull.py
+systemctl start airradarv2-g02-auto.service
+journalctl -u airradarv2-g02-auto.service -n 30 --no-pager
+~~~
+
+To nemění běžící web, službu AirRadar ani V1. Výsledek se zobrazí na
+`https://airradarv2.pomykal.cz/g02-status.json` pod aktuálním SHA.

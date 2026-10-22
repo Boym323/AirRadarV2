@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-02: oprava výběru nejnovějšího GitHub prerelease
+- Github API nevracelo seznam vydání v chronologickém pořadí; dosavadní pull agent vybíral první starší SHA místo nového, takže automatický DEV LXC 180s test zůstával nespouštěný.
+- Nově se řadí validní připnuté releasy podle `published_at`. Regresní testy pokrývají nesetříděnou odpověď. Vyžaduje jednorázovou aktualizaci nainstalovaného agenta v DEV LXC (bez restartu běžícího radaru).
+
+
 ### G-02.11 — automatický loopback reconnect soak (čeká na CI a LXC)
 - Do existujícího `--g02-benchmark` přidán izolovaný skutečný TCP BEAST + JSON poll scénář s fragmentací, opakovanými EOF, obnovením spojení i chybným/opravovaným JSON souborem, kontrolami deduplikace, fronty, RSS a TTL. Release sestavení měří 180s, rychlý CI debug test nejméně 5s.
 - Stávající timer na DEV LXC při vydání nové verze spustí test bez přístupu k produkční V1; výsledky se objeví v `benchmarkLog` veřejného `/g02-status.json`. Skutečná čísla se doplní až po ověření, live-soak fyzického přijímače zůstává nepřevzatý.
