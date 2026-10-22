@@ -1,142 +1,147 @@
-# PostgreSQL V2 — fyzický model, indexy, retence a zálohy
+# PostgreSQL V2 — deduplikovaný úsporný datový model a zálohy
 
-**Stav:** závazný **návrh G-04** k implementaci a ověření v oddělené DEV databázi; **žádné SQL z tohoto dokumentu dosud nebylo spuštěno**. **Rozsah:** \`J09\`, \`S06\`, \`S09\`, související diagnostika \`O07\`. Historie V1 se nemigruje. Datum: 22. 10. 2026.
+**Revize:** 22. 10. 2026 — RAM-first optimalizace; **nahrazuje původní pevné 15s vzorkování**.  
+**Stav:** schválený **návrh G-04**, nikoli vytvořená databáze, spuštěné SQLx migrace nebo benchmark.  
+**Primární KEEP:** J09, podpůrně S06/S09 a O07; lokální Rust RAM zůstává živou autoritou J05/J11.
 
-## 1. Datový model odpovídající schváleným funkcím
+**Nejdříve přečíst:** [RAM cache, deduplikace a podmínky zápisu](../docs/technical/RAM-CACHE-A-DEDUP-ZAPISU.md). Všechny níže uvedené časové a kapacitní limity se mohou upravit po reálném měření; bez dalších produktových funkcí.
 
-| Tabulka | Účel a konzument | Životní cyklus |
+## 1. Co se skutečně ukládá
+
+| Fyzický objekt | Data a přímý konzument | Výchozí retence |
 |---|---|---|
-| \`airradar_v2.flight_samples\` | vzorkované *validní polohy* skutečných lokálně přijatých cílů; J09, případně statistické dotazy | **30 dní**, denní UTC partition |
-| \`airradar_v2.receiver_daily\` | pravdivé agregované počty zpráv, letadel se zaznamenanou polohou, vzorků a zahozených vzorků; S09, O07 | **365 dní**, malá tabulka |
-| \`airradar_v2.dimension_daily\` | pouze *doložené* skupiny typu letadla/operátora/trasy, mají-li skutečně zdroj; S06 | **365 dní**, pouze existující hodnoty, bez domýšlení |
-| budoucí doručovací stav L06/L11/L12 | **není součást G-04**; model vznikne samostatným rozhodnutím v G-08 jen podle skutečné potřeby idempotentního doručení | případná krátká retence ve vlastní G-08 migraci |
+| \`airradar_v2.flight_samples\` | *nové a validní významné* vzorky poloh J09, po deduplikaci v RAM | **30 dní**, nejvýše 1 záznam na aircraft a 30s UTC bucket |
+| \`airradar_v2.receiver_daily\` | pravdivé denní počty uložených a ztracených vzorků, reálné snapshot počítače readsb, S09/O07 | **365 dní** |
+| \`airradar_v2.dimension_daily\` | **nezakládat v G-04**, dokud G-09 neprokáže důvěryhodný zdroj type/operator/route a reálný konzument S06 | případně **365 dní** |
 
-Nevytvářet tabulky pro historický detail letadla, analytické profily, fiktivní síťové zdroje, ukládání všech raw BEAST rámců ani kopie schématu V1. Nepřidávat PostGIS, TimescaleDB, pg_partman či další rozšíření bez důkazu jejich potřeby.
+Žádné tabulky pro raw BEAST rámce, plný JSON, duplicity, cache, SSE, seznam aktivních letadel či každé stisknutí mapy. PostgreSQL slouží **pouze k dlouhodobé historii**; lokální RAM store a MapLibre ji nevolají při každé aktualizaci.
 
-**Identita** je text \`icao:abcdef\` nebo \`nonicao:abcdef\`; šestimístná hex část malými písmeny a **ne-ICAO se nikdy neslučuje s ICAO**. Neoznačovat callsign za primární identitu. \`bucket_at\` je počátek 15sekundového UTC časového okna; \`position_at\` je nejnovější *skutečně platný* čas polohy. Volbu vzorku v každém okně provádí jediný RAM owner; pozdě doručený horší nebo starší zdroj jej nesmí přepsat.
-
-## 2. Návrh SQL schématu pro G-04 (neaplikovat bez revize)
+## 2. Schéma V2 — ilustrativní SQLx migrace, NEPROVÁDĚT
 
 ~~~sql
--- Ukázka budoucí SQLx migrace; následující příkazy NESPOUŠTĚT na V1 ani
--- v existující databázi bez G-04 DEV schválení a backup/restore plánu.
+-- Ukázka pro novou oddělenou DEV DB airradar_v2_dev.
+-- Nikdy nepouštět bez G-04 schválení proti sdílené produkci.
 CREATE SCHEMA IF NOT EXISTS airradar_v2;
 
 CREATE TABLE airradar_v2.flight_samples (
-  bucket_at       timestamptz NOT NULL,
-  aircraft_key    varchar(14) NOT NULL
-                    CHECK (aircraft_key ~ '^(icao|nonicao):[0-9a-f]{6}$'),
-  position_at     timestamptz NOT NULL,
-  latitude        double precision NOT NULL CHECK (latitude BETWEEN -90 AND 90),
-  longitude       double precision NOT NULL CHECK (longitude BETWEEN -180 AND 180),
-  altitude_ft     integer,
-  ground_speed_kt real CHECK (ground_speed_kt >= 0 AND ground_speed_kt <= 1500),
-  track_deg       real CHECK (track_deg >= 0 AND track_deg < 360),
-  vertical_rate_fpm integer,
-  squawk          varchar(4) CHECK (squawk ~ '^[0-7]{4}$'),
-  on_ground       boolean,
-  ingest_source   varchar(5) NOT NULL CHECK (ingest_source IN ('JSON','BEAST')),
+  bucket_at          timestamptz NOT NULL,
+  aircraft_key       varchar(14) NOT NULL
+                       CHECK (aircraft_key ~ '^(icao|nonicao):[0-9a-f]{6}$'),
+  position_at        timestamptz NOT NULL,
+  latitude           double precision NOT NULL
+                       CHECK (latitude BETWEEN -90 AND 90),
+  longitude          double precision NOT NULL
+                       CHECK (longitude BETWEEN -180 AND 180),
+  altitude_ft        integer,
+  ground_speed_kt    real CHECK (ground_speed_kt BETWEEN 0 AND 1500),
+  track_deg          real CHECK (track_deg >= 0 AND track_deg < 360),
+  squawk             varchar(4) CHECK (squawk ~ '^[0-7]{4}$'),
+  on_ground          boolean,
   PRIMARY KEY (bucket_at, aircraft_key),
-  CHECK (position_at <= bucket_at + interval '15 seconds')
+  CHECK (
+    position_at >= bucket_at
+    AND position_at < bucket_at + interval '30 seconds'
+  )
 ) PARTITION BY RANGE (bucket_at);
 
--- Vytvářet vždy konkrétní UTC denní partition pouze migrační/údržbovou rolí.
--- Například pro demonstrační den 2026-10-22:
+-- Jen pokud měřená data opravňují partitions:
+-- budoucí údržbová/migrační role připraví konkrétní denní UTC partition.
 CREATE TABLE airradar_v2.flight_samples_20261022
   PARTITION OF airradar_v2.flight_samples
   FOR VALUES FROM ('2026-10-22 00:00:00+00')
             TO   ('2026-10-23 00:00:00+00');
 
--- Index pro dotazy podle letadla a intervalu; pod PK je už časový B-tree.
-CREATE INDEX flight_samples_aircraft_time_idx
-  ON airradar_v2.flight_samples (aircraft_key, bucket_at DESC);
+-- ŽÁDNÝ další index v první verzi!
+-- Konkrétním EXPLAIN ověřit, zda je později třeba:
+-- CREATE INDEX ... ON ... (aircraft_key, bucket_at DESC);
 
 CREATE TABLE airradar_v2.receiver_daily (
   day_utc             date PRIMARY KEY,
-  received_messages   bigint NOT NULL DEFAULT 0 CHECK (received_messages >= 0),
-  observed_aircraft   integer NOT NULL DEFAULT 0 CHECK (observed_aircraft >= 0),
-  written_samples     bigint NOT NULL DEFAULT 0 CHECK (written_samples >= 0),
-  dropped_samples     bigint NOT NULL DEFAULT 0 CHECK (dropped_samples >= 0),
+  received_messages   bigint NOT NULL DEFAULT 0
+                        CHECK (received_messages >= 0),
+  observed_aircraft   integer NOT NULL DEFAULT 0
+                        CHECK (observed_aircraft >= 0),
+  written_samples     bigint NOT NULL DEFAULT 0
+                        CHECK (written_samples >= 0),
+  dropped_samples     bigint NOT NULL DEFAULT 0
+                        CHECK (dropped_samples >= 0),
   calculated_at       timestamptz NOT NULL DEFAULT now()
 );
-
-CREATE TABLE airradar_v2.dimension_daily (
-  day_utc         date NOT NULL,
-  dimension       varchar(16) NOT NULL
-                    CHECK (dimension IN ('aircraft_type','operator','route')),
-  dimension_key   varchar(80) NOT NULL,
-  aircraft_count  integer NOT NULL CHECK (aircraft_count >= 0),
-  calculated_at   timestamptz NOT NULL DEFAULT now(),
-  PRIMARY KEY (day_utc, dimension, dimension_key)
-);
 ~~~
 
-**Revize před migrací:** pokud se schválí záznam starých pozic po přechodu zdroje nebo jiný sampling interval, sjednotit výpočet \`bucket_at\` a \`CHECK(position_at)\`. Pozor na UTC časová razítka: \`position_at\` může být před začátkem bucketing okna u opožděného zdroje; před zápisem maximální stáří explicitně omezit. Sekvence událostí nesmí být předstírána jako SQL ID. V případném čase rolloveru používáme **UTC**, nikoli lokální DST. Návrh neobsahuje žádné DDL na sdílené role.
+**Integrita:** \`bucket_at\` je \`position_at\` zaokrouhlené dolů na 30s UTC (např. v aplikaci \`date_bin('30 seconds', position_at, epoch)\`). \`nonicao:\` a \`icao:\` jsou oddělené. \`PRIMARY KEY(bucket_at, aircraft_key)\` zabraňuje druhému řádku v **tomtéž bucketu**, nikoli ve všech sousedních intervalech. **Hlavní deduplikační logika běží v RAM ještě před SQL**. \`ON CONFLICT DO NOTHING\` je až poslední bezpečnostní vrstva proti replays/retry.
 
-## 3. Zápisy a indexy
+Čas polohy musí být skutečně doložený: u readsb \`now - seen_pos\` po validaci, u BEAST jen pokud je bezpečně rekonstruovaný; jeho MLAT timestamp není automaticky UTC. Pokud lze spolehlivě určit jen received UTC a chybí validní čas polohy, takový bod nevkládat jako údajně historickou platnou polohu bez zvláštního explicitního kontraktu.
 
-- **Vzorkování:** výchozí jeden vzorek za **15 s / validní aircraft identity**; pokud není čerstvá poloha, nevytvářet fiktivní záznam. Hodnoty mimo doménu odmítnout a metrikovat, ne „opravovat“ bez zdůvodnění.
-- **Queue:** \`RAM → bounded async queue (výchozí 10 000 jednotlivých samples) → batch 250–1 000 řádků nebo nejvýše 1 s → SQLx pool\`. Dávka transakčně, \`INSERT ... ON CONFLICT (bucket_at, aircraft_key) DO NOTHING\`, nikoliv nové SQL připojení na letadlo.
-- **Pool:** výchozí **max. 4 připojení** do DB LXC, connect timeout 3 s, statement timeout 5 s a krátké transakce. Při výpadku použít backoff a inkrementovat \`dropped_samples\`; nikdy nezablokovat live RAM/SSE a nikdy neukládat tajemství do logů.
-- **Indexy:** základní PK \`(bucket_at, aircraft_key)\` umožňuje rozsah dne/partition, sekundární B-tree \`(aircraft_key, bucket_at DESC)\` slouží pro dotaz jednotlivé identity. **BRIN \`(bucket_at)\` nepřidávat automaticky** — při denních partitions může být redundantní. Přidat teprve pokud \`EXPLAIN (ANALYZE, BUFFERS)\` na reprezentativních datech prokáže snížení bloků/latence proti ceně zápisů.
-- **Dotazy:** vždy používat omezené UTC intervaly, podporovat partition pruning; nevykonávat fullscan bez explicitního měření. Indexy pro typ/aerolinku nepřidávat, protože agregace jsou malé denní tabulky. Chybějící metadata S06 zobrazit jako nedostupná, **neodvozovat aerolinku/trasu jen z callsignu**.
-- **Particie:** denní UTC, 2 dny zpět pro toleranci opožděných paketů, **7 dní dopředu připravené** maintenance jobem; žádná DEFAULT partition, která by bezděčně zadržela stará data. Neexistující aktuální partition = chyba persistence a zdravotní alarm, ne výpadek živého ingestu.
-- **Retence:** denně řízeně \`DETACH PARTITION\`/po ověření \`DROP TABLE\` staré denní partition. Žádný masový \`DELETE\` celé velké tabulky. Admin příkazy provozovat odděleně s dokumentovanými zámky, transakcemi a možností rollbacku; \`DETACH ... CONCURRENTLY\` má specifická omezení. Automatický job musí nejdřív zobrazit návrh konkrétních partition, a mazat jen po otestování. Neprovádět mazání jiných schemat.
-- **Idempotence agregace:** S09/S06 se počítá nad uzavřeným UTC dnem do \`receiver_daily\` a \`dimension_daily\`, opakovaná dávka používá UPSERT po dni a klíčích. \`received_messages\` používá delty skutečného counteru, se zohledněním restartu readsb; \`observed_aircraft\` musí mít jednoznačnou definici (např. unikátní cíle s *uloženou platnou polohou*), aby se nepletlo s celkovou detekcí zpráv.
+**Záměrná změna:** původní dokument definoval třetí agregační tabulku ještě před potřebou, dva indexy od začátku a fixní 15s INSERT. Tento návrh je přísnější vůči diskové zátěži.
 
-## 4. Retence — startovací rozhodnutí a důsledky
+## 3. RAM watermark, change-driven sampling a bezplatná mapa
 
-| Kategorie | Výchozí návrh | Účel |
-|---|---|---|
-| Detailní platné polohy \`flight_samples\` | **30 dní** | úsporná historie, technické dotazy J09 |
-| Denní souhrny \`receiver_daily\`, \`dimension_daily\` | **365 dní** | S06/S09 bez držení detailů |
-| RAW BEAST/JSON rámce na disku | **neukládat** | cena a nepotřebná data |
-| Krátká letová stopa pro mapu R08 | **20 min v RAM**, nedotazovat DB na každý SSE tick | nízká latence |
-| Logy aplikace | **7–14 dní** bez citlivých paketů | diagnostika |
-| Fronta budoucího doručování L11/L12 | až návrh G-08; bez implicitního retention | žádný nový produkt mimo rozsah |
+- **Nejprve** normalizace J01/J02/J03/J04/J11; pokud stejná/opožděná poloha z JSON i BEAST, žádný zápis ani nové přepsání \`lastPositionAt\`.
+- **V RAM** stav každého letadla nese \`lastPersisted\` a \`pendingSample\`. Jedna platná první poloha, poté:
+  - běžný pohyb: nové skutečné pozorování **nejdříve po 60 s** a teprve při změně 2 km/500 ft/15°, případně po 180 s nového validního měření;
+  - výjimečný velký obrat 30°/stoupání 1500 ft/přechod air/ground: **nejdříve po 30 s**;
+  - stojící: 120 s + pohyb 100 m, jinak čerstvý 10min kontrolní bod;
+  - bez nové platné polohy: **žádný další SQL řádek**.
+- \`30s UTC bucket\` je pouze idempotentní hranice uloženého bodu, **nikoli povinný zápis každých 30s**.
+- Všechny detaily a nuance potvrzení SQL transakcí jsou v [policy](../docs/technical/RAM-CACHE-A-DEDUP-ZAPISU.md). Výše uvedené prahy jsou **startovací hypotézy** pro replay 15/30/60 s, ne garantovaná konfigurace.
+- Stav letadel a krátké mapové stopy (20 min, max 64 bodů na cíl) zůstává v Rust RAM. SSE 1Hz se nesmí dotazovat SQL.
 
-30/365 dní jsou **projektová východiska**, nikoli ze zdroje či naměřeného LXC. Po dvou týdnech skutečného sběru upravit podle počtu řádků, prostoru, WAL a uživatelských dotazů. Před zkrácením retence ověřit, že se nemusí zachovat údaje kvůli jinému legitimnímu konzumentovi.
+## 4. SQLx writer: co nejméně transakcí a indexových zápisů
 
-## 5. Kapacitní model (matematický příklad, NE MĚŘENÍ)
+- Jeden hlavní writer nad **bounded coalescing pending map** max 2 048 položek, max 30 s stáří. **Nevzniká** 10 000 položková FIFO pro všechny zprávy.
+- **Batch insert** maximálně 128 vzorků nebo flush po 5 sekundách neprázdného pending bufferu. Po prázdném ticku neodesílat SQL. Krátká transakce, připravené parametry, \`ON CONFLICT DO NOTHING\`. Pool start max **2** (writer + případné historické čtení).
+- Výpadek DB: omezené retry, stálý RAM live stav a SSE, nadlimitní/stará pending položka se zahodí se statistikou. Žádný catch-up write storm po obnově. Při crashi lze ztratit nepotvrzený vzorek; to je vědomý kompromis \`write-back RAM cache\`, ne stoprocentní durable queue.
+- Denní přijaté message counters a souhrny počítat **v RAM**, checkpoint nanejvýš **jednou za 5 min** nebo po UTC rolloveru, nikdy na každý přijatý rámec. Restart readsb i Rust může způsobit rozdíl proti přesnému počítadlu; explicitně dokumentovat přesnost. Počty zapsaných sample lze v DEV ověřit jednorázovým SQL agregátem.
+- Nevytvářet \`UPDATE\` historických pozic. Po zavření RAM bucketu vložit konečný vybraný vzorek. Kompaktní \`receiver_daily\` UPSERT je jediné plánované pravidelné přepsání jednoho řádku.
 
-50 letadel nepřetržitě s platnou pozicí × 4 vzorky/min × 1 440 min/den = **288 000 vzorků/den**, tedy **8,64 milionu/30 dní**. Skutečný objem disku záleží na délce řádků, fillfactoru, indexech, WAL a kompresi; žádné číslo GB zde nevydáváme za naměřený výsledek. V G-04 měřit \`pg_total_relation_size\`, WAL bytes, checkpointy, latence insertů a \`EXPLAIN\`.
+## 5. Indexy a retence podle skutečné velikosti
 
-## 6. Zálohy — dvě nezávislé vrstvy
+1. Nejdříve **porovnat dvě fyzické varianty** na DEV: **jedna běžná tabulka** s pravidelnou retenční údržbou vs **denní UTC partitions**, vždy stejný SQLx reader/writer a stejný replay. Nad malou tabulkou může být partition overhead zbytečný; nad miliony řádků umožní \`DROP/DETACH PARTITION\` odstranit celé dny bez masových DELETE/VACUUM. PostgreSQL samo uvádí, že partitioning bývá užitečný až pro dostatečně velké tabulky.
+2. PK je v obou variantách nutný pro poslední dedup. Dodatečný B-tree na \`aircraft_key, bucket_at DESC\` vytvořit **jen** když J09/S09 skutečně hledají detailní trasu letadla a \`EXPLAIN (ANALYZE, BUFFERS)\` prokáže výhodu.
+3. BRIN je kandidát jen při velmi velké append-only chronologicky uložené tabulce; nevytvářet jej automaticky vedle denních partitions.
+4. Retence detailu výchozí 30 dní, souhrny 365 dní; u partitions pravidelný **DROP/DETACH nejstarších celých dní**, u jedné tabulky jen ohraničený batch delete s dopadem na WAL/VACUUM. Retention job spouštět mimo Rust live hot path a izolovat práva.
+5. Žádný \`UNLOGGED\` pro persistentní J09, \`fsync=off\`, \`full_page_writes=off\` ani globální kompromis durability na sdíleném DB LXC.
+6. \`wal_compression\` lze zkoumat **jen se souhlasem správce**: omezuje velikost WAL full-page images výměnou za CPU a může zasáhnout ostatní databáze. Prioritou je **nedělat zbytečné INSERTy**.
 
-1. **Sdílený PostgreSQL cluster:** správce existujícího DB LXC musí potvrdit, že má funkční fyzické zálohy + případně WAL archivaci/PITR. To je ochrana celé instance, nelze bezpečně měnit jen pro V2. Zásadní: samotný \`pg_dump\` jedné databáze **není cluster PITR**.
-2. **Samostatná logická záloha databáze V2:** výchozí **1× denně** do \`pg_dump -Fc\` zacíleného pouze na \`airradar_v2\`, uložit šifrovaně **mimo DB LXC** (jiné úložiště/prostředí). **14 denních + 8 týdenních** kopií, měsíční nezávislý restore test do \`airradar_v2_restore_test\` nebo do izolované testovací instance. Potvrdit, že záloha obsahuje schéma, závislosti a datové řádky. Privilegia obnovovaného vlastníka předem připravit bezpečně.
-3. **Cílové RPO/RTO** navrhnout \`RPO <= 24 h\` při denním dumpu a \`RTO <= 2 h\`; jsou to cíle **k otestování**, ne garantované SLA. Pokud požadujeme \`RPO <= 15 min\`, pak je nutná skutečná průběžná WAL archivace na clusteru a odpovídající obnova.
-4. Export vyzkoušet neprivilegovanou read-only rolí s potřebnými SELECT, ale \`pg_dump\` role musí mít přístup ke všem V2 objektům a sekvencím. V záloze nesmí být secrets; i letové údaje se ukládají mimo veřejný Git.
-5. **Ověření obnovy**: \`pg_restore --list\` + vytvoření oddělené prázdné testovací DB + \`pg_restore --exit-on-error\` + počty řádků a relevantní API SELECT + zkušební SQLx připojení. Záloha bez obnovy není prověřená.
-6. U clusterových fyzických záloh používat \`pg_verifybackup\` při podporovaném formátu, ale stále také dělat skutečné restore testy.
+## 6. Model předpokládané redukce (NE měření)
 
-### Orientační příkazy bez tajemství (pouze po schválení prostředí)
+Hypotetických 50 letadel, neustále čerstvé polohy, žádné výjimečné velké manévry:
 
-~~~bash
-# Nespouštět do produkce bez samostatné V2 DB a zabezpečené konfigurace.
-pg_dump --format=custom --no-owner --no-acl \
-  --file="$SAFE_BACKUP_DIR/airradar_v2_YYYYMMDD.dump" airradar_v2
-pg_restore --list "$SAFE_BACKUP_DIR/airradar_v2_YYYYMMDD.dump"
-# Obnovovat výhradně do nové prázdné, izolované testovací DB.
-pg_restore --exit-on-error --no-owner --no-acl \
-  --dbname=airradar_v2_restore_test "$SAFE_BACKUP_DIR/airradar_v2_YYYYMMDD.dump"
-~~~
+| Maximální běžná frekvence | Řádky za den | Za 30 dní | Proti 15 s |
+|---|---:|---:|---:|
+| původní fixní 15 s | 288 000 | 8 640 000 | 0 % |
+| 30 s | 144 000 | 4 320 000 | až −50 % |
+| **adaptivně nejdříve 60 s** | **72 000** | **2 160 000** | **až −75 %** |
 
-## 7. Přejímka G-04
+To je **matematika počtu vzorků**, ne měřené zmenšení WAL, skutečných diskových zápisů ani CPU. Deduplikace stejné polohy může ušetřit více, záznamy prudkých manévrů naopak vedou k vyšší četnosti. Počet vzorků nesmí být optimalizován na úkor použitelnosti J09/R08/S09; potřebujeme skutečný replay a profilování.
 
-- [ ] Ověřena přesná verze PostgreSQL na existujícím LXC, role, vlastní schéma a klientská TLS konfigurace.
-- [ ] SQL DDL prošlo v nové **DEV V2** DB, partition maintenance precreate+expiry bezpečně otestovány.
-- [ ] SQLx transakce a role mají jen potřebná oprávnění, žádné DDL z runtime účtu.
-- [ ] Replay stejného datasetu při sampling 5/15/30 s, měřeny INSERT throughput, pool, p95/p99 a WAL.
-- [ ] \`EXPLAIN (ANALYZE, BUFFERS)\` na skutečném objemu pro časový dotaz a dotaz \`aircraft_key\`, potvrzen počet potřebných indexů.
-- [ ] Test výpadku DB, jeho restartu a dopadu na Rust RAM/SSE; bounded queue bez nekonečného růstu.
-- [ ] Ověřený logický i existující fyzický backup a **provedený test restore**, RPO/RTO skutečně změřeny.
-- [ ] Po schválení retence aktualizovat tuto specifikaci, SQLx migraci, český report, stav etap a changelog.
+## 7. Zálohy a obnova zůstávají nezbytné
 
-## Podklady
+- **Denní logický \`pg_dump -Fc\` jen DB \`airradar_v2\`**, šifrovaně mimo databázový LXC, výchozí 14 denních a 8 týdenních kopií, měsíční restore do izolovaného testovacího cíle.
+- Existující fyzickou cluster backup/WAL archivaci musí ověřit správce sdílené PostgreSQL instance. Denní \`pg_dump\` **není PITR** a není bezpečné globálně měnit WAL režim bez nezávislého schválení.
+- **RPO ≤ 24 h / RTO ≤ 2 h** jsou prozatím **cíle k testu**, nikoli garantovaná SLA; RAM pending data do posledního úspěšného commit nejsou zahrnutá.
+- Zálohám musí předcházet audit práv, SSL, provozní kapacity a oddělení od V1. Test \`pg_restore\` se spouští pouze na izolované prázdné DEV databázi.
 
-- [PostgreSQL 18 — Partitioning](https://www.postgresql.org/docs/18/ddl-partitioning.html): požadavek na partition key v PK, pruning a údržba.
-- [PostgreSQL 18 — BRIN](https://www.postgresql.org/docs/18/brin.html): vhodnost korelovaných hodnot a indexování.
-- [PostgreSQL — pg_dump](https://www.postgresql.org/docs/18/app-pgdump.html), [WAL/PITR](https://www.postgresql.org/docs/18/continuous-archiving.html), [pg_verifybackup](https://www.postgresql.org/docs/18/app-pgverifybackup.html).
+## 8. Podmínky přejímky a povinná měření G-04
 
-**Všechny SQL bloky jsou výlučně návrh.** Žádná DB není při této rešerši vytvořena nebo změněna.
+- [ ] Stejný golden replay v baseline 15s, 30s a novém adaptivním 60s režimu; doložit přesné skutečné INSERTy, unikátní identity a trasovou přesnost.
+- [ ] V RAM test duplicit JSON/BEAST, stejných/opožděných pozic, stale position time, přechodu air/ground a restartu readsb.
+- [ ] Nulové SQL INSERTy při nezměněných/nenových pozicích, nulové prázdné transakce a SQL \`UPDATE\` na polohových řádcích.
+- [ ] Buffer omezený počtem položek i stářím, žádné memory leak nebo catch-up write storm při výpadku SQL.
+- [ ] Správnost PK při restartu/retry a \`ON CONFLICT DO NOTHING\`, nedvojí započtení potvrzeného sample.
+- [ ] Porovnání nepartitionované vs denně partitionované tabulky a PK-only vs s přidaným indexem.
+- [ ] CPU/RSS Rust, SQL transakce/s, \`pg_stat_user_tables\`, \`pg_total_relation_size\`, \`EXPLAIN/BUFFERS\`, WAL a I/O (jen izolovaně; \`pg_stat_wal\` agreguje *celý cluster*).
+- [ ] Reálně otestovaný restore, práva/TLS a nulový dopad restartu PostgreSQL na živé RAM/SSE.
+
+Žádné označení \`ACCEPTED\` G-04/J09 nevzniká schválením tohoto dokumentu.
+
+## Zdroje
+
+- [PostgreSQL partitioning a jeho náklady](https://www.postgresql.org/docs/current/ddl-partitioning.html).
+- [PostgreSQL WAL a bezpečná durabilita](https://www.postgresql.org/docs/current/runtime-config-wal.html).
+- [PostgreSQL COPY vs INSERT](https://www.postgresql.org/docs/current/populate.html).
+- [PostgreSQL monitoring](https://www.postgresql.org/docs/current/monitoring-stats.html).
+- [PostgreSQL backup a recovery](https://www.postgresql.org/docs/current/backup.html).
+
+**Žádný příkaz z této specifikace nebyl spuštěn proti existující databázi ani LXC.**
