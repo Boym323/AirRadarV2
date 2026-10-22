@@ -156,14 +156,18 @@ def write_status(status: str, sha: str = "", reason: str = "") -> None:
     stage.replace(PUBLIC)
 
 
-def live_soak_active() -> bool:
-    r = subprocess.run(
-        ["systemctl", "show", "--value", "-p", "ActiveState",
-         "airradarv2-g02-live-auto.service"],
-        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
-        timeout=10, check=False,
-    )
-    return r.stdout.strip() in {"active", "activating", "reloading"}
+def g02_acceptance_active() -> bool:
+    # Both offline acceptance and the hourly physical BEAST soak own the 1-vCPU box.
+    for service in ("airradarv2-g02-live-auto.service",
+                    "airradarv2-g02-auto.service"):
+        r = subprocess.run(
+            ["systemctl", "show", "--value", "-p", "ActiveState", service],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+            timeout=10, check=False,
+        )
+        if r.stdout.strip() in {"active", "activating", "reloading"}:
+            return True
+    return False
 
 
 def preflight() -> None:
@@ -204,8 +208,8 @@ def run() -> int:
                 return 0
         except (OSError, ValueError):
             pass
-    if live_soak_active():
-        write_status("POSTPONED_G02_SOAK", main_sha, "LIVE acceptance takes priority")
+    if g02_acceptance_active():
+        write_status("POSTPONED_G02_ACCEPTANCE", main_sha, "LIVE acceptance takes priority")
         return 0
     tag = "g02-dev-" + main_sha
     try:
@@ -229,7 +233,7 @@ def run() -> int:
     if target_main_sha() != main_sha:
         write_status("NEWER_MAIN_PENDING", main_sha)
         return 0
-    if live_soak_active():
+    if g02_acceptance_active():
         write_status("POSTPONED_G02_SOAK", main_sha)
         return 0
     # Directory and files remain root-owned; the running web user cannot replace executable data.
