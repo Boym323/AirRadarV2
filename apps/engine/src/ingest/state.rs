@@ -86,7 +86,8 @@ impl RadarState {
         let before = self.tracks.len();
         self.tracks
             .retain(|_, p| now - p.last_message_at <= TRACK_TTL_SECONDS);
-        self.position_quality.retain(|key, _| self.tracks.contains_key(key));
+        self.position_quality
+            .retain(|key, _| self.tracks.contains_key(key));
         self.counters.expired += (before - self.tracks.len()) as u64;
     }
     pub fn snapshot(&self, now: f64) -> Vec<PublicAircraft> {
@@ -147,7 +148,10 @@ mod tests {
         );
         state.cleanup(1792627300.0);
         assert!(state.tracks.is_empty());
-        assert!(state.position_quality.is_empty(), "Pomocná RAM mapa nesmí leakovat");
+        assert!(
+            state.position_quality.is_empty(),
+            "Pomocná RAM mapa nesmí leakovat"
+        );
         assert_eq!(state.counters.expired, 3);
     }
     #[test]
