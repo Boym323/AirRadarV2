@@ -37,11 +37,14 @@ jobs:
           python3 -m py_compile deploy/g02-auto-pull.py
           python3 -m unittest discover -s tools -p 'test_g02_auto_pull.py'
           python3 -m unittest discover -s tools -p 'test_workflows_layout.py'
+      - name: G-03.08 statická kontrola proxy (bez instalace)
+        run: node tools/check-g03-network.mjs
       - name: Formální validace OpenAPI a JSON Schema G-01
         run: |
           python3 -m venv /tmp/airradar-g01-venv
           /tmp/airradar-g01-venv/bin/pip install --disable-pip-version-check --quiet "openapi-spec-validator==0.7.2" "jsonschema==4.25.1" "PyYAML==6.0.3"
           /tmp/airradar-g01-venv/bin/python tools/validate-g01-schemas.py
+          /tmp/airradar-g01-venv/bin/python tools/validate-g03-openapi.py
   rust-engine:
     runs-on: ubuntu-24.04
     steps:
@@ -81,6 +84,36 @@ jobs:
           python3 -c 'import json; data=json.load(open("/tmp/airradar-v2-health.json")); assert data["status"] == "bootstrap" and data["live_ingest"] is False and data["database_connected"] is False'
           curl -fsS http://127.0.0.1:4101/api/v1/aircraft -o /tmp/airradar-v2-aircraft.json
           python3 -c 'import json; data=json.load(open("/tmp/airradar-v2-aircraft.json")); assert data["status"] == "NOT_IMPLEMENTED" and data["aircraft"] == []'
+
+      - name: G-03 opt-in HTTP/SSE smoke bez skutečného přijímače
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          AIRRADAR_V2_BIND=127.0.0.1:4102 \
+          AIRRADAR_V2_READSB_JSON=/tmp/airradar-g03-neexistujici-replay \
+            target/debug/airradarv2-engine --g03-live-api >/tmp/g03-api.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:4102/api/v1/health -o /tmp/g03-health.json 2>/dev/null; then
+              ready=1; break
+            fi
+            sleep 0.2
+          done
+          if test "$ready" != "1"; then cat /tmp/g03-api.log; exit 1; fi
+          python3 -c 'import json; x=json.load(open("/tmp/g03-health.json")); assert x["stage"] == "G-03" and x["live_ingest"] is False'
+          curl -fsS http://127.0.0.1:4102/api/v1/aircraft -o /tmp/g03-aircraft.json
+          python3 -c 'import json; x=json.load(open("/tmp/g03-aircraft.json")); assert x["status"] == "waiting_for_observations" and x["data"]["kind"] == "snapshot"'
+          curl --max-time 3 --no-buffer -sS -D /tmp/g03-headers.txt \
+            http://127.0.0.1:4102/api/v1/stream -o /tmp/g03-stream.txt || test "$?" -eq 28
+          grep -qi 'text/event-stream' /tmp/g03-headers.txt
+          grep -q 'event: snapshot' /tmp/g03-stream.txt
+          grep -q '"seq":0' /tmp/g03-stream.txt
+          # G-03.06: na skutečném loopback TCP musí být 15s keepalive, bez nového letadla.
+          curl --max-time 18 --no-buffer -sS \
+            http://127.0.0.1:4102/api/v1/stream -o /tmp/g03-heartbeat.txt || test "$?" -eq 28
+          grep -q ': heartbeat' /tmp/g03-heartbeat.txt
 
   vite-web:
     runs-on: ubuntu-24.04

@@ -3,7 +3,7 @@
 **Datum:** 22. 10. 2026 · **Aktuální branch:** `main`  
 **Rozsah:** přesně **45 aktivních produktových funkcí** v 9 logických modulech, bez automatického rozšiřování.  
 **Technologie:** Rust/Tokio/Axum, Vite/React/TypeScript/MapLibre, PostgreSQL/SQLx na již provozovaném samostatném DB LXC.  
-**Stav:** G-00 dokončeno (scaffold a technologický stack); **G-01 až G-13 NEZAHÁJENO**. Tento plán jsou instrukce, ne důkaz dokončení.
+**Stav k 22. 10. 2026:** G-00 scaffold, G-01 HOTOVO 10/10, G-02 HOTOVO 11/11, G-03 ROZPRACOVÁNO 5/10; G-04 až G-13 NEZAHÁJENO. Tento plán jsou instrukce a odkazy na důkazy v etapových reportech.
 
 ## Implementační seznam
 
@@ -81,7 +81,7 @@ G-00 (hotový skeleton)
 
 ## Nejbližší krok
 
-**G-01.01 — Zafixovat rozsah a vlastnictví.** Následně pokračovat v [G-01](../ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) podle pořadí. Celý projekt lze převzít v novém chatu z [průvodce](ZACNI-ZDE-NOVE-VLAKNO.md). Samotný zápis tohoto dokumentu nemění funkční stav aplikace.
+**G-03.06–.10 — Dokončit lifecycle, backpressure, proxy a měření.** Navazuj v [G-03](../ukoly/G-03-API-A-SSE.md) a ověř CI finálního SHA. Celý projekt lze převzít v novém chatu z [průvodce](ZACNI-ZDE-NOVE-VLAKNO.md). Samotný zápis tohoto dokumentu nemění funkční stav aplikace.
 
 ## Detailní technické kontrakty před realizací
 

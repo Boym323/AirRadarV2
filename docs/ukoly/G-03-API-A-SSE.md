@@ -14,23 +14,23 @@ Samostatně otestovaný modul odpovídající uvedeným schváleným ID; zbyteč
 
 Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu**; pokud má krok vlastní závislost, nejdříve ověř jeho předchozí části. Zaškrtávej jen s odkazy na implementaci a reálné testy, nikdy pouze za napsání tohoto plánu.
 
-- [ ] **G-03.01 — Stabilizovat public DTO**  
+- [x] **G-03.01 — Stabilizovat public DTO**  
   **Implementace:** Odděl interní RAM struktury od veřejných DTO; vynech interní souřadnice přijímače, secrets a raw payloady.  
   **Ověření:** Snapshot JSON fixture splňuje OpenAPI a privacy test.
 
-- [ ] **G-03.02 — HTTP endpointy**  
+- [x] **G-03.02 — HTTP endpointy**  
   **Implementace:** Doplň GET /api/v1/aircraft, GET /api/v1/health a konzistentní chyby, timeouty a parametry filtrů pouze dle schválené smlouvy.  
   **Ověření:** Integrační test pokrývá prázdný i plný stav a 4xx/5xx.
 
-- [ ] **G-03.03 — Plné SSE snapshoty**  
+- [x] **G-03.03 — Plné SSE snapshoty**  
   **Implementace:** Odesílej úplný stav se sequence a časem při připojení jako kompatibilní formát.  
   **Ověření:** EventSource test dostane validní snapshot a spojení lze ukončit.
 
-- [ ] **G-03.04 — Delta producent**  
+- [x] **G-03.04 — Delta producent**  
   **Implementace:** Vytvářej upsert/removed změny jednou pro všechny klienty, nikoli znovu pro každého odběratele.  
   **Ověření:** Replay test prokáže, že následný delta stav odpovídá full snapshotu.
 
-- [ ] **G-03.05 — Sequence a resynchronizace**  
+- [x] **G-03.05 — Sequence a resynchronizace**  
   **Implementace:** Specifikuj monotónní pořadí a řízený resync při zmeškané sekvenci; nepředstírej neomezený server-side replay.  
   **Ověření:** Odpojení během více delt skončí novým korektním snapshotem.
 
@@ -54,6 +54,12 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Implementace:** Na syntetickém radarovém replay změř 1/10/100 klientů, bytes/s, CPU, RSS, p95/p99 a počet discard/resync.  
   **Ověření:** Výsledky s hardwarem a SHA v českém reportu, bez nevysvětlené ztráty pozic.
 
+## První CI důkazy G-03.03–.05 (22. 10. 2026)
+
+Na commitu `dbd9af7ceefe9455aae1297691f94cf2eeb9ea63` prošla [CI #39803605266](https://github.com/Boym323/AirRadarV2/actions/runs/39803605266): Rust fmt/Clippy/test, offline G-02 replay, Vite lint/TypeScript/test/build a česká dokumentace, 3/3 PASS. Nové testy `sse_snapshot_delta_and_resync_after_coalesced_seq` a `deltas_reconstruct_exact_canonical_full_state` přímo ověřují HTTP SSE snapshot, delta upsert/removed, resynchronizaci při ztraceném watch okně a shodu výsledné replica RAM s kanonickým stavem. SSE klient se na žádná data z V1 nepřipojoval.
+
+Zaškrtnuté **G-03.03/.04/.05 jsou unit/integračně TESTED**, nikoli reálně provozně ACCEPTED. G-03.01/.02/.06/.07 mají část implementace, ale ještě nejsou přejaty v rozsahu všech ověřovacích kritérií. G-03.08–.10 nejsou implementovány. Celá G-03 zůstává ROZPRACOVÁNO a žádný release se nenasadil.
+
 ## Povinné výsledky a testovací brána
 
 - Ověřit Rust `cargo fmt --all -- --check`, `cargo clippy --locked --workspace --all-targets -- -D warnings`, `cargo test --locked --workspace`.
@@ -73,3 +79,13 @@ Všechny kroky mají skutečné odkazy na důkazy a všechny této etapě primá
 - [Browser reconnect testy](../technical/PLAYWRIGHT-BROWSEROVE-TESTY.md)
 
 Výchozí číselné limity jsou **neověřené konfigurace pro první test**, nikoli PASS. Všechny checkboxy a stav KEEP zachovat, dokud nevznikne reálný kód, fixture a testovací důkazy.
+
+## Integrační pokračování
+
+G-03.08 obsahuje jen izolovaný Nginx vzor, opt-in Vite proxy a CI statickou kontrolu; skutečný DEV streaming přes proxy ještě nebyl ověřen. Checkbox zůstává neoznačen.
+
+G-03.01/.02/.06/.07: doplněn oddělený runtime OpenAPI kontrakt a Rust regresní scénáře; výsledky se stanou TESTED až po zelené CI a případných provozních měřeních.
+
+## Doložená dílčí přejímka G-03.01 a G-03.02
+
+[CI #39814106622](https://github.com/Boym323/AirRadarV2/actions/runs/39814106622) na `d7483417f80ce1820d84b2e377e3b709db93a153`: 3/3 PASS, samostatná G-03 OpenAPI 3.1 + validační fixture a Rust HTTP 200/400/503 včetně privacy. Proto .01/.02 jsou TESTED. G-03.06/.07 stále potřebují heartbeat, skutečný RSS/backpressure; .08 proxy browser, .09 další regresi a .10 zátěž.

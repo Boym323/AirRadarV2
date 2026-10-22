@@ -72,9 +72,11 @@
       "id": "J06",
       "name": "Veřejné API aktuálních letadel · základ systému",
       "decision": "KEEP",
-      "status": "NOT_STARTED",
-      "tests": [],
-      "notes": ""
+      "status": "TESTED",
+      "tests": [
+        "G-03 HTTP GET/400/503 + OpenAPI 3.1 + privacy, CI #39814106622, SHA d7483417"
+      ],
+      "notes": "Opt-in HTTP API nad jediným RAM snapshotem, bez DEV/LIVE nasazení. Nejde o přejímku SSE load a proxy."
     },
     {
       "id": "J07",

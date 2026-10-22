@@ -4,6 +4,7 @@
 #[allow(dead_code)]
 mod contract;
 
+mod api;
 #[allow(dead_code)]
 mod ingest;
 
@@ -90,6 +91,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             state.counters.duplicates,
             state.counters.conflicts
         );
+        return Ok(());
+    }
+    // G-03: opt-in HTTP/SSE nad *stejnou* G-02 RAM mapou. Není automaticky
+    // nasazeno do DEV, nemění G-00 service ani probíhající G-02 LIVE test.
+    if std::env::args().any(|arg| arg == "--g03-live-api") {
+        let config = ingest::supervisor::Config::from_env()?;
+        let (feed, publisher) = api::new();
+        let bind =
+            std::env::var("AIRRADAR_V2_BIND").unwrap_or_else(|_| "127.0.0.1:4102".to_owned());
+        let address: SocketAddr = bind.parse()?;
+        let listener = tokio::net::TcpListener::bind(address).await?;
+        tokio::spawn(async move {
+            if let Err(error) =
+                ingest::supervisor::run_with_publisher(config, Some(publisher)).await
+            {
+                eprintln!("G-03 ingest task ended: {error}");
+            }
+        });
+        println!("AirRadar V2 G-03 opt-in API on {}", listener.local_addr()?);
+        axum::serve(listener, api::router(feed))
+            .with_graceful_shutdown(async {
+                let _ = tokio::signal::ctrl_c().await;
+            })
+            .await?;
         return Ok(());
     }
     // Jen ruční diagnostický režim; běžný systemd vždy zůstává G-00 stub.

@@ -1,6 +1,11 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+// G-03.08: port 4102 zapíná jen explicitní lokální opt-in.
+const apiTarget = process.env.AIRRADAR_V2_G03_API === "1"
+  ? "http://127.0.0.1:4102"
+  : "http://127.0.0.1:4101";
+
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -9,7 +14,7 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:4101",
+        target: apiTarget,
         changeOrigin: false,
       },
     },

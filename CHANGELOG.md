@@ -4,6 +4,30 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-03.01/.02 — 5/10 testově uzavřeno na CI #39814106622
+- Public API J06 označeno `TESTED` po formální OpenAPI 3.1 validaci, HTTP 200/400/503, privacy a SSE reconnect testech (3/3 CI PASS); neznamená to provozní G-03 release.
+
+### G-03.01/.02/.06/.07 — formální API a regresní testy (čeká nové CI)
+- Oddělený OpenAPI kontrakt opt-in API, odmítnutí neschválených query parametrů HTTP 400, JSON `CONTRACT_INVALID` a při 100 SSE klientů JSON 503 `UNAVAILABLE`.
+- Přidány Rust testy reconnect se starým Last-Event-ID, uvolnění SSE permitů a záměrně zpožděného čtení s resynchronizací. Výkonové RSS/p95/p99 zůstává NEOVĚŘENO.
+
+### G-03.08 — neaktivované SSE proxy a izolovaný HTTP smoke
+- Připraven volitelný Vite cíl 4102 a oddělený Nginx SSE vzor; CI doplněna o síťový kontrakt a HTTP/SSE smoke bez skutečného přijímače. Provozní brána zatím NEOVĚŘENO.
+
+### G-03 — izolované HTTP/SSE rozhraní nad G-02 (22. 10. 2026)
+- Přeneseny skutečné změny [PR #8](https://github.com/Boym323/AirRadarV2/pull/8) na aktuální `main` bez historických G-02 změn; 3/10 G-03 kroků doloženy [CI #39804030160](https://github.com/Boym323/AirRadarV2/actions/runs/39804030160).
+- Rust opt-in API a SSE sdílí jeden RAM stav, veřejná DTO a 1 Hz snapshot/delta; provozní proxy/zátěž dosud NEOVĚŘENO.
+- Bez změny V1, PostgreSQL a vývojového LXC. Merge a auto-DEV release závisí na zeleném CI a schválené bráně.
+
+
+### Automatický DEV deploy z ověřeného main — zatím pouze implementace
+- Nový root-owned pull agent přijímá jen GitHub botem vydaný release k přesnému současnému main SHA a validuje balíček, SHA256, adresy assetů, tar allowlist a VERSION.
+- Jednorázový instalátor vytvoří izolovaný systemd timer každých 5 minut a bezpečný read-only DEV status. Healthcheck a rollback se provádí bez zásahu do V1, přijímače nebo DB.
+- **Není zatím potvrzena reálná instalace v DEV LXC**, provozní G-13 produkční etapa zůstává nerozpracovaná.
+
+
+
+
 ### Úklid GitHub Actions: 3 workflow místo 5 (22. 10. 2026)
 - Jediná kanonická CI sada (`ci.yml`) pro PR a jako reusable workflow před automatickým `main` release; odstraněny duplicitní `main` testy.
 - Jediný DEV release/deploy přes repo-scoped Runner zachovává G-02 replay/benchmark, Rust/Vite, OpenAPI, SHA256, healthcheck i rollback. Historický ruční build a jednorázové G-02 LIVE workflow odstraněny z aktivních YAML; auditní testy a výsledky zachovány.

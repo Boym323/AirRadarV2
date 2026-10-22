@@ -138,6 +138,14 @@ fn consume(
 /// Ingest pouze uvnitř jediného tasku mění RAM mapu. Další komponenty ji
 /// dostanou až v G-03 přes snapshot/delta, nikdy přes SQL.
 pub async fn run(config: Config) -> Result<(), Box<dyn std::error::Error>> {
+    run_with_publisher(config, None).await
+}
+
+/// G-03: jediný task RAM stavu; max. 1x za sekundu publikuje veřejný snapshot.
+pub async fn run_with_publisher(
+    config: Config,
+    mut publisher: Option<crate::api::Publisher>,
+) -> Result<(), Box<dyn std::error::Error>> {
     if config.receiver_id != "rx-primary" {
         return Err("invalid receiver ID".into());
     }
@@ -168,7 +176,13 @@ pub async fn run(config: Config) -> Result<(), Box<dyn std::error::Error>> {
                 match item {Some(event)=>{consume(event, &mut state, &mut cpr, &mut sources);},None=>break}
             },
             _=tick.tick()=>{
-                state.cleanup(wall_seconds());
+                let now = wall_seconds();
+                state.cleanup(now);
+                if let Some(publish) = publisher.as_mut() {
+                    if let Err(error) = publish.publish(state.snapshot(now), now) {
+                        eprintln!("G-03 publish rejected: {error}");
+                    }
+                }
                 // Interní G-02 diagnostika; veřejné API zatím G-00 stub.
                 if std::env::var_os("AIRRADAR_V2_G02_TRACE").is_some(){
                     eprintln!("G-02 RAM tracks={} updates={} duplicates={} conflicts={} capacity_drops={} channel_drops={} preferred={:?}",
