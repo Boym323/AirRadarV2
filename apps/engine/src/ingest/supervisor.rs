@@ -214,11 +214,16 @@ async fn poll_json(path: &Path, sender: mpsc::Sender<Ingress>, dropped: Arc<Atom
                         ok: true,
                     },
                 );
+                // JSON reprezentuje jeden úplný readsb snapshot až o 5 000
+                // pozorováních. try_send() na 2 048 položkovou mpsc frontu
+                // zahazovalo nové identity, takže SSE veřejný stav nebyl úplný.
+                // Backpressure se týká pouze izolované JSON polling úlohy;
+                // kanonická RAM, BEAST čtení a HTTP mají vlastní Tokio tasks.
+                // Nezvětšujeme frontu, nezavádíme neomezený batch ani SQL.
                 for row in rows {
-                    if sender.is_closed() {
-                        break;
+                    if sender.send(Ingress::Json(row)).await.is_err() {
+                        return;
                     }
-                    enqueue(&sender, &dropped, Ingress::Json(row));
                 }
             }
             _ => enqueue(

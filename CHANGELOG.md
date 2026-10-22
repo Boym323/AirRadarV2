@@ -4,6 +4,9 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-03.10 — korektní úplný JSON replay při 5 000 letadlech
+- Oprava ztráty identit: `poll_json` již nezahazuje položky nad kapacitu 2 048, ale použije ohraničený Tokio `mpsc::send().await` pouze ve vlastní JSON tasku. BEAST hot path se nemění. Nový 5k integrační test odhalil chybu, měření po opravě čeká CI.
+
 ### G-03.08 — Chromium EventSource, dva stejno-origin proxy průchody
 - Izolovaný browser test Chromium přes Vite 4100 → Rust 4102 a Nginx 8082 → Rust 4102. Ověřuje plný snapshot při připojení, delta upsert během otevřeného streamu, monotónní epoch/seq a full snapshot po reconnectu. Playwright se instaluje pouze do dočasného CI venv, nikoli do uživatelova počítače ani do DEV LXC.
 

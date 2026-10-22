@@ -121,3 +121,7 @@ Do izolované CI zátěže přidány varianty **1 a 100 klientů × 5 000 kompak
 ## Browserová brána G-03.08 — připravený test, čeká CI
 
 `tools/test_g03_browser.py` v izolovaném GitHub Actions Chromium provádí reálný browser `EventSource` přes **Vite same-origin proxy** (4100) i **Nginx same-origin proxy** (8082) do jediné Rust RAM. Ověřuje počáteční snapshot, následnou delta aktualizaci během otevřeného spojení a nový full snapshot po reconnectu; nevyžaduje nový frontend radar, produkční LXC, přijímač ani DB. Instalace Playwright je výhradně do dočasného CI Python venv. Provozní DEV browser přejímka nadále vyžaduje samostatné potvrzení.
+
+## Skutečné zjištění při 5k testu — příčina a oprava
+
+Nový 5 000-letadlový integrační test na SHA `a18485a78e130802b8c1e839d6f0dc8aa3813037` selhal: Rust RAM snapshot nedosáhl 5 000 identit. Přímá příčina je `try_send` každého z až 5 000 jednotlivých JSON pozorování do ohraničené `mpsc` fronty délky 2 048 v `poll_json`. **Předchozí testy do 1 000 neodhalily ztrátu celé dávky**. Oprava používá `send().await` jen v odděleném JSON poll tasku, takže fronta zůstává kapacitně omezená a konzument RAM neblokuje síťovým zápisem; BEAST receiver má nadále explicitní `try_send` a drop čítač. Ověření 5k / 100 klientů a CPU/RSS musí projít novým CI, zatím **NEOVĚŘENO**.
