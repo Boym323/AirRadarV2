@@ -16,6 +16,7 @@ const required = [
   "docs/plan/PODROBNY-KATALOG-FUNKCI.md",
   "docs/plan/ETAPY-A-STAV.md",
   "docs/plan/KROKOVY-IMPLEMENTACNI-PLAN.md",
+  "docs/audits/ARCHITEKTONICKY-AUDIT-AIRRADAR-V2-2026-10-22.md",
   "docs/plan/TECHNICKE-KONTRAKTY-A-LIMITY.md",
   "docs/adr/0006-kontrakty-dat-streamu-mapy-a-lxc.md",
   "database/POSTGRES-DATOVY-MODEL.md",
