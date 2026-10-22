@@ -88,3 +88,13 @@ periodický `PASS_SYNTHETIC_LXC` nejsou podmínkou běžného deploymentu. Timer
 `airradarv2-g02-auto.timer` je vypnutý, `airradarv2-g02-live-auto.timer` zůstává
 oddělený podle aktuálního provozního stavu a `airradarv2-main-deploy.timer` je
 vypnutý. Při kolizi s G-02 deployment bezpečně čeká přes sdílený lock.
+
+## Tři aktivní workflow — úklid CI/CD (22. 10. 2026)
+
+- `ci.yml`: jediná kompletní sada Rust fmt/Clippy/test, G-02 replay/benchmark, HTTP smoke, Vite/React, OpenAPI/schema a české dokumentace. Spouští se pro PR, ručně a jako **reusable workflow** před vydáním DEV releasu. Samostatný push trigger na main je záměrně odebraný, protože tytéž testy provádí volání z release.
+- `g02-dev-candidate.yml`: jediná cesta **main → sdílená CI → release Rust/Vite → immutable SHA+SHA256 prerelease → self-hosted Runner → DEV LXC → místní post-deploy health a rollback**. Název souboru zůstává kvůli existujícím odkazům, ale zobrazený název je obecný DEV release; nevytváří se další G-02 workflow. Na ručním workflow_dispatch lze vydat artefakt jen z main; automatické nasazení provede pouze push do main.
+- `development-metrics.yml`: denně dopočítá README / JSON / SVG metriky. Commit měnící pouze `README.md` a `docs/metrics/**` nemá vydávat ani nasazovat aplikaci; proto jsou tyto cesty u DEV release podmíněně ignorované. Změní-li stejný commit i jiný soubor, release se běžně spustí.
+
+Odstraněná historická workflow (stále dostupná v Gitu): `dev-package.yml` byl duplicitní manuální build bez nasazení; `g02-live-dev-acceptance.yml` byla jednorázová hodinová G-02.11 přejímka, která již proběhla a má důkaz [run #39795592425](https://github.com/Boym323/AirRadarV2/actions/runs/39795592425). Python přejímací nástroje, golden fixture, regresní testy a záznamy skutečného provozu zůstávají zachovány. Historický `PASS_LIVE_BEAST_60MIN` není vyžadován při každém běžném deploymentu.
+
+Postup ověření: PR CI (tři PASS joby); potom kontrola, že jeden nový push main spustí jen **DEV release workflow**, které nejprve zavolá reusable CI, sestaví a ověří release a provede Runner deployment se healthcheckem. **Znovunasazení samostatného LXC nebo změna V1 se neprovádí.**
