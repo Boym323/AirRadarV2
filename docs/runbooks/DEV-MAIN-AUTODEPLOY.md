@@ -1,50 +1,34 @@
-# DEV AirRadarV2: automatické vydávání ověřeného GitHub main
+# Automatické nasazování `main` do DEV LXC
 
-**Stav 22. 10. 2026: implementace připravena v PR #10, jednorázová aktivace v LXC ještě neověřena.** Jen vývojové LXC, nikoli produkční G-13 cutover, V1 nebo databáze.
+## Incident 22. 10. 2026
 
-## Jak to funguje
+Systemd journal doložil opakované ukončení služby:
 
-1. Merge do **main** spustí stávající GitHub Actions [G-02 DEV kandidát](../../.github/workflows/g02-dev-candidate.yml): Rust fmt, clippy, unit/replay, Vite lint/typecheck/test/build a kontrolu dokumentace. Teprve po PASS publikuje bot immutable GitHub release **g02-dev-SHA** s tar.gz a SHA256 manifestem.
-2. Samostatný DEV systemd timer každých přibližně pět minut zjišťuje aktuální **main HEAD**. Bere jen release odpovídající přesnému SHA, vydaný **github-actions[bot]**, se správným tagem, URL, SHA-256 manifestem, původem assetů, VERSION a bezpečným obsahem tar.
-3. Pokud běží G-02 offline nebo LIVE test, změna se odkládá. Pokud se main mezitím posunul, starší balíček se nenasadí.
-4. Instalátor uloží release do /opt/airradar-v2/releases, atomicky přepne **current**, restartuje pouze **airradarv2-engine.service** a reloaduje DEV Nginx, provede HTTP healthcheck a ověření Vite indexu. Při chybě obnoví předchozí release a chybný SHA se nezkouší v nekonečné smyčce.
-5. Poslední výsledek je v souboru /dev-deploy-status.json: DEPLOYED / WAITING_FOR_CI / POSTPONED_G02_ACCEPTANCE / ROLLED_BACK / ERROR_NO_DEPLOY. Podrobnou diagnostiku lze přečíst v systemd journalu.
+```text
+DEV auto-deploy rejected safely: ValueError Unsafe archive member
+airradarv2-main-deploy.service: Main process exited, code=exited, status=1/FAILURE
+```
 
-**Bez SSH, webhooku do LAN, self-hosted runneru, dotyků V1, DB migrací nebo změn konfigurace readsb.**
+Příčinou je validátor tarballu v pull agentu a installeru. GNU tar při
+`tar -C <dist> .` zapisuje kořenový adresář jako `.` nebo `./`; původní kód
+odstranil pouze prefix `./` a záznam `.` proto odmítl jako nebezpečný. Nejde o
+odklad kvůli G-02 ani o selhání healthchecku. Ověření SHA, původu release,
+kontrola obsahu, sandbox a rollback musí zůstat aktivní.
 
-## Jednorázová instalace v DEV LXC (nikoli Proxmox host nebo V1)
+## Bezpečná oprava
 
-Před instalací musí být PR #10 sloučený do main a finální CI SHA zelené. Použij celý neměnný commit SHA výsledného schváleného PR (ne staré G-02 release SHA). Uvnitř **lo-dev-airradarv2, jako root**:
+Kořenové adresářové záznamy `.` a `./` se mají normalizovat na prázdný název a
+přeskočit pouze tehdy, když jsou adresářové. Ostatní cesty se dál kontrolují
+proti absolutní cestě, `..`, symlinkům, hardlinkům, zařízením, duplicitám a
+seznamu povolených souborů. Tato oprava musí být nasazena současně do pull
+agenta i installeru.
 
-~~~bash
-G13_SOURCE_REF=SEM_DOSAD_CELY_40ZNAKOVY_SHA_MERGE
-curl -fsSLo /root/install-main-dev-auto.sh \
-  "https://raw.githubusercontent.com/Boym323/AirRadarV2/$G13_SOURCE_REF/deploy/install-main-dev-auto.sh"
-bash -n /root/install-main-dev-auto.sh
-G13_SOURCE_REF="$G13_SOURCE_REF" bash /root/install-main-dev-auto.sh
-~~~
+Regresní test je v `tests/test_archive_validation.py` a pokrývá GNU tar kořen,
+traversal a symlink.
 
-Po úspěšné instalaci je timer automaticky aktivní a další vydání už žádnou konzoli LXC nevyžadují. Na první kontrolu:
+## Aktuální provozní stav
 
-~~~bash
-systemctl status airradarv2-main-deploy.timer --no-pager
-systemctl start airradarv2-main-deploy.service
-journalctl -u airradarv2-main-deploy.service -n 60 --no-pager
-cat /var/cache/airradarv2-main-deploy/status.json
-cat /opt/airradar-v2/current/VERSION
-curl -fsS http://127.0.0.1:4101/api/v1/health
-~~~
-
-**Diagnostická služba nemá zobrazení V1 údajů.** Nový Nginx endpoint vrací pouze hash commitu, výsledek a čas.
-
-## Ochrana a omezení
-
-- Root-owned Python agent běží v systemd oneshot s **ProtectSystem=strict, ProtectHome=yes, NoNewPrivileges=yes, MemoryMax=768M, CPUQuota=60 % a TimeoutStartSec=300**. Zapisovat smí jen do DEV release adresáře, soukromého stavu a veřejného statusu.
-- Balíček musí mít správné SHA-256 a pouze pravidelné soubory v allowlistu, bez symlinků/hardlinků/traversalu; archiv je maximálně 150 MiB komprimovaně, 300 MiB rozbaleně.
-- Rollback zachovává předchozí release. **Retence starých verzí dosud není automatická**, protože před smazáním je nutné vyhodnotit 20GiB disk a případnou zálohu.
-- Při chybě stejného SHA zůstává kandidát zablokován; nová verze main může být nainstalována. Diagnostika: journalctl -u airradarv2-main-deploy.service.
-- Vypnutí dalšího automatického nasazování: **systemctl disable --now airradarv2-main-deploy.timer**. Běžící web a Rust engine tím nepřestanou fungovat.
-- Merge do main zatím **nezapíná G-03 živý API režim**: ten má opt-in, který patří do vlastní vývojové etapy. G-04 DB migrace a produkční G-13 release zůstávají samostatně schvalované.
-- Kdo může změnit main nebo vydat release, může ovlivnit DEV binárku. Doporučena branch protection a povinné CI; žádný široký token/heslo v LXC není potřebný.
-
-**Do doby doloženého prvního nasazení v LXC nelze automatiku označit za provozně aktivní.**
+Aktivní release zůstává `227a8619b590d2c536761ffefc75cd0a5633936c`; status byl
+`ERROR_NO_DEPLOY`. V tomto běhu nebylo možné zapsat `/usr/local/libexec`,
+spustit systemd přes D-Bus ani ověřit síťový GitHub release, proto provozní
+oprava a nové automatické nasazení zůstávají neověřené.

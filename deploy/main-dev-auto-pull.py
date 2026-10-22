@@ -108,7 +108,13 @@ def check_archive(data: bytes, sha: str) -> None:
             raise ValueError("Too many archive members")
         total, found = 0, {}
         for entry in members:
-            name = entry.name.removeprefix("./").rstrip("/")
+            name = entry.name
+            while name.startswith("./"):
+                name = name[2:]
+            if name == "." and entry.isdir():
+                name = ""
+            else:
+                name = name.rstrip("/")
             if not name and entry.isdir():
                 continue
             path = name.split("/")

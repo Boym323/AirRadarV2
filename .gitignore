@@ -9,3 +9,6 @@ coverage/
 *.log
 .DS_Store
 *.tsbuildinfo
+# Python test bytecode
+__pycache__/
+*.py[cod]

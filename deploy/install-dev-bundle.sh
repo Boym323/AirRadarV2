@@ -51,7 +51,13 @@ with tarfile.open(p,"r:gz") as tf:
     names=set()
     total=0
     for m in members:
-        name=m.name.removeprefix("./").rstrip("/")
+        name=m.name
+        while name.startswith("./"):
+            name=name[2:]
+        if name == "." and m.isdir():
+            name=""
+        else:
+            name=name.rstrip("/")
         if not name and m.isdir():
             continue
         parts=name.split("/")
