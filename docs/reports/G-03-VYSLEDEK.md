@@ -77,3 +77,7 @@ Připraven `tools/benchmark_g03_sse.py`: izolační test s vlastní Rust instanc
 ## Revidovaná metodika CI zátěžového testu
 
 První [CI #39833985212](https://github.com/Boym323/AirRadarV2/actions/runs/39833985212) 3/3 PASS naměřila doručení 1/10/100 klientům. Měřená latence je **od atomického zápisu syntetického JSON souboru do klientského přijetí aktualizace**, zahrnuje dva 1Hz cykly (readsb poll a SSE publish). **Není to čistá latence fanoutu SSE ani údaj z browseru**. V původní verzi číslo `bytes_per_sec` chybně započítávalo také první snapshot mimo měřený čas; nepoužívej je pro plánování kapacity. Nyní je oddělen přírůstek SSE bytes během měřeného okna, peak RSS a malformovaný JSON/recovery; nové hodnoty čekají na CI.
+
+## G-03.08 — Nginx streaming smoke v CI (čeká výsledek)
+
+Nový nezávislý CI krok dočasně instaluje Nginx jen na izolovaný GitHub runner, načítá `deploy/nginx-g03.example.conf` (loopback:8082 → Rust:4102), ověřuje health a přes `curl -N` postupný snapshot i 15s heartbeat. Nejde o nasazení do DEV LXC ani browser EventSource přejímku, G-03.08 proto zůstává otevřené.

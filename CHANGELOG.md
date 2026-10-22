@@ -4,6 +4,9 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-03.08 — skutečný průchod SSE přes Nginx v izolované CI (před přejímkou)
+- CI připravuje dočasný Nginx podle odděleného G-03 vzoru a testuje HTTP `/api/v1/health`, průběžné doručení SSE snapshotu a heartbeat přes 127.0.0.1:8082; neinstaluje ani nepřepíná skutečný DEV web. Browser EventSource a LXC zůstávají NEOVĚŘENO.
+
 ### G-03.09 — kontrola poškozeného readsb a přesnější SSE měření
 - Benchmark odlišuje čisté SSE update bytes/s od prvního snapshotu, měří peak RSS během aktualizace a ověřuje, že atomicky publikovaný chybný JSON neporuší kanonický Rust RAM stav ani další doručování. Výsledky aktualizuje CI finálního SHA.
 

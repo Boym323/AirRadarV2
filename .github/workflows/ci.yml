@@ -122,6 +122,41 @@ jobs:
           python3 -m py_compile tools/benchmark_g03_sse.py
           python3 tools/benchmark_g03_sse.py --binary target/debug/airradarv2-engine
 
+      - name: G-03.08 Nginx proxy curl -N s postupným SSE a heartbeat
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update -qq
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends nginx
+          sudo install -m 0644 deploy/nginx-g03.example.conf /etc/nginx/conf.d/airradarv2-g03-ci.conf
+          sudo nginx -t
+          (sudo nginx -s reload || sudo nginx)
+          AIRRADAR_V2_BIND=127.0.0.1:4102 \
+          AIRRADAR_V2_READSB_JSON=/tmp/airradar-g03-nginx-no-source \
+            target/debug/airradarv2-engine --g03-live-api >/tmp/g03-nginx-engine.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; sudo nginx -s stop 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:8082/api/v1/health -o /tmp/g03-nginx-health.json 2>/dev/null; then
+              ready=1; break
+            fi
+            sleep 0.2
+          done
+          if test "$ready" != "1"; then
+            cat /tmp/g03-nginx-engine.log
+            sudo nginx -t
+            exit 1
+          fi
+          python3 -c 'import json; a=json.load(open("/tmp/g03-nginx-health.json")); assert a["stage"] == "G-03" and a["live_ingest"] is False'
+          curl -Ns --max-time 18 --no-buffer -D /tmp/g03-nginx-headers.txt \
+            http://127.0.0.1:8082/api/v1/stream -o /tmp/g03-nginx-stream.txt || test "$?" -eq 28
+          grep -qi 'text/event-stream' /tmp/g03-nginx-headers.txt
+          grep -q 'event: snapshot' /tmp/g03-nginx-stream.txt
+          grep -q ': heartbeat' /tmp/g03-nginx-stream.txt
+          grep -qi 'no-cache' /tmp/g03-nginx-headers.txt
+          echo "PASS G-03.08: skutečný Nginx -> Rust SSE snapshot + 15s heartbeat přes loopback"
+
   vite-web:
     runs-on: ubuntu-24.04
     defaults:
