@@ -47,7 +47,7 @@ jobs:
           install -d package/web
           install -m 0755 target/release/airradarv2-engine package/airradarv2-engine
           cp -a apps/web/dist/. package/web/
-          # G03_STAGE_GATE_V1 — metadata of the current checked SHA.
+          # G03_STAGE_GATE_V2 — metadata of the current checked SHA.
           if test -f contracts/openapi.g03.yaml; then
             printf 'G-03\n' > package/web/g03-runtime-required.txt
           fi
