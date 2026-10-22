@@ -1,29 +1,72 @@
-# G-05 — Živá mapa a základní ovládání
+# G-05 — MapLibre mapa v již připraveném Vite webu
 
-**Stav:** NEZAHÁJENO  
-**Závislosti:** G-03, pro letiště G-06  
-**Vlastněná aktivní ID:** `R01`, `R03`, `R04`, `R06`, `R08`, `R09`, `R12`, `R14`
+**Stav:** NEZAHÁJENO (podrobné zadání; nejde o implementaci).  
+**Odpovědnost:** M04 — Vite/React/MapLibre.  
+**Závislosti:** G-03; letištní vrstva se dokončí po G-06, ostatní části lze provést dříve.  
+**Primární KEEP ID:** `R01`, `R03`, `R04`, `R06`, `R08`, `R09`, `R12`, `R14`.  
+**Odhad realizace:** nepodložený, nedávat termín bez změřené kapacity týmu.
 
-## Cíl
+## Výstup etapy
 
-Zprovoznit rychlou MapLibre mapu v **již migrovaném Vite + React webu** s jedním lokálním proudem letadel a minimem ovládacích prvků.
+Samostatně otestovaný modul odpovídající uvedeným schváleným ID; zbytečné části systému se nepřidávají.
 
-## Konkrétní práce
+## Implementační kroky a důkaz přejímky
 
-1. MapLibre React komponenty ve Vite, ikony podle typu/směru a čitelné popisky bez kolizí.
-2. Aktuální seznam, filtrování a výběr letadla, živá stopa a sledování mapovou kamerou.
-3. Samostatná vrstva okolních letišť z katalogu a přepínání existujících mapových podkladů.
-4. Nevytvářet přepínač datového původu; radar je vždy lokální a jasně tak označený.
+Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu**; pokud má krok vlastní závislost, nejdříve ověř jeho předchozí části. Zaškrtávej jen s odkazy na implementaci a reálné testy, nikdy pouze za napsání tohoto plánu.
 
-## Testy a měření
+- [ ] **G-05.01 — Založit MapLibre klienta**  
+  **Implementace:** Přidej MapLibre do Vite a jedinou stabilní Map instanci; SSR není potřeba, nepřeváděj Next.js ani vytvářej druhý mapový engine.  
+  **Ověření:** Browser smoke potvrdí mapu bez opakovaných remountů a bez chyb WebGL.
 
-- Mobil/tablet/desktop, mapový lifecycle, reconnect SSE, filtrování, trail/follow.
-- Ověřit, že UI neobsahuje inertní přepínače; změřit re-renders a aktualizace MapLibre.
+- [ ] **G-05.02 — SSE stavový adapter**  
+  **Implementace:** Založ úzký klient nad /api/v1/stream; aplikuj snapshot/delta na vlastní browser store s kontrolou sekvence.  
+  **Ověření:** Unit test normalizuje, maže a obnoví tracky při resync.
 
-## Kritéria převzetí
+- [ ] **G-05.03 — Symbolová vrstva**  
+  **Implementace:** Použij jeden GeoJSON source a layer pro ikony dle skutečně známého typu a směru, stabilní feature IDs.  
+  **Ověření:** Správné směry, bez fiktivních defaultních vlastností a duplicit.
 
-Všechny požadavky této etapy jsou doloženy reálnými testy a případnými relevantními měřeními. `contracts/feature-matrix.json`, český report `docs/reports/G-05-VYSLEDEK.md`, etapový stav i `CHANGELOG.md` odpovídají kódu a CI přesného commitu. Nesmí se zasáhnout do V1 ani provést produkční release bez zvláštního souhlasu.
+- [ ] **G-05.04 — Čitelné popisky**  
+  **Implementace:** Zobraz stručné popisky jen pro dostupný callsign/výšku, MapLibre collision a minimalizovanou práci React.  
+  **Ověření:** Test hustého provozu nepřekrývá obrazovku nekontrolovanými DOM markery.
 
-## Co do etapy nepatří
+- [ ] **G-05.05 — Seznam a vyhledávání v provozu**  
+  **Implementace:** Vytvoř živý seznam letadel se základními filtry a řazením; používej stejný state jako mapa.  
+  **Ověření:** Seznam a mapa jsou konzistentní po ztrátě/reconnect streamu.
 
-Nedoplňovat rozšíření mimo [aktivní matice](../../contracts/feature-matrix.json); případné budoucí funkce jsou evidované samostatně v [archivu](../backlog/FUNKCE-PRO-BUDOUCI-ROZSIRENI.md).
+- [ ] **G-05.06 — Výběr cíle**  
+  **Implementace:** Kliknutí v mapě nebo seznamu aktivuje výběr pro stopu/follow; nevytvářet zbytečný samostatný analytický panel.  
+  **Ověření:** Výběr reaguje správně i při zániku tracku a opětovném výskytu.
+
+- [ ] **G-05.07 — Skutečná letová stopa**  
+  **Implementace:** Kresli krátkou omezenou stopu jen z validních přijatých poloh, s TTL a maximálním počtem bodů.  
+  **Ověření:** Test retence odřízne staré body a nevytváří budoucí predikce.
+
+- [ ] **G-05.08 — Follow kamera**  
+  **Implementace:** Volitelně sleduj vybrané letadlo s možností okamžitě vypnout sledování interakcí uživatele.  
+  **Ověření:** Playwright ověří výběr, follow stop a nezaseknutou kameru.
+
+- [ ] **G-05.09 — Výběr mapového podkladu**  
+  **Implementace:** Implementuj jen funkční schválené mapové styly a jejich bezpečné URL; preference mohou být lokálně uložené.  
+  **Ověření:** Test změny stylu zachová live tracky a výběr.
+
+- [ ] **G-05.10 — Vrstva letišť**  
+  **Implementace:** Po dokončení G-06 zobraz letištní body nad stabilním zdrojem; neduplikuj katalog ve webu.  
+  **Ověření:** Zobrazené letiště vede ke správnému katalogovému detailu a API.
+
+- [ ] **G-05.11 — Výkon a regresní E2E**  
+  **Implementace:** Porovnej setData a updateData pouze podle skutečných dat; změř 25/100/500/2000 cílů, 1/2 Hz, FPS, re-renders a paměť.  
+  **Ověření:** Důkaz s modelem zařízení, SHA a minimálně desktop+mobil browser scénář.
+
+## Povinné výsledky a testovací brána
+
+- Ověřit Rust `cargo fmt --all -- --check`, `cargo clippy --locked --workspace --all-targets -- -D warnings`, `cargo test --locked --workspace`.
+- Ověřit Vite `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`; podle etapy kontraktové, integrační, browser a replay testy.
+- Spustit `node tools/check-docs.mjs` a `node tools/generate-feature-matrix.mjs --check`, aktualizovat jen skutečně ověřené testovací důkazy.
+- Každý nový modul/DB tabulka/datový zdroj potřebuje konkrétní aktivní ID, test, limity paměti/CPU a provozní důvod.
+- Založit český `docs/reports/G-05-VYSLEDEK.md` s baseline, SHA, PASS/FAIL, omezeními a zbývajícími riziky; upravit `CHANGELOG.md` a `docs/plan/ETAPY-A-STAV.md`.
+- **Zákaz:** přenos nebo mazání historie V1, zásah do produkce/V1 LXC/DB, skutečné push v replay/shadow a nevyžádané funkce mimo [aktivní matici](../../contracts/feature-matrix.json). Historické nápady se otevírají pouze na výslovnou žádost vlastníka.
+
+## Definice HOTOVO
+
+Všechny kroky mají skutečné odkazy na důkazy a všechny této etapě primárně přiřazené KEEP funkce jsou `TESTED` nebo `ACCEPTED` po doložení odpovídajících testů. U G-01 stačí ověřit kontrakty a připravenost pro implementaci — **žádná produktová funkce tím automaticky není hotová**. CI finálního SHA je úspěšné, report a changelog popisují realitu.

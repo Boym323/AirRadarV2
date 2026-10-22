@@ -1,28 +1,68 @@
-# G-03 — Verzované HTTP API a SSE
+# G-03 — Rust HTTP API a SSE full/delta
 
-**Stav:** NEZAHÁJENO  
-**Závislosti:** G-01 a G-02  
-**Vlastněná aktivní ID:** `J06`, `J07`, `J08`
+**Stav:** NEZAHÁJENO (podrobné zadání; nejde o implementaci).  
+**Odpovědnost:** M02 — Axum.  
+**Závislosti:** G-01 a G-02.  
+**Primární KEEP ID:** `J06`, `J07`, `J08`.  
+**Odhad realizace:** nepodložený, nedávat termín bez změřené kapacity týmu.
 
-## Cíl
+## Výstup etapy
 
-Zpřístupnit Rust state přes bezpečné verzované HTTP a SSE full/delta.
+Samostatně otestovaný modul odpovídající uvedeným schváleným ID; zbytečné části systému se nepřidávají.
 
-## Konkrétní práce
+## Implementační kroky a důkaz přejímky
 
-1. Implementovat veřejné DTO s minimem údajů a jednotným datovým modelem pro web.
-2. SSE initial snapshot, delta update/removed, sekvenční čísla, reconnect, heartbeat a cleanup.
-3. Zajistit bounded fanout, coalescing a odmítnutí nového klienta při vyčerpání kapacity.
+Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu**; pokud má krok vlastní závislost, nejdříve ověř jeho předchozí části. Zaškrtávej jen s odkazy na implementaci a reálné testy, nikdy pouze za napsání tohoto plánu.
 
-## Testy a měření
+- [ ] **G-03.01 — Stabilizovat public DTO**  
+  **Implementace:** Odděl interní RAM struktury od veřejných DTO; vynech interní souřadnice přijímače, secrets a raw payloady.  
+  **Ověření:** Snapshot JSON fixture splňuje OpenAPI a privacy test.
 
-- Kontrakty a 1/10/100 SSE klientů včetně pomalého odběratele.
-- Měřit P95/P99, CPU/RSS a sanitizaci API dat.
+- [ ] **G-03.02 — HTTP endpointy**  
+  **Implementace:** Doplň GET /api/v1/aircraft, GET /api/v1/health a konzistentní chyby, timeouty a parametry filtrů pouze dle schválené smlouvy.  
+  **Ověření:** Integrační test pokrývá prázdný i plný stav a 4xx/5xx.
 
-## Kritéria převzetí
+- [ ] **G-03.03 — Plné SSE snapshoty**  
+  **Implementace:** Odesílej úplný stav se sequence a časem při připojení jako kompatibilní formát.  
+  **Ověření:** EventSource test dostane validní snapshot a spojení lze ukončit.
 
-Všechny požadavky této etapy jsou doloženy reálnými testy a případnými relevantními měřeními. `contracts/feature-matrix.json`, český report `docs/reports/G-03-VYSLEDEK.md`, etapový stav i `CHANGELOG.md` odpovídají kódu a CI přesného commitu. Nesmí se zasáhnout do V1 ani provést produkční release bez zvláštního souhlasu.
+- [ ] **G-03.04 — Delta producent**  
+  **Implementace:** Vytvářej upsert/removed změny jednou pro všechny klienty, nikoli znovu pro každého odběratele.  
+  **Ověření:** Replay test prokáže, že následný delta stav odpovídá full snapshotu.
 
-## Co do etapy nepatří
+- [ ] **G-03.05 — Sequence a resynchronizace**  
+  **Implementace:** Specifikuj monotónní pořadí a řízený resync při zmeškané sekvenci; nepředstírej neomezený server-side replay.  
+  **Ověření:** Odpojení během více delt skončí novým korektním snapshotem.
 
-Nedoplňovat rozšíření mimo [aktivní matice](../../contracts/feature-matrix.json); případné budoucí funkce jsou evidované samostatně v [archivu](../backlog/FUNKCE-PRO-BUDOUCI-ROZSIRENI.md).
+- [ ] **G-03.06 — Heartbeat a lifecycle**  
+  **Implementace:** Přidej heartbeat/keepalive, cleanup po disconnectu a správné hlavičky text/event-stream.  
+  **Ověření:** Ověřený reconnect nemá uniklé úlohy ani rostoucí počet subscriberů.
+
+- [ ] **G-03.07 — Backpressure a kapacita**  
+  **Implementace:** Každý klient má ohraničenou frontu a deadline; při pomalém klientovi provést coalescing/resync/odpojení; nový klient může dostat 503.  
+  **Ověření:** Pomalý klient neblokuje producer a RSS roste pouze do deklarovaného limitu.
+
+- [ ] **G-03.08 — Síťový web kontrakt**  
+  **Implementace:** Ve Vite dev proxy a budoucím Nginx konfiguraci zajisti stejný origin /api, vypnutý SSE buffering a přiměřené timeouty.  
+  **Ověření:** curl -N a browser smoke ověří postupné doručování, nikoliv dávkové flush po ukončení.
+
+- [ ] **G-03.09 — Regresní testy**  
+  **Implementace:** Doplň concurrency, reconnect, malformed payload, slow consumer a konverzi veřejných jednotek.  
+  **Ověření:** Rust unit/integration a TS kontraktové testy PASS.
+
+- [ ] **G-03.10 — Měření SSE**  
+  **Implementace:** Na syntetickém radarovém replay změř 1/10/100 klientů, bytes/s, CPU, RSS, p95/p99 a počet discard/resync.  
+  **Ověření:** Výsledky s hardwarem a SHA v českém reportu, bez nevysvětlené ztráty pozic.
+
+## Povinné výsledky a testovací brána
+
+- Ověřit Rust `cargo fmt --all -- --check`, `cargo clippy --locked --workspace --all-targets -- -D warnings`, `cargo test --locked --workspace`.
+- Ověřit Vite `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`; podle etapy kontraktové, integrační, browser a replay testy.
+- Spustit `node tools/check-docs.mjs` a `node tools/generate-feature-matrix.mjs --check`, aktualizovat jen skutečně ověřené testovací důkazy.
+- Každý nový modul/DB tabulka/datový zdroj potřebuje konkrétní aktivní ID, test, limity paměti/CPU a provozní důvod.
+- Založit český `docs/reports/G-03-VYSLEDEK.md` s baseline, SHA, PASS/FAIL, omezeními a zbývajícími riziky; upravit `CHANGELOG.md` a `docs/plan/ETAPY-A-STAV.md`.
+- **Zákaz:** přenos nebo mazání historie V1, zásah do produkce/V1 LXC/DB, skutečné push v replay/shadow a nevyžádané funkce mimo [aktivní matici](../../contracts/feature-matrix.json). Historické nápady se otevírají pouze na výslovnou žádost vlastníka.
+
+## Definice HOTOVO
+
+Všechny kroky mají skutečné odkazy na důkazy a všechny této etapě primárně přiřazené KEEP funkce jsou `TESTED` nebo `ACCEPTED` po doložení odpovídajících testů. U G-01 stačí ověřit kontrakty a připravenost pro implementaci — **žádná produktová funkce tím automaticky není hotová**. CI finálního SHA je úspěšné, report a changelog popisují realitu.

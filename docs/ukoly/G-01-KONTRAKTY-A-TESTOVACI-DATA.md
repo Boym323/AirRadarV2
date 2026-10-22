@@ -1,29 +1,68 @@
-# G-01 — Verzované kontrakty a testovací data
+# G-01 — Kontrakty a deterministická testovací data
 
-**Stav:** NEZAHÁJENO  
-**Závislosti:** G-00  
-**Vlastněná aktivní ID:** `J01`, `J02`, `J03`, `J04`, `J05`, `J11`, `J06`, `J07`, `J08`, `J09`, `R01`, `R03`, `R04`, `R06`, `R08`, `R09`, `R12`, `R14`, `A01`, `A02`, `T10`, `W03`, `W06`, `W08`, `W09`, `L06`, `L11`, `L12`, `S01`, `S06`, `S09`, `O01`, `O02`, `O03`, `O04`, `O05`, `O06`, `O07`, `O08`, `U01`, `U02`, `U03`, `U04`, `U05`, `U08`
+**Stav:** NEZAHÁJENO (podrobné zadání; nejde o implementaci).  
+**Odpovědnost:** Průřezový kontrakt pro všech 45 aktivních funkcí (neznamená jejich implementaci).  
+**Závislosti:** G-00; schválená matice a Vite/Rust scaffold.  
+**Primární KEEP ID:** průřezový kontrakt všech aktivních funkcí; nepřebírá vlastnictví modulů.  
+**Odhad realizace:** nepodložený, nedávat termín bez změřené kapacity týmu.
 
-## Cíl
+## Výstup etapy
 
-Vytvořit jednoznačné smlouvy a reprodukovatelné testovací podklady pro všech 45 aktivních požadavků.
+Kontrakty a fixture pro 45 aktivních funkcí, bez připsání statusu dokončení produktovým funkcím.
 
-## Konkrétní práce
+## Implementační kroky a důkaz přejímky
 
-1. Definovat veřejné DTO a OpenAPI/JSON Schema pro health, letadla, chybové odpovědi a SSE snapshot/delta; strojové názvy stabilní, popisy české.
-2. Vytvořit syntetické readsb JSON a BEAST fixtures (běžný let, duplicitní rámec, změna callsign, chybná poloha/čas, CRC a výpadek zdroje).
-3. Pro každé aktivní ID doplnit akceptační scénář s vstupem, výstupem, mezními případy, testem a vazbou na modul.
-4. Připravit Rust/TypeScript kontraktové testy bez živého přijímače a bez síťové služby.
+Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu**; pokud má krok vlastní závislost, nejdříve ověř jeho předchozí části. Zaškrtávej jen s odkazy na implementaci a reálné testy, nikdy pouze za napsání tohoto plánu.
 
-## Testy a měření
+- [ ] **G-01.01 — Zafixovat rozsah a vlastnictví**  
+  **Implementace:** Načti právě 45 aktivních ID ze strojové matice; pro každé zachovej jednoho vlastníka z 9 modulů. Vytvoř přehled požadovaných vstupů, výstupů a chování.  
+  **Ověření:** Kontrolní skript prokáže 45 různých ID a 1:1 přiřazení k modulům.
 
-- Ověřit přesnost 45 ID, bez neaktivních kontraktů.
-- Spustit JSON/OpenAPI validaci, Rust/Next.js testy a aktualizovat českou dokumentaci.
+- [ ] **G-01.02 — Definovat doménové typy**  
+  **Implementace:** Navrhni typy AircraftId, AircraftObservation, AircraftState, position/altitude/speed/squawk, timestamp a dostupnost pole. Rozliš identitu ICAO a ne-ICAO, chybějící a neplatné údaje.  
+  **Ověření:** Rust a TS kontrakt explicitně rozlišují null/neznámé a mají validační testy.
 
-## Kritéria převzetí
+- [ ] **G-01.03 — Upřesnit jednotky a časy**  
+  **Implementace:** Specifikuj jednotky, UTC časové značky, age/seen, desetinná omezení souřadnic, validitu azimutu a pořadí aktualizací; žádné odhady chybějících hodnot.  
+  **Ověření:** Golden test odmítne NaN, nesmyslný rozsah, zastaralé a časově obrácené měření.
 
-Všechny požadavky této etapy jsou doloženy reálnými testy a případnými relevantními měřeními. `contracts/feature-matrix.json`, český report `docs/reports/G-01-VYSLEDEK.md`, etapový stav i `CHANGELOG.md` odpovídají kódu a CI přesného commitu. Nesmí se zasáhnout do V1 ani provést produkční release bez zvláštního souhlasu.
+- [ ] **G-01.04 — Vytvořit readsb JSON fixture**  
+  **Implementace:** Vytvoř syntetické JSON snapshoty: více letadel, postupné změny, ztrátu pozice, callsign, nehledanou identitu a prázdný snapshot.  
+  **Ověření:** Fixture jsou verzované, reprodukovatelné, s expected normalizovaným stavem a validovaným JSON.
 
-## Co do etapy nepatří
+- [ ] **G-01.05 — Vytvořit BEAST/Mode-S fixture**  
+  **Implementace:** Sestav syntetické rámce včetně escape 0x1A, krátkého/chybného rámce, CRC24, různých DF, CPR a chybějících částí dvojice; nepoužívej soukromá data.  
+  **Ověření:** Očekávané zprávy jsou ručně ověřitelné a rozbité rámce nezpůsobí panic.
 
-Nedoplňovat rozšíření mimo [aktivní matice](../../contracts/feature-matrix.json); případné budoucí funkce jsou evidované samostatně v [archivu](../backlog/FUNKCE-PRO-BUDOUCI-ROZSIRENI.md).
+- [ ] **G-01.06 — Navrhnout pravidla continuity**  
+  **Implementace:** Napiš scénáře BEAST→JSON→BEAST, reconnect, deduplikaci, změnu callsign, TTL a letadlo bez platné polohy.  
+  **Ověření:** Každý scénář má deterministický očekávaný state diff a hranici pro stale data.
+
+- [ ] **G-01.07 — Uzavřít API OpenAPI**  
+  **Implementace:** V contracts/openapi.yaml doplň /api/v1/aircraft, health, verzi a chyby; DTO jsou veřejná a bezpečně sanitizovaná.  
+  **Ověření:** Validátor OpenAPI a fixture pro odpověď prokážou stabilní tvar a absenci interních secrets.
+
+- [ ] **G-01.08 — Definovat SSE smlouvu**  
+  **Implementace:** Popiš snapshot/delta/removed, sekvenci, reconnect, heartbeat, resync a horní limity zpráv/front; nezaváděj nový transport.  
+  **Ověření:** Rust emitované zprávy i TS parser používají stejné golden fixtures.
+
+- [ ] **G-01.09 — Zavést kontraktové testy**  
+  **Implementace:** Doplň Rust jednotkové/integrační testy a TS Vitest nad společnými daty. Backend i web testují chyby bez spojení s produkčním readsb.  
+  **Ověření:** cargo test a npm test projdou s věrnými fixtures při opakovaném běhu.
+
+- [ ] **G-01.10 — Připravit akceptaci etap**  
+  **Implementace:** Ke každému aktivnímu ID zapiš scénář PASS/FAIL, odkaz na zamýšlený automatizovaný test a vlastní etapu; neoznačuj produktové funkce za hotové.  
+  **Ověření:** Přehled obsahuje všech 45 ID, ale statusy v JSON zůstávají NOT_STARTED, dokud je skutečný kód neprokáže.
+
+## Povinné výsledky a testovací brána
+
+- Ověřit Rust `cargo fmt --all -- --check`, `cargo clippy --locked --workspace --all-targets -- -D warnings`, `cargo test --locked --workspace`.
+- Ověřit Vite `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`; podle etapy kontraktové, integrační, browser a replay testy.
+- Spustit `node tools/check-docs.mjs` a `node tools/generate-feature-matrix.mjs --check`, aktualizovat jen skutečně ověřené testovací důkazy.
+- Každý nový modul/DB tabulka/datový zdroj potřebuje konkrétní aktivní ID, test, limity paměti/CPU a provozní důvod.
+- Založit český `docs/reports/G-01-VYSLEDEK.md` s baseline, SHA, PASS/FAIL, omezeními a zbývajícími riziky; upravit `CHANGELOG.md` a `docs/plan/ETAPY-A-STAV.md`.
+- **Zákaz:** přenos nebo mazání historie V1, zásah do produkce/V1 LXC/DB, skutečné push v replay/shadow a nevyžádané funkce mimo [aktivní matici](../../contracts/feature-matrix.json). Historické nápady se otevírají pouze na výslovnou žádost vlastníka.
+
+## Definice HOTOVO
+
+Všechny kroky mají skutečné odkazy na důkazy a všechny této etapě primárně přiřazené KEEP funkce jsou `TESTED` nebo `ACCEPTED` po doložení odpovídajících testů. U G-01 stačí ověřit kontrakty a připravenost pro implementaci — **žádná produktová funkce tím automaticky není hotová**. CI finálního SHA je úspěšné, report a changelog popisují realitu.

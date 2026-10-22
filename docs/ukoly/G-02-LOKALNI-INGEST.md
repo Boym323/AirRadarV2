@@ -1,29 +1,72 @@
-# G-02 — Lokální ADS-B ingest a RAM
+# G-02 — Lokální readsb/BEAST ingest a jediný RAM state
 
-**Stav:** NEZAHÁJENO  
-**Závislosti:** G-01  
-**Vlastněná aktivní ID:** `J01`, `J02`, `J03`, `J04`, `J05`, `J11`
+**Stav:** NEZAHÁJENO (podrobné zadání; nejde o implementaci).  
+**Odpovědnost:** M01 — Rust/Tokio.  
+**Závislosti:** G-01 kontrakty a golden fixtures.  
+**Primární KEEP ID:** `J01`, `J02`, `J03`, `J04`, `J05`, `J11`.  
+**Odhad realizace:** nepodložený, nedávat termín bez změřené kapacity týmu.
 
-## Cíl
+## Výstup etapy
 
-Rust engine dekóduje místní readsb JSON a BEAST a drží jednotný, ohraničený stav letadel v paměti.
+Samostatně otestovaný modul odpovídající uvedeným schváleným ID; zbytečné části systému se nepřidávají.
 
-## Konkrétní práce
+## Implementační kroky a důkaz přejímky
 
-1. Implementovat čistý Rust BEAST/Mode-S/CRC24 parser a readsb JSON adapter bez přístupu k produkci.
-2. Řešit autentickou identitu ICAO/ne-ICAO, deduplikaci, stale TTL, validní polohy, callsign a časové přetečení.
-3. Při výpadku přepnout BEAST/JSON bez duplikace a restartovat spojení s backoff; žádná závislost na DB.
-4. Mít jediný vlastník RAM state s explicitními limity počtu tracků a příjmových front.
+Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu**; pokud má krok vlastní závislost, nejdříve ověř jeho předchozí části. Zaškrtávej jen s odkazy na implementaci a reálné testy, nikdy pouze za napsání tohoto plánu.
 
-## Testy a měření
+- [ ] **G-02.01 — Oddělit normalizaci od transportu**  
+  **Implementace:** Založ úzké Rust moduly pro JSON reader, BEAST reader, parser, state a supervisor; nepřidávej mikroservisy.  
+  **Ověření:** Modulové testy lze spustit bez fyzického přijímače.
 
-- Golden fixtures a fuzz/property testy chybně zformátovaných rámců.
-- Zátěž 1×/2×/4× a opakované reconnect; evidence CPU, RSS a latence.
+- [ ] **G-02.02 — Readsb JSON snapshot adapter**  
+  **Implementace:** Pravidelně čti lokální readsb JSON s timeouty, velikostním limitem a atomic read; zpracuj prázdný/neúplný snapshot.  
+  **Ověření:** Fixture test nevyvolá panic ani falešnou polohu, stav zdroje je měřitelný.
 
-## Kritéria převzetí
+- [ ] **G-02.03 — BEAST TCP framing**  
+  **Implementace:** Implementuj asynchronní čtení, escapování 0x1A, délky typů a rekonstrukci po rozděleném TCP chunku.  
+  **Ověření:** Golden test zvládne fragmentaci, více rámců v chunku i záměrně poškozený vstup.
 
-Všechny požadavky této etapy jsou doloženy reálnými testy a případnými relevantními měřeními. `contracts/feature-matrix.json`, český report `docs/reports/G-02-VYSLEDEK.md`, etapový stav i `CHANGELOG.md` odpovídají kódu a CI přesného commitu. Nesmí se zasáhnout do V1 ani provést produkční release bez zvláštního souhlasu.
+- [ ] **G-02.04 — Mode-S a CRC24**  
+  **Implementace:** Dekóduj pouze potřebná pole a DF, správně odliš PI/AP/CRC podle typu zprávy; chybný rámec bez důkazu nepovyšuj na spolehlivý údaj.  
+  **Ověření:** Ověř soulad s fixture a známými vektory Mode-S, včetně špatné parity.
 
-## Co do etapy nepatří
+- [ ] **G-02.05 — Poloha a CPR**  
+  **Implementace:** Zpracuj korektní párování CPR a časovou/fyzikální plausibilitu; pokud pozici nejde spolehlivě získat, vynechej ji.  
+  **Ověření:** Test pokryje jednoprvkový CPR, lokální/globální dekódování a neplatné souřadnice.
 
-Nedoplňovat rozšíření mimo [aktivní matice](../../contracts/feature-matrix.json); případné budoucí funkce jsou evidované samostatně v [archivu](../backlog/FUNKCE-PRO-BUDOUCI-ROZSIRENI.md).
+- [ ] **G-02.06 — Kanonický stav letadla**  
+  **Implementace:** Založ jeden Rust vlastník track mapy, stabilní ID, freshness, výšku, rychlost, squawk a odlišená missing data.  
+  **Ověření:** Syntetický replay generuje správný stav bez duplicit při změně callsign.
+
+- [ ] **G-02.07 — TTL a deduplikace**  
+  **Implementace:** Nastav konfigurovatelné bounded TTL a odstranění stale tracků, spoj duplicitní pozorování a změř počet aktivních cílů.  
+  **Ověření:** Replay se zpožděnými a obrácenými časy neobnoví starou chybnou polohu.
+
+- [ ] **G-02.08 — Arbitráž a fallback**  
+  **Implementace:** Jeden supervisor volí platný BEAST nebo JSON při výpadku, restartuje spojení s omezeným backoff/jitter; obě cesty zapisují do stejné RAM.  
+  **Ověření:** Test změní dostupnost zdrojů vícekrát a zachová jedinou identitu tracku.
+
+- [ ] **G-02.09 — Backpressure a limity**  
+  **Implementace:** Omez velikost TCP bufferu, JSON payloadu, počtu tracků a front; při zátěži zaznamenej drop a health bez blokace.  
+  **Ověření:** Při syntetickém přetížení nepřibývá paměť neomezeně a klient dostane správný health.
+
+- [ ] **G-02.10 — Deterministický replay**  
+  **Implementace:** Připrav spustitelný lokální replay bez připojení na produkční readsb, který ověří všechna ID M01.  
+  **Ověření:** CI cargo test a replay PASS, chybné zprávy způsobí explicitní chybu místo pádu.
+
+- [ ] **G-02.11 — Výkonová evidence**  
+  **Implementace:** Změř na stejných fixture 1×, 2× a 4× tok, CPU, RSS, p95 ingest latence a reconnect; baseline zapiš do reportu.  
+  **Ověření:** Report obsahuje SHA, hardware, testovací data, chyby, naměřené hodnoty a reziduální rizika.
+
+## Povinné výsledky a testovací brána
+
+- Ověřit Rust `cargo fmt --all -- --check`, `cargo clippy --locked --workspace --all-targets -- -D warnings`, `cargo test --locked --workspace`.
+- Ověřit Vite `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`; podle etapy kontraktové, integrační, browser a replay testy.
+- Spustit `node tools/check-docs.mjs` a `node tools/generate-feature-matrix.mjs --check`, aktualizovat jen skutečně ověřené testovací důkazy.
+- Každý nový modul/DB tabulka/datový zdroj potřebuje konkrétní aktivní ID, test, limity paměti/CPU a provozní důvod.
+- Založit český `docs/reports/G-02-VYSLEDEK.md` s baseline, SHA, PASS/FAIL, omezeními a zbývajícími riziky; upravit `CHANGELOG.md` a `docs/plan/ETAPY-A-STAV.md`.
+- **Zákaz:** přenos nebo mazání historie V1, zásah do produkce/V1 LXC/DB, skutečné push v replay/shadow a nevyžádané funkce mimo [aktivní matici](../../contracts/feature-matrix.json). Historické nápady se otevírají pouze na výslovnou žádost vlastníka.
+
+## Definice HOTOVO
+
+Všechny kroky mají skutečné odkazy na důkazy a všechny této etapě primárně přiřazené KEEP funkce jsou `TESTED` nebo `ACCEPTED` po doložení odpovídajících testů. U G-01 stačí ověřit kontrakty a připravenost pro implementaci — **žádná produktová funkce tím automaticky není hotová**. CI finálního SHA je úspěšné, report a changelog popisují realitu.
