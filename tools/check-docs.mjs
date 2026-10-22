@@ -45,6 +45,7 @@ if (!read("apps/web/src/App.tsx").includes("Není připojen živý provoz")) fai
 execFileSync(process.execPath, [resolve(root,"tools/generate-feature-matrix.mjs"),"--check"], {stdio:"inherit"});
 // Modelový důkaz, nikoliv produkční DB benchmark.
 execFileSync(process.execPath, [resolve(root,"tools/check-eco-sampling.mjs")], {stdio:"inherit"});
+execFileSync(process.execPath, [resolve(root,"tools/check-g01-contracts.mjs")], {stdio:"inherit"});
 
 const activeData = JSON.parse(read("contracts/feature-matrix.json"));
 const active = activeData.features;
