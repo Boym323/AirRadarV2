@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### První úspěšné DEV LXC nasazení — 22. 10. 2026
+- Správce doložil nasazený balíček `227a8619b590d2c536761ffefc75cd0a5633936c`, SHA-256 OK, Rust i Nginx aktivní, bootstrap health a korektní `NOT_IMPLEMENTED` aircraft API.
+- [Přejímací report](docs/reports/DEV-LXC-PRVNI-NASAZENI-2026-10-22.md) rozlišuje ověřený lokální provoz a dosud neověřený prohlížeč, IPv6 firewall a soak. G-02/G-03/G-04 a V1 beze změny.
+
+
 ### Připravený DEV LXC balíček — 22. 10. 2026
 - Potvrzen existující izolovaný Debian 13.7 LXC (1 vCPU, 8 GiB RAM, 20 GiB disk) bez potřeby kompilovat Rust/Node uvnitř.
 - Přidáno ruční GitHub Actions balíčkování G-00/G-01, Debian bootstrap a bezpečná instalace přes SHA-256, oddělený systemd/Nginx pouze pro LAN IPv4:8080 a rollback.

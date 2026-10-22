@@ -28,6 +28,7 @@ const required = [
   "docs/technical/PLAYWRIGHT-BROWSEROVE-TESTY.md",
   "docs/runbooks/POSTGRES-LXC-SECURITY-BACKUP.md",
   "docs/runbooks/DEV-LXC-PRVNI-NASAZENI.md",
+  "docs/reports/DEV-LXC-PRVNI-NASAZENI-2026-10-22.md",
   "docs/plan/ZACNI-ZDE-NOVE-VLAKNO.md",
   "docs/plan/CO-NEPREBIRAT-Z-V1.md",
   "docs/plan/PRAVIDLA-DOKUMENTACE.md",

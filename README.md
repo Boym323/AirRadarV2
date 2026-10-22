@@ -119,3 +119,7 @@ Dne 22. 10. 2026 byla dokončena **G-01**: [report](docs/reports/G-01-VYSLEDEK.m
 ## Samostatný DEV LXC — připravený první ruční deploy
 
 Po G-01 je ověřen samostatný Debian 13.7 LXC (1 vCPU, 8 GiB RAM, 20 GiB disk). [První nasazení krok za krokem](docs/runbooks/DEV-LXC-PRVNI-NASAZENI.md) používá **ruční GitHub Actions artefakt**, SHA-256 a oddělený systemd + Nginx na privátní IPv4. **Žádný auto-deploy ani spojení s V1, DB či readsb.**
+
+## Skutečně instalovaný DEV základ
+
+Správce dne 22. 10. 2026 doložil první úspěšné **ruční DEV LXC nasazení** commitu `227a8619b590d2c536761ffefc75cd0a5633936c`. Integrita balíčku OK, systemd Rust/Nginx active, health `bootstrap`, API letadel `NOT_IMPLEMENTED`; [přejímací report](docs/reports/DEV-LXC-PRVNI-NASAZENI-2026-10-22.md). Jde výhradně o G-00/G-01 základ, ne živý radar ani produkční release.

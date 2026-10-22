@@ -1,6 +1,6 @@
 # AirRadar V2 — první nasazení do vývojového LXC
 
-**Datum:** 22. 10. 2026. **Stav:** připravený postup; **v LXC dosud nebyl vykonán**. Pouze G-00/G-01 statický web a Rust health. Bez DB, ADS-B a produkce.
+**Datum:** 22. 10. 2026. **Stav:** 22. 10. 2026 skutečně vykonáno v izolovaném DEV LXC podle konzolových logů správce. [Důkazy a neověřené kontroly](../reports/DEV-LXC-PRVNI-NASAZENI-2026-10-22.md). Pouze G-00/G-01 statický web a Rust health. Bez DB, ADS-B a produkce.
 
 ## Výchozí prostředí
 
@@ -83,3 +83,7 @@ Správné G-00/G-01 API explicitně odpovídá status=bootstrap, live_ingest=fal
 Chceš-li vrátit předchozí release, spusť instalační skript na jeho dříve uloženém tar.gz spolu s původním sha256 souborem. Systém nevytváří druhou DB ani nové produkční služby.
 
 Na Proxmox firewallu doporučujeme zakázat nevyžádané příchozí IPv6 na DEV LXC. Žádná veřejná reverse proxy, V1 readsb ani PostgreSQL se do G-00/G-01 nezapojují. Živá data patří do G-02/G-03, historie do G-04, produkční release do G-13.
+
+## Aktuální výsledek
+
+Instalována verze `227a8619b590d2c536761ffefc75cd0a5633936c`; SHA-256, nginx syntaxe, systemd Rust/Nginx a lokální health mají PASS. Webové ověření z prohlížeče a síťová kontrola IPv6/Proxmox firewallu zůstávají otevřené. G-02 ADS-B ingest ani G-04 SQL nejsou nasazeny. Viz [report](../reports/DEV-LXC-PRVNI-NASAZENI-2026-10-22.md).

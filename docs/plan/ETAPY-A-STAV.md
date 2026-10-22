@@ -39,7 +39,7 @@ Každá níže uvedená etapa G-01 až G-13 má konkrétní kroky `G-XX.YY` s ch
 
 - G-00: Rust, Next.js, připnuté závislosti a skutečné HTTP smoke testy: [GitHub Actions 39659205202](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202).
 - Tato základna **nepřijímá živá letadla**; veřejné API správně vrací `NOT_IMPLEMENTED`.
-- Uživatel potvrdil samostatný Debian 13.7 DEV LXC (1 vCPU, 8 GiB RAM, 20 GiB disk), **instalace aplikace se teprve připravuje**; produkční V1 zůstává nedotčená.
+- Uživatel potvrdil samostatný Debian 13.7 DEV LXC (1 vCPU, 8 GiB RAM, 20 GiB disk), **G-00/G-01 aplikace byla skutečně instalována do DEV LXC; integrita a služby ověřeny**; produkční V1 zůstává nedotčená.
 - Každá nová etapa musí mít skutečné testy i český report podle [šablony](../sablony/REPORT-ETAPY.md), odkazy na přesný commit a aktualizovaný [CHANGELOG](../../CHANGELOG.md).
 
 ## Závislosti
@@ -67,3 +67,7 @@ Audit úspornosti vedl k [adaptivní deduplikaci v Rust RAM](../technical/RAM-CA
 ## Dev infrastruktura po G-01
 
 Připraven [ruční balíčkovací workflow](../../.github/workflows/dev-package.yml) a [bezpečný instalační runbook](../runbooks/DEV-LXC-PRVNI-NASAZENI.md) pro potvrzený DEV LXC. GitHub Actions vytváří oddělený artefakt, ale **sám se k LXC nepřipojuje a nic nenasazuje**. První G-00/G-01 web a Rust health ještě neznamená dokončení G-02/G-03 ani produktových 45 KEEP.
+
+## První skutečné DEV LXC nasazení — 22. 10. 2026
+
+[**Záznam nasazení a důkazy**](../reports/DEV-LXC-PRVNI-NASAZENI-2026-10-22.md): artefakt `227a8619b590d2c536761ffefc75cd0a5633936c`, SHA-256 OK, systemd Rust/Nginx active, health `bootstrap`, aircraft `NOT_IMPLEMENTED`. **Web v prohlížeči, IPv6 firewall a soak nebyly zatím ověřeny.** G-02 až G-13 stále NEZAHÁJENO; nedotčeno V1, PostgreSQL a externí zdroje.
