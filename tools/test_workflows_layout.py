@@ -1,6 +1,6 @@
 """Regresní ochrana minimalistické CI/CD topologie AirRadarV2.
 
-Tři aktivní workflow: CI pro PR, DEV release/deploy přes runner, denní statistiky.
+Čtyři aktivní workflow: CI, DEV release/deploy, denní statistiky, izolovaný G-04 PostgreSQL.
 Historická G-02 diagnostika a ruční duplicate-package zůstávají v Git historii.
 """
 from pathlib import Path
@@ -11,13 +11,25 @@ WF = ROOT / ".github" / "workflows"
 
 
 class WorkflowTopology(unittest.TestCase):
-    def test_three_workflows_and_no_historical_duplicates(self):
+    def test_four_workflows_and_no_historical_duplicates(self):
         actual = {f.name for f in WF.glob("*.yml")}
         self.assertEqual(actual, {
             "ci.yml",
             "g02-dev-candidate.yml",
             "development-metrics.yml",
+            "g04-postgres-migrations.yml",
         })
+
+    def test_g04_isolated_postgres_migration_never_deploys(self):
+        g04 = (WF / "g04-postgres-migrations.yml").read_text(encoding="utf-8")
+        self.assertIn("image: postgres:18", g04)
+        self.assertIn("POSTGRES_DB: airradar_v2_dev", g04)
+        self.assertIn("PGHOST: 127.0.0.1", g04)
+        self.assertIn("tools/test_g04_migrations.sh", g04)
+        self.assertIn("branches: [main]", g04)
+        self.assertNotIn("self-hosted", g04)
+        self.assertNotIn("gh release create", g04)
+        self.assertNotIn("runner-deploy", g04)
 
     def test_single_canonical_validation_suite(self):
         ci = (WF / "ci.yml").read_text(encoding="utf-8")
