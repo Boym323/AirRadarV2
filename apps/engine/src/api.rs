@@ -26,6 +26,7 @@ const MAX_CLIENTS: usize = 100;
 // returns at most one <=16KiB Bytes slice per poll. No per-client event queue.
 const MAX_CLIENT_PENDING_BYTES: usize = 256 * 1024;
 const SSE_CHUNK_BYTES: usize = 16 * 1024;
+const _: () = assert!(SSE_CHUNK_BYTES <= MAX_CLIENT_PENDING_BYTES);
 const HEARTBEAT: &[u8] = b": heartbeat\n\n";
 const CAPACITY_ERROR: &str = "Snímek překročil bezpečný limit; živý stav je dočasně nedostupný.";
 
@@ -53,6 +54,7 @@ pub struct Delta {
 #[derive(Clone)]
 struct Frame {
     snapshot: Arc<Snapshot>,
+    #[cfg_attr(not(test), allow(dead_code))]
     delta: Option<Arc<Delta>>,
     // One prepared wire-format SSE payload per frame, shared by all clients.
     encoded_snapshot: Bytes,
@@ -264,6 +266,7 @@ impl Publisher {
 }
 
 impl Feed {
+    #[cfg(test)]
     fn latest(&self) -> Arc<Snapshot> {
         self.rx.borrow().snapshot.clone()
     }
@@ -449,7 +452,6 @@ async fn events(State(state): State<ApiState>, query: RawQuery) -> Response {
             }
         }
     });
-    debug_assert!(SSE_CHUNK_BYTES <= MAX_CLIENT_PENDING_BYTES);
     let mut response = Body::from_stream(chunks).into_response();
     response.headers_mut().insert(
         header::CONTENT_TYPE,
