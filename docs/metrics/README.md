@@ -17,6 +17,6 @@ Vyžaduje oprávnění contents: write a povolený zápis z GitHub Actions do ma
 Ručně lze generátor spustit příkazem: node tools/update-dev-stats.mjs (Node.js 22+ a git checkout).
 Pak zkontrolujte git diff --check a výsledný diff README a docs/metrics.
 
-CI badge v README ukazuje stav automatických kontrol Rust/Next.js, ale nenahrazuje důkazy v matici.
+CI badge v README ukazuje stav jednotné DEV release/test pipeline Rust/Vite nad `main` (samostatné PR kontroly zůstávají v `ci.yml`), ale nenahrazuje důkazy v matici.
 Provozní metriky (CPU, RAM, SSE p95/p99, fronty a databáze) se budou měřit až při odpovídajících implementačních etapách.
 Automatizace nespouští produkční nasazení a nedotýká se AirRadar V1.

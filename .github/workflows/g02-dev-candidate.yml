@@ -1,55 +1,49 @@
-name: AirRadar V2 — CI, immutable release a DEV deployment
+name: AirRadar V2 — DEV release a nasazení přes Runner
 on:
   push:
-    branches: [main, codex/g02-auto-lxc-20261022]
+    branches: [main]
+    # Denní commit statistik nemění aplikaci: žádný release ani restart DEV LXC.
+    # Jiné soubory v tomtéž commitu stále workflow spustí.
+    paths-ignore:
+      - 'README.md'
+      - 'docs/metrics/**'
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: g02-dev-candidate-${{ github.ref }}
+  group: airradarv2-dev-release-${{ github.ref }}
   cancel-in-progress: false
 jobs:
+  validate:
+    name: Kompletní CI před vydáním
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
   test-and-build:
+    name: Sestavit immutable DEV artefakt
+    needs: validate
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-      - name: Rust, offline JSON/BEAST, 5000 identit a dokumentace
-        run: |
-          set -Eeuo pipefail
-          cargo fmt --all -- --check
-          cargo clippy --locked --workspace --all-targets -- -D warnings
-          cargo test --locked --workspace
-          cargo run --locked --quiet -p airradarv2-engine -- --g02-replay
-          cargo run --locked --quiet -p airradarv2-engine -- --g02-benchmark
-          # --g02-benchmark now runs a real localhost TCP/JSON reconnect soak.
-          node tools/check-docs.mjs
-          python3 -m py_compile deploy/g02-auto-pull.py
-          python3 -m unittest discover -s tools -p 'test_g02_auto_pull.py'
-          python3 -m unittest discover -s tools -p 'test_g02_live_*.py'
-          python3 -m py_compile deploy/g02-live-auto.py deploy/g02-live-soak.py
-          python3 -m unittest discover -s tools -p 'test_verify_g02_public_status.py'
-          bash -n deploy/install-g02-auto-lxc.sh
-      - name: Ověřit a sestavit Vite
-        working-directory: apps/web
-        run: |
-          set -Eeuo pipefail
-          npm ci --no-audit --no-fund
-          npm run lint
-          npm run typecheck
-          npm test
-          npm run build
-      - name: Sestavit immutable Debian artefakt pro offline přejímku
+      - name: Sestavit release Rust enginu a Vite webu (testy převzaty z CI)
         shell: bash
         run: |
           set -Eeuo pipefail
           cargo build --locked --release -p airradarv2-engine
+          cd apps/web
+          npm ci --no-audit --no-fund
+          npm run build
+          cd ../..
+      - name: Sestavit immutable Debian artefakt pro DEV LXC
+        shell: bash
+        run: |
+          set -Eeuo pipefail
           install -d package/web
           install -m 0755 target/release/airradarv2-engine package/airradarv2-engine
           cp -a apps/web/dist/. package/web/
@@ -57,9 +51,10 @@ jobs:
           filename="airradarv2-dev-linux-amd64-$(printf '%s' "$GITHUB_SHA" | cut -c1-12).tar.gz"
           tar -C package -czf "$filename" .
           sha256sum "$filename" > "$filename.sha256"
-          tar -tzf "$filename" > /tmp/g02-archive.list
-          grep -qx './airradarv2-engine' /tmp/g02-archive.list
-          grep -qx './VERSION' /tmp/g02-archive.list
+          tar -tzf "$filename" > /tmp/airradarv2-archive.list
+          grep -qx './airradarv2-engine' /tmp/airradarv2-archive.list
+          grep -qx './VERSION' /tmp/airradarv2-archive.list
+          grep -qx './web/index.html' /tmp/airradarv2-archive.list
       - uses: actions/upload-artifact@v4
         with:
           name: g02-dev-${{ github.sha }}
@@ -72,7 +67,7 @@ jobs:
     needs: test-and-build
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    if: github.repository == 'Boym323/AirRadarV2' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: github.repository == 'Boym323/AirRadarV2' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
     steps:
@@ -96,7 +91,7 @@ jobs:
             ./*.tar.gz ./*.tar.gz.sha256 \
             --target "$GITHUB_SHA" \
             --prerelease --latest=false \
-            --title "G-02 DEV kandidat $GITHUB_SHA" \
+            --title "AirRadarV2 DEV release $GITHUB_SHA" \
             --notes "Ověřený CI artefakt pro izolovaný DEV deployment; bez zásahu do V1, DB nebo přijímače."
 
   deploy-dev:

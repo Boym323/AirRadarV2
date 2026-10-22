@@ -38,3 +38,7 @@ nezávislá diagnostická brána.
 bridge byl dříve řízeně ověřen a zachovává předchozí funkční release.
 
 [Instalační runbook](../runbooks/DEV-MAIN-AUTODEPLOY.md)
+
+## Konsolidace automatizací (22. 10. 2026)
+
+Po funkčním self-hosted Runner deployi [#39828853055](https://github.com/Boym323/AirRadarV2/actions/runs/39828853055) byl připraven úklid na přesně tři aktivní workflow: jeden sdílený testovací `ci.yml`, jedno `main` immutable release + Runner nasazení a jedny denní metriky. Zbytečné ruční build a 60min G-02 LIVE request YAML byly odstraněny pouze z aktivních GitHub workflow, ne z Git historie; již doložený G-02.11 PASS zůstává platný. Push s pouze statistikami nemá restartovat DEV. Dokončení tohoto úklidu vyžaduje novou CI přejímku konkrétního commitu a jednu skutečnou Runner deploy přejímku po merge; do té doby nejde o potvrzený provozní efekt této konkrétní změny.

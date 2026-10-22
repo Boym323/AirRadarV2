@@ -67,7 +67,7 @@ const ratio = (n, total) => (100 * n / total).toFixed(1).replace(".", ",") + " %
 const table = [
   "## Statistiky vývoje (automaticky aktualizované)",
   "",
-  "![Stav CI](https://github.com/Boym323/AirRadarV2/actions/workflows/ci.yml/badge.svg?branch=main)",
+  "![Stav CI](https://github.com/Boym323/AirRadarV2/actions/workflows/g02-dev-candidate.yml/badge.svg?branch=main)",
   "",
   "Aktualizace statistik: **denně ve 03:17 (Europe/Prague)** a ručně na vyžádání.",
   "",
@@ -87,7 +87,7 @@ const table = [
   "",
   "Měřený commit: [" + measured.sha.slice(0, 8) + "](https://github.com/Boym323/AirRadarV2/commit/" + measured.sha + ")"
     + " · [Historie](docs/metrics/history.json) · [Metodika](docs/metrics/README.md)"
-    + " · [Výsledky CI](https://github.com/Boym323/AirRadarV2/actions/workflows/ci.yml).",
+    + " · [Výsledky CI](https://github.com/Boym323/AirRadarV2/actions/workflows/g02-dev-candidate.yml).",
   "",
   "> Jde o vývojové statistiky repozitáře, nikoli o výkon živého radaru. "
     + "Funkce se počítají jen ze strojové matice s důkazem testu. "

@@ -4,6 +4,13 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### Úklid GitHub Actions: 3 workflow místo 5 (22. 10. 2026)
+- Jediná kanonická CI sada (`ci.yml`) pro PR a jako reusable workflow před automatickým `main` release; odstraněny duplicitní `main` testy.
+- Jediný DEV release/deploy přes repo-scoped Runner zachovává G-02 replay/benchmark, Rust/Vite, OpenAPI, SHA256, healthcheck i rollback. Historický ruční build a jednorázové G-02 LIVE workflow odstraněny z aktivních YAML; auditní testy a výsledky zachovány.
+- Denní statistiky zůstávají, ale commit obsahující pouze README/metrics již nespouští release ani restart DEV LXC. Aktualizován README CI badge na skutečný stav DEV main pipeline.
+
+
+
 - G-02.11: LIVE přejímka se již nezablokuje po vypnutí offline G-02 timeru. Schválení je svázáno s nasazeným DEV SHA, aktuálním main, botem vydaným immutable release a jednorázovým request ID. Historický offline status zůstává zachován a LIVE gate čte výlučně `liveSoak.sha`. Doplněny negativní regresní testy a postup jednorázové aktualizace root-owned LIVE skriptů; nová hodinová přejímka ještě nebyla spuštěna.
 
 - G-13: běžný DEV deployment už nečeká na periodický veřejný `g02-status.json`

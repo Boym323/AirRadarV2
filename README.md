@@ -7,7 +7,7 @@ Nová generace leteckého radaru, budovaná **od nuly**. Tento repozitář je zc
 <!-- AIRRADAR_STATS_START -->
 ## Statistiky vývoje (automaticky aktualizované)
 
-![Stav CI](https://github.com/Boym323/AirRadarV2/actions/workflows/ci.yml/badge.svg?branch=main)
+![Stav CI](https://github.com/Boym323/AirRadarV2/actions/workflows/g02-dev-candidate.yml/badge.svg?branch=main)
 
 Aktualizace statistik: **denně ve 03:17 (Europe/Prague)** a ručně na vyžádání.
 
@@ -25,7 +25,7 @@ Aktualizace statistik: **denně ve 03:17 (Europe/Prague)** a ručně na vyžád�
 
 ![Historie řádků zdrojového kódu](docs/metrics/loc.svg)
 
-Měřený commit: [f07fdb35](https://github.com/Boym323/AirRadarV2/commit/f07fdb35d64ab601e9675dc48b33aa4942b440bc) · [Historie](docs/metrics/history.json) · [Metodika](docs/metrics/README.md) · [Výsledky CI](https://github.com/Boym323/AirRadarV2/actions/workflows/ci.yml).
+Měřený commit: [f07fdb35](https://github.com/Boym323/AirRadarV2/commit/f07fdb35d64ab601e9675dc48b33aa4942b440bc) · [Historie](docs/metrics/history.json) · [Metodika](docs/metrics/README.md) · [Výsledky CI](https://github.com/Boym323/AirRadarV2/actions/workflows/g02-dev-candidate.yml).
 
 > Jde o vývojové statistiky repozitáře, nikoli o výkon živého radaru. Funkce se počítají jen ze strojové matice s důkazem testu. Úspěšná CI sama o sobě nedokazuje dokončení funkcí.
 <!-- AIRRADAR_STATS_END -->

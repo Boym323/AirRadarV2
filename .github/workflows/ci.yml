@@ -1,9 +1,8 @@
 name: AirRadar V2 — testy a česká dokumentace (bez nasazení)
 
 on:
-  push:
-    branches: [main]
   pull_request:
+  workflow_call:
   workflow_dispatch:
 
 permissions:
@@ -37,6 +36,7 @@ jobs:
           python3 -m unittest discover -s tools -p 'test_g02_live_install.py'
           python3 -m py_compile deploy/g02-auto-pull.py
           python3 -m unittest discover -s tools -p 'test_g02_auto_pull.py'
+          python3 -m unittest discover -s tools -p 'test_workflows_layout.py'
       - name: Formální validace OpenAPI a JSON Schema G-01
         run: |
           python3 -m venv /tmp/airradar-g01-venv
