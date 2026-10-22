@@ -4,6 +4,12 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### Připravený DEV LXC balíček — 22. 10. 2026
+- Potvrzen existující izolovaný Debian 13.7 LXC (1 vCPU, 8 GiB RAM, 20 GiB disk) bez potřeby kompilovat Rust/Node uvnitř.
+- Přidáno ruční GitHub Actions balíčkování G-00/G-01, Debian bootstrap a bezpečná instalace přes SHA-256, oddělený systemd/Nginx pouze pro LAN IPv4:8080 a rollback.
+- **Neprovedeno:** skutečné vzdálené spuštění v LXC, produkční V1, PostgreSQL, readsb, proxy do internetu, přístupové klíče, automatický deploy.
+
+
 ### G-01 — dokončené kontrakty a syntetické testy (22. 10. 2026)
 - **G-01 HOTOVO — 10/10 kroků**. Validátor v izolované GitHub CI kontrole ověřuje OpenAPI 3.1 bez duplicitních YAML klíčů, JSON Schema Draft 2020-12 a pozitivní/negativní fixtures. [CI 39748325104](https://github.com/Boym323/AirRadarV2/actions/runs/39748325104) 3/3 PASS na commitu `14f591c4`.
 - Pouze smlouvy a testy; 45 produktových funkcí nadále `NOT_STARTED`, runtime příjem a SSE až G-02/G-03, databáze G-04.

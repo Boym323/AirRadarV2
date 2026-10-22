@@ -44,8 +44,9 @@ jobs:
           tar -C package -czf "$filename" .
           sha256sum "$filename" > "$filename.sha256"
           test -s apps/web/dist/index.html
-          tar -tzf "$filename" | grep -q './airradarv2-engine'
-          tar -tzf "$filename" | grep -q './web/index.html'
+          tar -tzf "$filename" > /tmp/airradarv2-archive-list.txt
+          grep -qx './airradarv2-engine' /tmp/airradarv2-archive-list.txt
+          grep -qx './web/index.html' /tmp/airradarv2-archive-list.txt
       - name: Uložit pro ruční stažení
         uses: actions/upload-artifact@v4
         with:

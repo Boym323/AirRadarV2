@@ -27,6 +27,7 @@ const required = [
   "docs/technical/MAPLIBRE-VYKON-A-ZATEZ.md",
   "docs/technical/PLAYWRIGHT-BROWSEROVE-TESTY.md",
   "docs/runbooks/POSTGRES-LXC-SECURITY-BACKUP.md",
+  "docs/runbooks/DEV-LXC-PRVNI-NASAZENI.md",
   "docs/plan/ZACNI-ZDE-NOVE-VLAKNO.md",
   "docs/plan/CO-NEPREBIRAT-Z-V1.md",
   "docs/plan/PRAVIDLA-DOKUMENTACE.md",

@@ -24,6 +24,8 @@ jobs:
           node-version-file: .node-version
       - name: Kontrola dokumentace a 45 aktivních funkcí
         run: node tools/check-docs.mjs
+      - name: Kontrola syntaxe skriptů DEV LXC
+        run: bash -n deploy/bootstrap-dev-lxc.sh deploy/install-dev-bundle.sh
       - name: Formální validace OpenAPI a JSON Schema G-01
         run: |
           python3 -m venv /tmp/airradar-g01-venv

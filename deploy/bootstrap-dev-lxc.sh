@@ -26,6 +26,15 @@ if [[ "$BIND_IP" != 10.* && "$BIND_IP" != 192.168.* ]] &&
   echo "ERROR: DEV musí používat privátní RFC1918 adresu" >&2
   exit 1
 fi
+net_mask="$(printf '%s' "$ALLOW_NET" | cut -d/ -f2)"
+if [ "$net_mask" -lt 16 ] || [ "$net_mask" -gt 32 ]; then
+  echo "ERROR: DEV síť musí mít masku /16 až /32, nikoliv otevřený internet" >&2
+  exit 1
+fi
+if systemctl is-active --quiet airradarv2-engine; then
+  echo "ERROR: aplikace již běží, neopakuj bootstrap; použij instalační skript" >&2
+  exit 1
+fi
 for section in $(echo "$BIND_IP" | tr '.' ' '); do
   if [ "$section" -gt 255 ]; then echo "ERROR: neplatná IPv4" >&2; exit 1; fi
 done

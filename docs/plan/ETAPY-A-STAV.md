@@ -39,7 +39,7 @@ Každá níže uvedená etapa G-01 až G-13 má konkrétní kroky `G-XX.YY` s ch
 
 - G-00: Rust, Next.js, připnuté závislosti a skutečné HTTP smoke testy: [GitHub Actions 39659205202](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202).
 - Tato základna **nepřijímá živá letadla**; veřejné API správně vrací `NOT_IMPLEMENTED`.
-- Nový LXC není v aktuálních podkladech potvrzen jako nakonfigurovaný, produkční V1 zůstává nedotčená.
+- Uživatel potvrdil samostatný Debian 13.7 DEV LXC (1 vCPU, 8 GiB RAM, 20 GiB disk), **instalace aplikace se teprve připravuje**; produkční V1 zůstává nedotčená.
 - Každá nová etapa musí mít skutečné testy i český report podle [šablony](../sablony/REPORT-ETAPY.md), odkazy na přesný commit a aktualizovaný [CHANGELOG](../../CHANGELOG.md).
 
 ## Závislosti
@@ -63,3 +63,7 @@ Audit úspornosti vedl k [adaptivní deduplikaci v Rust RAM](../technical/RAM-CA
 ## Dokončení G-01 — 22. 10. 2026
 
 [Finální G-01 report](../reports/G-01-VYSLEDEK.md) a [CI 39748325104](https://github.com/Boym323/AirRadarV2/actions/runs/39748325104) prokazují OpenAPI 3.1, Draft 2020-12, readsb/BEAST/Mode-S a SSE golden fixtures i Rust/TypeScript kontraktové testy. **G-01 = HOTOVO**, G-02 až G-13 beze změny NEZAHÁJENO. Číslo 45 označuje budoucí produktové funkce, nikoli 45 implementovaných funkcí.
+
+## Dev infrastruktura po G-01
+
+Připraven [ruční balíčkovací workflow](../../.github/workflows/dev-package.yml) a [bezpečný instalační runbook](../runbooks/DEV-LXC-PRVNI-NASAZENI.md) pro potvrzený DEV LXC. GitHub Actions vytváří oddělený artefakt, ale **sám se k LXC nepřipojuje a nic nenasazuje**. První G-00/G-01 web a Rust health ještě neznamená dokončení G-02/G-03 ani produktových 45 KEEP.

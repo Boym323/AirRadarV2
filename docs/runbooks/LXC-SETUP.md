@@ -1,6 +1,6 @@
 # Nový samostatný Proxmox LXC pro AirRadar V2
 
-**Stav: pouze plán. Z tohoto repozitáře nebyl vytvořen ani upraven žádný LXC.** Původní AirRadar V1 musí zůstat beze změny.
+**Stav: samostatný vývojový LXC existuje, jeho verzi a prostředky potvrdil správce 22. 10. 2026. Aplikace z GitHubu v něm dosud není ověřeně nasazená.** Původní AirRadar V1 musí zůstat beze změny.
 
 ## Předběžné parametry
 
@@ -39,3 +39,12 @@ Jde o **odhad pro začátek vývoje, ne změřené minimální požadavky**. Sku
 V2 nesmí převzít port, adresář, DB, systemd název, GitHub runner ani hesla V1. Nesmí vysílat demo upozornění skutečným uživatelům ani zapisovat historie do V1.
 
 **Přejímka:** obě instalace mohou běžet odděleně; po vypnutí V2 je V1 beze změn; záloha V2 se dá obnovit bez zásahu do staré DB.
+
+## Skutečné ověřené parametry vývojového LXC
+
+- Debian **13.7 (Trixie)**, **x86_64**, **1 vCPU**, **8 GiB RAM**, **20 GiB disk**; jde o separátní **neprivilegovaný** kontejner.
+- Kontejner má privátní IPv4 v LAN a také globální IPv6. Vývojový web proto poslouchá **výhradně na explicitní privátní IPv4:8080** s omezením LAN CIDR. Veřejná IPv6 ani veřejná reverzní proxy se pro G-00/G-01 neaktivuje.
+- Pro instalaci hotových binárních artefaktů stačí aktuální kapacita; **na 1 vCPU nekompilovat Rust/Node web přímo v LXC**, sestavovat na GitHub Actions. Uvnitř LXC bylo hlášeno 0 B swap; bez symptomů nedostatku RAM není důvod ho měnit.
+- Přesná interní IP a hostitelská adresa se nepíší do veřejného repozitáře. Zjištění ani tento dokument neprokazují funkční instalaci aplikace.
+
+**Konkrétní bootstrap a bezpečný první release:** [DEV-LXC-PRVNI-NASAZENI.md](DEV-LXC-PRVNI-NASAZENI.md). Produkční G-13 a připojení readsb/DB jsou samostatné brány.

@@ -115,3 +115,7 @@ PostgreSQL v existujícím separátním LXC potřebuje vlastní databázi/role a
 ## Dokončená G-01: datové kontrakty
 
 Dne 22. 10. 2026 byla dokončena **G-01**: [report](docs/reports/G-01-VYSLEDEK.md), [CI 39748325104](https://github.com/Boym323/AirRadarV2/actions/runs/39748325104) (Rust, web i nezávislý OpenAPI/JSON Schema validátor PASS). Následuje G-02 ingest. Kontrakty jsou hotové, **živý radar, PostgreSQL připojení ani produkční release nejsou**.
+
+## Samostatný DEV LXC — připravený první ruční deploy
+
+Po G-01 je ověřen samostatný Debian 13.7 LXC (1 vCPU, 8 GiB RAM, 20 GiB disk). [První nasazení krok za krokem](docs/runbooks/DEV-LXC-PRVNI-NASAZENI.md) používá **ruční GitHub Actions artefakt**, SHA-256 a oddělený systemd + Nginx na privátní IPv4. **Žádný auto-deploy ani spojení s V1, DB či readsb.**
