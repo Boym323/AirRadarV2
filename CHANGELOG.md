@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+- G-13: opraven autonomní DEV deployment pro již registrovaný runner. Workflow
+  používá SHA/run izolovaný staging bez mazání cizích souborů, kontrolu SHA-256
+  z reálného adresáře a robustní kontrolu `VERSION`; root bridge ověřuje
+  vlastníka stagingu. Instalátor již nemaže registraci ani nevytváří duplicitní
+  systemd runner službu.
 - G-13: zdokumentována a regresně testována korektní validace kořenových záznamů GNU tar (`.`/`./`) pro DEV auto-deploy; bezpečnostní kontroly zůstávají povinné.
 - G-13: doplněn repo-scoped self-hosted runner `airradarv2-dev`, root-owned deployment bridge, krátkodobá tokenová registrace, sdílený G-02 lock a deploy job pouze pro úspěšný `main` prerelease. První registrace a skutečné nasazení čekají na GitHub runner oprávnění.
 - G-13: řízený rollback test root bridge PASS; nefunkční kandidát byl odmítnut healthcheckem, aktivní symlink i Rust API se vrátily na předchozí release. Vadný release zůstal zachován pro audit.

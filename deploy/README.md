@@ -6,6 +6,13 @@ Zdokumentovaný incident G-13 je v [runbooku](../docs/runbooks/DEV-MAIN-AUTODEPL
 root-owned installeru; samotné rozšíření validace nesmí vypnout SHA, podpis
 manifestu, kontrolu typu souboru ani rollback.
 
-Nový runner se instaluje přes `install-runner-dev.sh`. Starý pull timer zůstává
-aktivní až do potvrzení prvního runner deploymentu; potom se vypíná podle
-runbooku. `runner-deploy.sh` je jediný privilegovaný vstup z runneru.
+Nový runner se instaluje přes `install-runner-dev.sh`. Pokud už existuje
+registrovaný runner, skript jeho registraci zachová a pouze synchronizuje
+provozní bridge; nevytváří druhou službu ani nevyžaduje nový token. Artefakty
+Actions se ukládají do jednorázových adresářů
+`incoming/<full-SHA>.<run-id>/`, takže úklid cizích/root-owned souborů nemůže
+zablokovat další běh. `runner-deploy.sh` je jediný privilegovaný vstup z runneru.
+
+Starý pull timer zůstává aktivní pouze do potvrzení prvního runner deploymentu;
+potom se vypíná podle runbooku. Obě cesty používají stejný lock a G-02 má při
+kolizi přednost.
