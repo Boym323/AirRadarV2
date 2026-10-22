@@ -294,6 +294,26 @@ pub fn replay() -> Result<RadarState, &'static str> {
     for (bytes, t) in files {
         state.batch(&parse_replay(bytes, "rx-primary", t)?);
     }
+    // Běh CLI musí pokrýt OBA transporty v téže RAM autoritě, bez TCP/LAN.
+    let cases: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../contracts/fixtures/beast/cases.json"
+    )).map_err(|_| "beast fixture")?;
+    let mut cpr = CprCache::default();
+    let mut source = SourceArbiter::default();
+    consume(Ingress::BeastLink { at: 1792627206.0, connected: true }, &mut state, &mut cpr, &mut source);
+    for (i, case) in cases["valid"].as_array().ok_or("beast cases")?.iter().take(2).enumerate() {
+        let bytes = crate::contract::hex_decode(case["modeS"].as_str().ok_or("modeS")?)?;
+        let at = 1792627206.0 + i as f64;
+        let decoded = decode_df17(&bytes, at).ok_or("beast crc")?;
+        consume(Ingress::Beast { decoded, at }, &mut state, &mut cpr, &mut source);
+    }
+    let bad = crate::contract::hex_decode(cases["invalid"][3]["hex"].as_str().ok_or("invalid frame")?)?;
+    let mut decoder = Decoder::default();
+    let frames = decoder.push(&bad);
+    if frames.len() != 1 || decode_df17(&frames[0].payload, 1792627210.0).is_some() {
+        return Err("bad CRC accepted");
+    }
+    if state.tracks.len() != 3 { return Err("duplicate aircraft identity"); }
     Ok(state)
 }
 /// G-02.11: srovnatelné syntetické 1×/2×/4× na stejných fixture.
@@ -341,6 +361,57 @@ pub fn benchmark() -> Result<(), &'static str> {
             rss_kib(),
             cpu_delta
         );
+    }
+
+    // Samostatná 5000-cílová bounded RAM zátěž bez přijímače, DB a SSE.
+    // Rychlosti jsou syntetické, nikoli měření RF toku v cílovém LXC.
+    let baseline = parse_replay(
+        include_bytes!("../../../../contracts/fixtures/readsb/initial.json"),
+        "rx-primary", 1792627200.0,
+    )?.into_iter().next().ok_or("baseline")?;
+    for ratio in [1usize, 2, 4] {
+        let mut state = RadarState::default();
+        let mut batch_us = Vec::new();
+        let start_wall = Instant::now();
+        let start_cpu = cpu_ticks();
+        let mut sample = baseline.clone();
+        sample.position = None;
+        sample.position_at_utc = None;
+        for index in 0..5000 {
+            sample.aircraft_key = format!("icao:{index:06x}");
+            state.apply(&sample);
+        }
+        if state.tracks.len() != 5000 { return Err("RAM bound on fill"); }
+        for cycle in 0..(ratio * 8) {
+            let start = Instant::now();
+            let now = 1792627201.0 + cycle as f64;
+            sample.received_at_utc = now;
+            sample.message_at_utc = now;
+            for index in 0..5000 {
+                sample.aircraft_key = format!("icao:{index:06x}");
+                state.apply(&sample);
+            }
+            batch_us.push(start.elapsed().as_micros() as u64);
+        }
+        let mut excess = sample.clone();
+        excess.aircraft_key = "icao:ffffff".into();
+        if state.apply(&excess) != "capacity" || state.tracks.len() != 5000 {
+            return Err("RAM capacity violation");
+        }
+        batch_us.sort_unstable();
+        let p95 = batch_us[(batch_us.len() * 95 / 100).min(batch_us.len() - 1)];
+        let ticks = start_cpu.and_then(|old| cpu_ticks().map(|new| new.saturating_sub(old)));
+        println!(
+            "G-02 5000-target stress {ratio}x: observations={} elapsed_ms={:.1} batch5000_p95_us={} rss_kib={:?} cpu_ticks={:?} drops={}",
+            5000 * (ratio * 8 + 1),
+            start_wall.elapsed().as_secs_f64() * 1000.0,
+            p95,
+            rss_kib(),
+            ticks,
+            state.counters.capacity_drops
+        );
+        state.cleanup(1792627201.0 + (ratio * 8) as f64 + 61.0);
+        if !state.tracks.is_empty() { return Err("RAM track expiry"); }
     }
     Ok(())
 }

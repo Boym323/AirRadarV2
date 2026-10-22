@@ -222,6 +222,7 @@ pub fn local_airborne(cpr: &Cpr, reference: &Position) -> Option<Position> {
 #[derive(Default)]
 pub struct CprCache {
     entries: BTreeMap<String, (Option<Cpr>, Option<Cpr>, f64)>,
+    next_cleanup_at: f64,
 }
 impl CprCache {
     /// Vrátí position pouze po přijetí správného even/odd páru.
@@ -237,7 +238,11 @@ impl CprCache {
         if !cpr.at.is_finite() || !(0.0..1.0).contains(&cpr.lat) || !(0.0..1.0).contains(&cpr.lon) {
             return None;
         }
-        self.entries.retain(|_, (_, _, t)| cpr.at - *t <= 20.0);
+        // Amortizace: sken celé 5000prvkové cache nejvýše jednou za 5 s.
+        if cpr.at >= self.next_cleanup_at {
+            self.entries.retain(|_, (_, _, t)| cpr.at - *t <= 20.0);
+            self.next_cleanup_at = cpr.at + 5.0;
+        }
         if !self.entries.contains_key(key) && self.entries.len() >= 5000 {
             self.entries.pop_first();
         }
