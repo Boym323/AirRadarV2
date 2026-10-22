@@ -105,4 +105,11 @@ PASS: všechna doručení 1/10/100, 101. klient HTTP 503, uvolnění capacity, m
 - Při přetečení 1MiB snapshotu / překročení počtu 5000 přechod do `degraded`, HTTP 503 `CAPACITY_EXCEEDED`, explicitní `unavailable` pro stávající SSE a poté obnovení novým `snapshot`, nikoli ponechání starých LIVE letadel.
 - G-03 DEV releasy nesou `web/g03-runtime-required.txt`. Runner odmítne starý root-owned installer ještě před instalací. Nový root rollback ověřuje `--g03-live-api` a skutečný snapshot/heartbeat přes Nginx; G-00 bootstrap není G-03 přejímka.
 - **NO-GO pro sloučení G-03 do main** dokud není aktualizován root instalátor a ověřen návrat konfigurace systemd společně s binárkou. Při změně režimu nemusí pouhý rollback symlinku z G-03 na G-00 obnovit běh aplikace.
-- Změny jsou ve vývojovém PR #16 bez přímého zásahu do LXC, V1 nebo G-04 databáze. Stav PASS potvrdit až finálním zeleným CI a reálným síťovým měřením.
+- Změny jsou ve vývojovém PR #16 bez přímého zásahu do LXC, V1 nebo G-04 databáze. CI regresních testů je potvrzeno [#39840890251](https://github.com/Boym323/AirRadarV2/actions/runs/39840890251), ale reálné cílové DEV měření stále chybí.
+
+## P1 regresní PASS po sloučení opravy do G-03 — 22. 10. 2026
+
+- [**GitHub Actions #39840890251**](https://github.com/Boym323/AirRadarV2/actions/runs/39840890251), commit `b1cdb3f23d57566d54a1cede08b42b64a59ec1c5`: Rust/web/dokumentace **3/3 PASS**, 38 Rust testů, včetně `five_thousand_aircraft_shared_snapshot_is_chunked_under_16k` a `oversize_snapshot_marks_api_degraded_not_stale_and_recovers`.
+- Nový verifikátor stage-aware DEV má regresní negativní testy: `bootstrap` a `degraded` se nesmí přijmout jako G-03, SSE musí mít atomické `epoch:seq`. Statický test a syntetický Nginx heartbeat prošly v CI; **nainstalovaná root-owned G-03 brána v DEV LXC nebyla ověřena**.
+- Ověřený syntetický 1/10/100 klientů nad izolovaným 127.0.0.1 Rust procesem z výsledného buildu. Jde o CI hardware, ne cílový 1vCPU LXC a ne browserový test. Tento PASS neznamená důkaz OS socket budgetu 256KiB/klient.
+- **G-03 zůstává 7/10 TESTED a NO-GO pro merge do main**, dokud se nedokončí skutečné DEV provozní SSE měření a atomický rollback režimu systemd/binary. G-02, V1 a databáze zůstaly bez zásahu.

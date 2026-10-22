@@ -4,7 +4,7 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
-### P1/P2 audit G-03 — práce v izolované větvi
+### P1/P2 audit G-03 — CI ověřeno, zatím pouze draft G-03
 - Sdílené SSE payloady a 16KiB odesílací chunky, explicitní 503/degraded/unavailable při překročení 1MiB a návrat novým full snapshotem.
 - Stage-aware G-03 kontrola bez falešného bootstrap PASS: direct SSE + Nginx snapshot/heartbeat, fail-closed preflight root instalátoru. První systemd/config rollback stále NO-GO, žádná produkční změna.
 - Stav G-00/G-01/G-02 a rozpracované G-03 opraven v úvodní dokumentaci.
