@@ -17,7 +17,7 @@ export function validObservation(o: Observation): boolean {
   const fieldsValid = /^[a-zA-Z0-9_-]{1,64}$/.test(o.receiverId)
     && /^(icao|nonicao):[0-9a-f]{6}$/.test(o.aircraftKey)
     && Number.isSafeInteger(o.receivedAtMs) && o.receivedAtMs >= 0
-    && (o.callsign === null || (o.callsign.length <= 16 && !/[\x00-\x1f\x7f]/.test(o.callsign)))
+    && (o.callsign === null || (o.callsign.length <= 16 && ![...o.callsign].some((ch) => ch.charCodeAt(0) < 32 || ch.charCodeAt(0) === 127)))
     && (o.squawk === null || /^[0-7]{4}$/.test(o.squawk));
   if (!fieldsValid) return false;
   if (p === null) return o.positionAtMs === null;
