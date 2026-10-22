@@ -28,6 +28,7 @@ TRACE = re.compile(
 ROOT = Path("/var/lib/airradar-v2/g02-auto")
 STATUS = Path("/var/cache/airradarv2-g02-public/status.json")
 AGENT = Path("/usr/local/libexec/airradarv2-g02-pull.py")
+CURRENT_VERSION = Path("/opt/airradar-v2/current/VERSION")
 LIMIT_KIB = 256 * 1024
 
 
@@ -103,21 +104,43 @@ def fetch_engine(agent, sha, dest):
         raise ValueError("Neplatné SHA")
     release = json.loads(agent.download(
         f"{agent.API}/releases/tags/g02-dev-{sha}", 300_000))
-    if (release.get("draft") or not release.get("prerelease")
+    if (release.get("draft") is not False or release.get("prerelease") is not True
             or release.get("target_commitish") != sha
-            or release.get("tag_name") != f"g02-dev-{sha}"):
+            or release.get("tag_name") != f"g02-dev-{sha}"
+            or release.get("author", {}).get("login") != "github-actions[bot]"):
         raise ValueError("Vydání není immutable G-02 DEV kandidát pro očekávané SHA")
     ref = json.loads(agent.download(f"{agent.API}/git/ref/tags/g02-dev-{sha}", 100_000))
     if (ref.get("object", {}).get("type") != "commit"
             or ref.get("object", {}).get("sha") != sha):
         raise ValueError("Tag neukazuje na požadovaný commit")
     filename = f"airradarv2-dev-linux-amd64-{sha[:12]}.tar.gz"
-    assets = {asset["name"]: asset for asset in release["assets"]}
+    asset_list = release.get("assets", [])
+    required = {filename, filename + ".sha256"}
+    if (not isinstance(asset_list, list) or len(asset_list) != 2
+            or {asset.get("name") for asset in asset_list} != required):
+        raise ValueError("LIVE release nemá právě dva schválené assety")
+    assets = {asset["name"]: asset for asset in asset_list}
+    for name, asset in assets.items():
+        expected_url = (
+            f"https://github.com/{agent.REPO}/releases/download/g02-dev-{sha}/{name}"
+        )
+        if asset.get("browser_download_url") != expected_url:
+            raise ValueError("LIVE release obsahuje nečekaný download URL")
     data, digest = agent.fetch_asset(assets[filename], 150 * 1024 * 1024)
     manifest, _ = agent.fetch_asset(assets[filename + ".sha256"], 256)
     if manifest.decode("ascii").strip() != f"{digest}  {filename}":
         raise ValueError("Manifest SHA-256 nesouhlasí")
     agent.extract_binary(io.BytesIO(data), dest, sha)
+
+
+def validate_live_context(report, sha, request_id, deployed_sha):
+    """Povol jen schválený běžící request pro přesný aktivní DEV release."""
+    live = report.get("liveSoak") or {}
+    if (deployed_sha != sha or request_id <= 0 or
+            live.get("sha") != sha or
+            live.get("requestRunId") != request_id or
+            live.get("status") != "RUNNING"):
+        raise ValueError("G-02 LIVE požadavek nebo aktivní DEV SHA nesouhlasí")
 
 
 def main():
@@ -136,8 +159,10 @@ def main():
     if not SHA_PATTERN.fullmatch(args.sha):
         raise ValueError("Neplatné SHA")
     initial = json.loads(STATUS.read_text(encoding="utf-8"))
-    if initial.get("sha") != args.sha or initial.get("status") != "PASS_SYNTHETIC_LXC":
-        raise ValueError("Nejprve musí PASS offline test přesného SHA v g02-status.json")
+    validate_live_context(
+        initial, args.sha, args.request_id,
+        CURRENT_VERSION.read_text(encoding="ascii").strip()
+    )
     # Abort before any download or test unless the receiver already accepts
     # a read-only Beast TCP output connection.
     with socket.create_connection((receiver, args.port), timeout=4):
@@ -213,8 +238,10 @@ def main():
         # Logs (incl. per-second diagnostic counters) remain private.
         agent.atomically_write(workdir / "live-result.json", report)
         latest = json.loads(STATUS.read_text(encoding="utf-8"))
-        if latest.get("sha") != args.sha:
-            raise ValueError("Veřejný status mezitím změnil SHA; výsledek je jen privátně")
+        validate_live_context(
+            latest, args.sha, args.request_id,
+            CURRENT_VERSION.read_text(encoding="ascii").strip()
+        )
         latest["liveSoak"] = report
         agent.atomically_write(STATUS, latest)
         print(json.dumps(report, ensure_ascii=False, indent=2))

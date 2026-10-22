@@ -98,3 +98,12 @@ periodickém veřejném `PASS_SYNTHETIC_LXC`. `airradarv2-g02-auto.timer` a
 `airradarv2-main-deploy.timer` jsou vypnuté, LIVE G-02 zůstává oddělený.
 Aktivní důkazní release: `a1319067ae9fb5d01be3851eb3f899d25686e1e3`.
 Nejde o produkční cutover, DB migraci ani změnu V1.
+
+## Údržba LIVE G-02 po oddělení od autonomního CI/CD
+
+G-02 LIVE workflow nyní používá vlastní `liveSoak.sha` a požadavek
+`requestRunId`, zatímco historický offline `g02-status.json.sha`
+se nepřepisuje. Autorizace vyžaduje aktivní DEV release shodný
+s GitHub `main` a immutable bot release. Offline G-02 timer se
+nezapíná; LIVE timer se zachovává. Jde o opravu testovací infrastruktury,
+nikoli o novou produktovou funkci nebo nový 60min PASS.

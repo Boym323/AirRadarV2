@@ -4,6 +4,8 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+- G-02.11: LIVE přejímka se již nezablokuje po vypnutí offline G-02 timeru. Schválení je svázáno s nasazeným DEV SHA, aktuálním main, botem vydaným immutable release a jednorázovým request ID. Historický offline status zůstává zachován a LIVE gate čte výlučně `liveSoak.sha`. Doplněny negativní regresní testy a postup jednorázové aktualizace root-owned LIVE skriptů; nová hodinová přejímka ještě nebyla spuštěna.
+
 - G-13: běžný DEV deployment už nečeká na periodický veřejný `g02-status.json`
   ani `PASS_SYNTHETIC_LXC`. Historický verify job byl odstraněn a deploy nyní
   přímo na self-hosted runneru ověřuje přesný `VERSION`, release symlink, Rust

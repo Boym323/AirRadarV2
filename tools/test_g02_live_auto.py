@@ -3,6 +3,9 @@ import datetime as dt
 import importlib.util
 from pathlib import Path
 import unittest
+from unittest import mock
+import tempfile
+import json
 
 spec = importlib.util.spec_from_file_location(
     "g02_live_poll", Path(__file__).resolve().parent.parent / "deploy/g02-live-auto.py"
@@ -43,6 +46,45 @@ class TestRequest(unittest.TestCase):
         for item in examples:
             with self.subTest(item=item["tag_name"]):
                 self.assertIsNone(mod.select_request([item], SHA, set(), NOW))
+
+    def test_live_sha_follows_deployed_main_not_offline_report(self):
+        self.assertEqual(
+            mod.validated_live_sha(SHA, {"object": {"type": "commit", "sha": SHA}}),
+            SHA,
+        )
+        self.assertIsNone(
+            mod.validated_live_sha(SHA, {"object": {"type": "commit", "sha": "b" * 40}})
+        )
+        for deployed, ref in [
+            ("not-a-sha", {"object": {"type": "commit", "sha": SHA}}),
+            (SHA, {"object": {"type": "tag", "sha": SHA}}),
+            (SHA, {"object": {"type": "commit", "sha": "invalid"}}),
+        ]:
+            with self.subTest(deployed=deployed, ref=ref):
+                with self.assertRaises(ValueError):
+                    mod.validated_live_sha(deployed, ref)
+
+    def test_live_report_preserves_unrelated_offline_evidence(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "status.json"
+            original = {"stage": "G-02.11", "status": "PASS_SYNTHETIC_LXC",
+                        "sha": "b" * 40, "benchmark": "PASS"}
+            path.write_text(json.dumps(original), encoding="utf-8")
+
+            class StubAgent:
+                @staticmethod
+                def atomically_write(destination, value):
+                    destination.write_text(json.dumps(value), encoding="utf-8")
+
+            with mock.patch.object(mod, "STATUS", path):
+                mod.result_update(StubAgent(), 4321, SHA, "RUNNING")
+                updated = json.loads(path.read_text(encoding="utf-8"))
+                for key, value in original.items():
+                    self.assertEqual(updated[key], value)
+                self.assertEqual(updated["liveSoak"]["sha"], SHA)
+                self.assertEqual(updated["liveSoak"]["requestRunId"], 4321)
+                with self.assertRaises(ValueError):
+                    mod.result_update(StubAgent(), 4322, SHA, "RUNNING")
 
 
 if __name__ == "__main__":

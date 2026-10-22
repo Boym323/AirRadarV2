@@ -40,3 +40,49 @@ Dokud nebude schválen read-only odběr konkrétního izolovaného **testovacíh
 ## Pravidlo závěru
 
 G-02 smí dostat **HOTOVO** a primární KEEP ID případně `ACCEPTED` teprve po úspěchu obou bran, přesném SHA, doložených hodnotách a bezpečnostním auditu. V opačném případě zachovej **10/11, ROZPRACOVÁNO, TESTED**. Žádné automatické nasazení do DEV LXC ani produkce.
+
+## G-02 LIVE po vypnutí periodického offline timeru (údržba 22. 10. 2026)
+
+Běžné DEV CI/CD již testuje Rust replay/benchmarky a bezpečně nasazuje
+schválený immutable release. `airradarv2-g02-auto.timer` zůstává vypnutý,
+LIVE poller `airradarv2-g02-live-auto.timer` zůstává aktivní.
+
+LIVE test se nově autorizuje **výhradně podle aktivního**
+`/opt/airradar-v2/current/VERSION`, přesného SHA aktuálního GitHub `main`,
+botem vydaného immutable `g02-dev-<SHA>` prerelease a krátkodobého
+jednorázového `g02-live-<SHA>-<run-id>` požadavku. Dále se ověřuje
+Git tag, manifest SHA-256 a nepovolené položky archivu. Test používá
+jedinou předem schválenou privátní IPv4 adresu BEAST OUTPUT portu 30005.
+
+**Starý** `g02-status.json.sha` a `PASS_SYNTHETIC_LXC` se nemění:
+jsou historickým offline důkazem. Nový výsledek se zapisuje jen do
+`g02-status.json.liveSoak` a obsahuje vlastní přesné SHA a requestRunId.
+Veřejný LIVE GitHub gate kontroluje právě `liveSoak.sha`, nikoli
+historické `status.sha`.
+
+### Jednorázová instalace opraveného LIVE agenta do DEV LXC
+
+Protože LIVE agent běží ze souborů vlastněných rootem v `/usr/local/libexec`,
+samotný push na GitHub jej **neaktualizuje**. Na ověřeném DEV LXC po úspěšném
+CI, pouze pokud LIVE služba právě neběží, proveď:
+
+~~~bash
+cd /opt/airradarv2
+git fetch origin main
+git merge --ff-only origin/main
+python3 -m unittest discover -s tools -p 'test_g02_live_*.py'
+systemctl is-active --quiet airradarv2-g02-live-auto.service && {
+  echo 'LIVE test právě běží: nyní skripty nepřepisovat'; exit 1;
+}
+install -o root -g root -m 0755 deploy/g02-live-auto.py /usr/local/libexec/airradarv2-g02-live-auto.py
+install -o root -g root -m 0755 deploy/g02-live-soak.py /usr/local/libexec/airradarv2-g02-live-soak.py
+systemctl is-enabled airradarv2-g02-live-auto.timer
+systemctl is-active airradarv2-g02-live-auto.timer
+~~~
+
+Tento postup **nezapíná** offline timer, neregis­truje nový runner ani
+nepřepisuje receiver IP, DB či běžící engine. K ručnímu spuštění LIVE
+přejímky použij samostatný GitHub workflow s explicitním aktuálním SHA
+a potvrzením `SPUSTIT_READONLY_60MIN`; po hodině ověř
+`liveSoak.requestRunId` a metriky. Nespouštěj jej bez schválení
+read-only provozu; předchozí 60min PASS se novému SHA nepřipisuje.

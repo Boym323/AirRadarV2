@@ -167,3 +167,16 @@ GitHub workflow nezávisle načítá veřejný `g02-status.json` a ověřuje úp
 **Rozhodnutí:** G-02.01–G-02.11 všechny testově doloženy; etapa G-02 může být označena **HOTOVO (11/11)**. Šest KEEP ID zůstává ve stavu `TESTED` — neděláme nepravdivý `ACCEPTED` za produktový deploy. Běžný web i HTTP/SSE na DEV LXC nadále funguje na G-00/G-01 bootstrapu; G-03 opt-in HTTP/SSE má vlastní vývojovou a testovací bránu. Reálný JSON failover, P95 RF→RAM a dlouhodobé provozní stability přesahující tento jednorázový 60min test **nebyly ověřeny**. Zásah do V1 ani DB nebyl proveden.
 
 **Následná nesouvisející provozní údržba:** instalovaný systemd `Type=oneshot` má stále neúčinné `RuntimeMaxSec=3900`; šablona v PR #7 již používá `TimeoutStartSec=3900`. Změnu aplikovat odděleně a ověřit `systemctl show ... -p TimeoutStartUSec`. Současný běh se úspěšně dokončil díky vlastnímu Python timeoutu 3800 s.
+
+## Údržba G-02 LIVE gate po autonomním DEV CI/CD (22. 10. 2026)
+
+Běžný DEV deployment je oddělen od historické offline LXC přejímky.
+Aktuální LIVE agent se nově váže k aktivnímu DEV `VERSION`, aktuálnímu
+GitHub `main` a schválenému immutable release; offline `status.sha`
+zůstává neměnným historickým důkazem. Nová LIVE přejímka má své
+`liveSoak.sha` a `liveSoak.requestRunId`, s kontrolou skutečných
+ztrát, délky a RSS. Byly přidány regresní testy oddělení obou reportů
+a odmítání cizího SHA/request ID. **Nový hodinový test v tomto kroku
+neproběhl** a předchozí PASS platí pouze pro původní ověřené SHA.
+Instalace aktualizovaného root-owned LIVE agenta na LXC musí být
+provedena odděleně podle [runbooku](../runbooks/G-02-DEV-LXC-PREJIMKA.md).

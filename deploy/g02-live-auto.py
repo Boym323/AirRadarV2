@@ -13,6 +13,8 @@ AGENT_PATH = Path("/usr/local/libexec/airradarv2-g02-pull.py")
 SOAK = Path("/usr/local/libexec/airradarv2-g02-live-soak.py")
 STATUS = Path("/var/cache/airradarv2-g02-public/status.json")
 PRIVATE = Path("/var/lib/airradar-v2/g02-auto")
+CURRENT_VERSION = Path("/opt/airradar-v2/current/VERSION")
+RELEASE_ROOT = Path("/opt/airradar-v2/releases")
 REQUEST = re.compile(r"g02-live-([0-9a-f]{40})-([1-9][0-9]{0,18})")
 BOT = "github-actions[bot]"
 
@@ -44,10 +46,30 @@ def select_request(releases, expected_sha, used_ids, now=None):
     return max(acceptable, default=None)
 
 
+def validated_live_sha(deployed_sha, main_ref):
+    """Jen přesně nasazený a aktuální main; bez vazby na offline report."""
+    if not re.fullmatch(r"[0-9a-f]{40}", deployed_sha):
+        raise ValueError("DEV VERSION neobsahuje platné SHA")
+    obj = main_ref.get("object", {}) if isinstance(main_ref, dict) else {}
+    if obj.get("type") != "commit" or not re.fullmatch(r"[0-9a-f]{40}", str(obj.get("sha", ""))):
+        raise ValueError("GitHub main nemá platný přímý commit")
+    return deployed_sha if obj["sha"] == deployed_sha else None
+
+
+def current_live_sha(agent):
+    if not CURRENT_VERSION.is_file() or not CURRENT_VERSION.parent.resolve().is_relative_to(RELEASE_ROOT):
+        raise ValueError("Aktivní DEV release není v odděleném releases adresáři")
+    deployed = CURRENT_VERSION.read_text(encoding="ascii").strip()
+    ref = json.loads(agent.download(agent.API + "/git/ref/heads/main", 100_000))
+    return validated_live_sha(deployed, ref)
+
+
 def result_update(agent, request_id, sha, status, **extra):
     current = json.loads(STATUS.read_text(encoding="utf-8"))
-    if current.get("sha") != sha:
-        return
+    previous = current.get("liveSoak") or {}
+    if (previous.get("status") == "RUNNING"
+            and previous.get("requestRunId") != request_id):
+        raise ValueError("Jiný G-02 LIVE požadavek již běží")
     current["liveSoak"] = {
         "sha": sha,
         "requestRunId": request_id,
@@ -70,12 +92,13 @@ def main():
     agent_spec = importlib.util.spec_from_file_location("g02_agent", AGENT_PATH)
     agent = importlib.util.module_from_spec(agent_spec)
     agent_spec.loader.exec_module(agent)
-    status = json.loads(STATUS.read_text(encoding="utf-8"))
-    if (status.get("status") != "PASS_SYNTHETIC_LXC"
-            or not re.fullmatch("[0-9a-f]{40}", status.get("sha", ""))):
-        print("G-02: no verified offline SHA; cannot start live")
+    sha = current_live_sha(agent)
+    if sha is None:
+        print("G-02 LIVE: main a skutečně nasazená DEV verze se liší; čekám na deployment")
         return 0
-    sha = status["sha"]
+    # Historický PASS_SYNTHETIC_LXC se nemění ani nevyžaduje.
+    if not isinstance(json.loads(STATUS.read_text(encoding="utf-8")), dict):
+        raise ValueError("Veřejný G-02 report musí být JSON objekt")
     candidates = json.loads(agent.download(agent.API + "/releases?per_page=100", 5_000_000))
     state = PRIVATE / "live-requests"
     state.mkdir(mode=0o700, parents=True, exist_ok=True)

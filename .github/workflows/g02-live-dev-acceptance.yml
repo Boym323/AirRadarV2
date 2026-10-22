@@ -6,7 +6,6 @@ on:
         description: "Schválený immutable G-02 DEV release SHA"
         required: true
         type: string
-        default: d0cefc4a5c3332eadccf8ab21c96bae51987abe9
       confirm:
         description: "Výslovné potvrzení read-only 60min BEAST testu v DEV LXC"
         required: true
@@ -24,7 +23,7 @@ concurrency:
 jobs:
   request:
     name: Vydat schválený požadavek (bez LAN přístupu)
-    if: github.event.inputs.confirm == 'SPUSTIT_READONLY_60MIN'
+    if: github.repository == 'Boym323/AirRadarV2' && github.ref == 'refs/heads/main' && github.event.inputs.confirm == 'SPUSTIT_READONLY_60MIN'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -45,12 +44,21 @@ jobs:
           set -Eeuo pipefail
           [[ "$GH_REPO" == "Boym323/AirRadarV2" ]] || exit 1
           [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "Chybné SHA"; exit 1; }
+          main_sha="$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq '.object.sha')"
+          [[ "$main_sha" == "$SHA" ]] || { echo "SHA není aktuální main"; exit 1; }
+          filename="airradarv2-dev-linux-amd64-${SHA:0:12}.tar.gz"
           json="$(gh api "repos/$GH_REPO/releases/tags/g02-dev-$SHA")"
-          jq -e --arg sha "$SHA" '
+          jq -e --arg sha "$SHA" --arg name "$filename" --arg repo "$GH_REPO" '
+            .tag_name == ("g02-dev-" + $sha) and
             .prerelease == true and .draft == false and
             .target_commitish == $sha and
-            (.assets | map(.name) | any(. == ("airradarv2-dev-linux-amd64-" + $sha[0:12] + ".tar.gz")))
+            .author.login == "github-actions[bot]" and
+            ([.assets[].name] | sort) == ([$name, ($name + ".sha256")] | sort) and
+            all(.assets[]; .browser_download_url ==
+              ("https://github.com/" + $repo + "/releases/download/g02-dev-" + $sha + "/" + .name))
           ' <<<"$json" >/dev/null
+          gh api "repos/$GH_REPO/git/ref/tags/g02-dev-$SHA" |
+            jq -e --arg sha "$SHA" '.object.type == "commit" and .object.sha == $sha' >/dev/null
           tag="g02-live-$SHA-$RUN_ID"
           gh release create "$tag" \
             --target "$SHA" --prerelease --latest=false \
@@ -85,7 +93,7 @@ jobs:
           sha = os.environ["EXPECTED_SHA"]
           run_id = int(os.environ["EXPECTED_RUN_ID"])
           result = status.get("liveSoak") or {}
-          if status.get("sha") != sha or result.get("requestRunId") != run_id:
+          if result.get("sha") != sha or result.get("requestRunId") != run_id:
               sys.exit(2)
           state = result.get("status")
           if state == "RUNNING":

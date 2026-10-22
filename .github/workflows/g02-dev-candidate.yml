@@ -32,6 +32,8 @@ jobs:
           node tools/check-docs.mjs
           python3 -m py_compile deploy/g02-auto-pull.py
           python3 -m unittest discover -s tools -p 'test_g02_auto_pull.py'
+          python3 -m unittest discover -s tools -p 'test_g02_live_*.py'
+          python3 -m py_compile deploy/g02-live-auto.py deploy/g02-live-soak.py
           python3 -m unittest discover -s tools -p 'test_verify_g02_public_status.py'
           bash -n deploy/install-g02-auto-lxc.sh
       - name: Ověřit a sestavit Vite

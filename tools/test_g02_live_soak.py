@@ -52,6 +52,24 @@ class SoakTests(unittest.TestCase):
                                   cpu_percent=2, ended_early=early)
             self.assertEqual(result["status"], expected)
 
+    def test_authorized_live_context_is_independent_of_offline_sha(self):
+        report = {"sha": "b" * 40, "status": "PASS_SYNTHETIC_LXC",
+                  "liveSoak": {"sha": "a" * 40, "requestRunId": 123,
+                               "status": "RUNNING"}}
+        mod.validate_live_context(report, "a" * 40, 123, "a" * 40)
+        for sha, request_id, deployed in [
+            ("b" * 40, 123, "a" * 40),
+            ("a" * 40, 124, "a" * 40),
+            ("a" * 40, 123, "c" * 40),
+            ("a" * 40, 0, "a" * 40),
+        ]:
+            with self.subTest(sha=sha, request_id=request_id, deployed=deployed):
+                with self.assertRaises(ValueError):
+                    mod.validate_live_context(report, sha, request_id, deployed)
+        report["liveSoak"]["status"] = "PASS_LIVE_BEAST_60MIN"
+        with self.assertRaises(ValueError):
+            mod.validate_live_context(report, "a" * 40, 123, "a" * 40")
+
 
 if __name__ == "__main__":
     unittest.main()
