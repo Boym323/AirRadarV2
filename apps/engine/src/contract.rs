@@ -3,15 +3,29 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum Transport { ReadsbJson, BeastTcp }
+pub enum Transport {
+    ReadsbJson,
+    BeastTcp,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum TimeBasis { DerivedReadsb, ReceiverUtc, ServerArrival, Unknown }
+pub enum TimeBasis {
+    DerivedReadsb,
+    ReceiverUtc,
+    ServerArrival,
+    Unknown,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum PositionOrigin { Adsb, Mlat, Tisb, Estimated, Unknown }
+pub enum PositionOrigin {
+    Adsb,
+    Mlat,
+    Tisb,
+    Estimated,
+    Unknown,
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -47,27 +61,40 @@ pub fn aircraft_key(hex: &str) -> Option<String> {
 
 pub fn valid(ob: &Observation) -> bool {
     let parts: Vec<&str> = ob.aircraft_key.split(':').collect();
-    if parts.len() != 2 || !matches!(parts[0], "icao" | "nonicao")
+    if parts.len() != 2
+        || !matches!(parts[0], "icao" | "nonicao")
         || parts[1].len() != 6
-        || !parts[1].bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
-        || ob.receiver_id.is_empty() || ob.receiver_id.len() > 64
-        || !ob.receiver_id.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+        || !parts[1]
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        || ob.receiver_id.is_empty()
+        || ob.receiver_id.len() > 64
+        || !ob
+            .receiver_id
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
         || ob.received_at_ms < 0
     {
         return false;
     }
     if let Some(c) = &ob.callsign {
-        if c.len() > 16 || c.chars().any(char::is_control) { return false; }
+        if c.len() > 16 || c.chars().any(char::is_control) {
+            return false;
+        }
     }
     if let Some(s) = &ob.squawk {
-        if s.len() != 4 || !s.bytes().all(|b| (b'0'..=b'7').contains(&b)) { return false; }
+        if s.len() != 4 || !s.bytes().all(|b| (b'0'..=b'7').contains(&b)) {
+            return false;
+        }
     }
     match (&ob.position, ob.position_at_ms) {
         (Some(p), Some(t)) => {
-            p.lat.is_finite() && p.lon.is_finite()
+            p.lat.is_finite()
+                && p.lon.is_finite()
                 && (-90.0..=90.0).contains(&p.lat)
                 && (-180.0..=180.0).contains(&p.lon)
-                && t >= 0 && t <= ob.received_at_ms + 10_000
+                && t >= 0
+                && t <= ob.received_at_ms + 10_000
                 && ob.time_basis != TimeBasis::Unknown
         }
         (None, None) => true,
@@ -80,7 +107,10 @@ pub fn valid(ob: &Observation) -> bool {
 pub fn persistable(ob: &Observation) -> bool {
     valid(ob)
         && ob.position.is_some()
-        && matches!(ob.time_basis, TimeBasis::DerivedReadsb | TimeBasis::ReceiverUtc)
+        && matches!(
+            ob.time_basis,
+            TimeBasis::DerivedReadsb | TimeBasis::ReceiverUtc
+        )
         && ob.position_origin == PositionOrigin::Adsb
 }
 
@@ -90,13 +120,21 @@ pub fn plausible_transition(previous: &Observation, next: &Observation) -> bool 
     if !valid(previous) || !valid(next) || previous.aircraft_key != next.aircraft_key {
         return false;
     }
-    match (&previous.position, &next.position, previous.position_at_ms, next.position_at_ms) {
+    match (
+        &previous.position,
+        &next.position,
+        previous.position_at_ms,
+        next.position_at_ms,
+    ) {
         (Some(a), Some(b), Some(t0), Some(t1)) => {
-            if t1 < t0 { return false; }
-            if t1 == t0 { return a == b; }
+            if t1 < t0 {
+                return false;
+            }
+            if t1 == t0 {
+                return a == b;
+            }
             let lat_km = (a.lat - b.lat) * 111.2;
-            let lon_km = (a.lon - b.lon) * 111.2 *
-                ((a.lat + b.lat).to_radians() / 2.0).cos();
+            let lon_km = (a.lon - b.lon) * 111.2 * ((a.lat + b.lat).to_radians() / 2.0).cos();
             let distance_km = lat_km.hypot(lon_km);
             distance_km * 3_600_000.0 / (t1 - t0) as f64 <= 1500.0
         }
@@ -116,8 +154,17 @@ pub struct PublicAircraft {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum StreamPayload {
-    Snapshot { epoch: String, seq: u64, aircraft: Vec<PublicAircraft> },
-    Delta { epoch: String, seq: u64, upsert: Vec<PublicAircraft>, removed: Vec<String> },
+    Snapshot {
+        epoch: String,
+        seq: u64,
+        aircraft: Vec<PublicAircraft>,
+    },
+    Delta {
+        epoch: String,
+        seq: u64,
+        upsert: Vec<PublicAircraft>,
+        removed: Vec<String>,
+    },
 }
 
 /// Záruka proti mezeře: po registraci odběratele musí snapshot zachytit
@@ -135,8 +182,18 @@ mod tests {
         let fixtures: serde_json::Value = serde_json::from_str(JSON).unwrap();
         for case in fixtures["cases"].as_array().unwrap() {
             let ob: Observation = serde_json::from_value(case["observation"].clone()).unwrap();
-            assert_eq!(valid(&ob), case["valid"].as_bool().unwrap(), "{:?}", case["name"]);
-            assert_eq!(persistable(&ob), case["persistable"].as_bool().unwrap(), "{:?}", case["name"]);
+            assert_eq!(
+                valid(&ob),
+                case["valid"].as_bool().unwrap(),
+                "{:?}",
+                case["name"]
+            );
+            assert_eq!(
+                persistable(&ob),
+                case["persistable"].as_bool().unwrap(),
+                "{:?}",
+                case["name"]
+            );
         }
     }
     #[test]
@@ -145,8 +202,10 @@ mod tests {
         assert_eq!(aircraft_key("~ABC123").as_deref(), Some("nonicao:abc123"));
         assert_eq!(aircraft_key("xxx"), None);
         let mut a: Observation = serde_json::from_value(
-            serde_json::from_str::<serde_json::Value>(JSON).unwrap()["cases"][0]["observation"].clone()
-        ).unwrap();
+            serde_json::from_str::<serde_json::Value>(JSON).unwrap()["cases"][0]["observation"]
+                .clone(),
+        )
+        .unwrap();
         let mut b = a.clone();
         b.received_at_ms += 1000;
         b.position_at_ms = Some(a.position_at_ms.unwrap() + 1000);
