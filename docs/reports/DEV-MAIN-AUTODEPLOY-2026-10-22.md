@@ -1,6 +1,7 @@
 # V2 DEV main auto-deploy — průběžný implementační report
 
-**22. 10. 2026. Stav: CI/CD a root bridge připraveny, řízený rollback root bridge PASS, repo-scoped runner dosud NEZAREGISTROVÁN a první Actions deployment NEOVĚŘEN.**
+**Historický záznam 22. 10. 2026.** Původní přípravná část reportu zachovává
+stav před registrací runneru; aktuální uzavření je uvedeno níže.
 
 ## Implementace
 
@@ -16,8 +17,24 @@
 - Po sloučení G-02 do main skončila [stávající build/release pipeline #39808221884](https://github.com/Boym323/AirRadarV2/actions/runs/39808221884) úspěšně.
 - **Není důkaz**, že již došlo k automatickému přepnutí Rust/Vite webu: instalaci služby v DEV LXC teprve zbývá jednorázově provést. Nenahrazovat tento chybějící důkaz výsledkem CI.
 
-## Neuzavřené brány
+## Historické neuzavřené brány
 
-Registrace runneru, první skutečný Actions deployment a odpovídající status SHA; otestování disku, systemd sandboxu a Nginx z cílového serveru; deaktivace starého timeru. Produkční G-13 zůstává NO-GO, V1/DB/receiver beze změn.
+Následující seznam popisoval stav před registrací runneru a prvním deploymentem:
+registrace, ověření cílových služeb a deaktivace starého timeru. Tyto provozní
+body jsou nyní uzavřené; produkční G-13 stále zůstává NO-GO a V1/DB/receiver
+zůstávají beze změn.
+
+## Finální ověření stabilizace
+
+Runner `airradarv2-dev` je registrovaný a aktivní jako účet
+`airradarv2-runner`. Release `a1319067ae9fb5d01be3851eb3f899d25686e1e3` je
+aktivní v `/opt/airradar-v2/current`; engine, Nginx, Rust health API a web byly
+ověřeny. Běžný workflow již nečeká na `g02-status.json`: po deployi provádí
+kontrolu přímo na cílovém runneru. G-02 replay/benchmarky zůstávají v CI jako
+nezávislá diagnostická brána.
+
+`airradarv2-g02-auto.timer` a `airradarv2-main-deploy.timer` jsou `disabled` a
+`inactive`; `airradarv2-g02-live-auto.timer` zůstává samostatný. Rollback root
+bridge byl dříve řízeně ověřen a zachovává předchozí funkční release.
 
 [Instalační runbook](../runbooks/DEV-MAIN-AUTODEPLOY.md)

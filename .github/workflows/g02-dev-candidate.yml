@@ -122,6 +122,7 @@ jobs:
           mkdir -p "$incoming"
           staging="$incoming/${GITHUB_SHA}.${GITHUB_RUN_ID}"
           mkdir "$staging"
+          trap 'status=$?; if [ "$status" -ne 0 ]; then rm -rf -- "$staging"; fi; exit "$status"' EXIT
           release="$(curl -fsSL -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${GH_TOKEN}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/g02-dev-${GITHUB_SHA}")"
           jq -e --arg sha "$GITHUB_SHA" --arg name "$name" \
             '.tag_name == ("g02-dev-" + $sha) and .target_commitish == $sha and .prerelease == true and .draft == false and .author.login == "github-actions[bot]" and ([.assets[].name] | sort) == [$name, ($name + ".sha256")]' \
@@ -170,38 +171,45 @@ jobs:
           exit 75
       - name: Zápis výsledku do summary
         run: echo "DEV deployment dokončen pro $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
-
-  verify-dev-lxc:
-    # GitHub only reads the already public status; it never connects to V1 or runs
-    # arbitrary commands in the user's LAN. Any error fails this separate gate.
-    needs: deploy-dev
-    if: github.repository == 'Boym323/AirRadarV2' && github.event_name == 'push'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 29
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-      - name: Ověřit SHA-připnutý veřejný report přímo z DEV LXC
+      - name: Ověřit právě nasazený release a lokální služby
         env:
           EXPECTED_SHA: ${{ github.sha }}
         shell: bash
         run: |
           set -Eeuo pipefail
-          for attempt in $(seq 1 25); do
-            if curl --fail --silent --show-error \
-              --location --proto '=https' --proto-redir '=https' \
-              --max-time 15 \
-              --output /tmp/g02-lxc-status.json \
-              'https://airradarv2.pomykal.cz/g02-status.json'; then
-              if python3 tools/verify_g02_public_status.py \
-                --file /tmp/g02-lxc-status.json --sha "$EXPECTED_SHA"; then
-                echo "PASS: G-02.11 syntetická DEV LXC brána pro přesný SHA."
-                exit 0
-              fi
-            fi
-            echo "DEV LXC report zatím nemá potvrzené SHA; pokus $attempt/25"
-            if [ "$attempt" -lt 25 ]; then sleep 60; fi
-          done
-          echo "NEOVĚŘENO: 180s DEV LXC loopback acceptance nedoloženo."
-          exit 1
+          current=/opt/airradar-v2/current
+          expected_release_root=/opt/airradar-v2/releases/
+          test "$(systemctl is-active airradarv2-engine.service)" = active
+          test "$(systemctl is-active nginx.service)" = active
+          test -L "$current"
+          resolved="$(readlink -f -- "$current")"
+          case "$resolved" in
+            "$expected_release_root"*) ;;
+            *) echo "current míří mimo izolovaný releases adresář: $resolved" >&2; exit 1 ;;
+          esac
+          test "$(tr -d '\r\n' < "$current/VERSION")" = "$EXPECTED_SHA"
+          python3 - <<'PY'
+          import json, urllib.request
+
+          request = urllib.request.Request("http://127.0.0.1:4101/api/v1/health")
+          with urllib.request.urlopen(request, timeout=5) as response:
+              if response.status != 200:
+                  raise SystemExit(f"API health HTTP {response.status}")
+              health = json.load(response)
+          if health.get("status") not in {"bootstrap", "waiting_for_observations", "live"}:
+              raise SystemExit(f"Neplatný stav health: {health.get('status')!r}")
+          if not isinstance(health.get("live_ingest"), bool):
+              raise SystemExit("Health live_ingest není boolean")
+          if not isinstance(health.get("database_connected"), bool):
+              raise SystemExit("Health database_connected není boolean")
+          if not isinstance(health.get("stage"), str) or not health["stage"].startswith("G-"):
+              raise SystemExit("Health nemá platnou etapu")
+          PY
+          web_check="$RUNNER_TEMP/airradarv2-web-health.html"
+          curl --fail --silent --show-error --max-time 5 \
+            --output "$web_check" http://192.168.1.126:8080/
+          grep -q '<div id="root"></div>' "$web_check"
+          sleep 3
+          test "$(systemctl is-active airradarv2-engine.service)" = active
+          test "$(systemctl is-active nginx.service)" = active
+          echo "PASS: DEV release, služby, API a web odpovídají SHA $EXPECTED_SHA" >> "$GITHUB_STEP_SUMMARY"

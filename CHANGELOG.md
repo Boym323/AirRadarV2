@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+- G-13: běžný DEV deployment už nečeká na periodický veřejný `g02-status.json`
+  ani `PASS_SYNTHETIC_LXC`. Historický verify job byl odstraněn a deploy nyní
+  přímo na self-hosted runneru ověřuje přesný `VERSION`, release symlink, Rust
+  health API, Nginx, web a krátkou stabilitu engine. G-02 replay/benchmarky v CI
+  zůstávají zachované a oba staré polling timery zůstávají vypnuté.
 - G-13: opraven autonomní DEV deployment pro již registrovaný runner. Workflow
   používá SHA/run izolovaný staging bez mazání cizích souborů, kontrolu SHA-256
   z reálného adresáře a robustní kontrolu `VERSION`; root bridge ověřuje

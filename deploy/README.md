@@ -13,6 +13,7 @@ Actions se ukládají do jednorázových adresářů
 `incoming/<full-SHA>.<run-id>/`, takže úklid cizích/root-owned souborů nemůže
 zablokovat další běh. `runner-deploy.sh` je jediný privilegovaný vstup z runneru.
 
-Starý pull timer zůstává aktivní pouze do potvrzení prvního runner deploymentu;
-potom se vypíná podle runbooku. Obě cesty používají stejný lock a G-02 má při
-kolizi přednost.
+Starý pull timer `airradarv2-main-deploy.timer` je po ověření runner deploymentu
+vypnutý. Běžná cesta vede přes GitHub Actions runner; root bridge a G-02 stále
+sdílejí lock a při kolizi má G-02 přednost. Periodický veřejný G-02 report není
+podmínkou běžného deploymentu.

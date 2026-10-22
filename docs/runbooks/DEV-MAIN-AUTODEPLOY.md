@@ -24,14 +24,16 @@ nevytváří druhou službu. Dočasné release soubory jsou v jednorázovém
 runneru. Nepoužívá V1 checkout ani credentials.
 
 Root bridge sdílí `/run/lock/airradarv2-main-deploy.lock` s G-02 offline/LIVE
-službami. Při aktivním G-02 vrací 75 a GitHub job opakuje pokus. Po úspěšné
-prvním ověřeném Actions deploymentu se starý timer deaktivuje:
+službami. Při aktivním G-02 vrací 75 a GitHub job opakuje pokus. Starý polling
+timer je po ověření runneru vypnutý a nový deployment ho nepoužívá:
 
 ```bash
-systemctl disable --now airradarv2-main-deploy.timer
+systemctl is-enabled airradarv2-main-deploy.timer # disabled
+systemctl is-active airradarv2-main-deploy.timer  # inactive
 ```
 
-Do té doby zůstává aktivní jako jediná ověřená cesta obnovy.
+Obnova release probíhá přes stejný root bridge a rollback uvnitř instalačního
+mechanismu; nevytváří se paralelní privilegovaná cesta.
 
 ## Incident 22. 10. 2026
 
@@ -74,7 +76,15 @@ zůstává povinná.
 
 ## Aktuální provozní stav
 
-Aktivní release zůstává `227a8619b590d2c536761ffefc75cd0a5633936c`, dokud
-runner neprovede první ověřený deployment. Root bridge a sdílené G-02 lock
-drop-iny jsou připravené; první Actions job, rollback a deaktivace starého
-timeru jsou zatím provozně neověřené.
+Runner `airradarv2-dev` je registrovaný, aktivní a běží jako
+`airradarv2-runner`. Ověřený release je
+`a1319067ae9fb5d01be3851eb3f899d25686e1e3`; Rust engine, Nginx, lokální API a
+web jsou aktivní. Workflow po CI a immutable prerelease provádí post-deploy
+kontrolu přímo na tomto runneru: služby, přesný `VERSION`, umístění symlinku,
+JSON health API, web a krátkou kontrolu, že engine nespadl.
+
+G-02 replay a benchmarky zůstávají v CI. Veřejný `g02-status.json` ani
+periodický `PASS_SYNTHETIC_LXC` nejsou podmínkou běžného deploymentu. Timer
+`airradarv2-g02-auto.timer` je vypnutý, `airradarv2-g02-live-auto.timer` zůstává
+oddělený podle aktuálního provozního stavu a `airradarv2-main-deploy.timer` je
+vypnutý. Při kolizi s G-02 deployment bezpečně čeká přes sdílený lock.

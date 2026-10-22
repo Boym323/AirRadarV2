@@ -33,10 +33,10 @@ Měřený commit: [f07fdb35](https://github.com/Boym323/AirRadarV2/commit/f07fdb
 ## Kontinuální DEV nasazování z main
 
 Registrovaný repo-scoped runner v DEV LXC přebírá pouze SHA-ověřené prerelease
-z úspěšného GitHub CI `main` a kontroluje Rust/web s rollbackem. Viz
-[instalační postup](docs/runbooks/DEV-MAIN-AUTODEPLOY.md). Starý polling timer
-se vypíná až po ověřeném runner deploymentu; G-02 zůstává chráněno sdíleným
-lockem.
+z úspěšného GitHub CI `main` a kontroluje Rust/web s rollbackem. Post-deploy
+healthcheck probíhá přímo na runneru, bez čekání na veřejný G-02 report. Viz
+[provozní runbook](docs/runbooks/DEV-MAIN-AUTODEPLOY.md). Starý polling timer je
+vypnutý; G-02 zůstává chráněno sdíleným lockem a jeho přejímky jsou oddělené.
 
 ## Česká zadání a vývoj
 
