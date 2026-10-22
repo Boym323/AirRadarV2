@@ -198,36 +198,52 @@ pub fn merge(state: &mut BTreeMap<String, PublicAircraft>, o: &Observation) -> &
             callsign: None,
             squawk: None,
         });
-    item.last_message_at = item.last_message_at.max(o.message_at_utc);
-    if let Some(name) = &o.callsign {
-        item.callsign = Some(name.clone());
-    }
-    if let Some(squawk) = &o.squawk {
-        item.squawk = Some(squawk.clone());
-    }
-    if let (Some(next), Some(time)) = (&o.position, o.position_at_utc) {
+
+    // Fyzikální plausibilita se rozhodne DŘÍVE než jakákoliv mutace.
+    // Konflikt tedy nesmí přepsat ani identitu/metadata z platného tracku.
+    let result = if let (Some(next), Some(time)) = (&o.position, o.position_at_utc) {
         if let Some(previous) = item.last_position_at {
             if time <= previous {
-                return "duplicate_or_old";
-            }
-            if let Some(p) = &item.position {
-                let dx =
-                    (next.lon - p.lon).to_radians() * ((next.lat + p.lat) * 0.5).to_radians().cos();
+                "duplicate_or_old"
+            } else if let Some(p) = &item.position {
+                let dx = (next.lon - p.lon).to_radians()
+                    * ((next.lat + p.lat) * 0.5).to_radians().cos();
                 let dy = (next.lat - p.lat).to_radians();
                 let velocity = 6_371_000.0 * (dx * dx + dy * dy).sqrt() / (time - previous);
                 if velocity > 1000.0 {
-                    return "conflict";
+                    "conflict"
+                } else {
+                    "updated"
                 }
+            } else {
+                "updated"
             }
+        } else {
+            "updated"
         }
-        item.position = Some(next.clone());
-        item.last_position_at = Some(time);
-        item.position_origin = o.position_origin.clone();
-        item.stale = false;
-        "updated"
     } else {
         "no_new_position"
+    };
+    if result == "conflict" {
+        return result;
     }
+    // Metadata sledují čas skutečné zprávy, nikoliv čas doručení snapshotu.
+    if o.message_at_utc >= item.last_message_at {
+        item.last_message_at = o.message_at_utc;
+        if let Some(name) = &o.callsign {
+            item.callsign = Some(name.clone());
+        }
+        if let Some(squawk) = &o.squawk {
+            item.squawk = Some(squawk.clone());
+        }
+    }
+    if result == "updated" {
+        item.position = o.position.clone();
+        item.last_position_at = o.position_at_utc;
+        item.position_origin = o.position_origin.clone();
+        item.stale = false;
+    }
+    result
 }
 
 /// CRC24 pouze pro DF s nezakrytou paritou; AP/Mode A/C se takto nevalidují.
