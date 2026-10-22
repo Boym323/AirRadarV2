@@ -1,5 +1,5 @@
 //! G-02.06/07/09: jediný vlastník kanonického AircraftState, žádné SQL.
-use crate::contract::{FlightData, Observation, Position, PublicAircraft, merge};
+use crate::contract::{Observation, Position, PublicAircraft, merge};
 use std::collections::BTreeMap;
 
 pub const MAX_AIRCRAFT: usize = 5000;
@@ -116,6 +116,7 @@ impl RadarState {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::contract::FlightData;
     use crate::ingest::json::parse_replay;
     #[test]
     fn replay_dedup_and_ttl() {
