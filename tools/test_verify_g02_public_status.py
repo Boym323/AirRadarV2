@@ -38,6 +38,10 @@ class TestVerifier(unittest.TestCase):
         self.assertFalse(verify.validate({**BASE, "benchmarkLog":
             LOG.replace("queue_drops=0", "queue_drops=1")}, SHA)[0])
 
+    def test_accept_report_with_host_visible_cpu_count(self):
+        passed, msg = verify.validate({**BASE, "visibleCpuCount": 4}, SHA)
+        self.assertTrue(passed, msg)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -9,6 +9,8 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
   z reálného adresáře a robustní kontrolu `VERSION`; root bridge ověřuje
   vlastníka stagingu. Instalátor již nemaže registraci ani nevytváří duplicitní
   systemd runner službu.
+- G-02.11: validátor veřejného DEV reportu už nepředpokládá natvrdo jeden
+  viditelný CPU; vyžaduje kladnou hodnotu a zachovává skutečné měření hosta.
 - G-13: zdokumentována a regresně testována korektní validace kořenových záznamů GNU tar (`.`/`./`) pro DEV auto-deploy; bezpečnostní kontroly zůstávají povinné.
 - G-13: doplněn repo-scoped self-hosted runner `airradarv2-dev`, root-owned deployment bridge, krátkodobá tokenová registrace, sdílený G-02 lock a deploy job pouze pro úspěšný `main` prerelease. První registrace a skutečné nasazení čekají na GitHub runner oprávnění.
 - G-13: řízený rollback test root bridge PASS; nefunkční kandidát byl odmítnut healthcheckem, aktivní symlink i Rust API se vrátily na předchozí release. Vadný release zůstal zachován pro audit.

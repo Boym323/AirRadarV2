@@ -33,8 +33,9 @@ def validate(report, expected_sha):
         return False, "Offline test neprošel"
     if report.get("replay") != "PASS" or report.get("benchmark") != "PASS":
         return False, "Chybí PASS replay/benchmark"
-    if report.get("visibleCpuCount") != 1:
-        return False, "LXC nemá 1 viditelné CPU"
+    visible_cpu_count = report.get("visibleCpuCount")
+    if not isinstance(visible_cpu_count, int) or isinstance(visible_cpu_count, bool) or visible_cpu_count < 1:
+        return False, "LXC neposkytlo kladný počet viditelných CPU"
     log = report.get("benchmarkLog", "")
     for scale in ("1", "2", "4"):
         if (f"G-02 bench {scale}x:" not in log
