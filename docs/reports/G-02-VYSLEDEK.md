@@ -1,7 +1,7 @@
 # G-02 — průběžný výsledkový report implementace lokálního ingestu
 
-**Datum:** 22. 10. 2026. **Stav:** **ROZPRACOVÁNO; zatím NEPŘEVZATO jako celá etapa**.  
-**Nasazená verze v DEV LXC:** `227a8619b590d2c536761ffefc75cd0a5633936c` — zůstává G-00/G-01, tento nový G-02 kód **není nasazen**.  
+**Datum:** 22. 10. 2026. **Stav:** **HOTOVO — 11/11 testově doloženo, GitHub LIVE read-only PASS**, bez produkčního nasazení G-02 API.  
+**Veřejná webová služba v DEV LXC:** `227a8619b590d2c536761ffefc75cd0a5633936c` — zůstává G-00/G-01, tento nový G-02 kód **není nasazen**.  
 **Ověřený historický základ G-02:** [`18fcbed9039207b3b83fcc28558ca6c5b0cc363f`](https://github.com/Boym323/AirRadarV2/commit/18fcbed9039207b3b83fcc28558ca6c5b0cc363f).  
 **Historické CI:** [#39762483657](https://github.com/Boym323/AirRadarV2/actions/runs/39762483657), 22 Rust testů PASS. **Novější CI:** [#39769778992](https://github.com/Boym323/AirRadarV2/actions/runs/39769778992), 26 Rust testů PASS, 3/3 joby PASS (včetně dokumentace); oba běhy bez reálného ADS-B receiveru a DB.
 
@@ -137,3 +137,33 @@ Doplněn [gitHub-driven read-only live runbook](../runbooks/G-02-GITHUB-AUTOMATI
 Audit DEV LXC `lo-dev-airradarv2` doložil funkční GitHub → systemd agent → skutečný BEAST output čtecí stream (konkrétní interní IP záměrně do veřejné dokumentace nepřenášet). Test `--sha d0cefc4a5c3332eadccf8ab21c96bae51987abe9 --request-id 39795592425 --seconds 3600`: aktuálně **RUNNING**, `preferred=Beast` 591 vzorků, `updates=16532`, `channel_drops=0`, `capacity_drops=0`, `peak tracks=66`. Veřejný `liveSoak` report se shoduje s lokálním souborem a odpovídá run ID. Běžící test ještě není PASS a **G-02 10/11**.
 
 Odhalená systémová závada pouze v limitaci časovače: `RuntimeMaxSec=3900` nemá účinek na `Type=oneshot`. Nový instalátor používá `TimeoutStartSec=3900`; je třeba aktualizovat již nainstalovanou jednotku **až po skončení aktuálního testu**, aby se neohrozil běh. Samotný Python má aktivní timeout 3800 s.
+
+## Závěrečná provozní přejímka G-02.11 — PASS (22. 10. 2026)
+
+**Tento oddíl je závěrečný platný stav a nahrazuje historické poznámky „NEPROVEDENO“, „RUNNING“ a „10/11“ výše.**
+
+**Důkaz:** [GitHub Actions run #39795592425, job 119882086885](https://github.com/Boym323/AirRadarV2/actions/runs/39795592425/job/119882086885) — oba joby `SUCCESS`, poslední kontrolní log z **2026-10-22 15:29:27 UTC = 17:29:27 SELČ**:
+
+```text
+PASS: 60min readonly BEAST na DEV LXC pro přesný SHA a ID.
+CPU=0.36% RSS_peak=2492KiB tracks_peak=77 pozorování=109154
+```
+
+| Metodika / ukazatel | Prokazatelný výsledek |
+|---|---|
+| Lokalita | Samostatný AirRadarV2 DEV LXC, Debian 13, 1 vCPU, 8 GiB RAM; výhradně read-only TCP BEAST OUTPUT fyzického readsb přijímače |
+| Kód Rust ingestu | neměnný G-02 release SHA `d0cefc4a5c3332eadccf8ab21c96bae51987abe9` |
+| Jednorázový GitHub request | `39795592425`, přesná shoda požadavku a `liveSoak.requestRunId` v reportu |
+| Délka | Test nastaven na 3600 sekund, workflow vyžadovalo skutečných nejméně 3595 sekund |
+| Živě přijatá pozorování | **109 154** |
+| Maximum RAM tracků | **77** |
+| Průměr CPU procesu | **0,36 %** (z časových CPU ticks / 60min wall time; ne CPU hostu) |
+| Špičková residentní RAM procesu | **2 492 KiB** (~2,43 MiB; ne RAM celého LXC) |
+| Dropy kapacita / fronta | **0 / 0** |
+| Výsledek | **PASS_LIVE_BEAST_60MIN** a GitHub **SUCCESS** |
+
+GitHub workflow nezávisle načítá veřejný `g02-status.json` a ověřuje úplné SHA, jednoznačné request ID, délku, nenulová reálná pozorování, nulové dropy a < 256 MiB RSS. Za běhu byl z LXC auditorem doložen TCP ESTABLISHED a stovky skutečných `preferred=Beast` diagnostických vzorků. **Původní syntetický 180s loopback** a replay 1×/2×/4× jsou oddělené důkazy ([CI G-02 DEV #39781158565](https://github.com/Boym323/AirRadarV2/actions/runs/39781158565)); nelze je zaměňovat se skutečnou hodinovou přejímkou.
+
+**Rozhodnutí:** G-02.01–G-02.11 všechny testově doloženy; etapa G-02 může být označena **HOTOVO (11/11)**. Šest KEEP ID zůstává ve stavu `TESTED` — neděláme nepravdivý `ACCEPTED` za produktový deploy. Běžný web i HTTP/SSE na DEV LXC nadále funguje na G-00/G-01 bootstrapu; G-03 opt-in HTTP/SSE má vlastní vývojovou a testovací bránu. Reálný JSON failover, P95 RF→RAM a dlouhodobé provozní stability přesahující tento jednorázový 60min test **nebyly ověřeny**. Zásah do V1 ani DB nebyl proveden.
+
+**Následná nesouvisející provozní údržba:** instalovaný systemd `Type=oneshot` má stále neúčinné `RuntimeMaxSec=3900`; šablona v PR #7 již používá `TimeoutStartSec=3900`. Změnu aplikovat odděleně a ověřit `systemctl show ... -p TimeoutStartUSec`. Současný běh se úspěšně dokončil díky vlastnímu Python timeoutu 3800 s.

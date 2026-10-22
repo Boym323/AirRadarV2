@@ -1,6 +1,6 @@
 # G-02.11 — spouštění hodinového LIVE testu přímo z GitHub Actions
 
-**Stav:** implementace připravena v PR #7, před aktivací je potřeba jednorázová instalace služby v izolovaném DEV LXC. Žádná změna V1, DB ani stávající V2 engine. KEEP J01/J02/J03/J04/J05/J11.
+**Stav:** GitHub LIVE workflow i pull-only agent nainstalovaný v izolovaném DEV LXC byly skutečně použity; [přejímka #39795592425](https://github.com/Boym323/AirRadarV2/actions/runs/39795592425) skončila **SUCCESS / PASS_LIVE_BEAST_60MIN** v 17:29 SELČ. Následující část „jednorázová aktivace“ je historický návod pro případ nové instalace. Žádná změna V1, DB ani stávající V2 engine. KEEP J01/J02/J03/J04/J05/J11.
 
 ## Princip
 
@@ -64,3 +64,7 @@ Netýká se \`airradarv2-g02-auto.timer\` pro již existující offline testy, a
 Doložený audit z DEV LXC potvrdil, že `RuntimeMaxSec=3900` **systemd ignoruje pro `Type=oneshot`**. Opraven instalační vzor na `TimeoutStartSec=3900` (3900 s od začátku procesu). Interní Python subprocess timeout 3800 sekund zůstává sekundární pojistkou. GitHub změna nemění již instalovanou jednotku. **Běžící 60min test nepřerušovat.** Teprve po jeho dokončení provést v DEV LXC: `systemctl edit --full airradarv2-g02-live-auto.service`, opravit jedinou direktivu, následně `systemctl daemon-reload`, `systemctl show airradarv2-g02-live-auto.service -p Type -p TimeoutStartUSec -p RuntimeMaxUSec`; jednotku neresetovat/restartovat během testu. Alternativně po doběhu jednorázově znovu nainstalovat ověřený skript s novým SHA.
 
 **Reálný přenos již prokázán z výstupu auditu správce**: BEAST TCP `ESTABLISHED`, `preferred=Beast` 591 vzorků, 16 532 updates, nulové `channel_drops` i `capacity_drops`, 66 peak tracks, veřejná sekce `liveSoak` odpovídá requestu `39795592425` a je ve stavu `RUNNING`. **Toto není 60min PASS.**
+
+## Provozní ověření po úspěšném dokončení
+
+Dne 22. 10. 2026 v 17:29 SELČ [GitHub Actions #39795592425](https://github.com/Boym323/AirRadarV2/actions/runs/39795592425) potvrdila skutečný hodinový read-only BEAST výsledek pro `d0cefc4a5c3332eadccf8ab21c96bae51987abe9`, `requestRunId=39795592425`, 109 154 živých pozorování, CPU 0,36 %, RSS peak 2 492 KiB, peak 77 tracků, žádné dropy. **Agent je nainstalován a automaticky vykonal GitHub požadavek; žádný další instalační příkaz není pro opětovné spuštění potřebný.** Před dalším testem doporučená údržba: přenést opravné `TimeoutStartSec=3900` z PR #7 do již existující systemd jednotky a ověřit `systemctl show`; bez změny ostatních parametrů. G-02 nyní **11/11 testově HOTOVO**, nejde o G-03 veřejné API nasazení.

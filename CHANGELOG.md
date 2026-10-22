@@ -4,6 +4,12 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-02.11 — úspěšná hodinová LIVE přejímka, etapa 11/11 HOTOVO (22. 10. 2026)
+- [GitHub run #39795592425](https://github.com/Boym323/AirRadarV2/actions/runs/39795592425) — skutečný 60min read-only BEAST ingest na DEV LXC: 109 154 pozorování, 77 max tracků, `channelDrops=0`, `capacityDrops=0`, průměr CPU 0,36 %, peak RSS 2 492 KiB; plný G-02 SHA `d0cefc4a5c3332eadccf8ab21c96bae51987abe9`, request ID `39795592425`. Oba GitHub joby `SUCCESS` v 17:29 SELČ.
+- Kompletní G-02 má **11/11 testových kroků PASS**; šest KEEP ID zůstává `TESTED`. G-03/živé HTTP/SSE stále není produktově nasazeno. Samostatně zbývá propis opraveného `TimeoutStartSec=3900` do instalované oneshot jednotky po skončení testu.
+
+
+
 ### G-02.11 — oprava systemd time limitu a důkaz živého příjmu (RUNNING)
 - V DEV LXC správce potvrdil funkční GitHub požadavek a skutečný BEAST TCP stream: 591 `preferred=Beast` vzorků, 16 532 aktualizací, nula queue/capacity drops, maximum 66 tracků. 60min test ještě běží; G-02 stále 10/11.
 - Oprava instalátoru: `Type=oneshot` vyžaduje `TimeoutStartSec=3900`, protože `RuntimeMaxSec=3900` je ignorováno. Přidán regresní test; instalovanou jednotku aktualizovat bezpečně až po dokončení aktuálního testu.
