@@ -91,3 +91,7 @@ Historické výše uvedené stavy `10/11` a `čeká LIVE` jsou nahrazeny skuteč
 ## Přípravná DEV aktualizace z ověřeného main (mimo produkční G-13)
 
 Na přímé povolení vlastníka vzniká v [PR #10](https://github.com/Boym323/AirRadarV2/pull/10) root-owned, read-only GitHub pull agent, který po úspěšném CI dodá poslední main do samostatného DEV LXC; má SHA/manifest kontroly, odložení během G-02 testů a health+rollback. [Runbook](../runbooks/DEV-MAIN-AUTODEPLOY.md) a [report](../reports/DEV-MAIN-AUTODEPLOY-2026-10-22.md) upozorňují na stále neprovedenou jednorázovou aktivaci v LXC. **Nejde o produkční cutover, DB migrace, změnu V1 ani hotovou G-13.**
+
+## Optimalizace CI/CD DEV (22. 10. 2026)
+
+Samostatná DEV automatika z úspěšného `main` je zrychlována oddělením dlouhé G-02 LXC přejímky od GitHub release a minutovým odchozím polling timerem. Přejímka zůstává samostatně ověřitelná, neblokuje běžné vydání; i minutové kontroly zachovávají ochranu GitHub API limitů, immutable SHA, validaci artefaktů a rollback. **Aktualizace skutečně nainstalované systemd jednotky v DEV LXC zatím není potvrzena**; produkční G-13 zůstává bez GO. [Podrobnosti](../runbooks/DEV-MAIN-AUTODEPLOY.md).

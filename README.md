@@ -32,7 +32,7 @@ Měřený commit: [f07fdb35](https://github.com/Boym323/AirRadarV2/commit/f07fdb
 
 ## Kontinuální DEV nasazování z main
 
-Po jednorázové aktivaci root-owned timeru bude DEV LXC samo přebírat SHA-ověřené balíčky z úspěšného GitHub CI main a kontrolovat Rust/web s rollbackem. Viz [instalační postup](docs/runbooks/DEV-MAIN-AUTODEPLOY.md). **Zatím jde o připravený mechanismus, nikoliv prokázaný automatický deploy.**
+Po jednorázové aktivaci root-owned **minutového** timeru bude DEV LXC samo přebírat SHA-ověřené balíčky z úspěšného GitHub CI main a kontrolovat Rust/web s rollbackem. Viz [instalační postup](docs/runbooks/DEV-MAIN-AUTODEPLOY.md). **Zatím jde o připravený mechanismus, nikoliv prokázaný automatický deploy.**
 
 ## Česká zadání a vývoj
 

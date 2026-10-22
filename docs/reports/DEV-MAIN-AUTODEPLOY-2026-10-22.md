@@ -7,7 +7,7 @@
 - Využit existující CI TEST+SHA256 release z main, žádná duplicitní build pipeline ani příchozí SSH.
 - Přidán ověřovač provenance GitHub Actions bota, SHA HEAD main/tagu/releasu, SHA256 asset manifestu a whitelistu archivu.
 - DEV instalační skript zpřísněn: identita izolované služby, bezpečný archiv, atomický symlink, zdravotní kontroly, návrat na starší release při chybě.
-- Samostatný systemd timer každých 5 minut, root sandbox, odklad při G-02 testech a zablokování chybného SHA. Jen diagnostika bez interních adres na /dev-deploy-status.json.
+- Samostatný systemd timer po aktualizaci každou 1 minutu, root sandbox, odklad při G-02 testech a zablokování chybného SHA. Jen diagnostika bez interních adres na /dev-deploy-status.json.
 - Testy provenance a bezpečnosti jsou připojené k Rust/web/docs CI; finální důkazy až z konkrétního zeleného CI commitu PR #10.
 
 ## Ověřené podklady
@@ -20,3 +20,10 @@
 První skutečný deployment v DEV LXC a odpovídající status SHA; bezpečný řízený rollback na testovací vadné verzi; otestování disku, systemd sandboxu a Nginx z cílového serveru; automatická retence starších releases. Produkční G-13 zůstává NO-GO, V1/DB/receiver beze změn.
 
 [Instalační runbook](../runbooks/DEV-MAIN-AUTODEPLOY.md)
+
+## Zrychlení vydání v odděleném PR (22. 10. 2026)
+
+- Standardní vydání nemá závislost na dlouhém G-02 DEV LXC polling jobu. Oddělený `workflow_run` / ruční `workflow_dispatch` provozuje [g02-dev-lxc-acceptance.yml](../../.github/workflows/g02-dev-lxc-acceptance.yml) nezávisle na úspěšném vydání balíčku.
+- Minutový timer `OnUnitInactiveSec=1min`, `RandomizedDelaySec=0`, `AccuracySec=1s`; externí main SHA polling přes Atom, REST API se použije jen na kandidáta a těsně před aktivací. Pokud nový release dlouho neexistuje, po 10 404 přejde na 5min bezpečnou frekvenci.
+- Připraven regresní test workflow oddělení, minutového timeru, parsování Atom a 404 backoff. **Přesný SHA a CI odkaz budou známé po finálním úspěchu této změny**.
+- Skutečné přepnutí /opt/airradar-v2/current a stav již nainstalovaného timeru v LXC nejsou z tohoto PR přímo ověřeny; pro provozní aktivaci je nutné jednorázově obnovit skripty/jednotku v DEV LXC podle [runbooku](../runbooks/DEV-MAIN-AUTODEPLOY.md). G-13 produkční release nadále NO-GO.

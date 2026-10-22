@@ -4,6 +4,13 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### Zrychlení DEV release a nasazování z `main` (22. 10. 2026)
+- Dlouhou G-02 DEV LXC 180s přejímku přesunout do samostatné asynchronní GitHub Actions, která běžný build/release job neblokuje; stále kontroluje přesný SHA, veřejný report a read-only příjem.
+- Zkrácen DEV pull-only systemd interval z 5 minut na **1 minutu**, bez jitteru (AccuracySec=1s). Aby nevyčerpal anonymní GitHub REST API quota, SHA main čte veřejný Atom feed, ale skutečný deploy přepne teprve po nezávislé validaci REST/tag/release/SHA256.
+- Nové regresní testy pro oddělenou GitHub pipeline, odmítnutí neplatného feedu a API backoff při dlouho nedostupném releasu. Do LXC se musí znovu jednorázově nainstalovat aktualizovaný agent a timer; žádná změna V1, DB ani přijímače.
+
+
+
 ### Automatický DEV deploy z ověřeného main — zatím pouze implementace
 - Nový root-owned pull agent přijímá jen GitHub botem vydaný release k přesnému současnému main SHA a validuje balíček, SHA256, adresy assetů, tar allowlist a VERSION.
 - Jednorázový instalátor vytvoří izolovaný systemd timer každých 5 minut a bezpečný read-only DEV status. Healthcheck a rollback se provádí bez zásahu do V1, přijímače nebo DB.
