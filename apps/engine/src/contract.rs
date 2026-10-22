@@ -384,7 +384,10 @@ mod tests {
         assert_eq!(obs.len(), 3);
         for (actual, expected) in obs.iter().zip(expected["initial"].as_array().unwrap()) {
             let mut normalized = serde_json::to_value(actual).unwrap();
-            normalized["receivedAtUtc"] = serde_json::json!(1792627200);
+            assert_eq!(normalized["receivedAtUtc"].as_f64(), expected["receivedAtUtc"].as_f64());
+            assert_eq!(normalized["messageAtUtc"].as_f64(), expected["messageAtUtc"].as_f64());
+            normalized["receivedAtUtc"] = expected["receivedAtUtc"].clone();
+            normalized["messageAtUtc"] = expected["messageAtUtc"].clone();
             assert_eq!(normalized, *expected);
         }
         assert_ne!(obs[0].aircraft_key, obs[1].aircraft_key);
