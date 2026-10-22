@@ -107,6 +107,35 @@
       "type": "number",
       "minimum": 0,
       "description": "Skutečný čas poslední readsb zprávy (now-seen), nikdy implicitní poloha."
+    },
+    "telemetry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "altitudeBaroFt": {
+          "type": "integer",
+          "minimum": -2000,
+          "maximum": 65000
+        },
+        "groundSpeedKt": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1500
+        },
+        "trackDegrees": {
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMaximum": 360
+        },
+        "verticalRateFpm": {
+          "type": "integer",
+          "minimum": -15000,
+          "maximum": 15000
+        },
+        "onGround": {
+          "type": "boolean"
+        }
+      }
     }
   },
   "allOf": [

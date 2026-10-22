@@ -1,5 +1,5 @@
 //! G-02.06/07/09: jediný vlastník kanonického AircraftState, žádné SQL.
-use crate::contract::{Observation, PublicAircraft, merge};
+use crate::contract::{FlightData, Observation, Position, PublicAircraft, merge};
 use std::collections::BTreeMap;
 
 pub const MAX_AIRCRAFT: usize = 5000;
@@ -90,6 +90,14 @@ impl RadarState {
             .retain(|key, _| self.tracks.contains_key(key));
         self.counters.expired += (before - self.tracks.len()) as u64;
     }
+    /// Důvěryhodná čerstvá JSON poloha slouží jako kotva pro lokální CPR.
+    pub fn trusted_reference(&self, key: &str, now: f64) -> Option<Position> {
+        let aircraft = self.tracks.get(key)?;
+        if self.position_quality.get(key).copied().unwrap_or(0) < 2
+            || now - aircraft.last_position_at? > POSITION_FRESH_SECONDS
+        { return None; }
+        aircraft.position.clone()
+    }
     pub fn snapshot(&self, now: f64) -> Vec<PublicAircraft> {
         self.tracks
             .values()
@@ -130,6 +138,8 @@ mod tests {
         let mut state = RadarState::default();
         state.batch(&first);
         assert_eq!(state.tracks.len(), 3);
+        assert_eq!(state.tracks["icao:abc123"].telemetry.altitude_baro_ft, Some(10000));
+        assert_eq!(state.tracks["icao:abc123"].telemetry.ground_speed_kt, Some(180.0));
         state.batch(&second);
         assert_eq!(state.tracks.len(), 3);
         state.batch(&changed);
@@ -153,6 +163,7 @@ mod tests {
             "Pomocná RAM mapa nesmí leakovat"
         );
         assert_eq!(state.counters.expired, 3);
+        assert!(state.trusted_reference("icao:abc123", 1792627300.0).is_none());
     }
     #[test]
     fn cap_five_thousand() {
@@ -170,6 +181,7 @@ mod tests {
                 position: None,
                 callsign: None,
                 squawk: None,
+                telemetry: FlightData::default(),
             };
             state.apply(&data);
         }
