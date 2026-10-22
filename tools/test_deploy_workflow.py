@@ -21,13 +21,21 @@ class DeployWorkflowTests(unittest.TestCase):
         self.assertNotIn("verify-dev-lxc:", TEXT)
         self.assertNotIn("g02-status.json", TEXT)
 
+    def test_g03_release_is_fail_closed(self):
+        self.assertIn("g03_runtime: ${{ steps.stage.outputs.g03_runtime }}", TEXT)
+        self.assertIn("needs['test-and-build'].outputs.g03_runtime == 'false'", TEXT)
+        self.assertIn("test -f package/web/g03-runtime-required.txt", TEXT)
+        self.assertIn("grep -qx 'G-03' package/web/g03-runtime-required.txt", TEXT)
+        self.assertIn("echo 'g03_runtime=true'", TEXT)
+
     def test_release_and_deploy_dependencies_remain(self):
         self.assertIn("needs: test-and-build", TEXT)
         self.assertIn("needs: publish-dev-candidate", TEXT)
         self.assertIn("airradarv2-runner-deploy.sh", TEXT)
         self.assertIn("sha256sum -c", TEXT)
         self.assertIn("tar -tzf", TEXT)
-        self.assertIn("test_verify_g02_public_status.py", TEXT)
+        # G-02 syntetické kontroly jsou ve sdíleném ci.yml, ne v release YAML.
+        self.assertIn("test_verify_g02_public_status.py", WORKFLOW.with_name("ci.yml").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

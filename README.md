@@ -2,7 +2,7 @@
 
 Nová generace leteckého radaru, budovaná **od nuly**. Tento repozitář je zcela oddělený od [AirRadar V1](https://github.com/Boym323/AirRadar). Původní aplikace, produkční LXC a databáze se nemění.
 
-**Stav:** dokončen a ověřen základ G-00; **nejde ještě o živý radar**. G-01 a další etapy zatím nejsou realizovány.
+**Stav 22. 10. 2026:** G-00 HOTOVO, G-01 10/10 HOTOVO, G-02 11/11 HOTOVO (60min BEAST PASS); G-03 HTTP/SSE rozpracováno v PR #11, zatím bez živého DEV nasazení.
 
 <!-- AIRRADAR_STATS_START -->
 ## Statistiky vývoje (automaticky aktualizované)
@@ -63,7 +63,7 @@ vypnutý; G-02 zůstává chráněno sdíleným lockem a jeho přejímky jsou od
 - **Vite/React/MapLibre:** lehká česká mapa, seznam letadel, popisky, stopa a follow.
 - **PostgreSQL/SQLx:** samostatná V2 databáze na existujícím odděleném DB LXC; historie V1 se nepřenáší.
 - **Jedno místní pokrytí:** uživatel pracuje vždy s daty místního přijímače, bez přepínače datových zdrojů.
-- **45 schválených funkcí:** žádná z nich zatím není potvrzena jako implementovaná. G-00 je pouze základ projektu.
+- **45 schválených funkcí:** šest G-02 funkcí má důkaz `TESTED` (nikoliv `ACCEPTED`); G-03 je rozpracovaná.
 
 **Zvoleno a implementováno:** Vite + React/TypeScript pro webový skeleton. **PostgreSQL/SQLx** na existujícím samostatném DB LXC jako definitivní databáze; V2 DB ani migrace ještě nevznikly. Viz [ADR 0005](docs/adr/0005-vite-a-postgresql-v2.md).
 

@@ -50,6 +50,7 @@ install -o root -g root -m 0755 "$repo_dir/deploy/runner-deploy.sh" /usr/local/l
 install -o root -g root -m 0644 "$repo_dir/deploy/archive_validation.py" /usr/local/libexec/archive_validation.py
 install -o root -g root -m 0755 "$repo_dir/deploy/main-dev-auto-pull.py" /usr/local/libexec/airradarv2-main-deploy-pull.py
 install -o root -g root -m 0755 "$repo_dir/deploy/install-dev-bundle.sh" /usr/local/libexec/airradarv2-main-deploy-install.sh
+install -o root -g root -m 0755 "$repo_dir/deploy/verify-g03-runtime.py" /usr/local/libexec/airradarv2-verify-g03-runtime.py
 install -o root -g root -m 0440 "$repo_dir/deploy/systemd/airradarv2-runner.sudoers" /etc/sudoers.d/airradarv2-runner
 install -d -o root -g root -m 0755 \
   /etc/systemd/system/airradarv2-g02-auto.service.d \

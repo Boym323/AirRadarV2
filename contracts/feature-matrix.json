@@ -72,25 +72,31 @@
       "id": "J06",
       "name": "Veřejné API aktuálních letadel · základ systému",
       "decision": "KEEP",
-      "status": "NOT_STARTED",
-      "tests": [],
-      "notes": ""
+      "status": "TESTED",
+      "tests": [
+        "G-03 HTTP GET/400/503 + OpenAPI 3.1 + privacy, CI #39814106622, SHA d7483417"
+      ],
+      "notes": "Opt-in HTTP API nad jediným RAM snapshotem, bez DEV/LIVE nasazení. Nejde o přejímku SSE load a proxy."
     },
     {
       "id": "J07",
       "name": "Živý stream SSE V1 – celé snapshoty · základ systému",
       "decision": "KEEP",
-      "status": "NOT_STARTED",
-      "tests": [],
-      "notes": ""
+      "status": "TESTED",
+      "tests": [
+        "G-03 SSE snapshot, reconnect, 15s heartbeat Nginx curl -N; CI #39835102766, SHA db4078fa"
+      ],
+      "notes": "Pouze CI syntetické lokální JSON/BEAST DTO a loopback SSE; nelze zaměnit za DEV LXC a browser akceptaci."
     },
     {
       "id": "J08",
       "name": "Optimalizovaný SSE V2 – delta aktualizace",
       "decision": "KEEP",
-      "status": "NOT_STARTED",
-      "tests": [],
-      "notes": ""
+      "status": "TESTED",
+      "tests": [
+        "G-03 SSE delta/upsert/removed, gap resync, 100-client benchmark; CI #39835102766, SHA db4078fa"
+      ],
+      "notes": "Pouze CI syntetické lokální JSON/BEAST DTO a loopback SSE; nelze zaměnit za DEV LXC a browser akceptaci."
     },
     {
       "id": "J09",

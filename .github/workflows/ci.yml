@@ -21,6 +21,14 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
+      - name: Statická validace GitHub Actions pracovních postupů
+        # P0 release gate: parsování a validace expressions ještě před merge.
+        # CI obsahuje původní SC2034 upozornění na smyčkové čítače,
+        # a vlastní label self-hosted runneru. Validujeme syntaxe/actions
+        # expressions bez těchto dvou historických false positives.
+        # Starší development-metrics.yml používá vlastní timezone klíč
+        # neslučitelný s actionlint 1.7.7; jeho plánování zde neměníme.
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -shellcheck= -ignore 'label "airradarv2-dev" is unknown' .github/workflows/ci.yml .github/workflows/g02-dev-candidate.yml
       - name: Kontrola dokumentace a 45 aktivních funkcí
         run: node tools/check-docs.mjs
       - name: Kontrola syntaxe skriptů DEV LXC
@@ -37,11 +45,18 @@ jobs:
           python3 -m py_compile deploy/g02-auto-pull.py
           python3 -m unittest discover -s tools -p 'test_g02_auto_pull.py'
           python3 -m unittest discover -s tools -p 'test_workflows_layout.py'
+          python3 -m unittest discover -s tools -p 'test_deploy_workflow.py'
+          python3 -m py_compile deploy/verify-g03-runtime.py
+          python3 -m unittest discover -s tools -p 'test_verify_g03_runtime.py'
+          python3 -m unittest discover -s tools -p 'test_benchmark_g03_sse.py'
+      - name: G-03.08 statická kontrola proxy (bez instalace)
+        run: node tools/check-g03-network.mjs
       - name: Formální validace OpenAPI a JSON Schema G-01
         run: |
           python3 -m venv /tmp/airradar-g01-venv
           /tmp/airradar-g01-venv/bin/pip install --disable-pip-version-check --quiet "openapi-spec-validator==0.7.2" "jsonschema==4.25.1" "PyYAML==6.0.3"
           /tmp/airradar-g01-venv/bin/python tools/validate-g01-schemas.py
+          /tmp/airradar-g01-venv/bin/python tools/validate-g03-openapi.py
   rust-engine:
     runs-on: ubuntu-24.04
     steps:
@@ -81,6 +96,96 @@ jobs:
           python3 -c 'import json; data=json.load(open("/tmp/airradar-v2-health.json")); assert data["status"] == "bootstrap" and data["live_ingest"] is False and data["database_connected"] is False'
           curl -fsS http://127.0.0.1:4101/api/v1/aircraft -o /tmp/airradar-v2-aircraft.json
           python3 -c 'import json; data=json.load(open("/tmp/airradar-v2-aircraft.json")); assert data["status"] == "NOT_IMPLEMENTED" and data["aircraft"] == []'
+
+      - name: G-03 opt-in HTTP/SSE smoke bez skutečného přijímače
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          AIRRADAR_V2_BIND=127.0.0.1:4102 \
+          AIRRADAR_V2_READSB_JSON=/tmp/airradar-g03-neexistujici-replay \
+            target/debug/airradarv2-engine --g03-live-api >/tmp/g03-api.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:4102/api/v1/health -o /tmp/g03-health.json 2>/dev/null; then
+              ready=1; break
+            fi
+            sleep 0.2
+          done
+          if test "$ready" != "1"; then cat /tmp/g03-api.log; exit 1; fi
+          python3 -c 'import json; x=json.load(open("/tmp/g03-health.json")); assert x["stage"] == "G-03" and x["live_ingest"] is False'
+          curl -fsS http://127.0.0.1:4102/api/v1/aircraft -o /tmp/g03-aircraft.json
+          python3 -c 'import json; x=json.load(open("/tmp/g03-aircraft.json")); assert x["status"] == "waiting_for_observations" and x["data"]["kind"] == "snapshot"'
+          curl --max-time 3 --no-buffer -sS -D /tmp/g03-headers.txt \
+            http://127.0.0.1:4102/api/v1/stream -o /tmp/g03-stream.txt || test "$?" -eq 28
+          grep -qi 'text/event-stream' /tmp/g03-headers.txt
+          grep -q 'event: snapshot' /tmp/g03-stream.txt
+          grep -q '"seq":0' /tmp/g03-stream.txt
+          # G-03.06: na skutečném loopback TCP musí být 15s keepalive, bez nového letadla.
+          curl --max-time 18 --no-buffer -sS \
+            http://127.0.0.1:4102/api/v1/stream -o /tmp/g03-heartbeat.txt || test "$?" -eq 28
+          grep -q ': heartbeat' /tmp/g03-heartbeat.txt
+
+      - name: G-03.07/.09/.10 syntetický 1/10/100 SSE load, včetně 5000 letadel
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile tools/benchmark_g03_sse.py
+          python3 tools/benchmark_g03_sse.py --binary target/debug/airradarv2-engine
+
+      - name: G-03.08 Nginx proxy curl -N s postupným SSE a heartbeat
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update -qq
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends nginx
+          sudo install -m 0644 deploy/nginx-g03.example.conf /etc/nginx/conf.d/airradarv2-g03-ci.conf
+          sudo nginx -t
+          (sudo nginx -s reload || sudo nginx)
+          AIRRADAR_V2_BIND=127.0.0.1:4102 \
+          AIRRADAR_V2_READSB_JSON=/tmp/airradar-g03-nginx-no-source \
+            target/debug/airradarv2-engine --g03-live-api >/tmp/g03-nginx-engine.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; sudo nginx -s stop 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:8082/api/v1/health -o /tmp/g03-nginx-health.json 2>/dev/null; then
+              ready=1; break
+            fi
+            sleep 0.2
+          done
+          if test "$ready" != "1"; then
+            cat /tmp/g03-nginx-engine.log
+            sudo nginx -t
+            exit 1
+          fi
+          python3 -c 'import json; a=json.load(open("/tmp/g03-nginx-health.json")); assert a["stage"] == "G-03" and a["live_ingest"] is False'
+          curl -Ns --max-time 18 --no-buffer -D /tmp/g03-nginx-headers.txt \
+            http://127.0.0.1:8082/api/v1/stream -o /tmp/g03-nginx-stream.txt || test "$?" -eq 28
+          grep -qi 'text/event-stream' /tmp/g03-nginx-headers.txt
+          grep -q 'event: snapshot' /tmp/g03-nginx-stream.txt
+          grep -q ': heartbeat' /tmp/g03-nginx-stream.txt
+          grep -qi 'no-cache' /tmp/g03-nginx-headers.txt
+          echo "PASS G-03.08: skutečný Nginx -> Rust SSE snapshot + 15s heartbeat přes loopback"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: G-03.08 Chromium EventSource Nginx + Vite same-origin
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm ci --prefix apps/web --no-audit --no-fund
+          python3 -m venv /tmp/airradar-g03-browser
+          /tmp/airradar-g03-browser/bin/pip install --disable-pip-version-check --quiet playwright==1.57.0
+          command -v google-chrome >/dev/null || command -v google-chrome-stable >/dev/null
+          sudo mkdir -p /opt/airradar-v2/current/web
+          printf '<!doctype html><html lang="cs"><head><title>G03 test</title></head><body>G03</body></html>' | sudo tee /opt/airradar-v2/current/web/index.html >/dev/null
+          sudo nginx -t
+          (sudo nginx -s reload || sudo nginx)
+          trap 'sudo nginx -s stop 2>/dev/null || true' EXIT
+          /tmp/airradar-g03-browser/bin/python tools/test_g03_browser.py --binary target/debug/airradarv2-engine
 
   vite-web:
     runs-on: ubuntu-24.04

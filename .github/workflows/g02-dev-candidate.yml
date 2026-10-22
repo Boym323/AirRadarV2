@@ -23,6 +23,8 @@ jobs:
   test-and-build:
     name: Sestavit immutable DEV artefakt
     needs: validate
+    outputs:
+      g03_runtime: ${{ steps.stage.outputs.g03_runtime }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
@@ -47,6 +49,10 @@ jobs:
           install -d package/web
           install -m 0755 target/release/airradarv2-engine package/airradarv2-engine
           cp -a apps/web/dist/. package/web/
+          # G03_STAGE_GATE_V1 — metadata of the current checked SHA.
+          if test -f contracts/openapi.g03.yaml; then
+            printf 'G-03\n' > package/web/g03-runtime-required.txt
+          fi
           printf '%s\n' "$GITHUB_SHA" > package/VERSION
           filename="airradarv2-dev-linux-amd64-$(printf '%s' "$GITHUB_SHA" | cut -c1-12).tar.gz"
           tar -C package -czf "$filename" .
@@ -55,6 +61,23 @@ jobs:
           grep -qx './airradarv2-engine' /tmp/airradarv2-archive.list
           grep -qx './VERSION' /tmp/airradarv2-archive.list
           grep -qx './web/index.html' /tmp/airradarv2-archive.list
+      # G-03 release gate: allow CI artifacts on main but never publish a
+      # deployable prerelease until the installed root/systemd rollback was
+      # separately accepted. Fail closed from the source contract and marker.
+      - name: G-03 — bezpečná stage gate před publikací
+        id: stage
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if test -f contracts/openapi.g03.yaml; then
+            test -f package/web/g03-runtime-required.txt
+            grep -qx 'G-03' package/web/g03-runtime-required.txt
+            echo 'g03_runtime=true' >> "$GITHUB_OUTPUT"
+            echo 'G-03: ověřený build je jen Actions artifact, prerelease/deploy jsou blokované.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            test ! -e package/web/g03-runtime-required.txt
+            echo 'g03_runtime=false' >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: g02-dev-${{ github.sha }}
@@ -65,9 +88,11 @@ jobs:
           retention-days: 7
   publish-dev-candidate:
     needs: test-and-build
+    # P0 G-03 audit: no deployable release on a G-03 main push. Both the
+    # self-hosted runner and any external release poller have nothing to fetch.
+    if: ${{ needs['test-and-build'].outputs.g03_runtime == 'false' && github.repository == 'Boym323/AirRadarV2' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    if: github.repository == 'Boym323/AirRadarV2' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
     steps:
@@ -147,6 +172,11 @@ jobs:
           test "$current_main" = "$GITHUB_SHA"
           tar -tzf "$staging/$name" > "$staging/archive.list"
           grep -Eq '^\./(VERSION|airradarv2-engine|web/index\.html)$' "$staging/archive.list"
+          # G03_STAGE_GATE_V1: fail BEFORE deploying if root installer is stale.
+          if grep -qx './web/g03-runtime-required.txt' "$staging/archive.list"; then
+            grep -qF 'G03_STAGE_GATE_V1' /usr/local/libexec/airradarv2-main-deploy-install.sh
+            test -r /usr/local/libexec/airradarv2-verify-g03-runtime.py
+          fi
       - name: Nasadit nebo bezpečně čekat na dokončení G-02
         shell: bash
         run: |
@@ -193,19 +223,30 @@ jobs:
               if response.status != 200:
                   raise SystemExit(f"API health HTTP {response.status}")
               health = json.load(response)
-          if health.get("status") not in {"bootstrap", "waiting_for_observations", "live"}:
-              raise SystemExit(f"Neplatný stav health: {health.get('status')!r}")
-          if not isinstance(health.get("live_ingest"), bool):
-              raise SystemExit("Health live_ingest není boolean")
-          if not isinstance(health.get("database_connected"), bool):
-              raise SystemExit("Health database_connected není boolean")
-          if not isinstance(health.get("stage"), str) or not health["stage"].startswith("G-"):
-              raise SystemExit("Health nemá platnou etapu")
+          import pathlib
+          g03_required = pathlib.Path("/opt/airradar-v2/current/web/g03-runtime-required.txt").is_file()
+          if g03_required:
+              if health.get("stage") != "G-03" or health.get("status") not in {"live", "waiting_for_observations"}:
+                  raise SystemExit("G-03 release nesmí projít jako bootstrap/degraded")
+              if health.get("live_ingest") is not (health["status"] == "live"):
+                  raise SystemExit("G-03 health neodpovídá realitě")
+          else:
+              if health.get("stage") != "G-00" or health.get("status") != "bootstrap":
+                  raise SystemExit("G-00 bootstrap se nepodařil")
+              if health.get("live_ingest") is not False:
+                  raise SystemExit("G-00 nesmí předstírat živý příjem")
+          if health.get("database_connected") is not False:
+              raise SystemExit("G-04 DB nebyla aktivována")
           PY
           web_check="$RUNNER_TEMP/airradarv2-web-health.html"
           curl --fail --silent --show-error --max-time 5 \
             --output "$web_check" http://192.168.1.126:8080/
           grep -q '<div id="root"></div>' "$web_check"
+          if test -f "$current/web/g03-runtime-required.txt"; then
+            python3 /usr/local/libexec/airradarv2-verify-g03-runtime.py \
+              --direct http://127.0.0.1:4101 \
+              --proxy http://192.168.1.126:8080
+          fi
           sleep 3
           test "$(systemctl is-active airradarv2-engine.service)" = active
           test "$(systemctl is-active nginx.service)" = active

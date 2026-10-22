@@ -11,9 +11,9 @@ Tento soubor se generuje ze `contracts/feature-matrix.json` a obsahuje výhradn�
 | `J03` | Místní příjem | Rust akcelerace BEAST parseru a CRC24 | `TESTED` | G-02 DF17 CRC24, TC19, CPR a negativní parity, CI #39769323592, G-02 realny BEAST 60min read-only DEV LXC, GitHub #39795592425, SHA d0cefc4a |
 | `J04` | Místní příjem | Automatické přepínání BEAST / JSON při výpadku | `TESTED` | G-02 JSON/BEAST interleaving, connect/disconnect a source health, CI #39769323592 |
 | `J05` | Místní příjem | Správa živého stavu letadel v RAM · základ systému | `TESTED` | G-02 jediný RadarState, TTL a stres 5000 identit, CI #39769323592, G-02 realny BEAST 60min read-only DEV LXC, GitHub #39795592425, SHA d0cefc4a |
-| `J06` | Místní příjem | Veřejné API aktuálních letadel · základ systému | `NOT_STARTED` | — |
-| `J07` | Místní příjem | Živý stream SSE V1 – celé snapshoty · základ systému | `NOT_STARTED` | — |
-| `J08` | Místní příjem | Optimalizovaný SSE V2 – delta aktualizace | `NOT_STARTED` | — |
+| `J06` | Místní příjem | Veřejné API aktuálních letadel · základ systému | `TESTED` | G-03 HTTP GET/400/503 + OpenAPI 3.1 + privacy, CI #39814106622, SHA d7483417 |
+| `J07` | Místní příjem | Živý stream SSE V1 – celé snapshoty · základ systému | `TESTED` | G-03 SSE snapshot, reconnect, 15s heartbeat Nginx curl -N; CI #39835102766, SHA db4078fa |
+| `J08` | Místní příjem | Optimalizovaný SSE V2 – delta aktualizace | `TESTED` | G-03 SSE delta/upsert/removed, gap resync, 100-client benchmark; CI #39835102766, SHA db4078fa |
 | `J09` | Místní příjem | Ukládání vzorkované historie do PostgreSQL | `NOT_STARTED` | — |
 | `J11` | Místní příjem | Kontinuita identity letadel, detekce výpadků a deduplikace · základ systému | `TESTED` | G-02 identita, dedup, plausibilita, neplatné CRC a stale polohy, CI #39769323592, G-02 realny BEAST 60min read-only DEV LXC, GitHub #39795592425, SHA d0cefc4a |
 | `R01` | Mapa | Základní interaktivní mapa MapLibre · základ systému | `NOT_STARTED` | — |

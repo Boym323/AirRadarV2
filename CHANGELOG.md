@@ -4,6 +4,76 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### Audit P0 před G-03 merge: fail-closed hlavní release pipeline
+- Doloženo riziko: každý push do `main` by jinak zveřejnil G-03 prerelease a pokusil se spustit automatický DEV deployment bez ověřeného systemd/rollbacku. Workflow nyní bezpečně rozlišuje obsah G-03 balíčku, při G-03 publikuje **jen Github Actions artefakt** a zablokuje prerelease i závislý self-hosted deployment. Přidána regresní kontrola release topologie; G-03 kód lze sloučit bez živého cutoveru.
+
+### G-03 — 10/10 implementačních kroků TESTED v CI; DEV cutover zatím NO-GO
+- [CI #39848794079](https://github.com/Boym323/AirRadarV2/actions/runs/39848794079), SHA `c43ab9d543a740020ac9133941f1a4829b2c7dea`: 3/3 PASS; 5k/100 SSE klientů bez ztracené aktualizace (p95 1 576 ms, p99 1 630 ms, Rust RSS max 48 764 KiB); 90 nečtoucích klientů s 5/5 aktualizací zdravého a RSS +15 112 KiB; Chromium EventSource Vite + Nginx snapshot/delta/reconnect PASS.
+- Oprava ztráty 5000 JSON identit v 2048-elementovém mpsc používá jeden bounded `JsonBatch` se single-pending atomickou branou, žádná duplikace RAM stavu a žádné DB přístupy; doplněny regresní testy.
+- PR #11 zůstává draft, **NO-GO** pro merge kvůli dosud neověřenému DEV přepnutí systemd a rollbacku; V1 a její produkce nedotčeny.
+
+### G-03.07 — 90 skutečně nečtoucích SSE klientů
+- Syntetický HTTP TCP zátěžový test drží 90 spojení bez čtení body a kontroluje 5 úplných aktualizací zdravého klienta nad 5k cíli při přírůstku Rust RSS ≤25 MiB. Test odlišuje Rust RSS od OS socket bufferů; čeká na CI a cílovou DEV přejímku.
+
+### G-03.07/.08 — nečtoucí prohlížeče a rychlejší reálný browser CI
+- Do připraveného DEV Nginx SSE vzoru přidán downstream `send_timeout 30s`, zatímco heartbeat a 75s upstream proxy timeout zůstávají. Chromium browser smoke používá Playwright s nainstalovaným Google Chrome na izolovaném GitHub runneru, bez stahování vlastní browser binárky; nezměnilo to uživatelský PC ani DEV LXC.
+
+### G-03.07/.10 — slow reader lease, atomický JSON batch a 5000 tracků (CI #39845031595 PASS)
+- SSE lease watchdog s monotónním 30s deadlinem bez HTTP Body poll; 5s kontrolní interval a bezpečné předání aplikačního permitu. Žádná změna kontraktu ani produkce.
+- Izolovaný benchmark rozšířen na 1/10/100 odběratelů s 5000 úspornými identitami; unit testy přetížení přes 1 MiB zachovány. Provozní cílový TCP/RSS test zůstává otevřený.
+
+
+### G-03.08 — Chromium EventSource, dva stejno-origin proxy průchody
+- Izolovaný browser test Chromium přes Vite 4100 → Rust 4102 a Nginx 8082 → Rust 4102. Ověřuje plný snapshot při připojení, delta upsert během otevřeného streamu, monotónní epoch/seq a full snapshot po reconnectu. Playwright se instaluje pouze do dočasného CI venv, nikoli do uživatelova počítače ani do DEV LXC.
+
+### G-03.10 — skutečný test 5 000 kompaktních letadel (CI)
+- Syntetický readsb replay rozšířen o 5 000 kompaktích letadel pro 1 a 100 souběžných klientů, report CPU/RSS/p95/p99/bytes/s se explicitním čítačem nedoručených aktualizací. Přetížení nad 1 MiB ověřuje separátní Rust regresní test; plný produkční stav pěti tisíc letadel nelze garantovat při deklarovaném 1MiB limitu.
+
+### P1/P2 audit G-03 — CI ověřeno, zatím pouze draft G-03
+- Sdílené SSE payloady a 16KiB odesílací chunky, explicitní 503/degraded/unavailable při překročení 1MiB a návrat novým full snapshotem.
+- Stage-aware G-03 kontrola bez falešného bootstrap PASS: direct SSE + Nginx snapshot/heartbeat, fail-closed preflight root instalátoru. První systemd/config rollback stále NO-GO, žádná produkční změna.
+- Stav G-00/G-01/G-02 a rozpracované G-03 opraven v úvodní dokumentaci.
+
+
+### G-03 — průběžná dílčí přejímka 7/10 TESTED (22. 10. 2026)
+- [CI #39835102766](https://github.com/Boym323/AirRadarV2/actions/runs/39835102766) pro `db4078fa`: Rust, web, dokumentace 3/3 PASS; SSE 1/10/100 klientů, validní delta/snapshot, 15s heartbeat přes skutečný testový Nginx, 101. klient 503, JSON invalid/recovery.
+- Pro 100 souběžných SSE klientů a 250 syntetických letadel p95 **1 786 ms** od JSON rename do přijetí (včetně dvou 1Hz cyklů), RSS peak **11 448 KiB**, CPU **72,39 % jednoho jádra** na GitHub runneru. Není to výkon cílového DEV LXC.
+- G-03.06/.09 nově TESTED, J07/J08 v aktivní matici TESTED. G-03.07/.08/.10 stále otevřené; žádný G-03 release ani zásah do V1.
+
+
+### G-03.08 — skutečný průchod SSE přes Nginx v izolované CI (před přejímkou)
+- CI připravuje dočasný Nginx podle odděleného G-03 vzoru a testuje HTTP `/api/v1/health`, průběžné doručení SSE snapshotu a heartbeat přes 127.0.0.1:8082; neinstaluje ani nepřepíná skutečný DEV web. Browser EventSource a LXC zůstávají NEOVĚŘENO.
+
+### G-03.09 — kontrola poškozeného readsb a přesnější SSE měření
+- Benchmark odlišuje čisté SSE update bytes/s od prvního snapshotu, měří peak RSS během aktualizace a ověřuje, že atomicky publikovaný chybný JSON neporuší kanonický Rust RAM stav ani další doručování. Výsledky aktualizuje CI finálního SHA.
+
+### G-03.07/.09/.10 — izolovaný 1/10/100 SSE zátěžový scénář (čeká CI)
+- Přidán standard-library Python harness spouštějící pouze opt-in Rust API na loopback s atomicky obnovovaným syntetickým readsb JSON. Ověřuje 1/10/100 SSE klientů, delta/snapshot, limit 101. klienta a návrat kapacity; reportuje p95/p99, CPU, RSS a bytes/s. Čísla nejsou výkon cílového DEV LXC, proxy ani prohlížeče.
+
+### G-03.01/.02 — 5/10 testově uzavřeno na CI #39814106622
+- Public API J06 označeno `TESTED` po formální OpenAPI 3.1 validaci, HTTP 200/400/503, privacy a SSE reconnect testech (3/3 CI PASS); neznamená to provozní G-03 release.
+
+### G-03.01/.02/.06/.07 — formální API a regresní testy (čeká nové CI)
+- Oddělený OpenAPI kontrakt opt-in API, odmítnutí neschválených query parametrů HTTP 400, JSON `CONTRACT_INVALID` a při 100 SSE klientů JSON 503 `UNAVAILABLE`.
+- Přidány Rust testy reconnect se starým Last-Event-ID, uvolnění SSE permitů a záměrně zpožděného čtení s resynchronizací. Výkonové RSS/p95/p99 zůstává NEOVĚŘENO.
+
+### G-03.08 — neaktivované SSE proxy a izolovaný HTTP smoke
+- Připraven volitelný Vite cíl 4102 a oddělený Nginx SSE vzor; CI doplněna o síťový kontrakt a HTTP/SSE smoke bez skutečného přijímače. Provozní brána zatím NEOVĚŘENO.
+
+### G-03 — izolované HTTP/SSE rozhraní nad G-02 (22. 10. 2026)
+- Přeneseny skutečné změny [PR #8](https://github.com/Boym323/AirRadarV2/pull/8) na aktuální `main` bez historických G-02 změn; 3/10 G-03 kroků doloženy [CI #39804030160](https://github.com/Boym323/AirRadarV2/actions/runs/39804030160).
+- Rust opt-in API a SSE sdílí jeden RAM stav, veřejná DTO a 1 Hz snapshot/delta; provozní proxy/zátěž dosud NEOVĚŘENO.
+- Bez změny V1, PostgreSQL a vývojového LXC. Merge a auto-DEV release závisí na zeleném CI a schválené bráně.
+
+
+### Automatický DEV deploy z ověřeného main — zatím pouze implementace
+- Nový root-owned pull agent přijímá jen GitHub botem vydaný release k přesnému současnému main SHA a validuje balíček, SHA256, adresy assetů, tar allowlist a VERSION.
+- Jednorázový instalátor vytvoří izolovaný systemd timer každých 5 minut a bezpečný read-only DEV status. Healthcheck a rollback se provádí bez zásahu do V1, přijímače nebo DB.
+- **Není zatím potvrzena reálná instalace v DEV LXC**, provozní G-13 produkční etapa zůstává nerozpracovaná.
+
+
+
+
 ### Úklid GitHub Actions: 3 workflow místo 5 (22. 10. 2026)
 - Jediná kanonická CI sada (`ci.yml`) pro PR a jako reusable workflow před automatickým `main` release; odstraněny duplicitní `main` testy.
 - Jediný DEV release/deploy přes repo-scoped Runner zachovává G-02 replay/benchmark, Rust/Vite, OpenAPI, SHA256, healthcheck i rollback. Historický ruční build a jednorázové G-02 LIVE workflow odstraněny z aktivních YAML; auditní testy a výsledky zachovány.

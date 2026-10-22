@@ -1,0 +1,151 @@
+openapi: 3.1.0
+info:
+  title: AirRadar V2 — G-03 opt-in HTTP a SSE API
+  version: 0.3.0
+  description: Oddělený runtime kontrakt při --g03-live-api; výchozí G-00 služba se nemění.
+servers:
+  - url: http://127.0.0.1:4102
+paths:
+  /api/v1/health:
+    get:
+      operationId: g03Health
+      summary: Stav aktuálního lokálního příjmu
+      responses:
+        '200':
+          description: Stav příjmu, bez interních identifikátorů
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LiveHealthV1" }
+        '400':
+          description: Nepodporované query parametry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorV1" }
+  /api/v1/aircraft:
+    get:
+      operationId: g03Aircraft
+      summary: Atomický veřejný snapshot z RAM
+      responses:
+        '200':
+          description: Nejnovější dostupný immutable snapshot
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LiveAircraftResponseV1" }
+        '400':
+          description: Nepodporované query parametry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorV1" }
+        '503':
+          description: Příliš velký full snapshot, nelze podávat historický stav jako LIVE
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorV1" }
+  /api/v1/stream:
+    get:
+      operationId: g03Stream
+      summary: SSE snapshot, delta a heartbeat každých 15 sekund
+      description: Pokud není přetížení, po připojení vždy snapshot. Při overflow stream vyšle unavailable/ErrorV1 a skončí. Last-Event-ID není server-side replay.
+      responses:
+        '200':
+          description: SSE snapshot/delta, žádný proxy buffering
+          content:
+            text/event-stream:
+              schema: { type: string }
+        '400':
+          description: Nepodporované query parametry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorV1" }
+        '503':
+          description: Dosažen limit 100 klientů nebo snapshot nad 1 MiB
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorV1" }
+components:
+  schemas:
+    LiveHealthV1:
+      type: object
+      additionalProperties: false
+      required: [status, stage, live_ingest, database_connected]
+      properties:
+        status: { type: string, enum: [live, waiting_for_observations, degraded] }
+        stage: { type: string, const: G-03 }
+        live_ingest: { type: boolean }
+        database_connected: { type: boolean, const: false }
+    LiveAircraftResponseV1:
+      type: object
+      additionalProperties: false
+      required: [status, data]
+      properties:
+        status: { type: string, enum: [live, waiting_for_observations] }
+        data: { $ref: "#/components/schemas/SnapshotV1" }
+    PositionV1:
+      type: object
+      additionalProperties: false
+      required: [lat, lon]
+      properties:
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lon: { type: number, minimum: -180, maximum: 180 }
+    AircraftPublicV1:
+      type: object
+      additionalProperties: false
+      required: [id, lastMessageAt, lastPositionAt, position, positionOrigin, stale, callsign, squawk]
+      properties:
+        id: { type: string, pattern: "^(icao|nonicao):[0-9a-f]{6}$" }
+        lastMessageAt: { type: number }
+        lastPositionAt: { type: [number, "null"] }
+        position:
+          oneOf:
+            - $ref: "#/components/schemas/PositionV1"
+            - type: "null"
+        positionOrigin:
+          type: string
+          enum: [adsb, mlat, tisb, rebroadcast, estimated, unknown]
+        stale: { type: boolean }
+        callsign: { type: [string, "null"], maxLength: 8 }
+        squawk: { type: [string, "null"], pattern: "^[0-7]{4}$" }
+        telemetry:
+          type: object
+          additionalProperties: false
+          properties:
+            altitudeBaroFt: { type: integer, minimum: -2000, maximum: 65000 }
+            groundSpeedKt: { type: number, minimum: 0, maximum: 1500 }
+            trackDegrees: { type: number, minimum: 0, exclusiveMaximum: 360 }
+            verticalRateFpm: { type: integer, minimum: -15000, maximum: 15000 }
+            onGround: { type: boolean }
+    SnapshotV1:
+      type: object
+      additionalProperties: false
+      required: [kind, epoch, seq, generatedAt, aircraft]
+      properties:
+        kind: { type: string, const: snapshot }
+        epoch: { type: string, minLength: 1 }
+        seq: { type: integer, minimum: 0 }
+        generatedAt: { type: string, format: date-time }
+        aircraft:
+          type: array
+          items: { $ref: "#/components/schemas/AircraftPublicV1" }
+    DeltaV1:
+      type: object
+      additionalProperties: false
+      required: [kind, epoch, seq, generatedAt, upsert, removed]
+      properties:
+        kind: { type: string, const: delta }
+        epoch: { type: string, minLength: 1 }
+        seq: { type: integer, minimum: 0 }
+        generatedAt: { type: string, format: date-time }
+        upsert:
+          type: array
+          items: { $ref: "#/components/schemas/AircraftPublicV1" }
+        removed:
+          type: array
+          uniqueItems: true
+          items: { type: string, pattern: "^(icao|nonicao):[0-9a-f]{6}$" }
+    ErrorV1:
+      type: object
+      additionalProperties: false
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }

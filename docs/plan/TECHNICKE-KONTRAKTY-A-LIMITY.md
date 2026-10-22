@@ -1,6 +1,6 @@
 # AirRadar V2 — závazné technické kontrakty a limity
 
-**Datum:** 22. 10. 2026. **Stav:** dokončený podrobný návrh; **bez reálného měření, vytvořených DB tabulek nebo spuštěných browserových testů**. Rozsah nadále obsahuje pouze 45 aktivních funkcí.
+**Datum:** 22. 10. 2026. **Stav:** návrh G-04+ stále nepřevzat; G-03 HTTP/SSE a Chromium browser byly otestovány izolovaně v CI #39849652858, bez cílového DEV LXC měření či DB tabulek. Rozsah nadále obsahuje pouze 45 aktivních funkcí.
 
 | Oblast | Startovací rozhodnutí | Detailní české zadání | Etapa |
 |---|---|---|---|
