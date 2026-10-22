@@ -53,3 +53,90 @@ paths:
             text/event-stream:
               schema:
                 type: string
+
+
+# G-01 komponenty popisují BUDOUCÍ tvar API. Stávající odpovědi endpointů
+# jsou správně ponechány jako G-00 bootstrap; runtime kontrakty přepne až G-03.
+components:
+  schemas:
+    PositionV1:
+      type: object
+      additionalProperties: false
+      required: [lat, lon]
+      properties:
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lon: { type: number, minimum: -180, maximum: 180 }
+    AircraftPublicV1:
+      type: object
+      additionalProperties: false
+      required: [id, lastMessageAt, lastPositionAt, position, positionOrigin, stale, callsign, squawk]
+      properties:
+        id: { type: string, pattern: "^(icao|nonicao):[0-9a-f]{6}$" }
+        lastMessageAt: { type: number }
+        lastPositionAt: { type: [number, "null"] }
+        position:
+          oneOf:
+            - $ref: "#/components/schemas/PositionV1"
+            - type: "null"
+        positionOrigin:
+          type: string
+          enum: [adsb, mlat, tisb, rebroadcast, estimated, unknown]
+        stale: { type: boolean }
+        callsign: { type: [string, "null"], maxLength: 8 }
+        squawk: { type: [string, "null"], pattern: "^[0-7]{4}$" }
+    SnapshotV1:
+      type: object
+      additionalProperties: false
+      required: [kind, epoch, seq, generatedAt, aircraft]
+      properties:
+        kind: { type: string, const: snapshot }
+        epoch: { type: string, minLength: 1 }
+        seq: { type: integer, minimum: 0 }
+        generatedAt: { type: string, format: date-time }
+        aircraft:
+          type: array
+          items: { $ref: "#/components/schemas/AircraftPublicV1" }
+    DeltaV1:
+      type: object
+      additionalProperties: false
+      required: [kind, epoch, seq, generatedAt, upsert, removed]
+      properties:
+        kind: { type: string, const: delta }
+        epoch: { type: string, minLength: 1 }
+        seq: { type: integer, minimum: 0 }
+        generatedAt: { type: string, format: date-time }
+        upsert:
+          type: array
+          items: { $ref: "#/components/schemas/AircraftPublicV1" }
+        removed:
+          type: array
+          uniqueItems: true
+          items: { type: string, pattern: "^(icao|nonicao):[0-9a-f]{6}$" }
+    ErrorV1:
+      type: object
+      additionalProperties: false
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+# Nejde o již implementované endpoints; sekce popisuje schválený kontrakt G-01.
+x-g01-planned-contract:
+  stage: G-01
+  runtime: NOT_IMPLEMENTED
+  releaseApiVersion: 1
+  response:
+    status: live
+    dataSchema: "#/components/schemas/SnapshotV1"
+  sse:
+    path: /api/v1/stream
+    full: "#/components/schemas/SnapshotV1"
+    delta: "#/components/schemas/DeltaV1"
+    heartbeatSeconds: 15
+    deltaHz: 1
+    maxSnapshotBytes: 1048576
+    reconnectOnGap: true
+    initialAtomicBoundary: "subscribe_and_snapshot_under_one_state_owner"
+  errors:
+    bad_contract: CONTRACT_INVALID
+    oversized_snapshot: SNAPSHOT_TOO_LARGE
+    server_unavailable: UNAVAILABLE

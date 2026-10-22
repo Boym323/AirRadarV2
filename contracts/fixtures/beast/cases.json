@@ -73,5 +73,16 @@
   "knownCrc": {
     "data": "8d40621d58c382d690c8ac",
     "parity": "2863a7"
+  },
+  "cprPair": {
+    "even": "adsb_even",
+    "odd": "adsb_odd",
+    "decodeReference": {
+      "lat": 49.899994,
+      "lon": 15.29998,
+      "toleranceDegrees": 0.0001
+    },
+    "missingOddExpected": "no_position",
+    "excessiveTimeDifferenceExpected": "no_position"
   }
 }
