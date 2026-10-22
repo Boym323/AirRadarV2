@@ -4,6 +4,14 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-03 — první izolovaná implementace veřejného HTTP API a SSE (22. 10. 2026)
+- [CI #39803605266](https://github.com/Boym323/AirRadarV2/actions/runs/39803605266) pro commit `dbd9af7c`: Rust/web/docs 3/3 PASS, doložen replay delta do kanonického stavu. G-03.03/.04/.05 testově uzavřeny, celá G-03 zůstává ROZPRACOVÁNO.
+- Implementována G-03.01–.06 jako výslovně opt-in `--g03-live-api`: existující jediný Rust RAM vlastník publikuje 1× za sekundu do sdíleného watch kanálu.
+- `GET /api/v1/aircraft`, health a SSE snapshot/delta mají monotónní epoch/seq, odpovídající G-01 veřejné DTO, heartbeat 15 s, resync snapshotem při ztracené sequence, 1 MiB limit snapshotu a základní cap 100 SSE klientů.
+- Přidány testy snapshot/delta/removal, overflow/gap, soukromí, HTTP odpovědi, SSE hlavičky a kapacitního limitu.
+- **Neprovedeno:** zátěž a přejímka G-03.07–.10, web/Nginx release. **Žádné nasazení, žádná změna V1 a běžícího G-02 testu.**
+
+
 ### Automatický DEV deploy z ověřeného main — zatím pouze implementace
 - Nový root-owned pull agent přijímá jen GitHub botem vydaný release k přesnému současnému main SHA a validuje balíček, SHA256, adresy assetů, tar allowlist a VERSION.
 - Jednorázový instalátor vytvoří izolovaný systemd timer každých 5 minut a bezpečný read-only DEV status. Healthcheck a rollback se provádí bez zásahu do V1, přijímače nebo DB.

@@ -7,7 +7,7 @@
 | G-00 | Samostatný základ Rust + Vite/React | **HOTOVO — pouze scaffold** |
 | G-01 | [Kontrakty a deterministické fixture](../ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) | **HOTOVO — 10/10, CI PASS** |
 | G-02 | [Lokální ADS-B ingest a RAM](../ukoly/G-02-LOKALNI-INGEST.md) | **HOTOVO — 11/11 TESTED, reálný 60min BEAST PASS; G-02 HTTP/SSE zatím nenasazeno** |
-| G-03 | [Verzované HTTP API a SSE](../ukoly/G-03-API-A-SSE.md) | NEZAHÁJENO |
+| G-03 | [Verzované HTTP API a SSE](../ukoly/G-03-API-A-SSE.md) | **ROZPRACOVÁNO — G-03.03/.04/.05 CI PASS, bez nasazení do DEV** |
 | G-04 | [Úsporná historie](../ukoly/G-04-POSTGRESQL-HISTORIE.md) | NEZAHÁJENO |
 | G-05 | [Živá mapa a základní ovládání](../ukoly/G-05-ZIVA-MAPA.md) | NEZAHÁJENO |
 | G-06 | [Letiště a NAVAID/FIX](../ukoly/G-06-LETISTE-NAVAID.md) | NEZAHÁJENO |
@@ -91,3 +91,7 @@ Historické výše uvedené stavy `10/11` a `čeká LIVE` jsou nahrazeny skuteč
 ## Přípravná DEV aktualizace z ověřeného main (mimo produkční G-13)
 
 Na přímé povolení vlastníka vzniká v [PR #10](https://github.com/Boym323/AirRadarV2/pull/10) root-owned, read-only GitHub pull agent, který po úspěšném CI dodá poslední main do samostatného DEV LXC; má SHA/manifest kontroly, odložení během G-02 testů a health+rollback. [Runbook](../runbooks/DEV-MAIN-AUTODEPLOY.md) a [report](../reports/DEV-MAIN-AUTODEPLOY-2026-10-22.md) upozorňují na stále neprovedenou jednorázovou aktivaci v LXC. **Nejde o produkční cutover, DB migrace, změnu V1 ani hotovou G-13.**
+
+## G-03 — první izolovaná implementace HTTP/SSE (22. 10. 2026)
+
+[Průběžný report G-03](../reports/G-03-VYSLEDEK.md) popisuje první modul G-03.01–.06 na samostatné vývojové větvi s defaultně vypnutým `--g03-live-api`. Další G-03.07–.10 a reálné SSE zátěžové testy nejsou provedené. G-02.11 live test je nedotčený; G-03 zatím **NEPŘEVZATO**.
