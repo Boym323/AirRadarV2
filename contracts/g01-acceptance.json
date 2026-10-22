@@ -1,0 +1,366 @@
+{
+  "version": 1,
+  "description": "Přejímací scénáře plánované pro 45 aktivních funkcí; nejde o jejich implementaci ani PASS.",
+  "features": [
+    {
+      "id": "J01",
+      "name": "Příjem lokálních letadel přes readsb JSON · základ systému",
+      "stage": "G-02",
+      "scenario": "Přečtení syntetického aircraft.json včetně absentních polí a ne-ICAO identity",
+      "expected": "Jeden validní AircraftState; žádné fiktivní souřadnice",
+      "status": "PLANNED"
+    },
+    {
+      "id": "J02",
+      "name": "Přímý příjem lokálních BEAST TCP rámců",
+      "stage": "G-02",
+      "scenario": "BEAST TCP rámce rozdělené mezi chunk, neplatná délka, escaped 0x1A",
+      "expected": "Bez panic; vadný rámec odmítnut, validní zachován",
+      "status": "PLANNED"
+    },
+    {
+      "id": "J03",
+      "name": "Rust akcelerace BEAST parseru a CRC24",
+      "stage": "G-02",
+      "scenario": "DF17 CRC24 a DF se zvláštní paritou, goldeny CPR even/odd",
+      "expected": "Žádná nevalidní poloha, správná parita pro daný DF",
+      "status": "PLANNED"
+    },
+    {
+      "id": "J04",
+      "name": "Automatické přepínání BEAST / JSON při výpadku",
+      "stage": "G-02",
+      "scenario": "BEAST timeout → JSON → obnova BEAST se stejným hex",
+      "expected": "Kontinuita stavu bez druhého tracku, zdroj čerstvější polohy zachován",
+      "status": "PLANNED"
+    },
+    {
+      "id": "J05",
+      "name": "Správa živého stavu letadel v RAM · základ systému",
+      "stage": "G-02",
+      "scenario": "5000 cílů a restart/TTL s bounded RAM mapou",
+      "expected": "Jedna autorita s předvídatelným ošetřením limitu",
+      "status": "PLANNED"
+    },
+    {
+      "id": "J06",
+      "name": "Veřejné API aktuálních letadel · základ systému",
+      "stage": "G-03",
+      "scenario": "HTTP GET seznam letadel, bezpečný DTO a stáří pozice",
+      "expected": "Sanitizované pole bez IP, hesel nebo interní cesty",
+      "status": "PLANNED"
+    },
+    {
+      "id": "J07",
+      "name": "Živý stream SSE V1 – celé snapshoty · základ systému",
+      "stage": "G-03",
+      "scenario": "První SSE subscriber při současném vstupním pozorování",
+      "expected": "Atomický snapshot bez mezery a následné přesné eventy",
+      "status": "PLANNED"
+    },
+    {
+      "id": "J08",
+      "name": "Optimalizovaný SSE V2 – delta aktualizace",
+      "stage": "G-03",
+      "scenario": "Delta upsert/remove, seq gap, epoch restart, pomalý odběratel",
+      "expected": "Nový snapshot a bounded fronta bez ovlivnění ingestu",
+      "status": "PLANNED"
+    },
+    {
+      "id": "J09",
+      "name": "Ukládání vzorkované historie do PostgreSQL",
+      "stage": "G-04",
+      "scenario": "Replay duplicit JSON/BEAST a adaptivního economy sampleru",
+      "expected": "Jen nové pravdivé DB vzorky, bounded batch a idempotentní zápis",
+      "status": "PLANNED"
+    },
+    {
+      "id": "J11",
+      "name": "Kontinuita identity letadel, detekce výpadků a deduplikace · základ systému",
+      "stage": "G-02",
+      "scenario": "Shodný ICAO, různý callsign/transport a fyzikálně nemožný skok",
+      "expected": "Bez duplicitní identity a nemožného přepsání validní polohy",
+      "status": "PLANNED"
+    },
+    {
+      "id": "R01",
+      "name": "Základní interaktivní mapa MapLibre · základ systému",
+      "stage": "G-05",
+      "scenario": "MapLibre první render a aktuální live GeoJSON",
+      "expected": "Správné polohy na mapě bez DOM markeru pro každý cíl",
+      "status": "PLANNED"
+    },
+    {
+      "id": "R03",
+      "name": "Ikony letadel podle typu a směru",
+      "stage": "G-05",
+      "scenario": "Heading 0/90/270 a různé dostupné typy cílů",
+      "expected": "Ikona typu a natočení podle skutečných dat",
+      "status": "PLANNED"
+    },
+    {
+      "id": "R04",
+      "name": "Popisky letadel a řízení jejich kolizí",
+      "stage": "G-05",
+      "scenario": "Hustá skupina letadel se shodnými popisky",
+      "expected": "Kolize popisků řešeny bez zbytečných React commitů",
+      "status": "PLANNED"
+    },
+    {
+      "id": "R06",
+      "name": "Živý seznam provozu a filtrování letadel",
+      "stage": "G-05",
+      "scenario": "Snapshot+delta a filtrace v seznamu",
+      "expected": "Po změně/removed aktualizován příslušný řádek bez duplikace",
+      "status": "PLANNED"
+    },
+    {
+      "id": "R08",
+      "name": "Zobrazení živé letové stopy (trail)",
+      "stage": "G-05",
+      "scenario": "Více časových bodů a přerušení pozic",
+      "expected": "Trail v RAM bounded a bez falešných interpolací",
+      "status": "PLANNED"
+    },
+    {
+      "id": "R09",
+      "name": "Sledování letadla kamerou mapy (follow)",
+      "stage": "G-05",
+      "scenario": "Zapnutí follow a ruční posunutí mapy",
+      "expected": "Camera sleduje jen se souhlasem a reaguje na gesto",
+      "status": "PLANNED"
+    },
+    {
+      "id": "R12",
+      "name": "Vrstvy okolních letišť",
+      "stage": "G-05",
+      "scenario": "Letiště ve viewportu a změna přiblížení",
+      "expected": "Samostatná nízkofrekvenční vrstva bez zhoršení update letadel",
+      "status": "PLANNED"
+    },
+    {
+      "id": "R14",
+      "name": "Mapové podklady, vzhled a předvolby vrstev",
+      "stage": "G-05",
+      "scenario": "Změna mapového stylu a předvoleb",
+      "expected": "Vrstvy zachovají identitu a UI nepadá při nezdařeném stylu",
+      "status": "PLANNED"
+    },
+    {
+      "id": "A01",
+      "name": "Katalog letišť a vyhledávání podle ICAO",
+      "stage": "G-06",
+      "scenario": "Zadání ICAO a hledání v licencovaném katalogu",
+      "expected": "Jednoznačné letiště; neznámé ICAO transparentně odmítnuto",
+      "status": "PLANNED"
+    },
+    {
+      "id": "A02",
+      "name": "Detail letiště – dráhy, poloha, vybavení a frekvence",
+      "stage": "G-06",
+      "scenario": "Detail drah, polohy, vybavení a frekvencí",
+      "expected": "Údaje z konkrétního zdroje, správné jednotky/platnost",
+      "status": "PLANNED"
+    },
+    {
+      "id": "T10",
+      "name": "NAVAID/FIX databáze a navigační průzkumník",
+      "stage": "G-06",
+      "scenario": "NAVAID/FIX import z ověřeného zdroje",
+      "expected": "Deterministická identifikace s kontrolou souřadnic",
+      "status": "PLANNED"
+    },
+    {
+      "id": "W03",
+      "name": "Meteorologický radar ČHMÚ s časovou osou",
+      "stage": "G-07",
+      "scenario": "Meteorologický radar snímek s časem a výpadkem zdroje",
+      "expected": "Časový posuv je pravdivý; stale snímek není live",
+      "status": "PLANNED"
+    },
+    {
+      "id": "W06",
+      "name": "SIGMET a AirSIGMET výstrahy",
+      "stage": "G-07",
+      "scenario": "SIGMET polygon platný/prošlý a chybná geometrie",
+      "expected": "Zobrazí se jen platná bezpečná výstraha",
+      "status": "PLANNED"
+    },
+    {
+      "id": "W08",
+      "name": "Počasí měřené letadly z Mode-S / BDS 4,4",
+      "stage": "G-07",
+      "scenario": "Skutečný BDS 4,4 a ambivalentní Comm-B zpráva",
+      "expected": "Jen validní meteorologická měření, jinak unknown",
+      "status": "PLANNED"
+    },
+    {
+      "id": "W09",
+      "name": "Profil a kvalita počasí pozorovaného letadlem",
+      "stage": "G-07",
+      "scenario": "Dvě letadla s různou kvalitou a časy BDS měření",
+      "expected": "Pozorování se nesloučí a ukazuje se provenance/kvalita",
+      "status": "PLANNED"
+    },
+    {
+      "id": "L11",
+      "name": "Push notifikace do prohlížeče",
+      "stage": "G-08",
+      "scenario": "Web Push opt-in, odmítnutí souhlasu a expired subscription",
+      "expected": "Bez neoprávněného subscribe nebo reálného doručení v testu",
+      "status": "PLANNED"
+    },
+    {
+      "id": "L12",
+      "name": "Externí Pushover upozornění",
+      "stage": "G-08",
+      "scenario": "Pushover testovací fake endpoint s opakováním chyby",
+      "expected": "Omezené retry, žádný únik tokenu ani spam",
+      "status": "PLANNED"
+    },
+    {
+      "id": "S01",
+      "name": "Aktuální počítadla letadel a zpráv za sekundu",
+      "stage": "G-09",
+      "scenario": "Deterministický replay zpráv a snapshotů",
+      "expected": "Aktuální počty a messages/s bez dvojího započítání JSON/BEAST",
+      "status": "PLANNED"
+    },
+    {
+      "id": "S06",
+      "name": "Statistiky typů letadel, aerolinek a tratí – API",
+      "stage": "G-09",
+      "scenario": "Známý typ/operátor a neznámá trať bez metadat",
+      "expected": "Neznámé dimenze nejsou odhadnuté z callsignu",
+      "status": "PLANNED"
+    },
+    {
+      "id": "S09",
+      "name": "Logbook a agregované souhrny přijímače",
+      "stage": "G-09",
+      "scenario": "Denní receiver logbook a retence starých vzorků",
+      "expected": "Denní agregace zůstávají, chybějící detail je vysvětlen",
+      "status": "PLANNED"
+    },
+    {
+      "id": "O01",
+      "name": "System Dashboard – stav všech komponent",
+      "stage": "G-09",
+      "scenario": "Výpadek DB při fungujícím readsb a SSE",
+      "expected": "Dashboard označí degradovanou historii, ne falešný celkový výpadek",
+      "status": "PLANNED"
+    },
+    {
+      "id": "O02",
+      "name": "Veřejná kontrola zdraví aplikace a verze · základ systému",
+      "stage": "G-09",
+      "scenario": "Health výstup, SHA a stav bez tajemství",
+      "expected": "Veřejné API neobsahuje interní IP ani DB URL",
+      "status": "PLANNED"
+    },
+    {
+      "id": "O03",
+      "name": "Receiver Monitoring – zdraví SDR/readsb příjmu",
+      "stage": "G-09",
+      "scenario": "Odpojení/reconnect readsb a vadné BEAST rámce",
+      "expected": "Poslední validní příjem a chybovost jsou doložitelné",
+      "status": "PLANNED"
+    },
+    {
+      "id": "O04",
+      "name": "Diagnostika externích poskytovatelů a integrací",
+      "stage": "G-09",
+      "scenario": "Výpadek aktivního meteorologického poskytovatele",
+      "expected": "Diagnostika jen skutečných integrací, bez blokování ingestu",
+      "status": "PLANNED"
+    },
+    {
+      "id": "O05",
+      "name": "CPU, RAM, GC a event-loop telemetrie",
+      "stage": "G-09",
+      "scenario": "Rust CPU/RSS a fronty při replay",
+      "expected": "Bez fiktivních údajů GC Node procesu",
+      "status": "PLANNED"
+    },
+    {
+      "id": "O06",
+      "name": "Historie výkonu a aktuálních bottlenecků",
+      "stage": "G-09",
+      "scenario": "Dlouhý bounded soak interních výkonnostních metrik",
+      "expected": "Historie metrik nepřibývá neomezeně",
+      "status": "PLANNED"
+    },
+    {
+      "id": "O07",
+      "name": "Databázová latence, fronty a diagnostika zapisování",
+      "stage": "G-09",
+      "scenario": "SQLx pool čekání, batch latency a výpadek DB",
+      "expected": "Metriky ověřitelné bez zveřejnění přihlašovacích údajů",
+      "status": "PLANNED"
+    },
+    {
+      "id": "O08",
+      "name": "Systémové diagnostické SSE streamy",
+      "stage": "G-09",
+      "scenario": "100 klientů a změna diagnostické události",
+      "expected": "Sdílený low-rate SSE bez per-client DB pollingu",
+      "status": "PLANNED"
+    },
+    {
+      "id": "U01",
+      "name": "Responzivní rozhraní mobil/tablet/desktop · základ systému",
+      "stage": "G-10",
+      "scenario": "Mobilní/tablet/desktop viewport v Playwright",
+      "expected": "Ovládání přístupné bez překrytí hlavních prvků",
+      "status": "PLANNED"
+    },
+    {
+      "id": "U02",
+      "name": "Instalovatelná PWA aplikace",
+      "stage": "G-10",
+      "scenario": "PWA manifest a offline instalace",
+      "expected": "Instalovatelná aplikace pouze s verzovaným statickým buildem",
+      "status": "PLANNED"
+    },
+    {
+      "id": "U03",
+      "name": "Offline cache posledního známého stavu",
+      "stage": "G-10",
+      "scenario": "Offline přechod a návrat na SSE",
+      "expected": "Stará pozice viditelně stale, nikdy se netváří jako live",
+      "status": "PLANNED"
+    },
+    {
+      "id": "U04",
+      "name": "Česká a anglická lokalizace",
+      "stage": "G-10",
+      "scenario": "České výchozí UI a anglické přepnutí",
+      "expected": "Přeložené dostupné texty bez ztráty uživatelského stavu",
+      "status": "PLANNED"
+    },
+    {
+      "id": "U05",
+      "name": "Globální Command Search a navigace",
+      "stage": "G-10",
+      "scenario": "Command Search nad existujícími položkami",
+      "expected": "Rychlá navigace s keyboard a ARIA, bez externího search serveru",
+      "status": "PLANNED"
+    },
+    {
+      "id": "U08",
+      "name": "Klávesové zkratky a rychlé ovládání",
+      "stage": "G-10",
+      "scenario": "Klávesové zkratky vs focus v textovém poli",
+      "expected": "Zkratka neblokuje psaní a funguje ve specifikovaném kontextu",
+      "status": "PLANNED"
+    },
+    {
+      "id": "L06",
+      "name": "Emergency squawk 7500/7600/7700",
+      "stage": "G-08",
+      "scenario": "7500/7600/7700, přechod squawku, opakovaný BEAST/JSON",
+      "expected": "Jediný bezpečný idempotentní alarm pro stejnou událost",
+      "status": "PLANNED"
+    }
+  ]
+}
