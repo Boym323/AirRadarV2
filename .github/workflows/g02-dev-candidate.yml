@@ -30,6 +30,7 @@ jobs:
           cargo run --locked --quiet -p airradarv2-engine -- --g02-benchmark
           node tools/check-docs.mjs
           python3 -m py_compile deploy/g02-auto-pull.py
+          python3 -m unittest discover -s tools -p 'test_g02_auto_pull.py'
           bash -n deploy/install-g02-auto-lxc.sh
       - name: Ověřit a sestavit Vite
         working-directory: apps/web

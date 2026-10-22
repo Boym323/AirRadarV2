@@ -4,6 +4,12 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### Automatická G-02.11 acceptance — připraveno v repozitáři, LXC dosud nezapnuto
+- GitHub Actions při zelených testech vydá immutable SHA-pripnutý DEV prerelease bez nasazení.
+- Samostatný rootless systemd timer v DEV LXC může jednorázově po instalaci stahovat nové ověřené balíčky přes HTTPS, spouštět offline replay + 5000-track benchmark a zveřejnit výsledek na LAN-only `/g02-status.json`.
+- Žádný GitHub self-hosted runner, žádná V1/DB, žádné změny nasazené produkce a žádné automatické přepnutí aplikace. Provozní G-02.11 zůstává NEOVĚŘENO.
+
+
 ### G-02 — rozšíření testového pokrytí na 10/11 kroků (22. 10. 2026)
 - [CI #39769323592](https://github.com/Boym323/AirRadarV2/actions/runs/39769323592), commit `81a27295d78753a6a3d987e7d68d6b8394c12ef5`: Rustfmt, Clippy, 26 Rust testů a 3/3 joby PASS.
 - Doplněna validovaná letová telemetrie, TC19 rychlost/heading/vertikální rychlost, DF17 výška, lokální CPR s trusted reference, source health a test JSON↔BEAST fallbacku.

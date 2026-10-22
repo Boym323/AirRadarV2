@@ -25,7 +25,10 @@ jobs:
       - name: Kontrola dokumentace a 45 aktivních funkcí
         run: node tools/check-docs.mjs
       - name: Kontrola syntaxe skriptů DEV LXC
-        run: bash -n deploy/bootstrap-dev-lxc.sh deploy/install-dev-bundle.sh
+        run: |
+          bash -n deploy/bootstrap-dev-lxc.sh deploy/install-dev-bundle.sh deploy/install-g02-auto-lxc.sh
+          python3 -m py_compile deploy/g02-auto-pull.py
+          python3 -m unittest discover -s tools -p 'test_g02_auto_pull.py'
       - name: Formální validace OpenAPI a JSON Schema G-01
         run: |
           python3 -m venv /tmp/airradar-g01-venv

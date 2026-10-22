@@ -83,3 +83,7 @@ Při revizi bylo opraveno **uvolňování interní mapy `position_quality` spole
 **Zbývající povinná přejímka G-02.11:** bezpečně a izolovaně spustit tuto binárku `--g02-benchmark` a dlouhodobý soak/reconnect na cílovém DEV LXC; zaznamenat SHA binárky, počet vCPU/RAM, CPU/RSS, ztráty a p95 a ověřit chování na vybraném lokálním testovacím vstupu. Stávající službu G-00/G-01 zatím nevyměňovat. Bez testu na cílovém LXC **není G-02 finálně HOTOVO**.
 
 **Reprodukovatelný postup testu na cílovém 1vCPU DEV LXC:** [G-02.11 runbook](../runbooks/G-02-DEV-LXC-PREJIMKA.md). Dokud není doložen výstup těchto kroků, G-02 zůstává 10/11.
+
+### Automatizace přejímky G-02.11 (návrh; NENASAZENO)
+
+Bezpečné [automatické DEV ověření](../runbooks/G-02-AUTOMATICKA-PREJIMKA.md) zahrnuje SHA-pripnuté prerelease balíčky z důvěryhodného GitHub CI a odchozí rootless pull časovač v samostatném DEV LXC. JSON report přes existující privátní Nginx. Samotná instalace skriptu v LXC, syntetické výsledky přímo v LXC a reálný dlouhodobý BEAST/JSON soak zůstávají **NEOVĚŘENO**. Nepovažovat za přijetí G-02.

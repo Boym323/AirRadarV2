@@ -18,7 +18,10 @@ Nejdříve vyčkej na úspěšné [GitHub Actions G-02 kandidáta](https://githu
 
 ~~~bash
 cd /root
-command -v python3 || apt-get update && apt-get install -y python3-minimal
+if ! command -v python3 >/dev/null; then
+  apt-get update
+  apt-get install -y python3-minimal
+fi
 curl -fsSLo g02-auto-pull.py \
   https://raw.githubusercontent.com/Boym323/AirRadarV2/codex/g02-auto-lxc-20261022/deploy/g02-auto-pull.py
 curl -fsSLo install-g02-auto-lxc.sh \
