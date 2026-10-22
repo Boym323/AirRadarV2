@@ -30,6 +30,10 @@ Měřený commit: [f07fdb35](https://github.com/Boym323/AirRadarV2/commit/f07fdb
 > Jde o vývojové statistiky repozitáře, nikoli o výkon živého radaru. Funkce se počítají jen ze strojové matice s důkazem testu. Úspěšná CI sama o sobě nedokazuje dokončení funkcí.
 <!-- AIRRADAR_STATS_END -->
 
+## Kontinuální DEV nasazování z main
+
+Po jednorázové aktivaci root-owned timeru bude DEV LXC samo přebírat SHA-ověřené balíčky z úspěšného GitHub CI main a kontrolovat Rust/web s rollbackem. Viz [instalační postup](docs/runbooks/DEV-MAIN-AUTODEPLOY.md). **Zatím jde o připravený mechanismus, nikoliv prokázaný automatický deploy.**
+
 ## Česká zadání a vývoj
 
 | Soubor | Účel |
