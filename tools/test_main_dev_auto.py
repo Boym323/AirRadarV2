@@ -148,6 +148,7 @@ class MainDeploySafety(unittest.TestCase):
             "OnUnitInactiveSec=1min", "OnBootSec=1min",
             "RandomizedDelaySec=0", "AccuracySec=1s", "User=root",
             "G13_SOURCE_REF", "airradarv2-main-deploy.timer",
+            "právě běží DEV nasazení",
         ):
             self.assertIn(keyword, poll)
         self.assertNotIn("ssh ", poll)

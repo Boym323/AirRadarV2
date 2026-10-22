@@ -29,6 +29,15 @@ systemctl is-active --quiet airradarv2-engine.service
 grep -qF 'ExecStart=/opt/airradar-v2/current/airradarv2-engine' \
   /etc/systemd/system/airradarv2-engine.service || exit 1
 
+# Do not replace the root-owned deployment script while it is actively
+# switching a release or performing a rollback. Retry when it is idle.
+existing="$(systemctl show -p ActiveState --value airradarv2-main-deploy.service 2>/dev/null || true)"
+if [[ "$existing" == active || "$existing" == activating || "$existing" == reloading ]]; then
+  echo "ERROR: právě běží DEV nasazení; neprováděj aktualizaci agentu současně" >&2
+  exit 75
+fi
+
+
 tmp="$(mktemp -d)"
 trap 'rm -rf -- "$tmp"' EXIT
 base="https://raw.githubusercontent.com/Boym323/AirRadarV2/$G13_SOURCE_REF/deploy"
