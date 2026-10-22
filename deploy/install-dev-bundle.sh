@@ -80,6 +80,8 @@ if [ -L "$base/current" ]; then
   [[ "$old" == "$base/releases/"* && -d "$old" ]] || { echo "ERROR: current mimo DEV releases" >&2; exit 1; }
 fi
 activated=0
+health_tmp="$(mktemp)"
+web_tmp="$(mktemp)"
 
 rollback() {
   exit_code="$1"
@@ -99,6 +101,7 @@ rollback() {
   fi
   fi
   if [ -d "$work" ]; then rm -rf -- "$work"; fi
+  rm -f -- "$health_tmp" "$web_tmp"
   exit "$exit_code"
 }
 trap 'rollback "$?"' EXIT
@@ -149,8 +152,8 @@ systemctl reload nginx
 # Health check accepts G-00 bootstrap or explicit G-03+ state (never stale fake live).
 ready=0
 for attempt in $(seq 1 25); do
-  if curl -fsS --max-time 3 http://127.0.0.1:4101/api/v1/health -o "$work/health.json" 2>/dev/null &&
-     python3 - "$work/health.json" <<'PY'
+  if curl -fsS --max-time 3 http://127.0.0.1:4101/api/v1/health -o "$health_tmp" 2>/dev/null &&
+     python3 - "$health_tmp" <<'PY'
 import json,sys
 try:
     with open(sys.argv[1],encoding="utf-8") as f:
