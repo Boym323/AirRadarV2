@@ -31,6 +31,9 @@ jobs:
           python3 -m unittest discover -s tools -p 'test_g02_live_soak.py'
           python3 -m unittest discover -s tools -p 'test_g02_live_auto.py'
           bash -n deploy/install-g02-live-auto.sh
+          bash -n deploy/install-dev-bundle.sh deploy/install-main-dev-auto.sh
+          python3 -m py_compile deploy/main-dev-auto-pull.py
+          python3 -m unittest discover -s tools -p 'test_main_dev_auto.py'
           python3 -m unittest discover -s tools -p 'test_g02_live_install.py'
           python3 -m py_compile deploy/g02-auto-pull.py
           python3 -m unittest discover -s tools -p 'test_g02_auto_pull.py'
