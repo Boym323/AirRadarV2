@@ -126,6 +126,7 @@ def main():
     parser.add_argument("--port", type=int, default=30005)
     parser.add_argument("--sha", required=True)
     parser.add_argument("--seconds", type=int, default=3600)
+    parser.add_argument("--request-id", type=int, default=0)
     args = parser.parse_args()
     receiver = validate_receiver(args.receiver, args.port)
     if args.seconds != 3600:
@@ -203,7 +204,7 @@ def main():
         report = evaluate(lines, duration=elapsed, peak_rss=peak,
                           cpu_percent=cpu_percent, ended_early=ended_early)
         report.update(
-            sha=args.sha, startedAtUtc=started,
+            sha=args.sha, requestRunId=args.request_id, startedAtUtc=started,
             endedAtUtc=dt.datetime.now(dt.timezone.utc).isoformat(),
             source="read-only Beast TCP output / LAN (adresa neveřejná)",
             mode="real BEAST / no JSON, DB, HTTP, API, SSE or V1 changes",
