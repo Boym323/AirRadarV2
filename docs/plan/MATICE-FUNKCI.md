@@ -6,16 +6,16 @@ Tento soubor se generuje ze `contracts/feature-matrix.json` a obsahuje výhradn�
 
 | ID | Oblast | Funkce | Stav | Testovací důkazy |
 |---|---|---|---|---|
-| `J01` | Místní příjem | Příjem lokálních letadel přes readsb JSON · základ systému | `NOT_STARTED` | — |
-| `J02` | Místní příjem | Přímý příjem lokálních BEAST TCP rámců | `NOT_STARTED` | — |
-| `J03` | Místní příjem | Rust akcelerace BEAST parseru a CRC24 | `NOT_STARTED` | — |
-| `J04` | Místní příjem | Automatické přepínání BEAST / JSON při výpadku | `NOT_STARTED` | — |
-| `J05` | Místní příjem | Správa živého stavu letadel v RAM · základ systému | `NOT_STARTED` | — |
+| `J01` | Místní příjem | Příjem lokálních letadel přes readsb JSON · základ systému | `TESTED` | G-02 JSON fixture+temp-file a společný replay, CI #39769323592 |
+| `J02` | Místní příjem | Přímý příjem lokálních BEAST TCP rámců | `TESTED` | G-02 BEAST TCP fragmentation+loopback reconnect, CI #39769323592, G-02 realny BEAST 60min read-only DEV LXC, GitHub #39795592425, SHA d0cefc4a |
+| `J03` | Místní příjem | Rust akcelerace BEAST parseru a CRC24 | `TESTED` | G-02 DF17 CRC24, TC19, CPR a negativní parity, CI #39769323592, G-02 realny BEAST 60min read-only DEV LXC, GitHub #39795592425, SHA d0cefc4a |
+| `J04` | Místní příjem | Automatické přepínání BEAST / JSON při výpadku | `TESTED` | G-02 JSON/BEAST interleaving, connect/disconnect a source health, CI #39769323592 |
+| `J05` | Místní příjem | Správa živého stavu letadel v RAM · základ systému | `TESTED` | G-02 jediný RadarState, TTL a stres 5000 identit, CI #39769323592, G-02 realny BEAST 60min read-only DEV LXC, GitHub #39795592425, SHA d0cefc4a |
 | `J06` | Místní příjem | Veřejné API aktuálních letadel · základ systému | `NOT_STARTED` | — |
 | `J07` | Místní příjem | Živý stream SSE V1 – celé snapshoty · základ systému | `NOT_STARTED` | — |
 | `J08` | Místní příjem | Optimalizovaný SSE V2 – delta aktualizace | `NOT_STARTED` | — |
 | `J09` | Místní příjem | Ukládání vzorkované historie do PostgreSQL | `NOT_STARTED` | — |
-| `J11` | Místní příjem | Kontinuita identity letadel, detekce výpadků a deduplikace · základ systému | `NOT_STARTED` | — |
+| `J11` | Místní příjem | Kontinuita identity letadel, detekce výpadků a deduplikace · základ systému | `TESTED` | G-02 identita, dedup, plausibilita, neplatné CRC a stale polohy, CI #39769323592, G-02 realny BEAST 60min read-only DEV LXC, GitHub #39795592425, SHA d0cefc4a |
 | `R01` | Mapa | Základní interaktivní mapa MapLibre · základ systému | `NOT_STARTED` | — |
 | `R03` | Mapa | Ikony letadel podle typu a směru | `NOT_STARTED` | — |
 | `R04` | Mapa | Popisky letadel a řízení jejich kolizí | `NOT_STARTED` | — |

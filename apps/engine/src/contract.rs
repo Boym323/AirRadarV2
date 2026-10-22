@@ -9,6 +9,60 @@ pub struct Position {
     pub lon: f64,
 }
 
+/// Volitelná telemetrie letadla, nikoli implicitní nuly při výpadku zdroje.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FlightData {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub altitude_baro_ft: Option<i32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ground_speed_kt: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub track_degrees: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vertical_rate_fpm: Option<i32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub on_ground: Option<bool>,
+}
+impl FlightData {
+    pub fn is_empty(&self) -> bool {
+        self.altitude_baro_ft.is_none()
+            && self.ground_speed_kt.is_none()
+            && self.track_degrees.is_none()
+            && self.vertical_rate_fpm.is_none()
+            && self.on_ground.is_none()
+    }
+    /// Záměrně přijímá jen ohraničené, konečné a fyzikálně uvěřitelné údaje.
+    pub fn from_readsb(row: &Value) -> Self {
+        let altitude_baro_ft = row
+            .get("alt_baro")
+            .and_then(Value::as_i64)
+            .and_then(|x| i32::try_from(x).ok())
+            .filter(|x| (-2000..=65000).contains(x));
+        let on_ground = match row.get("alt_baro") {
+            Some(Value::String(s)) if s == "ground" => Some(true),
+            Some(Value::Number(_)) if altitude_baro_ft.is_some() => Some(false),
+            _ => None,
+        };
+        let bounded = |name: &str, max: f64| {
+            row.get(name)
+                .and_then(Value::as_f64)
+                .filter(|v| v.is_finite() && (0.0..=max).contains(v))
+        };
+        Self {
+            altitude_baro_ft,
+            ground_speed_kt: bounded("gs", 1500.0),
+            track_degrees: bounded("track", 360.0).map(|v| v.rem_euclid(360.0)),
+            vertical_rate_fpm: row
+                .get("baro_rate")
+                .and_then(Value::as_i64)
+                .and_then(|x| i32::try_from(x).ok())
+                .filter(|x| (-15000..=15000).contains(x)),
+            on_ground,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Observation {
@@ -23,6 +77,8 @@ pub struct Observation {
     pub position: Option<Position>,
     pub callsign: Option<String>,
     pub squawk: Option<String>,
+    #[serde(default, skip_serializing_if = "FlightData::is_empty")]
+    pub telemetry: FlightData,
 }
 
 fn safe_age(value: Option<&Value>) -> Option<f64> {
@@ -137,6 +193,7 @@ pub fn normalize_readsb(
                 .filter(|s| !s.is_empty() && s.len() <= 8)
                 .map(str::to_owned),
             squawk,
+            telemetry: FlightData::default(),
         });
     }
     Ok(result)
@@ -162,6 +219,7 @@ pub fn beast_arrival(hex: &str, timestamp: f64, position: Position) -> Option<Ob
         position: Some(position),
         callsign: None,
         squawk: None,
+        telemetry: FlightData::default(),
     })
 }
 
@@ -183,6 +241,8 @@ pub struct PublicAircraft {
     pub stale: bool,
     pub callsign: Option<String>,
     pub squawk: Option<String>,
+    #[serde(default, skip_serializing_if = "FlightData::is_empty")]
+    pub telemetry: FlightData,
 }
 
 pub fn merge(state: &mut BTreeMap<String, PublicAircraft>, o: &Observation) -> &'static str {
@@ -197,6 +257,7 @@ pub fn merge(state: &mut BTreeMap<String, PublicAircraft>, o: &Observation) -> &
             stale: true,
             callsign: None,
             squawk: None,
+            telemetry: FlightData::default(),
         });
 
     // Fyzikální plausibilita se rozhodne DŘÍVE než jakákoliv mutace.
@@ -235,6 +296,21 @@ pub fn merge(state: &mut BTreeMap<String, PublicAircraft>, o: &Observation) -> &
         }
         if let Some(squawk) = &o.squawk {
             item.squawk = Some(squawk.clone());
+        }
+        if let Some(v) = o.telemetry.altitude_baro_ft {
+            item.telemetry.altitude_baro_ft = Some(v);
+        }
+        if let Some(v) = o.telemetry.ground_speed_kt {
+            item.telemetry.ground_speed_kt = Some(v);
+        }
+        if let Some(v) = o.telemetry.track_degrees {
+            item.telemetry.track_degrees = Some(v);
+        }
+        if let Some(v) = o.telemetry.vertical_rate_fpm {
+            item.telemetry.vertical_rate_fpm = Some(v);
+        }
+        if let Some(v) = o.telemetry.on_ground {
+            item.telemetry.on_ground = Some(v);
         }
     }
     if result == "updated" {

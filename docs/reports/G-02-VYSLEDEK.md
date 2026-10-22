@@ -1,13 +1,15 @@
 # G-02 — průběžný výsledkový report implementace lokálního ingestu
 
-**Datum:** 22. 10. 2026. **Stav:** **ROZPRACOVÁNO; zatím NEPŘEVZATO jako celá etapa**.  
-**Nasazená verze v DEV LXC:** `227a8619b590d2c536761ffefc75cd0a5633936c` — zůstává G-00/G-01, tento nový G-02 kód **není nasazen**.  
-**Ověřený GitHub základ G-02:** [`18fcbed9039207b3b83fcc28558ca6c5b0cc363f`](https://github.com/Boym323/AirRadarV2/commit/18fcbed9039207b3b83fcc28558ca6c5b0cc363f).  
-**CI:** [#39762483657](https://github.com/Boym323/AirRadarV2/actions/runs/39762483657), všechny **3/3 joby PASS**, 22 Rust testů PASS, Rustfmt, Clippy, Vite/TS a kontrakty. Bez reálného ADS-B receiveru a DB.
+**Datum:** 22. 10. 2026. **Stav:** **HOTOVO — 11/11 testově doloženo, GitHub LIVE read-only PASS**, bez produkčního nasazení G-02 API.  
+**Veřejná webová služba v DEV LXC:** `227a8619b590d2c536761ffefc75cd0a5633936c` — zůstává G-00/G-01, tento nový G-02 kód **není nasazen**.  
+**Ověřený historický základ G-02:** [`18fcbed9039207b3b83fcc28558ca6c5b0cc363f`](https://github.com/Boym323/AirRadarV2/commit/18fcbed9039207b3b83fcc28558ca6c5b0cc363f).  
+**Historické CI:** [#39762483657](https://github.com/Boym323/AirRadarV2/actions/runs/39762483657), 22 Rust testů PASS. **Novější CI:** [#39769778992](https://github.com/Boym323/AirRadarV2/actions/runs/39769778992), 26 Rust testů PASS, 3/3 joby PASS (včetně dokumentace); oba běhy bez reálného ADS-B receiveru a DB.
 
-## Doložená implementace
+## Historický mezistav před doplněním implementace
 
-| Krok | Stav | Důkaz a omezení |
+Následující tabulka zachycuje starší průběžnou kontrolu; **aktuální testové výsledky a 10/11 doložených kroků jsou v závěrečné části „Implementační dokončení a měření CI“ níže.**
+
+| Krok | Historický stav | Důkaz a tehdejší omezení |
 |---|---|---|
 | G-02.01 Rozdělení modulů | **PASS** | `apps/engine/src/ingest/{mod,json,beast,mode_s,state,supervisor}.rs`; testy izolované od V1 |
 | G-02.02 JSON adapter | **PASS** | asynchronní čtení souboru, 4MiB limit, parse/clock validace, chybné soubory, fixture a skutečný temp-file test |
@@ -58,3 +60,110 @@ Tyto hodnoty měří **opakování fixture**, nikoli skutečné 1×/2×/4× ADS-
 Při revizi bylo opraveno **uvolňování interní mapy `position_quality` společně s expirovaným `tracks`**. Bez toho mohla tato pomocná RAM evidence růst s počtem historicky pozorovaných identit i po vypršení 60s TTL. Regresní test `ingest::state::tests::replay_dedup_and_ttl` nyní kontroluje, že po expiraci jsou **obě mapy prázdné**. Důkaz: [CI 39763140573](https://github.com/Boym323/AirRadarV2/actions/runs/39763140573), **3/3 PASS** na [commitu `be564960`](https://github.com/Boym323/AirRadarV2/commit/be56496015f744a2d5b16fd68bebb1f8ca0d815d). Tento konkrétní test neprokazuje dlouhodobý soak ani všechny podmínky G-02.11.
 
 **Stav zůstává ROZPRACOVÁNO**: dokončené a ověřené jsou pouze uvedené dílčí kroky, nasazené LXC stále provozuje dřívější stabilní základ.
+
+## Implementační dokončení a měření CI — 22. 10. 2026
+
+**Kód SHA:** [`81a27295d78753a6a3d987e7d68d6b8394c12ef5`](https://github.com/Boym323/AirRadarV2/commit/81a27295d78753a6a3d987e7d68d6b8394c12ef5). **Testy:** [GitHub Actions #39769323592](https://github.com/Boym323/AirRadarV2/actions/runs/39769323592), 3/3 joby PASS; `cargo fmt`, Clippy `-D warnings`, **26 Rust testů**, offline JSON+BEAST replay, Vite lint/typecheck/test/build a dokumentační validace PASS.
+
+**Nově doložené G-02.04/.05/.06/.08/.10:** konzervativní DF17 CRC a barometrická výška (Q=1), TC19 rychlost/heading/vertikální rychlost; odmítnutí nedůvěryhodných AP rámců, lokální CPR jen s čerstvou trusted JSON polohou; typovaná validovaná readsb telemetrie; jeden RAM konzument pro oba transporty; test přechodu JSON/BEAST, TCP reconnectu a zdraví zdrojů. Deterministické CLI `--g02-replay` nyní pokrývá oba transporty a chybný CRC případ.
+
+### GitHub CI syntetické replay měření (debug profil, Ubuntu 24.04 x86-64, nikoli cílové LXC)
+
+| Test | Opakování/pozorování | Celkem | p95 | RSS na konci | CPU ticks |
+|---|---:|---:|---:|---:|---:|
+| Fixture 1× | 1 000 průchodů | 174,7 ms | 182 µs/průchod | 5 920 KiB | 18 |
+| Fixture 2× | 2 000 průchodů | 348,6 ms | 182 µs/průchod | 5 944 KiB | 34 |
+| Fixture 4× | 4 000 průchodů | 697,4 ms | 181 µs/průchod | 5 972 KiB | 70 |
+| 5 000 identit 1× | 45 000 syntetických pozorování | 101,8 ms | 10 808 µs/dávka 5 000 | 8 812 KiB | 10 |
+| 5 000 identit 2× | 85 000 syntetických pozorování | 184,7 ms | 10 708 µs/dávka 5 000 | 8 812 KiB | 18 |
+| 5 000 identit 4× | 165 000 syntetických pozorování | 355,5 ms | 10 812 µs/dávka 5 000 | 8 812 KiB | 36 |
+
+**Metodika:** `--g02-benchmark` čte `/proc/self/status` pro RSS a `/proc/self/stat` jako raw ticks. První tři řádky časují celý syntetický JSON+BEAST replay 3 letadel. Poslední tři řádky časují dávky 5 000 unikátních identit během 8/16/32 cyklů (bez SDR, TCP, databáze a webu); po naplnění stavu úmyslně vloží 5 001. identitu a ověří 1 odmítnutí kapacity i úplné TTL odstranění. Nejde o měření skutečného rádio toku ani o důkaz provozního CPU/RAM limitu cílového 1vCPU DEV LXC. Žádná úspora SSD/IOPS nebyla měřena. Šest funkcí M01 je **TESTED**, ne **ACCEPTED**.
+
+**Zbývající povinná přejímka G-02.11:** bezpečně a izolovaně spustit tuto binárku `--g02-benchmark` a dlouhodobý soak/reconnect na cílovém DEV LXC; zaznamenat SHA binárky, počet vCPU/RAM, CPU/RSS, ztráty a p95 a ověřit chování na vybraném lokálním testovacím vstupu. Stávající službu G-00/G-01 zatím nevyměňovat. Bez testu na cílovém LXC **není G-02 finálně HOTOVO**.
+
+**Reprodukovatelný postup testu na cílovém 1vCPU DEV LXC:** [G-02.11 runbook](../runbooks/G-02-DEV-LXC-PREJIMKA.md). Dokud není doložen výstup těchto kroků, G-02 zůstává 10/11.
+
+### Automatizace přejímky G-02.11 (návrh; NENASAZENO)
+
+Bezpečné [automatické DEV ověření](../runbooks/G-02-AUTOMATICKA-PREJIMKA.md) zahrnuje SHA-pripnuté prerelease balíčky z důvěryhodného GitHub CI a odchozí rootless pull časovač v samostatném DEV LXC. JSON report přes existující privátní Nginx. Samotná instalace skriptu v LXC, syntetické výsledky přímo v LXC a reálný dlouhodobý BEAST/JSON soak zůstávají **NEOVĚŘENO**. Nepovažovat za přijetí G-02.
+
+## Výsledek automatického offline benchmarku přímo z DEV LXC — 22. 10. 2026
+
+**První brána G-02.11 = PASS (syntetická zátěž).** Uživatel 22. 10. 2026 doložil výstup `curl -i https://airradarv2.pomykal.cz/g02-status.json` z Macu: HTTP 200, JSON `status=PASS_SYNTHETIC_LXC`, `replay=PASS`, `benchmark=PASS`. Přímé nezávislé načtení veřejného endpointu z prostředí asistenta nebylo možné (síťový přístup omezen). Tento záznam vychází z **uživatelem předaného skutečného výstupu**, nikoli z odhadu nebo reprodukce na GitHub runneru.
+
+- **Testovaný SHA binárky:** `daa15703610b219b5b413319a4920659e19a8694`.
+- **UTC:** `2026-10-22T12:02:06.838135+00:00` (= 14:02 SELČ), publikovaný HTTP výstup ze 14:10 SELČ.
+- **Prostředí:** samostatný DEV LXC; `visibleCpuCount=1`; `cpuQuota=max 100000` (bez cgroup CPU quota; přímá verifikace affinity/cpuset zatím chybí).
+- **Sestavení:** [GitHub Actions #39774198432](https://github.com/Boym323/AirRadarV2/actions/runs/39774198432) (opakovaný PASS 26 Rust + 3 Python testy), [SHA-pripnutý release](https://github.com/Boym323/AirRadarV2/releases/tag/g02-dev-daa15703610b219b5b413319a4920659e19a8694).
+- **Metoda:** release Rust binárka `--g02-replay` a `--g02-benchmark` mimo běžící systemd aplikaci; žádný živý readsb/BEAST, DB, API, SSE ani zápisy historických dat.
+
+| Offline scénář | Celkem | p95 na průchod/dávku | RSS | CPU raw ticks |
+|---|---:|---:|---:|---:|
+| Fixture replay 1× (1 000 průchodů) | 24,2 ms | 26 µs | 2 332 KiB | 2 |
+| Fixture replay 2× (2 000 průchodů) | 47,5 ms | 24 µs | 2 364 KiB | 5 |
+| Fixture replay 4× (4 000 průchodů) | 99,5 ms | 38 µs | 2 392 KiB | 10 |
+| 5 000 identit 1× (45 000 pozorování) | 23,4 ms | 2 399 µs/dávka 5 000 | 5 236 KiB | 2 |
+| 5 000 identit 2× (85 000 pozorování) | 40,9 ms | 2 546 µs/dávka 5 000 | 5 256 KiB | 4 |
+| 5 000 identit 4× (165 000 pozorování) | 77,0 ms | 2 467 µs/dávka 5 000 | 5 256 KiB | 8 |
+
+`--g02-replay`: 3 tracky / 3 aktualizace / 1 duplicita / 0 konfliktů. U všech tří 5 000-track variant `drops=1` je **úmyslný negativní kapacitní test 5 001. identity**. RSS z `/proc/self/status` je hodnota příslušného krátkého testu; raw ticks z `/proc/self/stat` nepřevádět na procenta CPU bez metodiky HZ a wall-clock/cgroup evidence. Neprokazuje maximální paměť ani CPU za hodinový soak. Není metodicky správné přímo porovnávat výsledky s **debug** profilem předchozích GitHub CI měření: LXC testuje `--release` optimalizovanou binárku.
+
+**Přejímací závěr:** Offline replay a syntetické testy na cílovém LXC úspěšné, bez požadavku na ruční přenos binárky. **Druhá brána G-02.11 zůstává NEOVĚŘENO:** bezpečný reálný JSON/BEAST long-running soak, reconnect, bounded RAM/CPU a kontrola provozních dropů. Pořád **G-02 = 10/11, ROZPRACOVÁNO; J01/J02/J03/J04/J05/J11 = TESTED**, ne ACCEPTED. Nejde o doklad automatického nasazení G-02 do běžícího webu a nebyl proveden zásah do V1.
+
+## Nový automatizovaný izolovaný TCP/JSON soak — čeká na důkaz z cílového LXC
+
+V kroku **G-02.11 (J02/J03/J04/J05/J11)** rozšiřuje `--g02-benchmark` následný integrační scénář `isolated-loopback soak`: skutečný `poll_beast` přes TCP `127.0.0.1:0`, fragmentované golden rámce, šest uměle ukončených socketů, automatický reconnect, skutečný `poll_json` nad náhodným izolovaným testovacím souborem, jeho poškození a oprava, jediná RAM identita, bounded fronta, TTL a výpis p95 do `benchmarkLog`. Test nečte V1, reálný readsb, DB ani nepřepíná DEV service. **Zapsaná specifikace není sama o sobě PASS:** zatím čeká na úspěšné nové CI a výstup na cílovém DEV LXC pro přesný nový SHA. Dlouhý hodinový soak fyzického přijímače je samostatná nepřevzatá část.
+
+### Prodloužení G-02.11 soak na skutečných 180 sekund release binárky
+
+V optimalizovaném **release** sestavení provádí nově integrovaný izolovaný loopback test skutečný časový běh **180 sekund** s opakovaným BEAST TCP fragment/reconnect; CI debug test stejné logiky běží nejméně 5 sekund. Měří počty TCP up/down, BEAST frame, JSON výpadků, chyb fronty, p95 zpracování, RSS na začátku/špičce a TTL. Stávající DEV LXC agent má timeout 300 sekund pro `--g02-benchmark` a systemd maximum 600 sekund, takže **bez aktualizace agenta** novou binárku při novém SHA vyhodnotí. Hodinový test skutečného readsb a plné G-02.11 jsou nadále neověřené. Na LXC zatím nelze předem tvrdit PASS.
+
+### Připraveno automatické externí ověření z GitHub Actions
+
+Samostatný job [G-02 DEV kandidát](../../.github/workflows/g02-dev-candidate.yml) nyní po vydání balíčku čte veřejný `g02-status.json`, nepoužívá V1 ani žádná tajemství a kontroluje **přesnou shodu plného SHA** plus 180s loopback a RAM/reconnect kritéria. Před úspěchem jobu pro aktuální commit zůstává vzdálená evidence **NEOVĚŘENO**. Automatické potvrzení samo o sobě není 60min provozní test skutečného receiveru.
+
+
+## Připraven skutečný 60min BEAST read-only soak — NEPROVEDENO
+
+Pro G-02.11 připraven samostatný [návod s omezenými oprávněními](../runbooks/G-02-SKUTECNY-BEAST-SOAK.md) a [orchestrátor testu](../../deploy/g02-live-soak.py), využívající pouze BEAST TCP read-only výstup a SHA-připnutý kandidát. Jeho výsledky bude po celých 3600 sekund ověřeného provozu možné sledovat v existujícím veřejném status JSON jako liveSoak. **Zatím nemáme skutečný výsledek; G-02 stále 10/11, TESTED.**
+
+## Příprava přímého spuštění z GitHub Actions — NEAKTIVOVÁNO
+
+Doplněn [gitHub-driven read-only live runbook](../runbooks/G-02-GITHUB-AUTOMATICKY-LIVE.md) a nový systemd pull agent s jednorázovým instalačním skriptem. GitHub workflow bude v `main`, agent polling bude aktivní až po instalaci. Dokud reálný 60min BEAST test neproběhne s přesným SHA a GitHub run ID a nebudou vyhodnocené skutečné metriky, G-02 zůstává **10/11 / TESTED**.
+
+## Živý read-only BEAST příjem nyní prokazatelně RUNNING (audit správce 22. 10. 2026)
+
+Audit DEV LXC `lo-dev-airradarv2` doložil funkční GitHub → systemd agent → skutečný BEAST output čtecí stream (konkrétní interní IP záměrně do veřejné dokumentace nepřenášet). Test `--sha d0cefc4a5c3332eadccf8ab21c96bae51987abe9 --request-id 39795592425 --seconds 3600`: aktuálně **RUNNING**, `preferred=Beast` 591 vzorků, `updates=16532`, `channel_drops=0`, `capacity_drops=0`, `peak tracks=66`. Veřejný `liveSoak` report se shoduje s lokálním souborem a odpovídá run ID. Běžící test ještě není PASS a **G-02 10/11**.
+
+Odhalená systémová závada pouze v limitaci časovače: `RuntimeMaxSec=3900` nemá účinek na `Type=oneshot`. Nový instalátor používá `TimeoutStartSec=3900`; je třeba aktualizovat již nainstalovanou jednotku **až po skončení aktuálního testu**, aby se neohrozil běh. Samotný Python má aktivní timeout 3800 s.
+
+## Závěrečná provozní přejímka G-02.11 — PASS (22. 10. 2026)
+
+**Tento oddíl je závěrečný platný stav a nahrazuje historické poznámky „NEPROVEDENO“, „RUNNING“ a „10/11“ výše.**
+
+**Důkaz:** [GitHub Actions run #39795592425, job 119882086885](https://github.com/Boym323/AirRadarV2/actions/runs/39795592425/job/119882086885) — oba joby `SUCCESS`, poslední kontrolní log z **2026-10-22 15:29:27 UTC = 17:29:27 SELČ**:
+
+```text
+PASS: 60min readonly BEAST na DEV LXC pro přesný SHA a ID.
+CPU=0.36% RSS_peak=2492KiB tracks_peak=77 pozorování=109154
+```
+
+| Metodika / ukazatel | Prokazatelný výsledek |
+|---|---|
+| Lokalita | Samostatný AirRadarV2 DEV LXC, Debian 13, 1 vCPU, 8 GiB RAM; výhradně read-only TCP BEAST OUTPUT fyzického readsb přijímače |
+| Kód Rust ingestu | neměnný G-02 release SHA `d0cefc4a5c3332eadccf8ab21c96bae51987abe9` |
+| Jednorázový GitHub request | `39795592425`, přesná shoda požadavku a `liveSoak.requestRunId` v reportu |
+| Délka | Test nastaven na 3600 sekund, workflow vyžadovalo skutečných nejméně 3595 sekund |
+| Živě přijatá pozorování | **109 154** |
+| Maximum RAM tracků | **77** |
+| Průměr CPU procesu | **0,36 %** (z časových CPU ticks / 60min wall time; ne CPU hostu) |
+| Špičková residentní RAM procesu | **2 492 KiB** (~2,43 MiB; ne RAM celého LXC) |
+| Dropy kapacita / fronta | **0 / 0** |
+| Výsledek | **PASS_LIVE_BEAST_60MIN** a GitHub **SUCCESS** |
+
+GitHub workflow nezávisle načítá veřejný `g02-status.json` a ověřuje úplné SHA, jednoznačné request ID, délku, nenulová reálná pozorování, nulové dropy a < 256 MiB RSS. Za běhu byl z LXC auditorem doložen TCP ESTABLISHED a stovky skutečných `preferred=Beast` diagnostických vzorků. **Původní syntetický 180s loopback** a replay 1×/2×/4× jsou oddělené důkazy ([CI G-02 DEV #39781158565](https://github.com/Boym323/AirRadarV2/actions/runs/39781158565)); nelze je zaměňovat se skutečnou hodinovou přejímkou.
+
+**Rozhodnutí:** G-02.01–G-02.11 všechny testově doloženy; etapa G-02 může být označena **HOTOVO (11/11)**. Šest KEEP ID zůstává ve stavu `TESTED` — neděláme nepravdivý `ACCEPTED` za produktový deploy. Běžný web i HTTP/SSE na DEV LXC nadále funguje na G-00/G-01 bootstrapu; G-03 opt-in HTTP/SSE má vlastní vývojovou a testovací bránu. Reálný JSON failover, P95 RF→RAM a dlouhodobé provozní stability přesahující tento jednorázový 60min test **nebyly ověřeny**. Zásah do V1 ani DB nebyl proveden.
+
+**Následná nesouvisející provozní údržba:** instalovaný systemd `Type=oneshot` má stále neúčinné `RuntimeMaxSec=3900`; šablona v PR #7 již používá `TimeoutStartSec=3900`. Změnu aplikovat odděleně a ověřit `systemctl show ... -p TimeoutStartUSec`. Současný běh se úspěšně dokončil díky vlastnímu Python timeoutu 3800 s.

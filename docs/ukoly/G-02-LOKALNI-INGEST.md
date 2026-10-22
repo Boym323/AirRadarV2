@@ -1,6 +1,6 @@
 # G-02 — Lokální readsb/BEAST ingest a jediný RAM state
 
-**Stav:** **ROZPRACOVÁNO — 5/11 testově doložených kroků; ostatní částečné**. [Průběžný report](../reports/G-02-VYSLEDEK.md), [CI #39762483657](https://github.com/Boym323/AirRadarV2/actions/runs/39762483657).  
+**Stav:** **10/11 testově doložených kroků; G-02.11 má PASS offline benchmarku na DEV LXC, čeká dlouhodobý živý JSON/BEAST soak/reconnect**. [Průběžný report](../reports/G-02-VYSLEDEK.md), [aktuální CI #39769778992](https://github.com/Boym323/AirRadarV2/actions/runs/39769778992).  
 **Odpovědnost:** M01 — Rust/Tokio.  
 **Závislosti:** G-01 kontrakty a golden fixtures.  
 **Primární KEEP ID:** `J01`, `J02`, `J03`, `J04`, `J05`, `J11`.  
@@ -26,15 +26,15 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Implementace:** Implementuj asynchronní čtení, escapování 0x1A, délky typů a rekonstrukci po rozděleném TCP chunku.  
   **Ověření:** Golden test zvládne fragmentaci, více rámců v chunku i záměrně poškozený vstup.
 
-- [ ] **G-02.04 — Mode-S a CRC24**  
+- [x] **G-02.04 — Mode-S a CRC24**  
   **Implementace:** Dekóduj pouze potřebná pole a DF, správně odliš PI/AP/CRC podle typu zprávy; chybný rámec bez důkazu nepovyšuj na spolehlivý údaj.  
   **Ověření:** Ověř soulad s fixture a známými vektory Mode-S, včetně špatné parity.
 
-- [ ] **G-02.05 — Poloha a CPR**  
+- [x] **G-02.05 — Poloha a CPR**  
   **Implementace:** Zpracuj korektní párování CPR a časovou/fyzikální plausibilitu; pokud pozici nejde spolehlivě získat, vynechej ji.  
   **Ověření:** Test pokryje jednoprvkový CPR, lokální/globální dekódování a neplatné souřadnice.
 
-- [ ] **G-02.06 — Kanonický stav letadla**  
+- [x] **G-02.06 — Kanonický stav letadla**  
   **Implementace:** Založ jeden Rust vlastník track mapy, stabilní ID, freshness, výšku, rychlost, squawk a odlišená missing data.  
   **Ověření:** Syntetický replay generuje správný stav bez duplicit při změně callsign.
 
@@ -42,7 +42,7 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Implementace:** Nastav konfigurovatelné bounded TTL a odstranění stale tracků, spoj duplicitní pozorování a změř počet aktivních cílů.  
   **Ověření:** Replay se zpožděnými a obrácenými časy neobnoví starou chybnou polohu.
 
-- [ ] **G-02.08 — Arbitráž a fallback**  
+- [x] **G-02.08 — Arbitráž a fallback**  
   **Implementace:** Jeden supervisor volí platný BEAST nebo JSON při výpadku, restartuje spojení s omezeným backoff/jitter; obě cesty zapisují do stejné RAM.  
   **Ověření:** Test změní dostupnost zdrojů vícekrát a zachová jedinou identitu tracku.
 
@@ -50,11 +50,11 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Implementace:** Omez velikost TCP bufferu, JSON payloadu, počtu tracků a front; při zátěži zaznamenej drop a health bez blokace.  
   **Ověření:** Při syntetickém přetížení nepřibývá paměť neomezeně a klient dostane správný health.
 
-- [ ] **G-02.10 — Deterministický replay**  
+- [x] **G-02.10 — Deterministický replay**  
   **Implementace:** Připrav spustitelný lokální replay bez připojení na produkční readsb, který ověří všechna ID M01.  
   **Ověření:** CI cargo test a replay PASS, chybné zprávy způsobí explicitní chybu místo pádu.
 
-- [ ] **G-02.11 — Výkonová evidence**  
+- [x] **G-02.11 — Výkonová evidence**  
   **Implementace:** Změř na stejných fixture 1×, 2× a 4× tok, CPU, RSS, p95 ingest latence a reconnect; baseline zapiš do reportu.  
   **Ověření:** Report obsahuje SHA, hardware, testovací data, chyby, naměřené hodnoty a reziduální rizika.
 
@@ -77,6 +77,32 @@ Všechny kroky mají skutečné odkazy na důkazy a všechny této etapě primá
 
 Výchozí číselné limity jsou **neověřené konfigurace pro první test**, nikoli PASS. Všechny checkboxy a stav KEEP zachovat, dokud nevznikne reálný kód, fixture a testovací důkazy.
 
-## Průběžná implementace 22. 10. 2026
+## Historický průběžný stav před rozšířenými testy
 
-Detaily důkazů a otevřených invariantů obsahuje [G-02 report](../reports/G-02-VYSLEDEK.md). Zatím **nezaškrtávat** G-02.04/.05/.06/.08/.10/.11 — jsou pouze částečně ověřené. Žádná z šesti funkcí M01 nemá schválenou kompletní přejímku; nová verze G-02 není nasazená do DEV LXC, ten běží na bezpečně ověřeném G-00/G-01 vydání.
+Při předchozí kontrole byly G-02.04/.05/.06/.08/.10/.11 pouze částečně ověřené. **Tento historický stav byl pro G-02.04/.05/.06/.08/.10 aktualizován níže**, nikoli pro G-02.11. Kompletní provozní přejímka šesti funkcí M01 dosud neproběhla. G-02 není nasazena v DEV LXC, kde běží G-00/G-01.
+
+## Dodatečná přejímka implementace (22. 10. 2026)
+
+**CI:** [#39769323592](https://github.com/Boym323/AirRadarV2/actions/runs/39769323592), kód `81a27295d78753a6a3d987e7d68d6b8394c12ef5`: 3/3 joby PASS, **26 Rust testů PASS**, web/TS/build a validační dokumentace PASS. Offline `--g02-replay` nyní obsahuje skutečné syntetické JSON i BEAST DF17 zprávy, CRC negativní případ a jediný RAM state. Výška, rychlost, směr, vertikální rychlost a ground jsou volitelná validovaná pole. Lokální CPR vyžaduje čerstvou důvěryhodnou polohu stejného letadla. Kontrola source-health/fallback i loopback reconnect prochází testy.
+
+- **G-02.04/.05/.06/.08/.10: testováno** v tomto vymezeném DF17/readsb rozsahu, bez přidávání neschválených AP/DF dekodérů.
+- **G-02.11: nedokončeno.** GitHub CI měří navíc 5 000 různých identit při 1×/2×/4× syntetické zátěži; skutečné profilování na samostatném DEV LXC s 1 vCPU, stabilita při přetížení a dlouhodobý soak zatím nedoloženy.
+- `J01/J02/J03/J04/J05/J11` mají stav **TESTED**, nikoli `ACCEPTED`; celá etapa se do `HOTOVO` nepřeklápí před skutečnou G-02.11 přejímkou.
+- Nevznikla žádná produkční integrace, nasazení G-02 na DEV LXC ani změna V1, databáze či readsb.
+
+**Postup zbývajícího měření:** [G-02.11 — bezpečná DEV LXC přejímka](../runbooks/G-02-DEV-LXC-PREJIMKA.md).
+
+## Doložená první brána G-02.11 — DEV LXC 22. 10. 2026
+
+Přes automatický pull timer uživatel doložil `PASS_SYNTHETIC_LXC` na SHA `daa15703610b219b5b413319a4920659e19a8694`: 1 v systému viditelný CPU, p95 při dávce 5 000 unikátních identit 2,399/2,546/2,467 ms (1×/2×/4×), RSS 5 236–5 256 KiB a očekávané `drops=1` při vložení 5 001. tracku. [Kompletní metodika a čísla](../reports/G-02-VYSLEDEK.md#výsledek-automatického-offline-benchmarku-přímo-z-dev-lxc--22-10-2026). **Checkbox G-02.11 zůstává nevyplněný**, protože live-soak s reconnectem nebyl proveden. Měření není nasazení webového G-02 ingestu.
+
+## Závěrečná přejímka G-02.11 — PASS (22. 10. 2026, 17:29 SELČ)
+
+**Aktuální platný závěr (nahrazuje historická tvrzení „čeká“ výše): G-02 jako testovací etapa HOTOVO 11/11.** [GitHub Actions #39795592425](https://github.com/Boym323/AirRadarV2/actions/runs/39795592425) skutečně dočetla veřejný report ze samostatného DEV LXC, kontrolovala plný SHA `d0cefc4a5c3332eadccf8ab21c96bae51987abe9`, shodu `requestRunId=39795592425`, dobu běhu ≥ 3595 s, skutečná BEAST pozorování, nulové `channelDrops/capacityDrops` a RSS < 256 MiB. Kontrolní job skončil **SUCCESS v 17:29 SELČ**.
+
+- **Skutečný BEAST TCP read-only soak:** deklarovaných 3600 s, potvrzeno workflow validací ≥ 3595 s, `PASS_LIVE_BEAST_60MIN`. 109 154 reálných pozorování, max. 77 současných tracků, průměrné CPU testovacího procesu 0,36 % jednoho CPU, peak RSS 2 492 KiB, 0/0 dropů.
+- **Předchozí syntetické brány:** replay + 5000 identit 1×/2×/4×, izolovaný 180s loopback reconnect, podle [samostatného GitHub přejímacího běhu #39781158565](https://github.com/Boym323/AirRadarV2/actions/runs/39781158565) na shodném G-02 SHA.
+- **KEEP J01/J02/J03/J04/J05/J11:** zůstávají `TESTED` s doplněnými odkazy. `ACCEPTED` nesmí zastírat, že produkční veřejné API/SSE ani G-03 nebylo integrováno. JSON fallback testován synteticky, hodinový fyzický stream byl pouze BEAST — skutečný živý JSON failover samostatně neověřen.
+- **Provozní drobnost mimo přejímku G-02:** V nainstalované `Type=oneshot` jednotce je neúčinné `RuntimeMaxSec=3900`; opravený instalační vzor používá `TimeoutStartSec=3900`, ale přenos změny do LXC se ověří **samostatně po dokončeném soak testu**, bez restartu V1.
+
+[Podrobná závěrečná evidence](../reports/G-02-VYSLEDEK.md#závěrečná-provozní-přejímka-g-0211--pass-22-10-2026).

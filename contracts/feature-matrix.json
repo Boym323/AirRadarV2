@@ -19,41 +19,54 @@
       "id": "J01",
       "name": "Příjem lokálních letadel přes readsb JSON · základ systému",
       "decision": "KEEP",
-      "status": "NOT_STARTED",
-      "tests": [],
-      "notes": ""
+      "status": "TESTED",
+      "tests": [
+        "G-02 JSON fixture+temp-file a společný replay, CI #39769323592"
+      ],
+      "notes": "Readsb JSON parser otestován přes fixture a temp-file; 60min LIVE byl jen BEAST, nikoliv přepnutí na živý JSON."
     },
     {
       "id": "J02",
       "name": "Přímý příjem lokálních BEAST TCP rámců",
       "decision": "KEEP",
-      "status": "NOT_STARTED",
-      "tests": [],
-      "notes": ""
+      "status": "TESTED",
+      "tests": [
+        "G-02 BEAST TCP fragmentation+loopback reconnect, CI #39769323592",
+        "G-02 realny BEAST 60min read-only DEV LXC, GitHub #39795592425, SHA d0cefc4a"
+      ],
+      "notes": "Skutečný BEAST read-only 60min DEV LXC PASS: 109154 pozorování, 0/0 dropů, SHA d0cefc4a. Produktový deploy neproveden."
     },
     {
       "id": "J03",
       "name": "Rust akcelerace BEAST parseru a CRC24",
       "decision": "KEEP",
-      "status": "NOT_STARTED",
-      "tests": [],
-      "notes": ""
+      "status": "TESTED",
+      "tests": [
+        "G-02 DF17 CRC24, TC19, CPR a negativní parity, CI #39769323592",
+        "G-02 realny BEAST 60min read-only DEV LXC, GitHub #39795592425, SHA d0cefc4a"
+      ],
+      "notes": "CRC24/DF17 parity otestována synteticky; reálná BEAST cesta 60min PASS. AP/ostatní DF nadále mimo scope."
     },
     {
       "id": "J04",
       "name": "Automatické přepínání BEAST / JSON při výpadku",
       "decision": "KEEP",
-      "status": "NOT_STARTED",
-      "tests": [],
-      "notes": ""
+      "status": "TESTED",
+      "tests": [
+        "G-02 JSON/BEAST interleaving, connect/disconnect a source health, CI #39769323592"
+      ],
+      "notes": "Výpadky/reconnect a JSON/BEAST arbiter otestovány v replay/loopback; fyzická 60min brána pouze BEAST (live JSON fallback neověřen)."
     },
     {
       "id": "J05",
       "name": "Správa živého stavu letadel v RAM · základ systému",
       "decision": "KEEP",
-      "status": "NOT_STARTED",
-      "tests": [],
-      "notes": ""
+      "status": "TESTED",
+      "tests": [
+        "G-02 jediný RadarState, TTL a stres 5000 identit, CI #39769323592",
+        "G-02 realny BEAST 60min read-only DEV LXC, GitHub #39795592425, SHA d0cefc4a"
+      ],
+      "notes": "Jediný RAM stav, TTL a limit 5000 ověřeny synteticky; skutečný 60min BEAST test max 77 tracks, 0 dropů."
     },
     {
       "id": "J06",
@@ -91,9 +104,12 @@
       "id": "J11",
       "name": "Kontinuita identity letadel, detekce výpadků a deduplikace · základ systému",
       "decision": "KEEP",
-      "status": "NOT_STARTED",
-      "tests": [],
-      "notes": ""
+      "status": "TESTED",
+      "tests": [
+        "G-02 identita, dedup, plausibilita, neplatné CRC a stale polohy, CI #39769323592",
+        "G-02 realny BEAST 60min read-only DEV LXC, GitHub #39795592425, SHA d0cefc4a"
+      ],
+      "notes": "Identita a deduplikace ověřeny regresně; skutečný 60min BEAST příjem prošel bez kapacitních/frontových ztrát."
     },
     {
       "id": "R01",

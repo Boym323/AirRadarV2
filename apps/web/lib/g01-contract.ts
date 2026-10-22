@@ -1,5 +1,6 @@
 // G-01: stejný datový kontrakt jako Rust, bez živého přijímače nebo databáze.
 export type Position = { lat: number; lon: number };
+export type FlightData = { altitudeBaroFt?: number; groundSpeedKt?: number; trackDegrees?: number; verticalRateFpm?: number; onGround?: boolean };
 export type TimeBasis = "derived_readsb" | "receiver_utc" | "server_arrival" | "unknown";
 export type PositionOrigin = "adsb" | "mlat" | "tisb" | "rebroadcast" | "estimated" | "unknown";
 export type Observation = {
@@ -14,6 +15,7 @@ export type Observation = {
   position: Position | null;
   callsign: string | null;
   squawk: string | null;
+  telemetry?: FlightData;
 };
 export type PublicAircraft = {
   id: string;
@@ -24,6 +26,7 @@ export type PublicAircraft = {
   stale: boolean;
   callsign: string | null;
   squawk: string | null;
+  telemetry?: FlightData;
 };
 export type Snapshot = {
   kind: "snapshot"; epoch: string; seq: number; generatedAt: string;
@@ -109,7 +112,7 @@ export function parsePublicAircraft(data: unknown): PublicAircraft {
   if (!isObject(data) ||
     Object.keys(data).some(k => ![
       "id", "lastMessageAt", "lastPositionAt", "position", "positionOrigin",
-      "stale", "callsign", "squawk"
+      "stale", "callsign", "squawk", "telemetry"
     ].includes(k)) ||
     typeof data.id !== "string" || !keyRegex.test(data.id) ||
     !age(data.lastMessageAt) ||
@@ -121,7 +124,15 @@ export function parsePublicAircraft(data: unknown): PublicAircraft {
     !["adsb", "mlat", "tisb", "rebroadcast", "estimated", "unknown"].includes(String(data.positionOrigin)) ||
     typeof data.stale !== "boolean" ||
     (data.callsign !== null && (typeof data.callsign !== "string" || data.callsign.length > 8)) ||
-    (data.squawk !== null && (typeof data.squawk !== "string" || !/^[0-7]{4}$/.test(data.squawk)))) {
+    (data.squawk !== null && (typeof data.squawk !== "string" || !/^[0-7]{4}$/.test(data.squawk))) ||
+    (data.telemetry !== undefined && (!isObject(data.telemetry) ||
+      Object.entries(data.telemetry).some(([k,v]) => {
+        if (k === "onGround") return typeof v !== "boolean";
+        if (!["altitudeBaroFt","groundSpeedKt","trackDegrees","verticalRateFpm"].includes(k) || !number(v)) return true;
+        if (k === "altitudeBaroFt") return !Number.isInteger(v) || v < -2000 || v > 65000;
+        if (k === "verticalRateFpm") return !Number.isInteger(v) || v < -15000 || v > 15000;
+        return v < 0 || v >= (k === "trackDegrees" ? 360 : 1500.00001);
+      })))) {
     throw new Error("Neplatné nebo neveřejné Aircraft DTO");
   }
   return data as PublicAircraft;

@@ -1,5 +1,5 @@
 //! G-02.02: atomický readsb JSON snapshot, velikostní/časové limity.
-use crate::contract::{Observation, normalize_readsb};
+use crate::contract::{FlightData, Observation, aircraft_key, normalize_readsb};
 use std::{
     path::Path,
     time::{SystemTime, UNIX_EPOCH},
@@ -29,8 +29,7 @@ pub async fn read_snapshot(
     if bytes.len() as u64 > MAX_JSON_BYTES {
         return Err("json size");
     }
-    let value: serde_json::Value = serde_json::from_slice(&bytes).map_err(|_| "json parse")?;
-    normalize_readsb(&value, receiver_id, wall_seconds())
+    parse_replay(&bytes, receiver_id, wall_seconds())
 }
 
 pub fn parse_replay(
@@ -42,7 +41,25 @@ pub fn parse_replay(
         return Err("json size");
     }
     let value = serde_json::from_slice(bytes).map_err(|_| "json parse")?;
-    normalize_readsb(&value, receiver_id, clock)
+    let mut observations = normalize_readsb(&value, receiver_id, clock)?;
+    let mut extras = std::collections::BTreeMap::new();
+    if let Some(rows) = value.get("aircraft").and_then(serde_json::Value::as_array) {
+        for row in rows {
+            if let Some(key) = row
+                .get("hex")
+                .and_then(serde_json::Value::as_str)
+                .and_then(aircraft_key)
+            {
+                extras.insert(key, FlightData::from_readsb(row));
+            }
+        }
+    }
+    for observation in &mut observations {
+        if let Some(info) = extras.get(&observation.aircraft_key) {
+            observation.telemetry = info.clone();
+        }
+    }
+    Ok(observations)
 }
 
 #[cfg(test)]
@@ -55,6 +72,11 @@ mod tests {
         assert_eq!(observations.len(), 3);
         assert_eq!(observations[0].aircraft_key, "icao:abc123");
         assert_eq!(observations[1].aircraft_key, "nonicao:abc123");
+        assert_eq!(observations[0].telemetry.altitude_baro_ft, Some(10000));
+        assert_eq!(observations[0].telemetry.ground_speed_kt, Some(180.0));
+        assert_eq!(observations[0].telemetry.track_degrees, Some(270.0));
+        assert_eq!(observations[2].telemetry.on_ground, Some(true));
+        assert_eq!(observations[2].telemetry.track_degrees, Some(0.0));
         assert!(
             parse_replay(
                 &vec![b' '; MAX_JSON_BYTES as usize + 1],

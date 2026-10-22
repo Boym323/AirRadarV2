@@ -6,7 +6,7 @@
 |---|---|---|
 | G-00 | Samostatný základ Rust + Vite/React | **HOTOVO — pouze scaffold** |
 | G-01 | [Kontrakty a deterministické fixture](../ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) | **HOTOVO — 10/10, CI PASS** |
-| G-02 | [Lokální ADS-B ingest a RAM](../ukoly/G-02-LOKALNI-INGEST.md) | **ROZPRACOVÁNO — Rust runtime a fixture testy** |
+| G-02 | [Lokální ADS-B ingest a RAM](../ukoly/G-02-LOKALNI-INGEST.md) | **HOTOVO — 11/11 TESTED, reálný 60min BEAST PASS; G-02 HTTP/SSE zatím nenasazeno** |
 | G-03 | [Verzované HTTP API a SSE](../ukoly/G-03-API-A-SSE.md) | NEZAHÁJENO |
 | G-04 | [Úsporná historie](../ukoly/G-04-POSTGRESQL-HISTORIE.md) | NEZAHÁJENO |
 | G-05 | [Živá mapa a základní ovládání](../ukoly/G-05-ZIVA-MAPA.md) | NEZAHÁJENO |
@@ -75,3 +75,15 @@ Připraven [ruční balíčkovací workflow](../../.github/workflows/dev-package
 ## Průběžný G-02 replay — 22. 10. 2026
 
 [Report G-02](../reports/G-02-VYSLEDEK.md): 5/11 kontrolovaných kroků PASS, zbytek rozpracován. [CI 39762483657](https://github.com/Boym323/AirRadarV2/actions/runs/39762483657) 3/3 PASS včetně 22 Rust testů a syntetických 1×/2×/4× měření. Nasazený LXC stále používá stabilní G-00/G-01 release. Žádné V1/readsb/DB změny.
+
+## Novější CI G-02 a oddělená přejímka
+
+Kód `81a27295d78753a6a3d987e7d68d6b8394c12ef5` má [CI #39769323592](https://github.com/Boym323/AirRadarV2/actions/runs/39769323592) **3/3 PASS**, **26 Rust testů PASS** a benchmark 5 000 syntetických identit. Kódy `J01/J02/J03/J04/J05/J11` mají v aktivní matici `TESTED`. Implementačních 10/11 kroků má testové důkazy. **G-02.11 a celá etapa zůstávají ROZPRACOVÁNO**, protože nebyla ověřena skutečná zátěž na cílovém DEV LXC. Současná instalace DEV LXC je nadále G-00/G-01, produkční V1 nedotčena.
+
+## Automatická první brána DEV LXC G-02.11 — 22. 10. 2026
+
+Doložen uživatelský výstup z `https://airradarv2.pomykal.cz/g02-status.json` (HTTP 200). Syntetický offline replay + 5 000 unikátních letadel na skutečném DEV LXC pro build `daa15703610b219b5b413319a4920659e19a8694` **PASS**, viditelný 1 CPU, p95 dávek 2,40–2,55 ms, RSS do 5 256 KiB. [Měření, provenance, metodika](../reports/G-02-VYSLEDEK.md#výsledek-automatického-offline-benchmarku-přímo-z-dev-lxc--22-10-2026). Nejde o HTTP/SSE/live-ingest test; zůstává G-02 **10/11, ROZPRACOVÁNO** do bezpečného dlouhodobého JSON/BEAST reconnect soak a vyhodnocení CPU/RAM. Produkční V1 se nemění.
+
+## G-02 závěrečná brána úspěšně uzavřena — 22. 10. 2026 v 17:29 SELČ
+
+Historické výše uvedené stavy `10/11` a `čeká LIVE` jsou nahrazeny skutečným výsledkem [GitHub run #39795592425](https://github.com/Boym323/AirRadarV2/actions/runs/39795592425) (`SUCCESS`): neměnný G-02 commit `d0cefc4a5c3332eadccf8ab21c96bae51987abe9`, 60min skutečný read-only BEAST stream, 109 154 pozorování, 77 peak tracků, nulové ztráty, CPU 0,36 %, RSS peak 2 492 KiB. Zároveň dříve potvrzený syntetický G-02 replay + 180s reconnect [#39781158565](https://github.com/Boym323/AirRadarV2/actions/runs/39781158565) PASS. **G-02 = 11/11 HOTOVO na úrovni vývojové/testovací etapy**, KEEP ID zůstávají `TESTED`; nasazení G-02 jako živého HTTP API, G-03 a provozní oprava systemd timeoutu zůstávají samostatné činnosti. [Závěrečný report](../reports/G-02-VYSLEDEK.md#závěrečná-provozní-přejímka-g-0211--pass-22-10-2026).

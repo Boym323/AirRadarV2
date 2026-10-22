@@ -1,5 +1,5 @@
 //! G-02.06/07/09: jediný vlastník kanonického AircraftState, žádné SQL.
-use crate::contract::{Observation, PublicAircraft, merge};
+use crate::contract::{FlightData, Observation, Position, PublicAircraft, merge};
 use std::collections::BTreeMap;
 
 pub const MAX_AIRCRAFT: usize = 5000;
@@ -46,7 +46,8 @@ impl RadarState {
             _ => 0,
         };
         // Nižší časová přesnost nesmí krátce po důvěryhodném JSON
-        // přepsat existující čerstvou polohu. Metadata však mohou pokračovat.
+        // přepsat ani čerstvou polohu, ani metadata. Jinak by novější
+        // server_arrival u BEAST přepsal kvalitnější readsb hodnoty.
         let masked = self
             .tracks
             .get(&observation.aircraft_key)
@@ -63,6 +64,9 @@ impl RadarState {
         if masked {
             incoming.position = None;
             incoming.position_at_utc = None;
+            incoming.callsign = None;
+            incoming.squawk = None;
+            incoming.telemetry = FlightData::default();
         }
         let result = merge(&mut self.tracks, &incoming);
         match result {
@@ -90,6 +94,16 @@ impl RadarState {
             .retain(|key, _| self.tracks.contains_key(key));
         self.counters.expired += (before - self.tracks.len()) as u64;
     }
+    /// Důvěryhodná čerstvá JSON poloha slouží jako kotva pro lokální CPR.
+    pub fn trusted_reference(&self, key: &str, now: f64) -> Option<Position> {
+        let aircraft = self.tracks.get(key)?;
+        if self.position_quality.get(key).copied().unwrap_or(0) < 2
+            || now - aircraft.last_position_at? > POSITION_FRESH_SECONDS
+        {
+            return None;
+        }
+        aircraft.position.clone()
+    }
     pub fn snapshot(&self, now: f64) -> Vec<PublicAircraft> {
         self.tracks
             .values()
@@ -106,6 +120,7 @@ impl RadarState {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::contract::FlightData;
     use crate::ingest::json::parse_replay;
     #[test]
     fn replay_dedup_and_ttl() {
@@ -130,6 +145,14 @@ mod tests {
         let mut state = RadarState::default();
         state.batch(&first);
         assert_eq!(state.tracks.len(), 3);
+        assert_eq!(
+            state.tracks["icao:abc123"].telemetry.altitude_baro_ft,
+            Some(10000)
+        );
+        assert_eq!(
+            state.tracks["icao:abc123"].telemetry.ground_speed_kt,
+            Some(180.0)
+        );
         state.batch(&second);
         assert_eq!(state.tracks.len(), 3);
         state.batch(&changed);
@@ -153,6 +176,11 @@ mod tests {
             "Pomocná RAM mapa nesmí leakovat"
         );
         assert_eq!(state.counters.expired, 3);
+        assert!(
+            state
+                .trusted_reference("icao:abc123", 1792627300.0)
+                .is_none()
+        );
     }
     #[test]
     fn cap_five_thousand() {
@@ -170,6 +198,7 @@ mod tests {
                 position: None,
                 callsign: None,
                 squawk: None,
+                telemetry: FlightData::default(),
             };
             state.apply(&data);
         }
@@ -193,7 +222,19 @@ mod tests {
         beast.message_at_utc = 1792627203.0;
         beast.position_at_utc = Some(1792627203.0);
         beast.position.as_mut().unwrap().lat = 49.901;
+        beast.callsign = Some("SPOOF".into());
+        beast.squawk = Some("7777".into());
+        beast.telemetry.ground_speed_kt = Some(999.0);
         state.apply(&beast);
+        assert_eq!(
+            state.tracks["icao:abc123"].callsign.as_deref(),
+            Some("TEST123")
+        );
+        assert_eq!(state.tracks["icao:abc123"].squawk.as_deref(), Some("7600"));
+        assert_eq!(
+            state.tracks["icao:abc123"].telemetry.ground_speed_kt,
+            Some(180.0)
+        );
         assert_eq!(
             state.tracks["icao:abc123"].position.as_ref().unwrap().lat,
             49.9
@@ -202,6 +243,15 @@ mod tests {
         beast.message_at_utc = 1792627220.0;
         beast.position_at_utc = Some(1792627220.0);
         assert_eq!(state.apply(&beast), "updated");
+        // Po vypršení důvěryhodné JSON freshness může převzít údaje BEAST.
+        assert_eq!(
+            state.tracks["icao:abc123"].callsign.as_deref(),
+            Some("SPOOF")
+        );
+        assert_eq!(
+            state.tracks["icao:abc123"].telemetry.ground_speed_kt,
+            Some(999.0)
+        );
         assert_eq!(
             state.tracks["icao:abc123"].position.as_ref().unwrap().lat,
             49.901
