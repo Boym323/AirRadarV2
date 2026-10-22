@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### Průzkum 22. 10. 2026
+- Dokončeny české technické návrhy pro PostgreSQL fyzický model, indexy a retenci 30/365 dní, off-LXC zálohy, readsb/BEAST a deduplikaci, 1Hz SSE s bounded frontami, MapLibre profilování, Playwright browser E2E a TLS/SCRAM spojení k existujícímu DB LXC.
+- Přidán [rozcestník](docs/plan/TECHNICKE-KONTRAKTY-A-LIMITY.md) a ADR 0006. Neprovedeno žádné SQL, nasazení, reálné Playwright E2E ani výkonový benchmark. Výběr 45 funkcí zůstává nezměněn.
+
+
 ### Přidáno
 - Detailní český krokový implementační plán `docs/plan/KROKOVY-IMPLEMENTACNI-PLAN.md`: **140 konkrétních kroků** v G-01 až G-13 s návaznostmi, definicí výstupu a odpovídajícími testy.
 - Všech 13 etapových MD zadání rozšířeno o zaškrtávací kroky `G-XX.YY`, bezpečnostní hranice a pravidla evidence PASS/FAIL; žádná z 45 funkcí není touto dokumentací označena jako hotová.

@@ -24,3 +24,7 @@
 ## Průběžná evidence
 
 Všechna čísla skutečného výkonu uváděj s metodikou a přesným SHA. Stav `TESTED`/`ACCEPTED` se udělí jen při doloženém testu. Po každé změně matice regeneruj český Markdown a spusť `node tools/check-docs.mjs`. Chybějící důkazy označ `NEOVĚŘENO`, nikoli `HOTOVO`.
+
+## Technické kontrakty
+
+Při každé práci na G-01 až G-11 zkontroluj [závazný rozcestník](docs/plan/TECHNICKE-KONTRAKTY-A-LIMITY.md) a příslušnou z šesti technických specifikací. Výchozí sampling, retenci, SSE limity, MapLibre render a PostgreSQL TLS/backup neměň bez konkrétního měření a českého ADR. Tyto návrhové hodnoty ještě nejsou naměřené ani implementované.

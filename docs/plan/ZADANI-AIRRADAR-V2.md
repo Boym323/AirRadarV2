@@ -53,3 +53,7 @@ Základní produkt tvoří: příjem readsb/BEAST, korektní identita a stav let
 ## 7. Etapy a navázání nového vlákna
 
 Realizace probíhá po jednotlivých českých zadáních [G-00 až G-13](ETAPY-A-STAV.md) a [140 konkrétních krocích G-XX.YY](KROKOVY-IMPLEMENTACNI-PLAN.md). Při každé etapě se aktualizuje `docs/reports/`, `CHANGELOG.md`, strojová matice, generovaný Markdown a měření. Ve vlákně začni čtením `AGENTS.md` a [ZAČNI ZDE](ZACNI-ZDE-NOVE-VLAKNO.md), nikoliv kopírováním starého projektu.
+
+## Technické limity a navazující průzkum
+
+Výchozí datový model, retence, návrhové parametry SSE, readsb/BEAST, mapy, Playwright a spojení LXC jsou v [šesti technických kontraktech](TECHNICKE-KONTRAKTY-A-LIMITY.md) a v [ADR 0006](../adr/0006-kontrakty-dat-streamu-mapy-a-lxc.md). Zůstává nutné jejich správnost ověřit v G-01 až G-11; samostatné DB LXC se touto rešerší neměnilo.

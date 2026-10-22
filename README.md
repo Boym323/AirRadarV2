@@ -97,3 +97,7 @@ Pro vývoj je nyní schváleno **45 aktivních funkcí**. Žádný produkční m
 ## PostgreSQL a statický provoz
 
 PostgreSQL v existujícím separátním LXC potřebuje vlastní databázi/role a bezpečně omezený síťový přístup: [postup](database/POSTGRES-LXC.md). Žádná DB nebyla v této etapě změněna. Vite produkuje `apps/web/dist/`, který bude v produkci poskytovat reverse proxy bez Node serveru; `npm run preview` je pouze kontrola buildu.
+
+## Konkretizace technologií před implementací (22. 10. 2026)
+
+[**Přesné technické kontrakty pro 6 oblastí**](docs/plan/TECHNICKE-KONTRAKTY-A-LIMITY.md) sjednocují PostgreSQL schéma/indexy/retenci/zálohy, readsb/BEAST a deduplikaci, SSE a limity paměti, výkonnost MapLibre, Playwright testy a bezpečné spojení LXC. Český [ADR 0006](docs/adr/0006-kontrakty-dat-streamu-mapy-a-lxc.md) je výchozím rozhodnutím. Parametry jsou **návrhem k měření, nikoli implementovaným produkčním řešením**.

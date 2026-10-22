@@ -13,6 +13,8 @@
 7. [CO-NEPREBIRAT-Z-V1.md](CO-NEPREBIRAT-Z-V1.md): pravidla greenfield minimalismu.
 8. [CHANGELOG.md](../../CHANGELOG.md), pouze reporty související s aktuální etapou, a jediný úkol z `docs/ukoly/`.
 
+**Povinná technická příloha před G-01 až G-11:** [přesné kontrakty PostgreSQL, readsb/BEAST, SSE, MapLibre, Playwright a zabezpečení LXC](TECHNICKE-KONTRAKTY-A-LIMITY.md). Jsou to výchozí návrhové limity a jejich měřicí brány, nikoliv důkaz provozu.
+
 **Oddělený archiv budoucích návrhů není určen pro běžný vývoj**. Čti jej pouze na výslovnou žádost vlastníka, nikdy jej neimportuj do současné aplikace automaticky.
 
 ## Technologie: důležitý rozdíl mezi plánem a kódem
