@@ -122,7 +122,6 @@ jobs:
           mkdir -p "$incoming"
           staging="$incoming/${GITHUB_SHA}.${GITHUB_RUN_ID}"
           mkdir "$staging"
-          trap 'rm -rf -- "$staging"' EXIT
           release="$(curl -fsSL -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${GH_TOKEN}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/g02-dev-${GITHUB_SHA}")"
           jq -e --arg sha "$GITHUB_SHA" --arg name "$name" \
             '.tag_name == ("g02-dev-" + $sha) and .target_commitish == $sha and .prerelease == true and .draft == false and .author.login == "github-actions[bot]" and ([.assets[].name] | sort) == [$name, ($name + ".sha256")]' \
