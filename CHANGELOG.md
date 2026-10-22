@@ -5,7 +5,7 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 ## [Nepublikováno]
 
 ### G-02.11 — automatický loopback reconnect soak (čeká na CI a LXC)
-- Do existujícího `--g02-benchmark` přidán izolovaný skutečný TCP BEAST + JSON poll scénář s fragmentací, umělými EOF, obnovením spojení i chybným/opravovaným JSON souborem, kontrolami deduplikace, fronty a TTL.
+- Do existujícího `--g02-benchmark` přidán izolovaný skutečný TCP BEAST + JSON poll scénář s fragmentací, opakovanými EOF, obnovením spojení i chybným/opravovaným JSON souborem, kontrolami deduplikace, fronty, RSS a TTL. Release sestavení měří 180s, rychlý CI debug test nejméně 5s.
 - Stávající timer na DEV LXC při vydání nové verze spustí test bez přístupu k produkční V1; výsledky se objeví v `benchmarkLog` veřejného `/g02-status.json`. Skutečná čísla se doplní až po ověření, live-soak fyzického přijímače zůstává nepřevzatý.
 
 

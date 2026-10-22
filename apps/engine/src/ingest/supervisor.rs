@@ -312,10 +312,10 @@ pub async fn loopback_soak() -> Result<(), &'static str> {
         .await
         .map_err(|_| "soak temp JSON")?;
 
-    // Po šesti úmyslných EOF musí skutečný poll_beast znovu navázat TCP.
+    // Opakované úmyslné EOF: 5s rychlý CI, 180s skutečný DEV LXC soak.
     // Zprávu záměrně fragmentujeme přes escapovaný 0x1a bajt.
     let server = tokio::spawn(async move {
-        for _ in 0..6 {
+        for _ in 0..256 {
             let (mut socket, _) = time::timeout(Duration::from_secs(14), listener.accept())
                 .await
                 .map_err(|_| "soak tcp accept timeout")?
@@ -349,6 +349,19 @@ pub async fn loopback_soak() -> Result<(), &'static str> {
     };
     drop(tx);
     let clock = Instant::now();
+    let target = Duration::from_secs(if cfg!(debug_assertions) { 5 } else { 180 });
+    let rss_kib = || {
+        std::fs::read_to_string("/proc/self/status")
+            .ok()?
+            .lines()
+            .find(|line| line.starts_with("VmRSS:"))?
+            .split_whitespace()
+            .nth(1)?
+            .parse::<u64>()
+            .ok()
+    };
+    let initial_rss = rss_kib();
+    let mut peak_rss = initial_rss.unwrap_or(0);
     let mut state = RadarState::default();
     let mut cpr = CprCache::default();
     let mut sources = SourceArbiter::default();
@@ -360,9 +373,10 @@ pub async fn loopback_soak() -> Result<(), &'static str> {
     let mut malformed = false;
     let mut recovered = false;
     let mut latencies_us = Vec::new();
-    let result = time::timeout(Duration::from_secs(23), async {
+    let result = time::timeout(target + Duration::from_secs(20), async {
         loop {
             let elapsed = clock.elapsed();
+            peak_rss = peak_rss.max(rss_kib().unwrap_or(0));
             if elapsed >= Duration::from_secs(2) && !malformed {
                 tokio::fs::write(&path, b"{")
                     .await
@@ -381,6 +395,7 @@ pub async fn loopback_soak() -> Result<(), &'static str> {
                 && json_bad >= 1
                 && json_ok >= 2
                 && recovered
+                && elapsed >= target
             {
                 return Ok::<(), &'static str>(());
             }
@@ -433,7 +448,7 @@ pub async fn loopback_soak() -> Result<(), &'static str> {
     latencies_us.sort_unstable();
     let p95 = latencies_us[(latencies_us.len() * 95 / 100).min(latencies_us.len() - 1)];
     println!(
-        "G-02 isolated-loopback soak PASS: duration_ms={} tcp_connects={} tcp_eofs={} beast_frames={} json_ok={} json_fail={} queue_drops={} p95_receive_us={} tracks_after_ttl={} receiver=127.0.0.1(no V1/DB)",
+        "G-02 isolated-loopback soak PASS: duration_ms={} tcp_connects={} tcp_eofs={} beast_frames={} json_ok={} json_fail={} queue_drops={} p95_receive_us={} rss_start_kib={:?} rss_peak_kib={} tracks_after_ttl={} receiver=127.0.0.1(no V1/DB)",
         clock.elapsed().as_millis(),
         links_up,
         links_down,
@@ -442,6 +457,8 @@ pub async fn loopback_soak() -> Result<(), &'static str> {
         json_bad,
         drops.load(Ordering::Relaxed),
         p95,
+        initial_rss,
+        peak_rss,
         state.tracks.len()
     );
     Ok(())

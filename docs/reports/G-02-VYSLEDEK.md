@@ -114,3 +114,7 @@ Bezpečné [automatické DEV ověření](../runbooks/G-02-AUTOMATICKA-PREJIMKA.m
 ## Nový automatizovaný izolovaný TCP/JSON soak — čeká na důkaz z cílového LXC
 
 V kroku **G-02.11 (J02/J03/J04/J05/J11)** rozšiřuje `--g02-benchmark` následný integrační scénář `isolated-loopback soak`: skutečný `poll_beast` přes TCP `127.0.0.1:0`, fragmentované golden rámce, šest uměle ukončených socketů, automatický reconnect, skutečný `poll_json` nad náhodným izolovaným testovacím souborem, jeho poškození a oprava, jediná RAM identita, bounded fronta, TTL a výpis p95 do `benchmarkLog`. Test nečte V1, reálný readsb, DB ani nepřepíná DEV service. **Zapsaná specifikace není sama o sobě PASS:** zatím čeká na úspěšné nové CI a výstup na cílovém DEV LXC pro přesný nový SHA. Dlouhý hodinový soak fyzického přijímače je samostatná nepřevzatá část.
+
+### Prodloužení G-02.11 soak na skutečných 180 sekund release binárky
+
+V optimalizovaném **release** sestavení provádí nově integrovaný izolovaný loopback test skutečný časový běh **180 sekund** s opakovaným BEAST TCP fragment/reconnect; CI debug test stejné logiky běží nejméně 5 sekund. Měří počty TCP up/down, BEAST frame, JSON výpadků, chyb fronty, p95 zpracování, RSS na začátku/špičce a TTL. Stávající DEV LXC agent má timeout 300 sekund pro `--g02-benchmark` a systemd maximum 600 sekund, takže **bez aktualizace agenta** novou binárku při novém SHA vyhodnotí. Hodinový test skutečného readsb a plné G-02.11 jsou nadále neověřené. Na LXC zatím nelze předem tvrdit PASS.

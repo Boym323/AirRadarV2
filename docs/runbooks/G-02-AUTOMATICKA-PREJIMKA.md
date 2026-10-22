@@ -58,3 +58,5 @@ Uživatel dodal 22. 10. 2026 HTTP výstup z veřejné reverzní proxy: `/g02-sta
 ## Další automatický test při novém GitHub commitu
 
 Nová release binárka G-02.11 spouští po syntetickém 5 000-track benchmarku též integrovaný **loopback JSON/BEAST reconnect soak** bez externího přijímače. Není nutná opětovná instalace Python časovače, protože jeho stávající `--g02-benchmark` nyní zahrnuje i tento scénář. V `/g02-status.json` kontroluj v `benchmarkLog` řádek `G-02 isolated-loopback soak PASS: ...`, nikoli jen `status=PASS_SYNTHETIC_LXC`. Až tento řádek opravdu vznikne **na cílovém LXC**, doplníme číselné výsledky a rozhodneme o provozním live-soak. Tento test nenahrazuje test skutečného RF toku.
+
+Optimalizované `--g02-benchmark` nyní obsahuje **180 sekund** syntetického BEAST/JSON loopback provozu s reconnecty; CI debug měří jen 5 sekund. Celý `benchmark` zůstává pod stávajícím per-command 300s timeoutem. V `benchmarkLog` sleduj `duration_ms` alespoň `180000`, nulové `queue_drops`, p95 a `rss_peak_kib`. Nepovažuj CI záznam s `duration_ms=5000` za důkaz 180sekundového LXC soak.
