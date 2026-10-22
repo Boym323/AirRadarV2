@@ -1,0 +1,95 @@
+name: AirRadar V2 — automatický G-02 DEV balíček (bez nasazení)
+on:
+  push:
+    branches: [main, codex/g02-auto-lxc-20261022]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: g02-dev-candidate-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  test-and-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: Rust, offline JSON/BEAST, 5000 identit a dokumentace
+        run: |
+          set -Eeuo pipefail
+          cargo fmt --all -- --check
+          cargo clippy --locked --workspace --all-targets -- -D warnings
+          cargo test --locked --workspace
+          cargo run --locked --quiet -p airradarv2-engine -- --g02-replay
+          cargo run --locked --quiet -p airradarv2-engine -- --g02-benchmark
+          node tools/check-docs.mjs
+          python3 -m py_compile deploy/g02-auto-pull.py
+          bash -n deploy/install-g02-auto-lxc.sh
+      - name: Ověřit a sestavit Vite
+        working-directory: apps/web
+        run: |
+          set -Eeuo pipefail
+          npm ci --no-audit --no-fund
+          npm run lint
+          npm run typecheck
+          npm test
+          npm run build
+      - name: Sestavit immutable Debian artefakt pro offline přejímku
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cargo build --locked --release -p airradarv2-engine
+          install -d package/web
+          install -m 0755 target/release/airradarv2-engine package/airradarv2-engine
+          cp -a apps/web/dist/. package/web/
+          printf '%s\n' "$GITHUB_SHA" > package/VERSION
+          filename="airradarv2-dev-linux-amd64-$(printf '%s' "$GITHUB_SHA" | cut -c1-12).tar.gz"
+          tar -C package -czf "$filename" .
+          sha256sum "$filename" > "$filename.sha256"
+          tar -tzf "$filename" > /tmp/g02-archive.list
+          grep -qx './airradarv2-engine' /tmp/g02-archive.list
+          grep -qx './VERSION' /tmp/g02-archive.list
+      - uses: actions/upload-artifact@v4
+        with:
+          name: g02-dev-${{ github.sha }}
+          path: |
+            airradarv2-dev-linux-amd64-*.tar.gz
+            airradarv2-dev-linux-amd64-*.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 7
+  publish-dev-candidate:
+    needs: test-and-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    if: github.repository == 'Boym323/AirRadarV2' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: g02-dev-${{ github.sha }}
+      - name: Publikovat SHA-pripnutý prerelease (nikoli deploy)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -Eeuo pipefail
+          sha256sum -c ./*.tar.gz.sha256
+          tag="g02-dev-${GITHUB_SHA}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release uz existuje: $tag"
+            exit 0
+          fi
+          gh release create "$tag" \
+            ./*.tar.gz ./*.tar.gz.sha256 \
+            --target "$GITHUB_SHA" \
+            --prerelease --latest=false \
+            --title "G-02 DEV kandidat $GITHUB_SHA" \
+            --notes "Offline acceptance, bez automaticke instalace a bez zasahu do V1."
