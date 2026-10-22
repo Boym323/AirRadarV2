@@ -123,3 +123,7 @@ Po G-01 je ověřen samostatný Debian 13.7 LXC (1 vCPU, 8 GiB RAM, 20 GiB disk)
 ## Skutečně instalovaný DEV základ
 
 Správce dne 22. 10. 2026 doložil první úspěšné **ruční DEV LXC nasazení** commitu `227a8619b590d2c536761ffefc75cd0a5633936c`. Integrita balíčku OK, systemd Rust/Nginx active, health `bootstrap`, API letadel `NOT_IMPLEMENTED`; [přejímací report](docs/reports/DEV-LXC-PRVNI-NASAZENI-2026-10-22.md). Jde výhradně o G-00/G-01 základ, ne živý radar ani produkční release.
+
+## První testovaná implementace G-02
+
+[Průběžný report](docs/reports/G-02-VYSLEDEK.md) a [CI 39762483657](https://github.com/Boym323/AirRadarV2/actions/runs/39762483657): lokální JSON/BEAST, DF17/CPR, RAM a bounded supervisor, offline syntetický replay; **G-02 je ROZPRACOVÁNO**, zbývají metadata, širší dekódování a výkonnostní prověrky. Záměrně **není nasazeno do DEV LXC**, G-00/G-01 verze zůstává funkční.

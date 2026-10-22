@@ -71,3 +71,7 @@ Připraven [ruční balíčkovací workflow](../../.github/workflows/dev-package
 ## První skutečné DEV LXC nasazení — 22. 10. 2026
 
 [**Záznam nasazení a důkazy**](../reports/DEV-LXC-PRVNI-NASAZENI-2026-10-22.md): artefakt `227a8619b590d2c536761ffefc75cd0a5633936c`, SHA-256 OK, systemd Rust/Nginx active, health `bootstrap`, aircraft `NOT_IMPLEMENTED`. **Web v prohlížeči v LAN uživatel potvrdil jako funkční; IPv6 firewall a dlouhodobý soak ještě nejsou ověřeny.** G-02 až G-13 stále NEZAHÁJENO; nedotčeno V1, PostgreSQL a externí zdroje.
+
+## Průběžný G-02 replay — 22. 10. 2026
+
+[Report G-02](../reports/G-02-VYSLEDEK.md): 5/11 kontrolovaných kroků PASS, zbytek rozpracován. [CI 39762483657](https://github.com/Boym323/AirRadarV2/actions/runs/39762483657) 3/3 PASS včetně 22 Rust testů a syntetických 1×/2×/4× měření. Nasazený LXC stále používá stabilní G-00/G-01 release. Žádné V1/readsb/DB změny.

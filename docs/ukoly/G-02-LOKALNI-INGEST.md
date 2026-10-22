@@ -1,6 +1,6 @@
 # G-02 — Lokální readsb/BEAST ingest a jediný RAM state
 
-**Stav:** **ROZPRACOVÁNO** — první Rust JSON/BEAST/CPR/RAM/supervisor implementace, **testy a výkonnostní měření jsou průběžné**; nepovažovat za HOTOVO.  
+**Stav:** **ROZPRACOVÁNO — 5/11 testově doložených kroků; ostatní částečné**. [Průběžný report](../reports/G-02-VYSLEDEK.md), [CI #39762483657](https://github.com/Boym323/AirRadarV2/actions/runs/39762483657).  
 **Odpovědnost:** M01 — Rust/Tokio.  
 **Závislosti:** G-01 kontrakty a golden fixtures.  
 **Primární KEEP ID:** `J01`, `J02`, `J03`, `J04`, `J05`, `J11`.  
@@ -14,15 +14,15 @@ Samostatně otestovaný modul odpovídající uvedeným schváleným ID; zbyteč
 
 Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu**; pokud má krok vlastní závislost, nejdříve ověř jeho předchozí části. Zaškrtávej jen s odkazy na implementaci a reálné testy, nikdy pouze za napsání tohoto plánu.
 
-- [ ] **G-02.01 — Oddělit normalizaci od transportu**  
+- [x] **G-02.01 — Oddělit normalizaci od transportu**  
   **Implementace:** Založ úzké Rust moduly pro JSON reader, BEAST reader, parser, state a supervisor; nepřidávej mikroservisy.  
   **Ověření:** Modulové testy lze spustit bez fyzického přijímače.
 
-- [ ] **G-02.02 — Readsb JSON snapshot adapter**  
+- [x] **G-02.02 — Readsb JSON snapshot adapter**  
   **Implementace:** Pravidelně čti lokální readsb JSON s timeouty, velikostním limitem a atomic read; zpracuj prázdný/neúplný snapshot.  
   **Ověření:** Fixture test nevyvolá panic ani falešnou polohu, stav zdroje je měřitelný.
 
-- [ ] **G-02.03 — BEAST TCP framing**  
+- [x] **G-02.03 — BEAST TCP framing**  
   **Implementace:** Implementuj asynchronní čtení, escapování 0x1A, délky typů a rekonstrukci po rozděleném TCP chunku.  
   **Ověření:** Golden test zvládne fragmentaci, více rámců v chunku i záměrně poškozený vstup.
 
@@ -38,7 +38,7 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Implementace:** Založ jeden Rust vlastník track mapy, stabilní ID, freshness, výšku, rychlost, squawk a odlišená missing data.  
   **Ověření:** Syntetický replay generuje správný stav bez duplicit při změně callsign.
 
-- [ ] **G-02.07 — TTL a deduplikace**  
+- [x] **G-02.07 — TTL a deduplikace**  
   **Implementace:** Nastav konfigurovatelné bounded TTL a odstranění stale tracků, spoj duplicitní pozorování a změř počet aktivních cílů.  
   **Ověření:** Replay se zpožděnými a obrácenými časy neobnoví starou chybnou polohu.
 
@@ -46,7 +46,7 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Implementace:** Jeden supervisor volí platný BEAST nebo JSON při výpadku, restartuje spojení s omezeným backoff/jitter; obě cesty zapisují do stejné RAM.  
   **Ověření:** Test změní dostupnost zdrojů vícekrát a zachová jedinou identitu tracku.
 
-- [ ] **G-02.09 — Backpressure a limity**  
+- [x] **G-02.09 — Backpressure a limity**  
   **Implementace:** Omez velikost TCP bufferu, JSON payloadu, počtu tracků a front; při zátěži zaznamenej drop a health bez blokace.  
   **Ověření:** Při syntetickém přetížení nepřibývá paměť neomezeně a klient dostane správný health.
 
@@ -76,3 +76,7 @@ Všechny kroky mají skutečné odkazy na důkazy a všechny této etapě primá
 - [Kontrakty readsb/BEAST a pravidla identity](../technical/READSB-BEAST-KONTRAKTY.md)
 
 Výchozí číselné limity jsou **neověřené konfigurace pro první test**, nikoli PASS. Všechny checkboxy a stav KEEP zachovat, dokud nevznikne reálný kód, fixture a testovací důkazy.
+
+## Průběžná implementace 22. 10. 2026
+
+Detaily důkazů a otevřených invariantů obsahuje [G-02 report](../reports/G-02-VYSLEDEK.md). Zatím **nezaškrtávat** G-02.04/.05/.06/.08/.10/.11 — jsou pouze částečně ověřené. Žádná z šesti funkcí M01 nemá schválenou kompletní přejímku; nová verze G-02 není nasazená do DEV LXC, ten běží na bezpečně ověřeném G-00/G-01 vydání.
