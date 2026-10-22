@@ -33,7 +33,7 @@ jobs:
         run: node tools/check-docs.mjs
       - name: Kontrola syntaxe skriptů DEV LXC
         run: |
-          bash -n deploy/bootstrap-dev-lxc.sh deploy/install-dev-bundle.sh deploy/install-g02-auto-lxc.sh
+          bash -n deploy/bootstrap-dev-lxc.sh deploy/install-dev-bundle.sh deploy/install-g02-auto-lxc.sh deploy/activate-g03-main-autodeploy.sh
           python3 -m unittest discover -s tools -p 'test_verify_g02_public_status.py'
           python3 -m unittest discover -s tools -p 'test_g02_live_soak.py'
           python3 -m unittest discover -s tools -p 'test_g02_live_auto.py'
@@ -46,6 +46,7 @@ jobs:
           python3 -m unittest discover -s tools -p 'test_g02_auto_pull.py'
           python3 -m unittest discover -s tools -p 'test_workflows_layout.py'
           python3 -m unittest discover -s tools -p 'test_deploy_workflow.py'
+          python3 -m unittest discover -s tools -p 'test_g03_auto_deploy.py'
           python3 -m py_compile deploy/verify-g03-runtime.py
           python3 -m unittest discover -s tools -p 'test_verify_g03_runtime.py'
           python3 -m unittest discover -s tools -p 'test_benchmark_g03_sse.py'

@@ -21,12 +21,12 @@ class DeployWorkflowTests(unittest.TestCase):
         self.assertNotIn("verify-dev-lxc:", TEXT)
         self.assertNotIn("g02-status.json", TEXT)
 
-    def test_g03_release_is_fail_closed(self):
-        self.assertIn("g03_runtime: ${{ steps.stage.outputs.g03_runtime }}", TEXT)
-        self.assertIn("needs['test-and-build'].outputs.g03_runtime == 'false'", TEXT)
-        self.assertIn("test -f package/web/g03-runtime-required.txt", TEXT)
+    def test_g03_release_auto_enabled(self):
+        self.assertNotIn("g03_runtime == 'false'", TEXT)
+        self.assertIn("name: G-03 — ověřit stage marker před vydáním", TEXT)
+        self.assertIn("test -f contracts/openapi.g03.yaml", TEXT)
         self.assertIn("grep -qx 'G-03' package/web/g03-runtime-required.txt", TEXT)
-        self.assertIn("echo 'g03_runtime=true'", TEXT)
+        self.assertIn("G03_STAGE_GATE_V2", TEXT)
 
     def test_release_and_deploy_dependencies_remain(self):
         self.assertIn("needs: test-and-build", TEXT)

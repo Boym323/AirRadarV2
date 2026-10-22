@@ -161,3 +161,8 @@ Test nyní drží **90 TCP SSE spojení bez jakéhokoliv čtení odpovědi**, ve
 ## Audit před merge do main — P0 DEV release gate
 
 Kontrola [PR #11](https://github.com/Boym323/AirRadarV2/pull/11) před merge zjistila P0: samotný push do `main` spouští release pipeline včetně publikace prerelease a pokusu o self-hosted DEV deployment, ačkoliv aktuální root-owned G-00 systemd/rollback není připraven pro G-03. Proto nová *fail-closed* stage brána v `.github/workflows/g02-dev-candidate.yml` dovolí validovat a sestavit G-03 immutable artefakt v GitHub Actions, ale blokuje **publikaci prerelease i deploy** při `contracts/openapi.g03.yaml`. Doplněny statické Python regresní testy kontrolující přesné chování. Toto umožňuje splnit vlastníkovo zadání „sloučit kód do main“ bez neoprávněného přepnutí DEV služby. Důkaz bezpečného provozního cutoveru zůstává **NEOVĚŘENO**. Žádný test ani tento gate neospravedlňují prohlásit G-03 za živě nasazenou.
+
+
+## Automatické vydávání a nasazování G-03 podle požadavku vlastníka
+
+Původní zákaz publikace z `main` byl zrušen. Jediný schválený GitHub Actions řetězec nyní publikuje a nasazuje každý **úspěšně otestovaný** commit přes již existující self-hosted runner. Root-owned instalátor umí přepnout G-03 systemd mód a immutable Rust/Vite artefakt jako jednu transakci, ověřuje skutečný HTTP/SSE stav i Nginx a při selhání rollbackuje **systemd režim i binárku**. Jednorázové aktualizování root-owned installeru vyžaduje správce V2 DEV LXC podle runbooku, protože runner má jen úzce vymezené sudo pravidlo. Před prvním `deploy-dev=PASS` je skutečný provoz G-03 stále **NEOVĚŘENO**; žádná změna V1 ani DB.

@@ -72,6 +72,15 @@ class WorkflowTopology(unittest.TestCase):
         self.assertIn("  deploy-dev:\n", release)
         self.assertIn("needs: publish-dev-candidate", release)
 
+    def test_g03_main_commit_publishes_and_runs_runner(self):
+        release = (WF / "g02-dev-candidate.yml").read_text(encoding="utf-8")
+        self.assertNotIn("g03_runtime == 'false'", release)
+        self.assertIn("name: G-03 — ověřit stage marker před vydáním", release)
+        self.assertIn("grep -qx 'G-03' package/web/g03-runtime-required.txt", release)
+        self.assertIn("  publish-dev-candidate:", release)
+        self.assertIn("needs: publish-dev-candidate", release)
+        self.assertIn("G03_STAGE_GATE_V2", release)
+
     def test_daily_metrics_does_not_restart_dev(self):
         metrics = (WF / "development-metrics.yml").read_text(encoding="utf-8")
         release = (WF / "g02-dev-candidate.yml").read_text(encoding="utf-8")
