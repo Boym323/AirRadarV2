@@ -383,12 +383,8 @@ mod tests {
         let obs = normalize_readsb(&f, "rx-primary", 1792627200.0).unwrap();
         assert_eq!(obs.len(), 3);
         for (actual, expected) in obs.iter().zip(expected["initial"].as_array().unwrap()) {
-            let mut normalized = serde_json::to_value(actual).unwrap();
-            assert_eq!(normalized["receivedAtUtc"].as_f64(), expected["receivedAtUtc"].as_f64());
-            assert_eq!(normalized["messageAtUtc"].as_f64(), expected["messageAtUtc"].as_f64());
-            normalized["receivedAtUtc"] = expected["receivedAtUtc"].clone();
-            normalized["messageAtUtc"] = expected["messageAtUtc"].clone();
-            assert_eq!(normalized, *expected);
+            let typed: Observation = serde_json::from_value(expected.clone()).unwrap();
+            assert_eq!(actual, &typed);
         }
         assert_ne!(obs[0].aircraft_key, obs[1].aircraft_key);
         assert!(eligible_for_sql(&obs[0]));
