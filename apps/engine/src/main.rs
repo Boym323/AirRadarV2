@@ -1,5 +1,7 @@
 //! AirRadar V2 G-00 stub API. No receiver or flight state exists yet.
 
+// G-01 definuje typy před implementací jejich runtime konzumentů v G-02/G-03.
+#[allow(dead_code)]
 mod contract;
 
 use std::{convert::Infallible, net::SocketAddr, time::Duration};
