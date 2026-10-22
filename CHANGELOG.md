@@ -4,6 +4,12 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-02.11 — ovládání 60min LIVE přejímky z GitHubu (připraveno, neaktivováno)
+- Odchozí pull-only agent čte výhradně botem vydaný request release s přesným SHA/run ID a věkem do 45 minut; spouští schválený read-only BEAST test se systémovým limitem 3900s.
+- Jednorázový instalační skript pro izolovaný DEV LXC vytváří samostatný systemd timer a omezenou službu. GitHub workflow pro ruční spuštění je dodán v odděleném PR určeném do `main`.
+- Výsledek je v `liveSoak` připojen k workflow run ID; defaultní přijímač a V1 se nemění, na LXC ještě nic nového neběží. G-02 10/11.
+
+
 ### G-02.11 — připraven hodinový reálný BEAST read-only soak (NEPROVEDENO)
 - Samostatný rootless diagnostický proces připojí existující G-02 engine pouze k BEAST TCP OUTPUT 30005. Bez změny V1, DB či běžícího webu.
 - Po dobu 3600 sekund měří tracky, přijaté zprávy, dropy, RSS a CPU. Veřejný status dostane oddělenou sekci liveSoak bez adres nebo dat letadel.

@@ -127,3 +127,7 @@ Samostatný job [G-02 DEV kandidát](../../.github/workflows/g02-dev-candidate.y
 ## Připraven skutečný 60min BEAST read-only soak — NEPROVEDENO
 
 Pro G-02.11 připraven samostatný [návod s omezenými oprávněními](../runbooks/G-02-SKUTECNY-BEAST-SOAK.md) a [orchestrátor testu](../../deploy/g02-live-soak.py), využívající pouze BEAST TCP read-only výstup a SHA-připnutý kandidát. Jeho výsledky bude po celých 3600 sekund ověřeného provozu možné sledovat v existujícím veřejném status JSON jako liveSoak. **Zatím nemáme skutečný výsledek; G-02 stále 10/11, TESTED.**
+
+## Příprava přímého spuštění z GitHub Actions — NEAKTIVOVÁNO
+
+Doplněn [gitHub-driven read-only live runbook](../runbooks/G-02-GITHUB-AUTOMATICKY-LIVE.md) a nový systemd pull agent s jednorázovým instalačním skriptem. GitHub workflow bude v `main`, agent polling bude aktivní až po instalaci. Dokud reálný 60min BEAST test neproběhne s přesným SHA a GitHub run ID a nebudou vyhodnocené skutečné metriky, G-02 zůstává **10/11 / TESTED**.
