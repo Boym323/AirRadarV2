@@ -160,6 +160,24 @@ jobs:
           grep -qi 'no-cache' /tmp/g03-nginx-headers.txt
           echo "PASS G-03.08: skutečný Nginx -> Rust SSE snapshot + 15s heartbeat přes loopback"
 
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: G-03.08 Chromium EventSource Nginx + Vite same-origin
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm ci --prefix apps/web --no-audit --no-fund
+          python3 -m venv /tmp/airradar-g03-browser
+          /tmp/airradar-g03-browser/bin/pip install --disable-pip-version-check --quiet playwright==1.57.0
+          /tmp/airradar-g03-browser/bin/python -m playwright install --with-deps chromium
+          sudo mkdir -p /opt/airradar-v2/current/web
+          printf '<!doctype html><html lang="cs"><head><title>G03 test</title></head><body>G03</body></html>' | sudo tee /opt/airradar-v2/current/web/index.html >/dev/null
+          sudo nginx -t
+          (sudo nginx -s reload || sudo nginx)
+          trap 'sudo nginx -s stop 2>/dev/null || true' EXIT
+          /tmp/airradar-g03-browser/bin/python tools/test_g03_browser.py --binary target/debug/airradarv2-engine
+
   vite-web:
     runs-on: ubuntu-24.04
     defaults:
