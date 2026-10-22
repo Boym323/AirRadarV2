@@ -3,11 +3,13 @@
 **Datum:** 22. 10. 2026. **Stav:** **ROZPRACOVÁNO; zatím NEPŘEVZATO jako celá etapa**.  
 **Nasazená verze v DEV LXC:** `227a8619b590d2c536761ffefc75cd0a5633936c` — zůstává G-00/G-01, tento nový G-02 kód **není nasazen**.  
 **Ověřený historický základ G-02:** [`18fcbed9039207b3b83fcc28558ca6c5b0cc363f`](https://github.com/Boym323/AirRadarV2/commit/18fcbed9039207b3b83fcc28558ca6c5b0cc363f).  
-**CI:** [#39762483657](https://github.com/Boym323/AirRadarV2/actions/runs/39762483657), všechny **3/3 joby PASS**, 22 Rust testů PASS, Rustfmt, Clippy, Vite/TS a kontrakty. Bez reálného ADS-B receiveru a DB.
+**Historické CI:** [#39762483657](https://github.com/Boym323/AirRadarV2/actions/runs/39762483657), 22 Rust testů PASS. **Novější CI:** [#39769778992](https://github.com/Boym323/AirRadarV2/actions/runs/39769778992), 26 Rust testů PASS, 3/3 joby PASS (včetně dokumentace); oba běhy bez reálného ADS-B receiveru a DB.
 
-## Doložená implementace
+## Historický mezistav před doplněním implementace
 
-| Krok | Stav | Důkaz a omezení |
+Následující tabulka zachycuje starší průběžnou kontrolu; **aktuální testové výsledky a 10/11 doložených kroků jsou v závěrečné části „Implementační dokončení a měření CI“ níže.**
+
+| Krok | Historický stav | Důkaz a tehdejší omezení |
 |---|---|---|
 | G-02.01 Rozdělení modulů | **PASS** | `apps/engine/src/ingest/{mod,json,beast,mode_s,state,supervisor}.rs`; testy izolované od V1 |
 | G-02.02 JSON adapter | **PASS** | asynchronní čtení souboru, 4MiB limit, parse/clock validace, chybné soubory, fixture a skutečný temp-file test |

@@ -1,6 +1,6 @@
 # G-02 — Lokální readsb/BEAST ingest a jediný RAM state
 
-**Stav:** **10/11 testově doložených kroků; G-02.11 čeká měření v cílovém DEV LXC**. [Průběžný report](../reports/G-02-VYSLEDEK.md), [CI #39762483657](https://github.com/Boym323/AirRadarV2/actions/runs/39762483657).  
+**Stav:** **10/11 testově doložených kroků; G-02.11 čeká měření v cílovém DEV LXC**. [Průběžný report](../reports/G-02-VYSLEDEK.md), [aktuální CI #39769778992](https://github.com/Boym323/AirRadarV2/actions/runs/39769778992).  
 **Odpovědnost:** M01 — Rust/Tokio.  
 **Závislosti:** G-01 kontrakty a golden fixtures.  
 **Primární KEEP ID:** `J01`, `J02`, `J03`, `J04`, `J05`, `J11`.  
@@ -77,9 +77,9 @@ Všechny kroky mají skutečné odkazy na důkazy a všechny této etapě primá
 
 Výchozí číselné limity jsou **neověřené konfigurace pro první test**, nikoli PASS. Všechny checkboxy a stav KEEP zachovat, dokud nevznikne reálný kód, fixture a testovací důkazy.
 
-## Průběžná implementace 22. 10. 2026
+## Historický průběžný stav před rozšířenými testy
 
-Detaily důkazů a otevřených invariantů obsahuje [G-02 report](../reports/G-02-VYSLEDEK.md). Zatím **nezaškrtávat** G-02.04/.05/.06/.08/.10/.11 — jsou pouze částečně ověřené. Žádná z šesti funkcí M01 nemá schválenou kompletní přejímku; nová verze G-02 není nasazená do DEV LXC, ten běží na bezpečně ověřeném G-00/G-01 vydání.
+Při předchozí kontrole byly G-02.04/.05/.06/.08/.10/.11 pouze částečně ověřené. **Tento historický stav byl pro G-02.04/.05/.06/.08/.10 aktualizován níže**, nikoli pro G-02.11. Kompletní provozní přejímka šesti funkcí M01 dosud neproběhla. G-02 není nasazena v DEV LXC, kde běží G-00/G-01.
 
 ## Dodatečná přejímka implementace (22. 10. 2026)
 
