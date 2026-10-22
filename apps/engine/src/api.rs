@@ -476,11 +476,11 @@ pub fn router(feed: Feed) -> Router {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use futures_util::StreamExt;
     use axum::{
         body::{Body, to_bytes},
         http::{Request, StatusCode},
     };
+    use futures_util::StreamExt;
     use tower::ServiceExt;
 
     fn fixture_tracks() -> Vec<PublicAircraft> {
