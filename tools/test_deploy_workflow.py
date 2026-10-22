@@ -34,7 +34,8 @@ class DeployWorkflowTests(unittest.TestCase):
         self.assertIn("airradarv2-runner-deploy.sh", TEXT)
         self.assertIn("sha256sum -c", TEXT)
         self.assertIn("tar -tzf", TEXT)
-        self.assertIn("test_verify_g02_public_status.py", TEXT)
+        # G-02 syntetické kontroly jsou ve sdíleném ci.yml, ne v release YAML.
+        self.assertIn("test_verify_g02_public_status.py", WORKFLOW.with_name("ci.yml").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
