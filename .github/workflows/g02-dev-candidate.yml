@@ -130,7 +130,7 @@ jobs:
             test -n "$url" -a "$url" != null
             curl -fsSL --location -H 'Accept: application/octet-stream' -H "Authorization: Bearer ${GH_TOKEN}" "$url" -o "$incoming/$asset"
           done
-          sha256sum -c "$incoming/$name.sha256"
+          (cd "$incoming" && sha256sum -c "$name.sha256")
           test "$(tar -xOzf "$incoming/$name" ./VERSION)" = "$GITHUB_SHA"
           current_main="$(curl -fsSL -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${GH_TOKEN}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" | jq -r '.object.sha')"
           test "$current_main" = "$GITHUB_SHA"
