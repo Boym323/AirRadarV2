@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-02.11 — oprava systemd time limitu a důkaz živého příjmu (RUNNING)
+- V DEV LXC správce potvrdil funkční GitHub požadavek a skutečný BEAST TCP stream: 591 `preferred=Beast` vzorků, 16 532 aktualizací, nula queue/capacity drops, maximum 66 tracků. 60min test ještě běží; G-02 stále 10/11.
+- Oprava instalátoru: `Type=oneshot` vyžaduje `TimeoutStartSec=3900`, protože `RuntimeMaxSec=3900` je ignorováno. Přidán regresní test; instalovanou jednotku aktualizovat bezpečně až po dokončení aktuálního testu.
+
+
 ### G-02.11 — ovládání 60min LIVE přejímky z GitHubu (připraveno, neaktivováno)
 - Odchozí pull-only agent čte výhradně botem vydaný request release s přesným SHA/run ID a věkem do 45 minut; spouští schválený read-only BEAST test se systémovým limitem 3900s.
 - Jednorázový instalační skript pro izolovaný DEV LXC vytváří samostatný systemd timer a omezenou službu. GitHub workflow pro ruční spuštění je dodán v odděleném PR určeném do `main`.

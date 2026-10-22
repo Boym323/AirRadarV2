@@ -23,7 +23,7 @@ curl -fsSLo /root/g02-live-installer.sh \
 G02_SOURCE_REF="$SOURCE_SHA" bash /root/g02-live-installer.sh PRIVATNI_IP_ADRESA_PRIJIMACE
 ~~~
 
-Instalátor na správném Debian 13 x86_64 ověří již nainstalovaný G-02 auto timer, existenci V2 enginu a účet \`airradarv2\`; stáhne skripty pod týmž immutable SHA, kontroluje Python syntaxi a založí pouze **novou** oneshot službu a timer. Limity: \`NoNewPrivileges=yes\`, \`ProtectSystem=strict\`, \`ProtectHome=yes\`, \`CPUQuota=50%\`, \`MemoryMax=384M\`, \`RuntimeMaxSec=3900\`, zapisuje jen do vlastních \`/var/lib/airradar-v2/g02-auto\` a \`/var/cache/airradarv2-g02-public\`. Neinstaluje další démon, Docker, SSH ani GitHub token.
+Instalátor na správném Debian 13 x86_64 ověří již nainstalovaný G-02 auto timer, existenci V2 enginu a účet \`airradarv2\`; stáhne skripty pod týmž immutable SHA, kontroluje Python syntaxi a založí pouze **novou** oneshot službu a timer. Limity: \`NoNewPrivileges=yes\`, \`ProtectSystem=strict\`, \`ProtectHome=yes\`, \`CPUQuota=50%\`, \`MemoryMax=384M\`, \`TimeoutStartSec=3900\`, zapisuje jen do vlastních \`/var/lib/airradar-v2/g02-auto\` a \`/var/cache/airradarv2-g02-public\`. Neinstaluje další démon, Docker, SSH ani GitHub token.
 
 Kontrola instalace:
 
@@ -58,3 +58,9 @@ systemctl stop airradarv2-g02-live-auto.service
 ~~~
 
 Netýká se \`airradarv2-g02-auto.timer\` pro již existující offline testy, ani V1/webu.
+
+## Zjištěná závada Type=oneshot — oprava pro další běhy
+
+Doložený audit z DEV LXC potvrdil, že `RuntimeMaxSec=3900` **systemd ignoruje pro `Type=oneshot`**. Opraven instalační vzor na `TimeoutStartSec=3900` (3900 s od začátku procesu). Interní Python subprocess timeout 3800 sekund zůstává sekundární pojistkou. GitHub změna nemění již instalovanou jednotku. **Běžící 60min test nepřerušovat.** Teprve po jeho dokončení provést v DEV LXC: `systemctl edit --full airradarv2-g02-live-auto.service`, opravit jedinou direktivu, následně `systemctl daemon-reload`, `systemctl show airradarv2-g02-live-auto.service -p Type -p TimeoutStartUSec -p RuntimeMaxUSec`; jednotku neresetovat/restartovat během testu. Alternativně po doběhu jednorázově znovu nainstalovat ověřený skript s novým SHA.
+
+**Reálný přenos již prokázán z výstupu auditu správce**: BEAST TCP `ESTABLISHED`, `preferred=Beast` 591 vzorků, 16 532 updates, nulové `channel_drops` i `capacity_drops`, 66 peak tracks, veřejná sekce `liveSoak` odpovídá requestu `39795592425` a je ve stavu `RUNNING`. **Toto není 60min PASS.**

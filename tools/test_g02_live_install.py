@@ -10,11 +10,13 @@ class TestInstaller(unittest.TestCase):
         for needed in [
             "AIRRADAR_V2_G02_PORT=30005", "User=airradarv2",
             "NoNewPrivileges=yes", "ProtectSystem=strict", "ProtectHome=yes",
-            "MemoryMax=384M", "CPUQuota=50%", "RuntimeMaxSec=3900",
+            "MemoryMax=384M", "CPUQuota=50%", "TimeoutStartSec=3900",
             "OnUnitInactiveSec=3min", "G02_SOURCE_REF", "python3 -m py_compile",
         ]:
             self.assertIn(needed, s)
         self.assertNotIn("192.168.1.", s)
+        self.assertNotIn("\nRuntimeMaxSec=", s)
+        self.assertIn("Type=oneshot", s)
 
 
 if __name__ == "__main__":

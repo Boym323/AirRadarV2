@@ -61,7 +61,8 @@ MemoryMax=384M
 CPUQuota=50%
 CPUWeight=10
 TasksMax=64
-RuntimeMaxSec=3900
+# Type=oneshot: RuntimeMaxSec is ignored by systemd; TimeoutStartSec is enforced.
+TimeoutStartSec=3900
 UMask=0027
 SERVICE
 cat > /etc/systemd/system/airradarv2-g02-live-auto.timer <<'TIMER'

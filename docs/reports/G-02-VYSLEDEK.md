@@ -131,3 +131,9 @@ Pro G-02.11 připraven samostatný [návod s omezenými oprávněními](../runbo
 ## Příprava přímého spuštění z GitHub Actions — NEAKTIVOVÁNO
 
 Doplněn [gitHub-driven read-only live runbook](../runbooks/G-02-GITHUB-AUTOMATICKY-LIVE.md) a nový systemd pull agent s jednorázovým instalačním skriptem. GitHub workflow bude v `main`, agent polling bude aktivní až po instalaci. Dokud reálný 60min BEAST test neproběhne s přesným SHA a GitHub run ID a nebudou vyhodnocené skutečné metriky, G-02 zůstává **10/11 / TESTED**.
+
+## Živý read-only BEAST příjem nyní prokazatelně RUNNING (audit správce 22. 10. 2026)
+
+Audit DEV LXC `lo-dev-airradarv2` doložil funkční GitHub → systemd agent → skutečný BEAST output čtecí stream (konkrétní interní IP záměrně do veřejné dokumentace nepřenášet). Test `--sha d0cefc4a5c3332eadccf8ab21c96bae51987abe9 --request-id 39795592425 --seconds 3600`: aktuálně **RUNNING**, `preferred=Beast` 591 vzorků, `updates=16532`, `channel_drops=0`, `capacity_drops=0`, `peak tracks=66`. Veřejný `liveSoak` report se shoduje s lokálním souborem a odpovídá run ID. Běžící test ještě není PASS a **G-02 10/11**.
+
+Odhalená systémová závada pouze v limitaci časovače: `RuntimeMaxSec=3900` nemá účinek na `Type=oneshot`. Nový instalátor používá `TimeoutStartSec=3900`; je třeba aktualizovat již nainstalovanou jednotku **až po skončení aktuálního testu**, aby se neohrozil běh. Samotný Python má aktivní timeout 3800 s.
