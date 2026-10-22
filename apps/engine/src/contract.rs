@@ -55,13 +55,20 @@ pub fn normalize_readsb(
     if receiver_id != "rx-primary" {
         return Err("nedůvěryhodná stanice");
     }
-    let rows = input.get("aircraft").and_then(Value::as_array).ok_or("aircraft")?;
+    let rows = input
+        .get("aircraft")
+        .and_then(Value::as_array)
+        .ok_or("aircraft")?;
     if rows.len() > 5000 {
         return Err("limit");
     }
     let mut result = Vec::new();
     for row in rows {
-        let Some(key) = row.get("hex").and_then(Value::as_str).and_then(aircraft_key) else {
+        let Some(key) = row
+            .get("hex")
+            .and_then(Value::as_str)
+            .and_then(aircraft_key)
+        else {
             continue;
         };
         if !matches!(safe_age(row.get("seen")), Some(age) if age <= 60.0) {
@@ -80,7 +87,8 @@ pub fn normalize_readsb(
         let position = match (row.get("lat"), row.get("lon")) {
             (Some(a), Some(b)) => match (a.as_f64(), b.as_f64()) {
                 (Some(lat), Some(lon))
-                    if lat.is_finite() && lon.is_finite()
+                    if lat.is_finite()
+                        && lon.is_finite()
                         && (-90.0..=90.0).contains(&lat)
                         && (-180.0..=180.0).contains(&lon) =>
                 {
@@ -110,12 +118,21 @@ pub fn normalize_readsb(
             transport: "readsb_json".to_owned(),
             aircraft_key: key,
             received_at_utc: now,
-            time_basis: if time.is_some() { "derived_readsb" } else { "unknown" }.to_owned(),
+            time_basis: if time.is_some() {
+                "derived_readsb"
+            } else {
+                "unknown"
+            }
+            .to_owned(),
             position_origin: kind.to_owned(),
             position_at_utc: time,
             position,
-            callsign: row.get("flight").and_then(Value::as_str).map(str::trim)
-                .filter(|s| !s.is_empty() && s.len() <= 8).map(str::to_owned),
+            callsign: row
+                .get("flight")
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|s| !s.is_empty() && s.len() <= 8)
+                .map(str::to_owned),
             squawk,
         });
     }
@@ -123,7 +140,8 @@ pub fn normalize_readsb(
 }
 
 pub fn beast_arrival(hex: &str, timestamp: f64, position: Position) -> Option<Observation> {
-    if !timestamp.is_finite() || timestamp < 0.0
+    if !timestamp.is_finite()
+        || timestamp < 0.0
         || !(-90.0..=90.0).contains(&position.lat)
         || !(-180.0..=180.0).contains(&position.lon)
     {
@@ -144,7 +162,8 @@ pub fn beast_arrival(hex: &str, timestamp: f64, position: Position) -> Option<Ob
 }
 
 pub fn eligible_for_sql(o: &Observation) -> bool {
-    o.position.is_some() && o.position_at_utc.is_some()
+    o.position.is_some()
+        && o.position_at_utc.is_some()
         && o.position_origin == "adsb"
         && matches!(o.time_basis.as_str(), "derived_readsb" | "receiver_utc")
 }
@@ -163,16 +182,18 @@ pub struct PublicAircraft {
 }
 
 pub fn merge(state: &mut BTreeMap<String, PublicAircraft>, o: &Observation) -> &'static str {
-    let item = state.entry(o.aircraft_key.clone()).or_insert(PublicAircraft {
-        id: o.aircraft_key.clone(),
-        last_message_at: o.received_at_utc,
-        last_position_at: None,
-        position: None,
-        position_origin: o.position_origin.clone(),
-        stale: true,
-        callsign: None,
-        squawk: None,
-    });
+    let item = state
+        .entry(o.aircraft_key.clone())
+        .or_insert(PublicAircraft {
+            id: o.aircraft_key.clone(),
+            last_message_at: o.received_at_utc,
+            last_position_at: None,
+            position: None,
+            position_origin: o.position_origin.clone(),
+            stale: true,
+            callsign: None,
+            squawk: None,
+        });
     item.last_message_at = item.last_message_at.max(o.received_at_utc);
     if let Some(name) = &o.callsign {
         item.callsign = Some(name.clone());
@@ -186,8 +207,8 @@ pub fn merge(state: &mut BTreeMap<String, PublicAircraft>, o: &Observation) -> &
                 return "duplicate_or_old";
             }
             if let Some(p) = &item.position {
-                let dx = (next.lon - p.lon).to_radians()
-                    * ((next.lat + p.lat) * 0.5).to_radians().cos();
+                let dx =
+                    (next.lon - p.lon).to_radians() * ((next.lat + p.lat) * 0.5).to_radians().cos();
                 let dy = (next.lat - p.lat).to_radians();
                 let velocity = 6_371_000.0 * (dx * dx + dy * dy).sqrt() / (time - previous);
                 if velocity > 1000.0 {
@@ -224,10 +245,13 @@ pub fn hex_decode(s: &str) -> Result<Vec<u8>, &'static str> {
     if s.len() % 2 != 0 || !s.bytes().all(|c| c.is_ascii_hexdigit()) {
         return Err("hex");
     }
-    s.as_bytes().chunks_exact(2).map(|pair| {
-        u8::from_str_radix(std::str::from_utf8(pair).map_err(|_| "utf8")?, 16)
-            .map_err(|_| "hex")
-    }).collect()
+    s.as_bytes()
+        .chunks_exact(2)
+        .map(|pair| {
+            u8::from_str_radix(std::str::from_utf8(pair).map_err(|_| "utf8")?, 16)
+                .map_err(|_| "hex")
+        })
+        .collect()
 }
 
 /// Jen kontrola úplného golden rámce; TCP stavový parser patří G-02.
@@ -266,8 +290,17 @@ pub fn beast_envelope(s: &str) -> Result<(u8, u64, u8, Vec<u8>), &'static str> {
 #[derive(Debug, Deserialize)]
 #[serde(tag = "kind", rename_all = "lowercase")]
 pub enum StreamEvent {
-    Snapshot { epoch: String, seq: u64, aircraft: Vec<PublicAircraft> },
-    Delta { epoch: String, seq: u64, upsert: Vec<PublicAircraft>, removed: Vec<String> },
+    Snapshot {
+        epoch: String,
+        seq: u64,
+        aircraft: Vec<PublicAircraft>,
+    },
+    Delta {
+        epoch: String,
+        seq: u64,
+        upsert: Vec<PublicAircraft>,
+        removed: Vec<String>,
+    },
 }
 
 #[derive(Default)]
@@ -280,7 +313,11 @@ pub struct Replica {
 impl Replica {
     pub fn apply(&mut self, event: StreamEvent) -> Result<(), &'static str> {
         match event {
-            StreamEvent::Snapshot { epoch, seq, aircraft } => {
+            StreamEvent::Snapshot {
+                epoch,
+                seq,
+                aircraft,
+            } => {
                 let mut next = BTreeMap::new();
                 for item in aircraft {
                     if next.insert(item.id.clone(), item).is_some() {
@@ -291,7 +328,12 @@ impl Replica {
                 self.epoch = Some(epoch);
                 self.seq = Some(seq);
             }
-            StreamEvent::Delta { epoch, seq, upsert, removed } => {
+            StreamEvent::Delta {
+                epoch,
+                seq,
+                upsert,
+                removed,
+            } => {
                 if self.epoch.as_deref() != Some(epoch.as_str())
                     || self.seq.and_then(|s| s.checked_add(1)) != Some(seq)
                 {
@@ -322,8 +364,12 @@ mod tests {
 
     #[test]
     fn readsb_golden_time_origin_and_nonicao() {
-        let f = fixture(include_str!("../../../contracts/fixtures/readsb/initial.json"));
-        let expected = fixture(include_str!("../../../contracts/fixtures/readsb/expected.json"));
+        let f = fixture(include_str!(
+            "../../../contracts/fixtures/readsb/initial.json"
+        ));
+        let expected = fixture(include_str!(
+            "../../../contracts/fixtures/readsb/expected.json"
+        ));
         let obs = normalize_readsb(&f, "rx-primary", 1792627200.0).unwrap();
         assert_eq!(obs.len(), 3);
         for (actual, expected) in obs.iter().zip(expected["initial"].as_array().unwrap()) {
@@ -333,24 +379,46 @@ mod tests {
         assert!(eligible_for_sql(&obs[0]));
         assert!(!eligible_for_sql(&obs[1]));
         assert!(!eligible_for_sql(&obs[2]));
-        let repeated = fixture(include_str!("../../../contracts/fixtures/readsb/repeated.json"));
+        let repeated = fixture(include_str!(
+            "../../../contracts/fixtures/readsb/repeated.json"
+        ));
         let repeat = normalize_readsb(&repeated, "rx-primary", 1792627201.0).unwrap();
         assert_eq!(obs[0].position_at_utc, repeat[0].position_at_utc);
     }
 
     #[test]
     fn invalid_rows_skip_and_clock_drift_rejects() {
-        let bad = fixture(include_str!("../../../contracts/fixtures/readsb/invalid.json"));
-        assert!(normalize_readsb(&bad, "rx-primary", 1792627200.0).unwrap().is_empty());
+        let bad = fixture(include_str!(
+            "../../../contracts/fixtures/readsb/invalid.json"
+        ));
+        assert!(
+            normalize_readsb(&bad, "rx-primary", 1792627200.0)
+                .unwrap()
+                .is_empty()
+        );
         assert!(normalize_readsb(&bad, "rx-primary", 1792627300.0).is_err());
         assert!(normalize_readsb(&bad, "unknown-station", 1792627200.0).is_err());
-        let empty = fixture(include_str!("../../../contracts/fixtures/readsb/empty.json"));
-        assert!(normalize_readsb(&empty, "rx-primary", 1792627210.0).unwrap().is_empty());
+        let empty = fixture(include_str!(
+            "../../../contracts/fixtures/readsb/empty.json"
+        ));
+        assert!(
+            normalize_readsb(&empty, "rx-primary", 1792627210.0)
+                .unwrap()
+                .is_empty()
+        );
     }
 
     #[test]
     fn beast_without_utc_is_not_sql_history() {
-        let obs = beast_arrival("ABC123", 1792627205.0, Position { lat: 49.9, lon: 15.3 }).unwrap();
+        let obs = beast_arrival(
+            "ABC123",
+            1792627205.0,
+            Position {
+                lat: 49.9,
+                lon: 15.3,
+            },
+        )
+        .unwrap();
         assert_eq!(obs.time_basis, "server_arrival");
         assert_eq!(obs.aircraft_key, "icao:abc123");
         assert!(!eligible_for_sql(&obs));
@@ -358,9 +426,15 @@ mod tests {
 
     #[test]
     fn merge_dedup_and_plausibility_guard() {
-        let f = fixture(include_str!("../../../contracts/fixtures/readsb/initial.json"));
-        let repeated = fixture(include_str!("../../../contracts/fixtures/readsb/repeated.json"));
-        let changed = fixture(include_str!("../../../contracts/fixtures/readsb/changed.json"));
+        let f = fixture(include_str!(
+            "../../../contracts/fixtures/readsb/initial.json"
+        ));
+        let repeated = fixture(include_str!(
+            "../../../contracts/fixtures/readsb/repeated.json"
+        ));
+        let changed = fixture(include_str!(
+            "../../../contracts/fixtures/readsb/changed.json"
+        ));
         let mut state = BTreeMap::new();
         let first = normalize_readsb(&f, "rx-primary", 1792627200.0).unwrap();
         assert_eq!(merge(&mut state, &first[0]), "updated");
@@ -370,7 +444,10 @@ mod tests {
         assert_eq!(merge(&mut state, &fresh[0]), "updated");
         let mut impossible = fresh[0].clone();
         impossible.position_at_utc = Some(1792627205.0);
-        impossible.position = Some(Position { lat: -20.0, lon: 140.0 });
+        impossible.position = Some(Position {
+            lat: -20.0,
+            lon: 140.0,
+        });
         assert_eq!(merge(&mut state, &impossible), "conflict");
         assert_eq!(state["icao:abc123"].position.as_ref().unwrap().lat, 49.91);
     }
@@ -380,22 +457,34 @@ mod tests {
         let f = fixture(include_str!("../../../contracts/fixtures/beast/cases.json"));
         for case in f["valid"].as_array().unwrap() {
             let (kind, ticks, rssi, data) = beast_envelope(case["hex"].as_str().unwrap()).unwrap();
-            assert_eq!(kind, u8::from_str_radix(case["type"].as_str().unwrap(), 16).unwrap());
+            assert_eq!(
+                kind,
+                u8::from_str_radix(case["type"].as_str().unwrap(), 16).unwrap()
+            );
             assert_eq!(ticks, case["receiverTicks"].as_u64().unwrap());
             assert_eq!(rssi, case["rssi"].as_u64().unwrap() as u8);
             assert_eq!(data, hex_decode(case["modeS"].as_str().unwrap()).unwrap());
             if kind == 0x33 {
                 assert_eq!(data[0] >> 3, 17);
-                assert_eq!(crc24(&data[..11]), u32::from_be_bytes([0, data[11], data[12], data[13]]));
+                assert_eq!(
+                    crc24(&data[..11]),
+                    u32::from_be_bytes([0, data[11], data[12], data[13]])
+                );
                 assert_eq!((data[6] >> 2) & 1, if case["cpr"] == "odd" { 1 } else { 0 });
             }
         }
-        assert_eq!(crc24(&hex_decode(f["knownCrc"]["data"].as_str().unwrap()).unwrap()), 0x2863a7);
+        assert_eq!(
+            crc24(&hex_decode(f["knownCrc"]["data"].as_str().unwrap()).unwrap()),
+            0x2863a7
+        );
         for case in f["invalid"].as_array().unwrap() {
             let hex = case["hex"].as_str().unwrap();
             if case["expected"] == "bad_crc" {
                 let (_, _, _, data) = beast_envelope(hex).unwrap();
-                assert_ne!(crc24(&data[..11]), u32::from_be_bytes([0, data[11], data[12], data[13]]));
+                assert_ne!(
+                    crc24(&data[..11]),
+                    u32::from_be_bytes([0, data[11], data[12], data[13]])
+                );
             } else {
                 assert!(beast_envelope(hex).is_err());
             }
@@ -404,15 +493,25 @@ mod tests {
 
     #[test]
     fn sse_snapshot_delta_gap_and_restart() {
-        let f = fixture(include_str!("../../../contracts/fixtures/sse/sequence.json"));
+        let f = fixture(include_str!(
+            "../../../contracts/fixtures/sse/sequence.json"
+        ));
         let mut replica = Replica::default();
         for key in ["snapshot", "delta", "removed"] {
-            replica.apply(serde_json::from_value(f[key].clone()).unwrap()).unwrap();
+            replica
+                .apply(serde_json::from_value(f[key].clone()).unwrap())
+                .unwrap();
         }
         assert!(replica.aircraft.is_empty());
-        assert!(replica.apply(serde_json::from_value(f["gap"].clone()).unwrap()).is_err());
+        assert!(
+            replica
+                .apply(serde_json::from_value(f["gap"].clone()).unwrap())
+                .is_err()
+        );
         assert_eq!(replica.seq, Some(7));
-        replica.apply(serde_json::from_value(f["restart"].clone()).unwrap()).unwrap();
+        replica
+            .apply(serde_json::from_value(f["restart"].clone()).unwrap())
+            .unwrap();
         assert_eq!(replica.seq, Some(0));
     }
 }
