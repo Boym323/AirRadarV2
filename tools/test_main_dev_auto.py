@@ -117,6 +117,21 @@ class MainDeploySafety(unittest.TestCase):
                 self.assertTrue(agent.release_lookup_due(SHA, now + dt.timedelta(minutes=14)))
                 self.assertTrue(agent.release_lookup_due("b"*40, now + dt.timedelta(minutes=10)))
 
+    def test_fast_release_and_independent_g02_acceptance(self):
+        release = (ROOT / ".github/workflows/g02-dev-candidate.yml").read_text()
+        acceptance = (ROOT / ".github/workflows/g02-dev-lxc-acceptance.yml").read_text()
+        self.assertIn("publish-dev-candidate:", release)
+        self.assertIn("needs: test-and-build", release)
+        self.assertNotIn("  verify-dev-lxc:", release)
+        self.assertNotIn("sleep 60", release)
+        self.assertIn("workflows: [\"AirRadar V2", acceptance)
+        self.assertIn("workflow_run:", acceptance)
+        self.assertIn("workflow_dispatch:", acceptance)
+        self.assertIn("github.event.workflow_run.conclusion == 'success'", acceptance)
+        self.assertIn("github.event.workflow_run.head_branch == 'main'", acceptance)
+        self.assertIn("github.event.workflow_run.head_repository.full_name == github.repository", acceptance)
+        self.assertIn("python3 tools/verify_g02_public_status.py", acceptance)
+
     def test_install_script_hardening_and_timer(self):
         install = (ROOT / "deploy/install-dev-bundle.sh").read_text()
         poll = (ROOT / "deploy/install-main-dev-auto.sh").read_text()
@@ -130,7 +145,8 @@ class MainDeploySafety(unittest.TestCase):
         for keyword in (
             "TimeoutStartSec=300", "Type=oneshot", "NoNewPrivileges=yes",
             "ProtectSystem=strict", "ProtectHome=yes", "MemoryMax=768M",
-            "OnUnitInactiveSec=1min", "AccuracySec=1s", "User=root",
+            "OnUnitInactiveSec=1min", "OnBootSec=1min",
+            "RandomizedDelaySec=0", "AccuracySec=1s", "User=root",
             "G13_SOURCE_REF", "airradarv2-main-deploy.timer",
         ):
             self.assertIn(keyword, poll)
