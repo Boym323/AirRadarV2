@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-03.07/.10 — slow reader lease, atomický JSON batch a 5000 tracků (CI #39845031595 PASS)
+- SSE lease watchdog s monotónním 30s deadlinem bez HTTP Body poll; 5s kontrolní interval a bezpečné předání aplikačního permitu. Žádná změna kontraktu ani produkce.
+- Izolovaný benchmark rozšířen na 1/10/100 odběratelů s 5000 úspornými identitami; unit testy přetížení přes 1 MiB zachovány. Provozní cílový TCP/RSS test zůstává otevřený.
+
+
 ### G-03.08 — Chromium EventSource, dva stejno-origin proxy průchody
 - Izolovaný browser test Chromium přes Vite 4100 → Rust 4102 a Nginx 8082 → Rust 4102. Ověřuje plný snapshot při připojení, delta upsert během otevřeného streamu, monotónní epoch/seq a full snapshot po reconnectu. Playwright se instaluje pouze do dočasného CI venv, nikoli do uživatelova počítače ani do DEV LXC.
 

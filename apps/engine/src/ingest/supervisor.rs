@@ -11,7 +11,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{
         Arc,
-        atomic::{AtomicU64, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
     },
     time::Duration,
 };
@@ -46,9 +46,25 @@ impl Config {
 #[derive(Debug)]
 enum Ingress {
     Json(Observation),
-    JsonHealth { at: f64, ok: bool },
-    Beast { decoded: Decoded, at: f64 },
-    BeastLink { at: f64, connected: bool },
+    // One readsb JSON file is one bounded queue message (up to 5000 rows),
+    // never 5000 individual try_send calls against a 2048-element FIFO.
+    JsonBatch {
+        rows: Vec<Observation>,
+        at: f64,
+        pending: Arc<AtomicBool>,
+    },
+    JsonHealth {
+        at: f64,
+        ok: bool,
+    },
+    Beast {
+        decoded: Decoded,
+        at: f64,
+    },
+    BeastLink {
+        at: f64,
+        connected: bool,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -113,6 +129,13 @@ fn consume(
         Ingress::Json(obs) => {
             state.apply(&obs);
         }
+        Ingress::JsonBatch { rows, at, pending } => {
+            // Only this consumer mutates the authoritative Rust RAM map.
+            // No unbounded buffering: only one JSON batch can be outstanding.
+            sources.json_seen = Some(at);
+            state.batch(&rows);
+            pending.store(false, Ordering::Release);
+        }
         Ingress::JsonHealth { at, ok } => {
             if ok {
                 sources.json_seen = Some(at);
@@ -151,11 +174,13 @@ pub async fn run_with_publisher(
     }
     let (tx, mut rx) = mpsc::channel::<Ingress>(2048);
     let drops = Arc::new(AtomicU64::new(0));
+    let json_pending = Arc::new(AtomicBool::new(false));
     if let Some(path) = config.json_path {
         let sender = tx.clone();
         let dropped = Arc::clone(&drops);
+        let pending = Arc::clone(&json_pending);
         tokio::spawn(async move {
-            poll_json(&path, sender, dropped).await;
+            poll_json(&path, sender, dropped, pending).await;
         });
     }
     if let Some(address) = config.beast_addr {
@@ -200,26 +225,43 @@ fn enqueue(sender: &mpsc::Sender<Ingress>, dropped: &AtomicU64, event: Ingress) 
         dropped.fetch_add(1, Ordering::Relaxed);
     }
 }
-async fn poll_json(path: &Path, sender: mpsc::Sender<Ingress>, dropped: Arc<AtomicU64>) {
+fn enqueue_json_batch(
+    sender: &mpsc::Sender<Ingress>,
+    dropped: &AtomicU64,
+    pending: &Arc<AtomicBool>,
+    rows: Vec<Observation>,
+) {
+    let count = rows.len() as u64;
+    // G-03.10: a single 5000-track JSON sample may not overflow the BEAST FIFO.
+    // If the previous batch has not yet been consumed, drop a whole snapshot,
+    // never enqueue an unlimited series of multi-MiB batch copies.
+    if pending.swap(true, Ordering::AcqRel) {
+        dropped.fetch_add(count, Ordering::Relaxed);
+        return;
+    }
+    let event = Ingress::JsonBatch {
+        rows,
+        at: wall_seconds(),
+        pending: Arc::clone(pending),
+    };
+    if sender.try_send(event).is_err() {
+        pending.store(false, Ordering::Release);
+        dropped.fetch_add(count, Ordering::Relaxed);
+    }
+}
+
+async fn poll_json(
+    path: &Path,
+    sender: mpsc::Sender<Ingress>,
+    dropped: Arc<AtomicU64>,
+    pending: Arc<AtomicBool>,
+) {
     let mut interval = time::interval(Duration::from_secs(1));
     loop {
         interval.tick().await;
         match timeout(Duration::from_secs(2), read_snapshot(path, "rx-primary")).await {
             Ok(Ok(rows)) => {
-                enqueue(
-                    &sender,
-                    &dropped,
-                    Ingress::JsonHealth {
-                        at: wall_seconds(),
-                        ok: true,
-                    },
-                );
-                for row in rows {
-                    if sender.is_closed() {
-                        break;
-                    }
-                    enqueue(&sender, &dropped, Ingress::Json(row));
-                }
+                enqueue_json_batch(&sender, &dropped, &pending, rows);
             }
             _ => enqueue(
                 &sender,
@@ -350,6 +392,7 @@ pub async fn loopback_soak() -> Result<(), &'static str> {
     });
     let (tx, mut rx) = mpsc::channel::<Ingress>(2048);
     let drops = Arc::new(AtomicU64::new(0));
+    let json_pending = Arc::new(AtomicBool::new(false));
     let beast_handle = {
         let tx = tx.clone();
         let drops = Arc::clone(&drops);
@@ -359,7 +402,8 @@ pub async fn loopback_soak() -> Result<(), &'static str> {
         let tx = tx.clone();
         let drops = Arc::clone(&drops);
         let path = path.clone();
-        tokio::spawn(async move { poll_json(&path, tx, drops).await })
+        let pending = Arc::clone(&json_pending);
+        tokio::spawn(async move { poll_json(&path, tx, drops, pending).await })
     };
     drop(tx);
     let clock = Instant::now();
@@ -432,6 +476,9 @@ pub async fn loopback_soak() -> Result<(), &'static str> {
                         } else {
                             json_bad += 1;
                         }
+                    }
+                    Ingress::JsonBatch { .. } => {
+                        json_ok += 1;
                     }
                     Ingress::Json(_) => {}
                 }
@@ -665,6 +712,59 @@ mod tests {
         assert!(state.counters.duplicates > 0);
         assert_eq!(state.counters.capacity_drops, 0);
     }
+    #[tokio::test]
+    async fn g03_10_json_batch_preserves_all_5000_tracks_without_fifo_loss() {
+        let template = parse_replay(
+            include_bytes!("../../../../contracts/fixtures/readsb/initial.json"),
+            "rx-primary",
+            1792627200.0,
+        )
+        .unwrap()
+        .remove(0);
+        let rows: Vec<Observation> = (0..5000)
+            .map(|index| {
+                let mut observation = template.clone();
+                observation.aircraft_key = format!("icao:{index:06x}");
+                observation
+            })
+            .collect();
+        let (tx, mut rx) = mpsc::channel::<Ingress>(2);
+        let dropped = AtomicU64::new(0);
+        let pending = Arc::new(AtomicBool::new(false));
+        enqueue_json_batch(&tx, &dropped, &pending, rows);
+        assert!(pending.load(Ordering::Acquire));
+        let event = rx.recv().await.unwrap();
+        let mut state = RadarState::default();
+        let mut cpr = CprCache::default();
+        let mut sources = SourceArbiter::default();
+        consume(event, &mut state, &mut cpr, &mut sources);
+        assert_eq!(state.tracks.len(), 5000);
+        assert!(!pending.load(Ordering::Acquire));
+        assert_eq!(dropped.load(Ordering::Relaxed), 0);
+        assert_eq!(sources.active(wall_seconds()), ActiveSource::Json);
+    }
+
+    #[tokio::test]
+    async fn g03_10_json_batch_backpressure_discards_whole_sample_not_prefix() {
+        let template = parse_replay(
+            include_bytes!("../../../../contracts/fixtures/readsb/initial.json"),
+            "rx-primary",
+            1792627200.0,
+        )
+        .unwrap()
+        .remove(0);
+        let (tx, mut rx) = mpsc::channel::<Ingress>(1);
+        let pending = Arc::new(AtomicBool::new(false));
+        let dropped = AtomicU64::new(0);
+        let rows = vec![template.clone(); 5000];
+        enqueue_json_batch(&tx, &dropped, &pending, rows);
+        assert!(pending.load(Ordering::Acquire));
+        enqueue_json_batch(&tx, &dropped, &pending, vec![template; 5000]);
+        assert_eq!(dropped.load(Ordering::Relaxed), 5000);
+        assert!(rx.try_recv().is_ok());
+        assert!(rx.try_recv().is_err());
+    }
+
     #[test]
     fn bounded_fifo_and_missing_source_rejected() {
         assert!(

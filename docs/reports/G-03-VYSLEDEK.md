@@ -114,10 +114,20 @@ PASS: všechna doručení 1/10/100, 101. klient HTTP 503, uvolnění capacity, m
 - Ověřený syntetický 1/10/100 klientů nad izolovaným 127.0.0.1 Rust procesem z výsledného buildu. Jde o CI hardware, ne cílový 1vCPU LXC a ne browserový test. Tento PASS neznamená důkaz OS socket budgetu 256KiB/klient.
 - **G-03 zůstává 7/10 TESTED a NO-GO pro merge do main**, dokud se nedokončí skutečné DEV provozní SSE měření a atomický rollback režimu systemd/binary. G-02, V1 a databáze zůstaly bez zásahu.
 
-## Nová brána G-03.10 — až 5 000 letadel
+## Ověřená G-03.07/.10 CI brána — 22. 10. 2026
 
-Do izolované CI zátěže přidány varianty **1 a 100 klientů × 5 000 kompaktních letadel**. Zůstává deklarovaný limit **1 MiB serializovaného veřejného snapshotu** — u plných objektů s telemetrií je správnou odpovědí explicitní 503, nikoli zkrácený či zatuhlý starý stav. Při 5 000 kompaktních objektech má být snapshot menší než 1 MiB, jako ověřuje Rust unit test. Tyto nové případy zatím nemají novou výsledkovou CI, neoznačovat G-03.10 za TESTED.
+[**GitHub Actions #39845031595**](https://github.com/Boym323/AirRadarV2/actions/runs/39845031595), přesný SHA `ea64497d7079f65e474969a8a2f44df5d49a6b8a`, **3/3 PASS**, Rust fmt/Clippy `-D warnings`, **42/42 Rust unit**, Vite a české dokumenty, Nginx opt-in SSE snapshot + 15s heartbeat.
 
-## Browserová brána G-03.08 — připravený test, čeká CI
+**Nalezená a opravená chyba:** První rozšíření benchmarku [CI #39844067265](https://github.com/Boym323/AirRadarV2/actions/runs/39844067265) nedokázalo vytvořit RAM snapshot 5000 letadel. Původní JSON poll posílal každý z 5000 řádků zvlášť do 2048-elementového `mpsc` s `try_send`. Oprava je atomická `Ingress::JsonBatch` (max. 5000 validovaných JSON identit ze `MAX_JSON_BYTES=4MiB`) s `AtomicBool` bránou **maximálně jedné čekající dávky**. Nová dávka při obsazeném slotu se zahodí vcelku a její pozorování se započítají jako drops; BEAST zůstává na původní ohraničené frontě, jediný RAM vlastník a časová arbitráž beze změny. Rust regrese `g03_10_json_batch_preserves_all_5000_tracks_without_fifo_loss` a `g03_10_json_batch_backpressure_discards_whole_sample_not_prefix` PASS; testován i původní G-02 offline replay a 5s loopback soak.
 
-`tools/test_g03_browser.py` v izolovaném GitHub Actions Chromium provádí reálný browser `EventSource` přes **Vite same-origin proxy** (4100) i **Nginx same-origin proxy** (8082) do jediné Rust RAM. Ověřuje počáteční snapshot, následnou delta aktualizaci během otevřeného spojení a nový full snapshot po reconnectu; nevyžaduje nový frontend radar, produkční LXC, přijímač ani DB. Instalace Playwright je výhradně do dočasného CI Python venv. Provozní DEV browser přejímka nadále vyžaduje samostatné potvrzení.
+**G-03.07:** `ClientLease` vrací při 30s bez HTTP Body poll aplikační SSE permit watchdogem nezávislým na pokračování HTTP socketu, v intervalu 5s (nejpozději přibližně po 35s neaktivity). Watchdog drží jen `Weak` referenci a po dropu spojení mizí. Testy `g03_07_deadline_releases_permit_without_any_body_poll` a `g03_07_active_reader_refreshes_deadline_and_drop_cleans_up` PASS. **Nejde o garantované ukončení TCP socketu nebo limit kernelových bufferů**.
+
+**G-03.10:** měření pouze na GitHub-hosted Ubuntu, syntetický readsb soubor atomicky nahrazovaný každou změnou, 1Hz JSON poll + 1Hz SSE publish. Čas P95/P99 je *od zápisu syntetického souboru do obdržení validní SSE aktualizace*, zahrnuje oba 1Hz cykly, není měřením čisté síťové SSE latence. CPU je proces Rustu z `/proc/PID/stat`, RSS z `VmRSS` periodicky po 50 ms, **bez kernelových TCP bufferů**. Nová plná zátěž 5000 řádků používá *sparse* identitu (bez souřadnic/telemetrie), aby byl serializovaný snapshot pod schváleným 1MiB limitem; 5000 dense nad limitem pokrývá samostatný negativní Rust overflow test.
+
+| Klienti | Syntetická letadla | P95 od souboru (ms) | P99 (ms) | CPU (% 1 jádra) | Rust VmRSS peak (KiB) | Nové SSE B/s |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 5000 sparse | 1868 | 1868 | 10,17 | 37212 | 508691 |
+| 10 | 5000 sparse | 1865 | 1865 | 11,79 | 42336 | 5096137 |
+| 100 | 5000 sparse | 2033 | 2110 | 12,15 | 43396 | 44411539 |
+
+**Přijímací omezení:** CI 5000/100 PASS neprokazuje 256KiB celkových TCP bufferů na klienta, odpojení skutečného pomalého socketu, browser EventSource, zátěž cílového DEV LXC ani atomické vrácení systemd režimu G-00. G-03.07/.08/.10 zůstávají nezaškrtnuté; G-03 **7/10 TESTED** a **NO-GO pro merge do main** do cílové provozní přejímky.
