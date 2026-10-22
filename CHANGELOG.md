@@ -4,6 +4,9 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-03.09 — kontrola poškozeného readsb a přesnější SSE měření
+- Benchmark odlišuje čisté SSE update bytes/s od prvního snapshotu, měří peak RSS během aktualizace a ověřuje, že atomicky publikovaný chybný JSON neporuší kanonický Rust RAM stav ani další doručování. Výsledky aktualizuje CI finálního SHA.
+
 ### G-03.07/.09/.10 — izolovaný 1/10/100 SSE zátěžový scénář (čeká CI)
 - Přidán standard-library Python harness spouštějící pouze opt-in Rust API na loopback s atomicky obnovovaným syntetickým readsb JSON. Ověřuje 1/10/100 SSE klientů, delta/snapshot, limit 101. klienta a návrat kapacity; reportuje p95/p99, CPU, RSS a bytes/s. Čísla nejsou výkon cílového DEV LXC, proxy ani prohlížeče.
 

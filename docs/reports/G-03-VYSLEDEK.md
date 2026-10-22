@@ -73,3 +73,7 @@ Limitace: testy v CI jsou syntetické bez skutečného přijímače; nejsou mě�
 ## Pokračování — měřicí brána G-03.07/.09/.10
 
 Připraven `tools/benchmark_g03_sse.py`: izolační test s vlastní Rust instancí, syntetickými readsb JSON soubory a 1/10/100 HTTP SSE klienty. Po prvním snapshotu měří reakci na nová pozorování, kontroluje 503 u 101. klienta, restart capacity a vypisuje CPU (Linux `/proc`), RSS, bytes/s, p95 a p99. Měření je **CI na sdíleném runneru**, nikoli cílové 1vCPU DEV LXC nebo browser/Nginx; aktuální stav pro finální report **NEOVĚŘENO do dokončení CI**. Checkbox .07/.09/.10 zůstává otevřený.
+
+## Revidovaná metodika CI zátěžového testu
+
+První [CI #39833985212](https://github.com/Boym323/AirRadarV2/actions/runs/39833985212) 3/3 PASS naměřila doručení 1/10/100 klientům. Měřená latence je **od atomického zápisu syntetického JSON souboru do klientského přijetí aktualizace**, zahrnuje dva 1Hz cykly (readsb poll a SSE publish). **Není to čistá latence fanoutu SSE ani údaj z browseru**. V původní verzi číslo `bytes_per_sec` chybně započítávalo také první snapshot mimo měřený čas; nepoužívej je pro plánování kapacity. Nyní je oddělen přírůstek SSE bytes během měřeného okna, peak RSS a malformovaný JSON/recovery; nové hodnoty čekají na CI.

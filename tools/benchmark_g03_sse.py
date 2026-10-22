@@ -10,7 +10,6 @@ import asyncio
 import json
 import os
 from pathlib import Path
-import signal
 import subprocess
 import sys
 import tempfile
@@ -166,6 +165,16 @@ async def benchmark(binary: Path, temp: Path) -> list[dict]:
                         assert status == 503, "101. SSE klient musí dostat 503"
 
                     cpu_before, rss_before = proc_stats(engine.pid)
+                    prior_bytes = sum(c.bytes_read for c in clients)
+                    rss_samples = [rss_before]
+                    stop_sampling = asyncio.Event()
+
+                    async def sample_rss() -> None:
+                        while not stop_sampling.is_set():
+                            rss_samples.append(proc_stats(engine.pid)[1])
+                            await asyncio.sleep(0.05)
+
+                    watcher = asyncio.create_task(sample_rss())
                     started = time.perf_counter()
                     write_fixture(fixture, count, index * 2 + 1)
 
@@ -183,6 +192,8 @@ async def benchmark(binary: Path, temp: Path) -> list[dict]:
                         *(receive_change(client, seq) for client, seq in zip(clients, seqs))
                     )
                     elapsed = time.perf_counter() - started
+                    stop_sampling.set()
+                    await watcher
                     cpu_after, rss_after = proc_stats(engine.pid)
                     result = {
                         "clients": connections,
@@ -191,13 +202,15 @@ async def benchmark(binary: Path, temp: Path) -> list[dict]:
                         "latency_p95_ms": percentile(latencies, 0.95),
                         "latency_p99_ms": percentile(latencies, 0.99),
                         "bytes_per_sec": round(
-                            sum(c.bytes_read for c in clients) / max(elapsed, 0.001)
+                            (sum(c.bytes_read for c in clients) - prior_bytes)
+                            / max(elapsed, 0.001)
                         ),
                         "cpu_percent_1_core": round(
                             (cpu_after - cpu_before) / max(elapsed, 0.001) * 100, 2
                         ),
                         "rss_before_kib": rss_before,
                         "rss_after_kib": rss_after,
+                        "rss_peak_kib": max(rss_samples + [rss_after]),
                         "elapsed_s": round(elapsed, 3),
                     }
                     results.append(result)
@@ -208,6 +221,36 @@ async def benchmark(binary: Path, temp: Path) -> list[dict]:
                     await asyncio.gather(
                         *(c.writer.wait_closed() for c in clients), return_exceptions=True
                     )
+
+            # G-03.09: chybný/částečný readsb JSON nepoškodí živý RAM snapshot.
+            status, malformed_client = await connect()
+            assert status == 200
+            try:
+                initial = await malformed_client.event()
+                assert initial["kind"] == "snapshot"
+                before_seq = initial["body"]["seq"]
+                # Původní data jsou v RAM, syntetický JSON pouze záměrně poškodíme.
+                broken = fixture.with_suffix(".tmp")
+                broken.write_text("{invalid-json", encoding="utf-8")
+                os.replace(broken, fixture)
+                await asyncio.sleep(1.4)
+                import urllib.request
+
+                with urllib.request.urlopen(
+                    f"http://{HOST}:{PORT}/api/v1/aircraft", timeout=3
+                ) as response:
+                    retained = json.load(response)["data"]
+                assert retained["seq"] == before_seq, "Chybný JSON změnil canonical state"
+                write_fixture(fixture, 1000, 100)
+                while True:
+                    recovered = await malformed_client.event(seconds=8)
+                    if recovered["body"]["seq"] > before_seq:
+                        assert recovered["kind"] in ("delta", "snapshot")
+                        break
+                print("PASS G-03.09: malformed JSON, zachování RAM a zotavení")
+            finally:
+                malformed_client.close()
+                await malformed_client.writer.wait_closed()
 
             # G-03.06 lifecycle: po odpojení všech klientů musí být kapacita vrácena.
             status, remaining = await connect()
