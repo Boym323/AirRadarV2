@@ -4,6 +4,9 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-03.07/.08 — nečtoucí prohlížeče a rychlejší reálný browser CI
+- Do připraveného DEV Nginx SSE vzoru přidán downstream `send_timeout 30s`, zatímco heartbeat a 75s upstream proxy timeout zůstávají. Chromium browser smoke používá Playwright s nainstalovaným Google Chrome na izolovaném GitHub runneru, bez stahování vlastní browser binárky; nezměnilo to uživatelský PC ani DEV LXC.
+
 ### G-03.07/.10 — slow reader lease, atomický JSON batch a 5000 tracků (CI #39845031595 PASS)
 - SSE lease watchdog s monotónním 30s deadlinem bez HTTP Body poll; 5s kontrolní interval a bezpečné předání aplikačního permitu. Žádná změna kontraktu ani produkce.
 - Izolovaný benchmark rozšířen na 1/10/100 odběratelů s 5000 úspornými identitami; unit testy přetížení přes 1 MiB zachovány. Provozní cílový TCP/RSS test zůstává otevřený.

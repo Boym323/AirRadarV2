@@ -141,7 +141,7 @@ def main() -> int:
             else:
                 raise AssertionError("Rust RAM nevytvořil 25 testovacích letadel")
             with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+                browser = p.chromium.launch(channel="chrome", headless=True, args=["--no-sandbox"])
                 try:
                     results = [
                         browser_case(browser, "http://127.0.0.1:4100/", fixture, 2),
