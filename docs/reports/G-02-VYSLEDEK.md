@@ -52,3 +52,9 @@ Tyto hodnoty měří **opakování fixture**, nikoli skutečné 1×/2×/4× ADS-
 5. Doložit všechny aktivní KEEP ID M01 v `contracts/feature-matrix.json`, přejímací evidenci kroků, CI finálního SHA a teprve potom měnit stav celé G-02 na HOTOVO.
 
 **Konečný stav:** významná část G-02 existuje a synteticky funguje, ale **G-02 není dokončená**. Další vývoj se soustředí na uvedené blokace, nikoli na produkční nasazení.
+
+## Závěrečná dodatečná kontrola bounded RAM
+
+Při revizi bylo opraveno **uvolňování interní mapy `position_quality` společně s expirovaným `tracks`**. Bez toho mohla tato pomocná RAM evidence růst s počtem historicky pozorovaných identit i po vypršení 60s TTL. Regresní test `ingest::state::tests::replay_dedup_and_ttl` nyní kontroluje, že po expiraci jsou **obě mapy prázdné**. Důkaz: [CI 39763140573](https://github.com/Boym323/AirRadarV2/actions/runs/39763140573), **3/3 PASS** na [commitu `be564960`](https://github.com/Boym323/AirRadarV2/commit/be56496015f744a2d5b16fd68bebb1f8ca0d815d). Tento konkrétní test neprokazuje dlouhodobý soak ani všechny podmínky G-02.11.
+
+**Stav zůstává ROZPRACOVÁNO**: dokončené a ověřené jsou pouze uvedené dílčí kroky, nasazené LXC stále provozuje dřívější stabilní základ.

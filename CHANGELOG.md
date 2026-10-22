@@ -5,6 +5,7 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 ## [Nepublikováno]
 
 ### G-02 — první izolovaná implementace readsb/BEAST (22. 10. 2026)
+- Opraven úklid per-aircraft `position_quality` pomocné RAM mapy při TTL, regresně ověřeno [CI 39763140573](https://github.com/Boym323/AirRadarV2/actions/runs/39763140573) 3/3 PASS na `be564960`.
 - [Průběžný G-02 report](docs/reports/G-02-VYSLEDEK.md) a [CI 39762483657](https://github.com/Boym323/AirRadarV2/actions/runs/39762483657): 22 Rust testů PASS, syntetický TCP reconnect, JSON temp-file, DF17/CPR a 1×/2×/4× CPU/RSS/p95 replay. **5/11 úkolů bezpečně potvrzeno, G-02 dosud HOTOVO není**.
 - Implementovány Rust moduly pro bounded JSON snapshoty, inkrementální BEAST TCP framing, konzervativní DF17 CRC/CPR párování, jediný RAM state, TTL/dedup a oddělený bounded Tokio supervisor.
 - Přidán `--g02-replay` pro offline syntetický test a explicitní `--g02-live` pouze na ruční vyžádání s konfigurací zdroje; běžný systemd HTTP stále poctivě G-00 bootstrap a žádný skutečný receiver se automaticky nepřipojuje.
