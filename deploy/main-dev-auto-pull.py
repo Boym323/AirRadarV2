@@ -15,6 +15,7 @@ import sys
 import tarfile
 import tempfile
 import urllib.error
+import urllib.parse
 import urllib.request
 
 REPOSITORY = "Boym323/AirRadarV2"
@@ -38,7 +39,7 @@ def fetch(url: str, max_size: int) -> bytes:
         raise ValueError("HTTP destination is not TLS")
     request = urllib.request.Request(url, headers=HEADERS)
     with urllib.request.urlopen(request, timeout=30) as response:
-        final = urllib.request.urlparse(response.url)
+        final = urllib.parse.urlparse(response.url)
         if final.scheme != "https" or final.hostname not in (
             "api.github.com", "github.com", "release-assets.githubusercontent.com",
             "objects.githubusercontent.com",

@@ -127,7 +127,7 @@ else
     echo "ERROR: konflikt release jména a SHA" >&2
     exit 1
   fi
-  rm -rf -- "$work"
+  # Do not delete the staging directory until healthcheck has used it.
 fi
 
 ln -sfn "$target" "$base/.current-next"
