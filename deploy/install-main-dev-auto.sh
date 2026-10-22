@@ -43,6 +43,9 @@ install -o root -g root -m 0755 "$tmp/agent.py" \
   /usr/local/libexec/airradarv2-main-deploy-pull.py
 install -o root -g root -m 0755 "$tmp/installer.sh" \
   /usr/local/libexec/airradarv2-main-deploy-install.sh
+install -o root -g root -m 0644 \
+  "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/archive_validation.py" \
+  /usr/local/libexec/archive_validation.py
 install -d -o root -g root -m 0700 /var/lib/airradar-v2/main-deploy
 install -d -o root -g root -m 0755 /var/cache/airradarv2-main-deploy
 if [[ ! -e /var/cache/airradarv2-main-deploy/status.json ]]; then

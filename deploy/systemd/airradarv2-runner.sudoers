@@ -1,0 +1,2 @@
+Defaults!/usr/local/libexec/airradarv2-runner-deploy.sh !setenv
+airradarv2-runner ALL=(root) NOPASSWD: /usr/local/libexec/airradarv2-runner-deploy.sh

@@ -1,4 +1,4 @@
-name: AirRadar V2 — automatický G-02 DEV balíček (bez nasazení)
+name: AirRadar V2 — CI, immutable release a DEV deployment
 on:
   push:
     branches: [main, codex/g02-auto-lxc-20261022]
@@ -95,12 +95,70 @@ jobs:
             --target "$GITHUB_SHA" \
             --prerelease --latest=false \
             --title "G-02 DEV kandidat $GITHUB_SHA" \
-            --notes "Offline acceptance, bez automaticke instalace a bez zasahu do V1."
+            --notes "Ověřený CI artefakt pro izolovaný DEV deployment; bez zásahu do V1, DB nebo přijímače."
+
+  deploy-dev:
+    name: DEV deployment přes AirRadar V2 runner
+    needs: publish-dev-candidate
+    if: github.repository == 'Boym323/AirRadarV2' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux, x64, airradarv2-dev]
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    concurrency:
+      group: airradarv2-dev-deployment
+      cancel-in-progress: false
+    steps:
+      - name: Stáhnout pouze prerelease artefakt přesného SHA
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          short="$(printf '%s' "$GITHUB_SHA" | cut -c1-12)"
+          name="airradarv2-dev-linux-amd64-${short}.tar.gz"
+          incoming=/var/lib/airradarv2-runner/incoming
+          mkdir -p "$incoming"
+          rm -f "$incoming"/*
+          release="$(curl -fsSL -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${GH_TOKEN}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/g02-dev-${GITHUB_SHA}")"
+          jq -e --arg sha "$GITHUB_SHA" --arg name "$name" \
+            '.tag_name == ("g02-dev-" + $sha) and .target_commitish == $sha and .prerelease == true and .draft == false and .author.login == "github-actions[bot]" and ([.assets[].name] | sort) == [$name, ($name + ".sha256")]' \
+            <<<"$release"
+          for suffix in .tar.gz .tar.gz.sha256; do
+            asset="${name}${suffix#\.tar.gz}"
+            url="$(jq -r --arg n "$asset" '.assets[] | select(.name == $n) | .url' <<<"$release")"
+            test -n "$url" -a "$url" != null
+            curl -fsSL --location -H 'Accept: application/octet-stream' -H "Authorization: Bearer ${GH_TOKEN}" "$url" -o "$incoming/$asset"
+          done
+          sha256sum -c "$incoming/$name.sha256"
+          test "$(tar -xOzf "$incoming/$name" ./VERSION)" = "$GITHUB_SHA"
+          current_main="$(curl -fsSL -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${GH_TOKEN}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" | jq -r '.object.sha')"
+          test "$current_main" = "$GITHUB_SHA"
+          tar -tzf "$incoming/$name" | grep -Eq '^\./(VERSION|airradarv2-engine|web/index\.html)$'
+      - name: Nasadit nebo bezpečně čekat na dokončení G-02
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          short="$(printf '%s' "$GITHUB_SHA" | cut -c1-12)"
+          bundle="/var/lib/airradarv2-runner/incoming/airradarv2-dev-linux-amd64-${short}.tar.gz"
+          for attempt in $(seq 1 240); do
+            set +e
+            sudo -n /usr/local/libexec/airradarv2-runner-deploy.sh "$bundle" "$GITHUB_SHA"
+            status=$?
+            set -e
+            if [ "$status" -eq 0 ]; then exit 0; fi
+            if [ "$status" -ne 75 ]; then exit "$status"; fi
+            echo "G-02 právě běží; další pokus za 30 s ($attempt/240)"
+            sleep 30
+          done
+          exit 75
+      - name: Zápis výsledku do summary
+        run: echo "DEV deployment dokončen pro $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
 
   verify-dev-lxc:
     # GitHub only reads the already public status; it never connects to V1 or runs
     # arbitrary commands in the user's LAN. Any error fails this separate gate.
-    needs: publish-dev-candidate
+    needs: deploy-dev
     if: github.repository == 'Boym323/AirRadarV2' && github.event_name == 'push'
     runs-on: ubuntu-24.04
     timeout-minutes: 29

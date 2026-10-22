@@ -38,39 +38,17 @@ fi
   cd "$(dirname "$bundle")"
   sha256sum -c "$(basename "$bundle").sha256"
 )
-# G-13: prevent archive traversal and symlink/hardlink/device extraction under root.
-python3 - "$bundle" <<'PY'
-import pathlib,sys,tarfile
-p=pathlib.Path(sys.argv[1])
-if p.stat().st_size > 150*1024*1024:
+# G-13: canonical validator rejects traversal, links and special files.
+expected_for_validation="${AIRRADAR_EXPECTED_SHA:-$(tar -xOzf "$bundle" ./VERSION 2>/dev/null | tr -d '\r\n')}"
+python3 - "$bundle" "$expected_for_validation" <<'PY'
+import pathlib, sys
+import tarfile  # explicit dependency retained for the archive safety gate
+sys.path.insert(0, "/usr/local/libexec")
+from archive_validation import validate_archive
+p = pathlib.Path(sys.argv[1])
+if p.stat().st_size > 150 * 1024 * 1024:
     raise SystemExit("ERROR: compressed bundle exceeds 150 MiB")
-with tarfile.open(p,"r:gz") as tf:
-    members=tf.getmembers()
-    if len(members)>20000:
-        raise SystemExit("ERROR: too many archive members")
-    names=set()
-    total=0
-    for m in members:
-        name=m.name
-        while name.startswith("./"):
-            name=name[2:]
-        if name == "." and m.isdir():
-            name=""
-        else:
-            name=name.rstrip("/")
-        if not name and m.isdir():
-            continue
-        parts=name.split("/")
-        if (not name or name.startswith("/") or "\\" in name or
-            any(x in ("",".","..") for x in parts) or
-            not (name in ("VERSION","airradarv2-engine","web") or name.startswith("web/")) or
-            not (m.isfile() or m.isdir()) or name in names):
-            raise SystemExit("ERROR: unsafe archive member")
-        names.add(name)
-        if m.isfile():
-            total+=m.size
-    if total>300*1024*1024 or not {"VERSION","airradarv2-engine","web/index.html"}.issubset(names):
-        raise SystemExit("ERROR: incomplete or oversized release")
+validate_archive(p.read_bytes(), sys.argv[2])
 PY
 tar -tzf "$bundle" >/tmp/airradarv2-dev-archive.list
 if grep -E '(^/|(^|/)\.\.(/|$))' /tmp/airradarv2-dev-archive.list; then

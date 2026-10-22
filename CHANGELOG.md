@@ -5,6 +5,8 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 ## [Nepublikováno]
 
 - G-13: zdokumentována a regresně testována korektní validace kořenových záznamů GNU tar (`.`/`./`) pro DEV auto-deploy; bezpečnostní kontroly zůstávají povinné.
+- G-13: doplněn repo-scoped self-hosted runner `airradarv2-dev`, root-owned deployment bridge, krátkodobá tokenová registrace, sdílený G-02 lock a deploy job pouze pro úspěšný `main` prerelease. První registrace a skutečné nasazení čekají na GitHub runner oprávnění.
+- G-13: řízený rollback test root bridge PASS; nefunkční kandidát byl odmítnut healthcheckem, aktivní symlink i Rust API se vrátily na předchozí release. Vadný release zůstal zachován pro audit.
 
 ### Automatický DEV deploy z ověřeného main — zatím pouze implementace
 - Nový root-owned pull agent přijímá jen GitHub botem vydaný release k přesnému současnému main SHA a validuje balíček, SHA256, adresy assetů, tar allowlist a VERSION.

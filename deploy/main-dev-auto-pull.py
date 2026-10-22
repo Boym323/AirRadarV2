@@ -19,6 +19,9 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from archive_validation import validate_archive
+
 REPOSITORY = "Boym323/AirRadarV2"
 API = "https://api.github.com/repos/" + REPOSITORY
 STATE = Path("/var/lib/airradar-v2/main-deploy")
@@ -100,42 +103,8 @@ def sha256_asset(asset: dict, limit: int) -> tuple:
 
 
 def check_archive(data: bytes, sha: str) -> None:
-    """Validate all tar members before executing a root-owned installer."""
-    import io
-    with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as archive:
-        members = archive.getmembers()
-        if len(members) > 20000:
-            raise ValueError("Too many archive members")
-        total, found = 0, {}
-        for entry in members:
-            name = entry.name
-            while name.startswith("./"):
-                name = name[2:]
-            if name == "." and entry.isdir():
-                name = ""
-            else:
-                name = name.rstrip("/")
-            if not name and entry.isdir():
-                continue
-            path = name.split("/")
-            if (
-                not name or name.startswith("/") or "\\" in name
-                or any(part in ("", ".", "..") for part in path)
-                or not (name in ("VERSION", "airradarv2-engine", "web") or name.startswith("web/"))
-                or not (entry.isfile() or entry.isdir()) or name in found
-            ):
-                raise ValueError("Unsafe archive member")
-            found[name] = entry
-            total += entry.size if entry.isfile() else 0
-        if total > 300 * 1024 * 1024:
-            raise ValueError("Archive uncompressed size too large")
-        if not {"VERSION", "airradarv2-engine", "web/index.html"} <= found.keys():
-            raise ValueError("Missing required files")
-        if not all(found[item].isfile() for item in ("VERSION", "airradarv2-engine", "web/index.html")):
-            raise ValueError("Nonregular critical archive member")
-        source = archive.extractfile(found["VERSION"])
-        if source is None or source.read(256).decode("ascii", "strict").strip() != sha:
-            raise ValueError("Archive VERSION != main commit")
+    """Validate all tar members through the canonical shared validator."""
+    validate_archive(data, sha)
 
 
 def current_sha() -> str:
