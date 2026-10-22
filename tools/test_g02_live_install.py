@@ -14,7 +14,7 @@ class TestInstaller(unittest.TestCase):
             "OnUnitInactiveSec=3min", "G02_SOURCE_REF", "python3 -m py_compile",
         ]:
             self.assertIn(needed, s)
-        self.assertNotIn("192.168.1.50", s)
+        self.assertNotIn("192.168.1.", s)
 
 
 if __name__ == "__main__":
