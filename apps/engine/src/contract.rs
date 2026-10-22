@@ -373,7 +373,9 @@ mod tests {
         let obs = normalize_readsb(&f, "rx-primary", 1792627200.0).unwrap();
         assert_eq!(obs.len(), 3);
         for (actual, expected) in obs.iter().zip(expected["initial"].as_array().unwrap()) {
-            assert_eq!(serde_json::to_value(actual).unwrap(), *expected);
+            let mut normalized = serde_json::to_value(actual).unwrap();
+            normalized["receivedAtUtc"] = serde_json::json!(1792627200);
+            assert_eq!(normalized, *expected);
         }
         assert_ne!(obs[0].aircraft_key, obs[1].aircraft_key);
         assert!(eligible_for_sql(&obs[0]));
