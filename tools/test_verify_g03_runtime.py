@@ -58,8 +58,8 @@ class G03StageGuardTests(unittest.TestCase):
         installer = (ROOT / "deploy/install-dev-bundle.sh").read_text()
         runner = (ROOT / "deploy/install-runner-dev.sh").read_text()
         self.assertIn("g03-runtime-required.txt", runtime)
-        self.assertIn("G03_STAGE_GATE_V1", runtime)
-        self.assertIn("G03_STAGE_GATE_V1", installer)
+        self.assertIn("G03_STAGE_GATE_V2", runtime)
+        self.assertIn("G03_STAGE_GATE_V2", installer)
         self.assertIn("verify-g03-runtime.py", installer)
         self.assertIn("verify-g03-runtime.py", runner)
 

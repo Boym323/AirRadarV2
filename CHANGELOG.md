@@ -4,6 +4,15 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-03 — obnoven automatický main → V2 DEV deployment
+- Release workflow po PASS CI opět publikuje SHA256 prerelease a spouští již registrovaný runner. Stage-aware root instalátor automaticky přepne `--g03-live-api` i immutable release a provede kompletní systemd+binary rollback při chybě. Source čte již schválený read-only G-02 BEAST (privátní LAN TCP 30005). Jednorázový root helper připravuje prostředí bez restartu; samotné automatické vydávání už nevyžaduje ruční schválení každého commitu.
+
+
+### G-04.04 — zahájení izolované PostgreSQL historie (CI k ověření)
+- Přidána skutečná SQLx migrace s jednou J09 tabulkou, 30s UTC bucketem a jediným PK. Reverzibilní SQL a separátní CI workflow pro PostgreSQL 18 testují integritu, nezměnitelnost historie, role a rollback pouze ve vytvořené efemérní DB.
+- Žádné spojení se skutečným DB LXC, žádné nasazení; G-04.01–.03, reálný TLS, writer, retence a měření zůstávají otevřené. Podrobnosti v [průběžném reportu](docs/reports/G-04-VYSLEDEK.md).
+
+
 ### G-04.04 — zahájení izolované PostgreSQL historie (DB CI #39856030008 PASS)
 - Přidána skutečná SQLx migrace s jednou J09 tabulkou, 30s UTC bucketem a jediným PK. Reverzibilní SQL a separátní CI workflow pro PostgreSQL 18 testují integritu, nezměnitelnost historie, role a rollback pouze ve vytvořené efemérní DB.
 - Žádné spojení se skutečným DB LXC, žádné nasazení; G-04.01–.03, reálný TLS, writer, retence a měření zůstávají otevřené. Podrobnosti v [průběžném reportu](docs/reports/G-04-VYSLEDEK.md).

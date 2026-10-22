@@ -23,8 +23,6 @@ jobs:
   test-and-build:
     name: Sestavit immutable DEV artefakt
     needs: validate
-    outputs:
-      g03_runtime: ${{ steps.stage.outputs.g03_runtime }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
@@ -49,7 +47,7 @@ jobs:
           install -d package/web
           install -m 0755 target/release/airradarv2-engine package/airradarv2-engine
           cp -a apps/web/dist/. package/web/
-          # G03_STAGE_GATE_V1 — metadata of the current checked SHA.
+          # G03_STAGE_GATE_V2 — metadata of the current checked SHA.
           if test -f contracts/openapi.g03.yaml; then
             printf 'G-03\n' > package/web/g03-runtime-required.txt
           fi
@@ -61,22 +59,14 @@ jobs:
           grep -qx './airradarv2-engine' /tmp/airradarv2-archive.list
           grep -qx './VERSION' /tmp/airradarv2-archive.list
           grep -qx './web/index.html' /tmp/airradarv2-archive.list
-      # G-03 release gate: allow CI artifacts on main but never publish a
-      # deployable prerelease until the installed root/systemd rollback was
-      # separately accepted. Fail closed from the source contract and marker.
-      - name: G-03 — bezpečná stage gate před publikací
-        id: stage
+      - name: G-03 — ověřit stage marker před vydáním
         shell: bash
         run: |
           set -Eeuo pipefail
           if test -f contracts/openapi.g03.yaml; then
-            test -f package/web/g03-runtime-required.txt
             grep -qx 'G-03' package/web/g03-runtime-required.txt
-            echo 'g03_runtime=true' >> "$GITHUB_OUTPUT"
-            echo 'G-03: ověřený build je jen Actions artifact, prerelease/deploy jsou blokované.' >> "$GITHUB_STEP_SUMMARY"
           else
             test ! -e package/web/g03-runtime-required.txt
-            echo 'g03_runtime=false' >> "$GITHUB_OUTPUT"
           fi
       - uses: actions/upload-artifact@v4
         with:
@@ -88,9 +78,9 @@ jobs:
           retention-days: 7
   publish-dev-candidate:
     needs: test-and-build
-    # P0 G-03 audit: no deployable release on a G-03 main push. Both the
-    # self-hosted runner and any external release poller have nothing to fetch.
-    if: ${{ needs['test-and-build'].outputs.g03_runtime == 'false' && github.repository == 'Boym323/AirRadarV2' && github.ref == 'refs/heads/main' }}
+    # Každý main commit po úspěšných testech automaticky publikuje
+    # immutable prerelease; G-03 režim bezpečně přepne až root installer.
+    if: github.repository == 'Boym323/AirRadarV2' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -174,8 +164,11 @@ jobs:
           grep -Eq '^\./(VERSION|airradarv2-engine|web/index\.html)$' "$staging/archive.list"
           # G03_STAGE_GATE_V1: fail BEFORE deploying if root installer is stale.
           if grep -qx './web/g03-runtime-required.txt' "$staging/archive.list"; then
-            grep -qF 'G03_STAGE_GATE_V1' /usr/local/libexec/airradarv2-main-deploy-install.sh
-            test -r /usr/local/libexec/airradarv2-verify-g03-runtime.py
+            if ! grep -qF 'G03_STAGE_GATE_V2' /usr/local/libexec/airradarv2-main-deploy-install.sh ||
+               ! test -r /usr/local/libexec/airradarv2-verify-g03-runtime.py; then
+              echo "::error::Jednorázově na V2 DEV LXC spusť: bash deploy/activate-g03-main-autodeploy.sh"
+              exit 1
+            fi
           fi
       - name: Nasadit nebo bezpečně čekat na dokončení G-02
         shell: bash

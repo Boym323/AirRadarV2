@@ -112,3 +112,22 @@ G-03 má 10/10 izolovaných CI testů a lze sloučit **pouze implementační kó
 SHA-připnutý balíček s `contracts/openapi.g03.yaml` dostane při buildu `web/g03-runtime-required.txt`. Před deploymentem Runner ověřuje přítomnost nainstalovaného root instalátoru `G03_STAGE_GATE_V1` a verifikátoru `verify-g03-runtime.py`; pokud chybí, deploy odmítne **před přepnutím symlinku**. Instalátor vyžaduje aktivní systemd `--g03-live-api` a následně ověřuje HTTP health `stage=G-03`, pravdivý `live`/`waiting_for_observations`, nový `snapshot` s epoch/seq, stream přes DEV Nginx a 15s heartbeat do 20s. `bootstrap` ani `degraded` nesmí projít. Chyba G-03 streamu ještě uvnitř root EXIT trap vyvolá rollback.
 
 **G-03 cutover dosud NO-GO:** PR neinstaluje do LXC nový root-owned skript. Před prvním G-03 deploymentem je potřeba bezpečně aktualizovat instalátor z ověřeného commitu, schválit změnu systemd režimu a ověřit celý config+binary rollback (starý G-00 binary nemusí umět `--g03-live-api`). Dokud se neověří tato atomická konfigurace a cílový DEV streaming, neslučovat G-03 do main. Provozní G-00/G-02 Runner workflow zůstává neměnné.
+
+
+## G-03 — obnovená automatická distribuce z main (22. 10. 2026)
+
+Na výslovné přání vlastníka se odstraňuje zákaz G-03 release. Každý push do `main` nyní automaticky provede `shared CI → immutable Rust/Vite build → SHA256 prerelease → existující self-hosted V2 runner → root-owned instalátor → stage-aware health HTTP/SSE`. Žádné další ruční schválení jednotlivých vydání není potřeba. Nový instalátor transakčně připraví systemd `--g03-live-api`, převezme dříve schválený read-only BEAST vstup z G-02 služby a přepne verzi; každé selhání vrací předchozí verzi **i systemd režim**.
+
+Při **prvním zprovoznění** je nutná jednorázová aktualizace root-owned installeru (existující runner sudoers nedovolují samotnému GitHub jobu nahradit root-owned soubory). Na `lo-dev-airradarv2` jako root:
+
+```bash
+cd /opt/airradarv2
+git fetch origin main
+git switch main
+git pull --ff-only origin main
+bash deploy/activate-g03-main-autodeploy.sh
+```
+
+Jednorázový skript přísně ověřuje původ a SHA `main`, root-owned checkout, schválenou BEAST G-02 službu, běžící V2 engine/Nginx/runner i `nginx -t`, potom pouze instaluje root-owned bridge, archivový validátor, G-03 runtime verifier a transakční instalátor. **Nerestartuje** běžící engine. Následující push do `main` spustí plný automatický deployment. Pokud bootstrap není proveden, workflow při preflightu selže před změnou služby, místo aby tvrdilo falešný úspěch.
+
+Pro ověření skutečné aktivace: GitHub Actions workflow musí mít všech šest jobů PASS (zejména `deploy-dev`), na LXC `systemctl show airradarv2-engine.service -p ExecStart`, `curl -fsS http://127.0.0.1:4101/api/v1/health` vrátí `stage=G-03`, `/api/v1/stream` odešle `event: snapshot` a Nginx postupně doručí heartbeat. **První reálný úspěšný DEV cutover zatím NEOVĚŘENO.**
