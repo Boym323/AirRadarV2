@@ -4,6 +4,13 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### Automatický DEV deploy z ověřeného main — zatím pouze implementace
+- Nový root-owned pull agent přijímá jen GitHub botem vydaný release k přesnému současnému main SHA a validuje balíček, SHA256, adresy assetů, tar allowlist a VERSION.
+- Jednorázový instalátor vytvoří izolovaný systemd timer každých 5 minut a bezpečný read-only DEV status. Healthcheck a rollback se provádí bez zásahu do V1, přijímače nebo DB.
+- **Není zatím potvrzena reálná instalace v DEV LXC**, provozní G-13 produkční etapa zůstává nerozpracovaná.
+
+
+
 ### G-02.11 — úspěšná hodinová LIVE přejímka, etapa 11/11 HOTOVO (22. 10. 2026)
 - [GitHub run #39795592425](https://github.com/Boym323/AirRadarV2/actions/runs/39795592425) — skutečný 60min read-only BEAST ingest na DEV LXC: 109 154 pozorování, 77 max tracků, `channelDrops=0`, `capacityDrops=0`, průměr CPU 0,36 %, peak RSS 2 492 KiB; plný G-02 SHA `d0cefc4a5c3332eadccf8ab21c96bae51987abe9`, request ID `39795592425`. Oba GitHub joby `SUCCESS` v 17:29 SELČ.
 - Kompletní G-02 má **11/11 testových kroků PASS**; šest KEEP ID zůstává `TESTED`. G-03/živé HTTP/SSE stále není produktově nasazeno. Samostatně zbývá propis opraveného `TimeoutStartSec=3900` do instalované oneshot jednotky po skončení testu.

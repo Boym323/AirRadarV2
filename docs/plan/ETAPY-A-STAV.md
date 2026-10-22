@@ -17,7 +17,7 @@
 | G-10 | [Webová platforma](../ukoly/G-10-PWA-LOKALIZACE.md) | NEZAHÁJENO |
 | G-11 | [Akceptace všech aktivních funkcí](../ukoly/G-11-ZAVERECNE-TESTOVANI.md) | NEZAHÁJENO |
 | G-12 | [Oddělený shadow provoz](../ukoly/G-12-ODDELENY-SHADOW.md) | NEZAHÁJENO |
-| G-13 | [Schválené nasazení a rollback](../ukoly/G-13-BEZPECNY-RELEASE.md) | NEZAHÁJENO |
+| G-13 | [Schválené nasazení a rollback](../ukoly/G-13-BEZPECNY-RELEASE.md) | PRODUKČNÍ ETAPA NEZAHÁJENA — samostatný DEV auto-deploy připraven, neaktivován |
 
 ## Technologická údržba G-00 (bez změny funkčního rozsahu)
 
@@ -87,3 +87,7 @@ Doložen uživatelský výstup z `https://airradarv2.pomykal.cz/g02-status.json`
 ## G-02 závěrečná brána úspěšně uzavřena — 22. 10. 2026 v 17:29 SELČ
 
 Historické výše uvedené stavy `10/11` a `čeká LIVE` jsou nahrazeny skutečným výsledkem [GitHub run #39795592425](https://github.com/Boym323/AirRadarV2/actions/runs/39795592425) (`SUCCESS`): neměnný G-02 commit `d0cefc4a5c3332eadccf8ab21c96bae51987abe9`, 60min skutečný read-only BEAST stream, 109 154 pozorování, 77 peak tracků, nulové ztráty, CPU 0,36 %, RSS peak 2 492 KiB. Zároveň dříve potvrzený syntetický G-02 replay + 180s reconnect [#39781158565](https://github.com/Boym323/AirRadarV2/actions/runs/39781158565) PASS. **G-02 = 11/11 HOTOVO na úrovni vývojové/testovací etapy**, KEEP ID zůstávají `TESTED`; nasazení G-02 jako živého HTTP API, G-03 a provozní oprava systemd timeoutu zůstávají samostatné činnosti. [Závěrečný report](../reports/G-02-VYSLEDEK.md#závěrečná-provozní-přejímka-g-0211--pass-22-10-2026).
+
+## Přípravná DEV aktualizace z ověřeného main (mimo produkční G-13)
+
+Na přímé povolení vlastníka vzniká v [PR #10](https://github.com/Boym323/AirRadarV2/pull/10) root-owned, read-only GitHub pull agent, který po úspěšném CI dodá poslední main do samostatného DEV LXC; má SHA/manifest kontroly, odložení během G-02 testů a health+rollback. [Runbook](../runbooks/DEV-MAIN-AUTODEPLOY.md) a [report](../reports/DEV-MAIN-AUTODEPLOY-2026-10-22.md) upozorňují na stále neprovedenou jednorázovou aktivaci v LXC. **Nejde o produkční cutover, DB migrace, změnu V1 ani hotovou G-13.**
