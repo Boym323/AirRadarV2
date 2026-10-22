@@ -117,3 +117,7 @@ PASS: všechna doručení 1/10/100, 101. klient HTTP 503, uvolnění capacity, m
 ## Nová brána G-03.10 — až 5 000 letadel
 
 Do izolované CI zátěže přidány varianty **1 a 100 klientů × 5 000 kompaktních letadel**. Zůstává deklarovaný limit **1 MiB serializovaného veřejného snapshotu** — u plných objektů s telemetrií je správnou odpovědí explicitní 503, nikoli zkrácený či zatuhlý starý stav. Při 5 000 kompaktních objektech má být snapshot menší než 1 MiB, jako ověřuje Rust unit test. Tyto nové případy zatím nemají novou výsledkovou CI, neoznačovat G-03.10 za TESTED.
+
+## Browserová brána G-03.08 — připravený test, čeká CI
+
+`tools/test_g03_browser.py` v izolovaném GitHub Actions Chromium provádí reálný browser `EventSource` přes **Vite same-origin proxy** (4100) i **Nginx same-origin proxy** (8082) do jediné Rust RAM. Ověřuje počáteční snapshot, následnou delta aktualizaci během otevřeného spojení a nový full snapshot po reconnectu; nevyžaduje nový frontend radar, produkční LXC, přijímač ani DB. Instalace Playwright je výhradně do dočasného CI Python venv. Provozní DEV browser přejímka nadále vyžaduje samostatné potvrzení.

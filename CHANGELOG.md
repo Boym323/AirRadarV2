@@ -4,6 +4,9 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-03.08 — Chromium EventSource, dva stejno-origin proxy průchody
+- Izolovaný browser test Chromium přes Vite 4100 → Rust 4102 a Nginx 8082 → Rust 4102. Ověřuje plný snapshot při připojení, delta upsert během otevřeného streamu, monotónní epoch/seq a full snapshot po reconnectu. Playwright se instaluje pouze do dočasného CI venv, nikoli do uživatelova počítače ani do DEV LXC.
+
 ### G-03.10 — skutečný test 5 000 kompaktních letadel (CI)
 - Syntetický readsb replay rozšířen o 5 000 kompaktích letadel pro 1 a 100 souběžných klientů, report CPU/RSS/p95/p99/bytes/s se explicitním čítačem nedoručených aktualizací. Přetížení nad 1 MiB ověřuje separátní Rust regresní test; plný produkční stav pěti tisíc letadel nelze garantovat při deklarovaném 1MiB limitu.
 
