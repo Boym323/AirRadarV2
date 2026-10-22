@@ -93,7 +93,7 @@ class MainDeploySafety(unittest.TestCase):
             "AIRRADAR_EXPECTED_SHA", "AIRRADAR_V2_AUTO_DEPLOY",
             "trap 'rollback", "sha256sum -c", "nginx -t",
             "systemctl restart airradarv2-engine",
-            "health.json", "tarfile", "web/index.html",
+            "health_tmp", "tarfile", "web/index.html",
         ):
             self.assertIn(keyword, install)
         for keyword in (
