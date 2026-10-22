@@ -206,8 +206,8 @@ pub fn merge(state: &mut BTreeMap<String, PublicAircraft>, o: &Observation) -> &
             if time <= previous {
                 "duplicate_or_old"
             } else if let Some(p) = &item.position {
-                let dx = (next.lon - p.lon).to_radians()
-                    * ((next.lat + p.lat) * 0.5).to_radians().cos();
+                let dx =
+                    (next.lon - p.lon).to_radians() * ((next.lat + p.lat) * 0.5).to_radians().cos();
                 let dy = (next.lat - p.lat).to_radians();
                 let velocity = 6_371_000.0 * (dx * dx + dy * dy).sqrt() / (time - previous);
                 if velocity > 1000.0 {

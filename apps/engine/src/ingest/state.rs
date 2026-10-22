@@ -29,11 +29,14 @@ impl RadarState {
             || !observation.message_at_utc.is_finite()
             || !observation.received_at_utc.is_finite()
             || observation.message_at_utc > observation.received_at_utc + 10.0
-            || observation.position_at_utc.is_some_and(|t| !t.is_finite() || t < 0.0)
+            || observation
+                .position_at_utc
+                .is_some_and(|t| !t.is_finite() || t < 0.0)
         {
             return "invalid";
         }
-        if !self.tracks.contains_key(&observation.aircraft_key) && self.tracks.len() >= MAX_AIRCRAFT {
+        if !self.tracks.contains_key(&observation.aircraft_key) && self.tracks.len() >= MAX_AIRCRAFT
+        {
             self.counters.capacity_drops += 1;
             return "capacity";
         }
@@ -44,10 +47,15 @@ impl RadarState {
         };
         // Nižší časová přesnost nesmí krátce po důvěryhodném JSON
         // přepsat existující čerstvou polohu. Metadata však mohou pokračovat.
-        let masked = self.tracks.get(&observation.aircraft_key)
-            .and_then(|old|old.last_position_at.map(|time| (old,time)))
-            .is_some_and(|(_,t)| {
-                self.position_quality.get(&observation.aircraft_key).copied().unwrap_or(0)
+        let masked = self
+            .tracks
+            .get(&observation.aircraft_key)
+            .and_then(|old| old.last_position_at.map(|time| (old, time)))
+            .is_some_and(|(_, t)| {
+                self.position_quality
+                    .get(&observation.aircraft_key)
+                    .copied()
+                    .unwrap_or(0)
                     > incoming_quality
                     && observation.received_at_utc - t <= POSITION_FRESH_SECONDS
             });
@@ -60,7 +68,8 @@ impl RadarState {
         match result {
             "updated" => {
                 self.counters.updated += 1;
-                self.position_quality.insert(observation.aircraft_key.clone(),incoming_quality);
+                self.position_quality
+                    .insert(observation.aircraft_key.clone(), incoming_quality);
             }
             "duplicate_or_old" => self.counters.duplicates += 1,
             "conflict" => self.counters.conflicts += 1,
@@ -163,8 +172,12 @@ mod tests {
     }
     #[test]
     fn beast_cannot_override_fresh_trusted_json() {
-        let first = parse_replay(include_bytes!("../../../../contracts/fixtures/readsb/initial.json"),
-            "rx-primary", 1792627200.0).unwrap();
+        let first = parse_replay(
+            include_bytes!("../../../../contracts/fixtures/readsb/initial.json"),
+            "rx-primary",
+            1792627200.0,
+        )
+        .unwrap();
         let mut state = RadarState::default();
         state.batch(&first);
         let mut beast = first[0].clone();
@@ -175,27 +188,39 @@ mod tests {
         beast.position_at_utc = Some(1792627203.0);
         beast.position.as_mut().unwrap().lat = 49.901;
         state.apply(&beast);
-        assert_eq!(state.tracks["icao:abc123"].position.as_ref().unwrap().lat,49.9);
+        assert_eq!(
+            state.tracks["icao:abc123"].position.as_ref().unwrap().lat,
+            49.9
+        );
         beast.received_at_utc = 1792627220.0;
         beast.message_at_utc = 1792627220.0;
         beast.position_at_utc = Some(1792627220.0);
-        assert_eq!(state.apply(&beast),"updated");
-        assert_eq!(state.tracks["icao:abc123"].position.as_ref().unwrap().lat,49.901);
+        assert_eq!(state.apply(&beast), "updated");
+        assert_eq!(
+            state.tracks["icao:abc123"].position.as_ref().unwrap().lat,
+            49.901
+        );
     }
     #[test]
     fn implausible_position_does_not_mutate_metadata() {
-        let first = parse_replay(include_bytes!("../../../../contracts/fixtures/readsb/initial.json"),
-            "rx-primary", 1792627200.0).unwrap();
+        let first = parse_replay(
+            include_bytes!("../../../../contracts/fixtures/readsb/initial.json"),
+            "rx-primary",
+            1792627200.0,
+        )
+        .unwrap();
         let mut state = RadarState::default();
         state.apply(&first[0]);
         let mut bad = first[0].clone();
         bad.received_at_utc = 1792627203.0;
         bad.message_at_utc = 1792627203.0;
         bad.position_at_utc = Some(1792627203.0);
-        bad.position.as_mut().unwrap().lat=-70.0;
-        bad.callsign=Some("SPOOF".into());
-        assert_eq!(state.apply(&bad),"conflict");
-        assert_eq!(state.tracks["icao:abc123"].callsign.as_deref(), Some("TEST123"));
+        bad.position.as_mut().unwrap().lat = -70.0;
+        bad.callsign = Some("SPOOF".into());
+        assert_eq!(state.apply(&bad), "conflict");
+        assert_eq!(
+            state.tracks["icao:abc123"].callsign.as_deref(),
+            Some("TEST123")
+        );
     }
-
 }
