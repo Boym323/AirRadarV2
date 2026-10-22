@@ -34,7 +34,9 @@ impl FlightData {
     }
     /// Záměrně přijímá jen ohraničené, konečné a fyzikálně uvěřitelné údaje.
     pub fn from_readsb(row: &Value) -> Self {
-        let altitude_baro_ft = row.get("alt_baro").and_then(Value::as_i64)
+        let altitude_baro_ft = row
+            .get("alt_baro")
+            .and_then(Value::as_i64)
             .and_then(|x| i32::try_from(x).ok())
             .filter(|x| (-2000..=65000).contains(x));
         let on_ground = match row.get("alt_baro") {
@@ -42,13 +44,18 @@ impl FlightData {
             Some(Value::Number(_)) if altitude_baro_ft.is_some() => Some(false),
             _ => None,
         };
-        let bounded = |name: &str, max: f64| row.get(name).and_then(Value::as_f64)
-            .filter(|v| v.is_finite() && (0.0..=max).contains(v));
+        let bounded = |name: &str, max: f64| {
+            row.get(name)
+                .and_then(Value::as_f64)
+                .filter(|v| v.is_finite() && (0.0..=max).contains(v))
+        };
         Self {
             altitude_baro_ft,
             ground_speed_kt: bounded("gs", 1500.0),
             track_degrees: bounded("track", 360.0).map(|v| v.rem_euclid(360.0)),
-            vertical_rate_fpm: row.get("baro_rate").and_then(Value::as_i64)
+            vertical_rate_fpm: row
+                .get("baro_rate")
+                .and_then(Value::as_i64)
                 .and_then(|x| i32::try_from(x).ok())
                 .filter(|x| (-15000..=15000).contains(x)),
             on_ground,
@@ -290,11 +297,21 @@ pub fn merge(state: &mut BTreeMap<String, PublicAircraft>, o: &Observation) -> &
         if let Some(squawk) = &o.squawk {
             item.squawk = Some(squawk.clone());
         }
-        if let Some(v) = o.telemetry.altitude_baro_ft { item.telemetry.altitude_baro_ft = Some(v); }
-        if let Some(v) = o.telemetry.ground_speed_kt { item.telemetry.ground_speed_kt = Some(v); }
-        if let Some(v) = o.telemetry.track_degrees { item.telemetry.track_degrees = Some(v); }
-        if let Some(v) = o.telemetry.vertical_rate_fpm { item.telemetry.vertical_rate_fpm = Some(v); }
-        if let Some(v) = o.telemetry.on_ground { item.telemetry.on_ground = Some(v); }
+        if let Some(v) = o.telemetry.altitude_baro_ft {
+            item.telemetry.altitude_baro_ft = Some(v);
+        }
+        if let Some(v) = o.telemetry.ground_speed_kt {
+            item.telemetry.ground_speed_kt = Some(v);
+        }
+        if let Some(v) = o.telemetry.track_degrees {
+            item.telemetry.track_degrees = Some(v);
+        }
+        if let Some(v) = o.telemetry.vertical_rate_fpm {
+            item.telemetry.vertical_rate_fpm = Some(v);
+        }
+        if let Some(v) = o.telemetry.on_ground {
+            item.telemetry.on_ground = Some(v);
+        }
     }
     if result == "updated" {
         item.position = o.position.clone();

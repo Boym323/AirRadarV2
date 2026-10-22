@@ -95,7 +95,9 @@ impl RadarState {
         let aircraft = self.tracks.get(key)?;
         if self.position_quality.get(key).copied().unwrap_or(0) < 2
             || now - aircraft.last_position_at? > POSITION_FRESH_SECONDS
-        { return None; }
+        {
+            return None;
+        }
         aircraft.position.clone()
     }
     pub fn snapshot(&self, now: f64) -> Vec<PublicAircraft> {
@@ -138,8 +140,14 @@ mod tests {
         let mut state = RadarState::default();
         state.batch(&first);
         assert_eq!(state.tracks.len(), 3);
-        assert_eq!(state.tracks["icao:abc123"].telemetry.altitude_baro_ft, Some(10000));
-        assert_eq!(state.tracks["icao:abc123"].telemetry.ground_speed_kt, Some(180.0));
+        assert_eq!(
+            state.tracks["icao:abc123"].telemetry.altitude_baro_ft,
+            Some(10000)
+        );
+        assert_eq!(
+            state.tracks["icao:abc123"].telemetry.ground_speed_kt,
+            Some(180.0)
+        );
         state.batch(&second);
         assert_eq!(state.tracks.len(), 3);
         state.batch(&changed);
@@ -163,7 +171,11 @@ mod tests {
             "Pomocná RAM mapa nesmí leakovat"
         );
         assert_eq!(state.counters.expired, 3);
-        assert!(state.trusted_reference("icao:abc123", 1792627300.0).is_none());
+        assert!(
+            state
+                .trusted_reference("icao:abc123", 1792627300.0)
+                .is_none()
+        );
     }
     #[test]
     fn cap_five_thousand() {

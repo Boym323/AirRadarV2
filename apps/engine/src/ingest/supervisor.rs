@@ -9,7 +9,10 @@ use super::{
 use crate::contract::Observation;
 use std::{
     path::{Path, PathBuf},
-    sync::{Arc, atomic::{AtomicU64, Ordering}},
+    sync::{
+        Arc,
+        atomic::{AtomicU64, Ordering},
+    },
     time::Duration,
 };
 use tokio::{
@@ -49,7 +52,11 @@ enum Ingress {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ActiveSource { Offline, Json, Beast }
+enum ActiveSource {
+    Offline,
+    Json,
+    Beast,
+}
 
 #[derive(Default)]
 struct SourceArbiter {
@@ -61,7 +68,10 @@ struct SourceArbiter {
 impl SourceArbiter {
     fn connected(&mut self, up: bool) {
         self.beast_connected = up;
-        if !up { self.beast_since = None; self.beast_seen = None; }
+        if !up {
+            self.beast_since = None;
+            self.beast_seen = None;
+        }
     }
     fn beast_message(&mut self, at: f64) {
         if self.beast_connected {
@@ -73,10 +83,15 @@ impl SourceArbiter {
     }
     fn active(&self, now: f64) -> ActiveSource {
         let recent_beast = self.beast_connected
-            && self.beast_seen.is_some_and(|at| now >= at && now - at <= 5.0);
+            && self
+                .beast_seen
+                .is_some_and(|at| now >= at && now - at <= 5.0);
         if recent_beast && self.beast_since.is_some_and(|at| now >= at + 10.0) {
             ActiveSource::Beast
-        } else if self.json_seen.is_some_and(|at| now >= at && now - at <= 5.0) {
+        } else if self
+            .json_seen
+            .is_some_and(|at| now >= at && now - at <= 5.0)
+        {
             ActiveSource::Json
         } else if recent_beast {
             ActiveSource::Beast
@@ -88,23 +103,36 @@ impl SourceArbiter {
 
 /// Arbitráž diagnostikuje zdroje, ale nikdy nezahazuje důvěryhodná pole:
 /// obě cesty se slučují v JEDINÉ RAM mapě podle stáří a kvality.
-fn consume(event: Ingress, state: &mut RadarState, cpr: &mut CprCache, sources: &mut SourceArbiter) {
+fn consume(
+    event: Ingress,
+    state: &mut RadarState,
+    cpr: &mut CprCache,
+    sources: &mut SourceArbiter,
+) {
     match event {
-        Ingress::Json(obs) => { state.apply(&obs); },
+        Ingress::Json(obs) => {
+            state.apply(&obs);
+        }
         Ingress::JsonHealth { at, ok } => {
-            if ok { sources.json_seen = Some(at); }
-            else { sources.json_seen = None; }
-        },
+            if ok {
+                sources.json_seen = Some(at);
+            } else {
+                sources.json_seen = None;
+            }
+        }
         Ingress::BeastLink { at, connected } => {
-            if at.is_finite() { sources.connected(connected); }
-        },
+            if at.is_finite() {
+                sources.connected(connected);
+            }
+        }
         Ingress::Beast { decoded, at } => {
             sources.beast_message(at);
             let reference = state.trusted_reference(&decoded.key, at);
-            let pos = decoded.cpr.clone().and_then(|value|
-                cpr.observe_with_reference(&decoded.key, value, reference.as_ref()));
+            let pos = decoded.cpr.clone().and_then(|value| {
+                cpr.observe_with_reference(&decoded.key, value, reference.as_ref())
+            });
             state.apply(&observation(decoded, pos, at));
-        },
+        }
     }
 }
 /// Ingest pouze uvnitř jediného tasku mění RAM mapu. Další komponenty ji
@@ -154,7 +182,9 @@ pub async fn run(config: Config) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 fn enqueue(sender: &mpsc::Sender<Ingress>, dropped: &AtomicU64, event: Ingress) {
-    if sender.try_send(event).is_err() { dropped.fetch_add(1, Ordering::Relaxed); }
+    if sender.try_send(event).is_err() {
+        dropped.fetch_add(1, Ordering::Relaxed);
+    }
 }
 async fn poll_json(path: &Path, sender: mpsc::Sender<Ingress>, dropped: Arc<AtomicU64>) {
     let mut interval = time::interval(Duration::from_secs(1));
@@ -162,13 +192,29 @@ async fn poll_json(path: &Path, sender: mpsc::Sender<Ingress>, dropped: Arc<Atom
         interval.tick().await;
         match timeout(Duration::from_secs(2), read_snapshot(path, "rx-primary")).await {
             Ok(Ok(rows)) => {
-                enqueue(&sender, &dropped, Ingress::JsonHealth { at: wall_seconds(), ok: true });
+                enqueue(
+                    &sender,
+                    &dropped,
+                    Ingress::JsonHealth {
+                        at: wall_seconds(),
+                        ok: true,
+                    },
+                );
                 for row in rows {
-                    if sender.is_closed() { break; }
+                    if sender.is_closed() {
+                        break;
+                    }
                     enqueue(&sender, &dropped, Ingress::Json(row));
                 }
             }
-            _ => enqueue(&sender, &dropped, Ingress::JsonHealth { at: wall_seconds(), ok: false }),
+            _ => enqueue(
+                &sender,
+                &dropped,
+                Ingress::JsonHealth {
+                    at: wall_seconds(),
+                    ok: false,
+                },
+            ),
         }
         if sender.is_closed() {
             break;
@@ -181,7 +227,14 @@ async fn poll_beast(addr: &str, sender: mpsc::Sender<Ingress>, dropped: Arc<Atom
         let connected = timeout(Duration::from_secs(3), TcpStream::connect(addr)).await;
         if let Ok(Ok(mut tcp)) = connected {
             delay = 1;
-            enqueue(&sender, &dropped, Ingress::BeastLink { at: wall_seconds(), connected: true });
+            enqueue(
+                &sender,
+                &dropped,
+                Ingress::BeastLink {
+                    at: wall_seconds(),
+                    connected: true,
+                },
+            );
             let mut decoder = Decoder::default();
             let mut buf = [0_u8; 4096];
             loop {
@@ -203,7 +256,14 @@ async fn poll_beast(addr: &str, sender: mpsc::Sender<Ingress>, dropped: Arc<Atom
                     _ => break,
                 }
             }
-            enqueue(&sender, &dropped, Ingress::BeastLink { at: wall_seconds(), connected: false });
+            enqueue(
+                &sender,
+                &dropped,
+                Ingress::BeastLink {
+                    at: wall_seconds(),
+                    connected: false,
+                },
+            );
         }
         if sender.is_closed() {
             break;
@@ -315,53 +375,133 @@ mod tests {
     fn json_beast_interleaving_and_fallback_one_track() {
         let fixture: serde_json::Value = serde_json::from_str(include_str!(
             "../../../../contracts/fixtures/beast/cases.json"
-        )).unwrap();
+        ))
+        .unwrap();
         let mut state = RadarState::default();
         let mut cpr = CprCache::default();
         let mut sources = SourceArbiter::default();
-        for obs in parse_replay(include_bytes!("../../../../contracts/fixtures/readsb/initial.json"),"rx-primary",1792627200.0).unwrap() {
+        for obs in parse_replay(
+            include_bytes!("../../../../contracts/fixtures/readsb/initial.json"),
+            "rx-primary",
+            1792627200.0,
+        )
+        .unwrap()
+        {
             consume(Ingress::Json(obs), &mut state, &mut cpr, &mut sources);
         }
-        consume(Ingress::JsonHealth {at:1792627200.0,ok:true}, &mut state,&mut cpr,&mut sources);
-        consume(Ingress::BeastLink {at:1792627200.0,connected:true}, &mut state,&mut cpr,&mut sources);
-        for (i,case) in fixture["valid"].as_array().unwrap().iter().take(2).enumerate() {
+        consume(
+            Ingress::JsonHealth {
+                at: 1792627200.0,
+                ok: true,
+            },
+            &mut state,
+            &mut cpr,
+            &mut sources,
+        );
+        consume(
+            Ingress::BeastLink {
+                at: 1792627200.0,
+                connected: true,
+            },
+            &mut state,
+            &mut cpr,
+            &mut sources,
+        );
+        for (i, case) in fixture["valid"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .take(2)
+            .enumerate()
+        {
             let frame = crate::contract::hex_decode(case["modeS"].as_str().unwrap()).unwrap();
-            let at = 1792627201.0+i as f64;
-            let decoded = decode_df17(&frame,at).unwrap();
-            consume(Ingress::Beast{decoded,at},&mut state,&mut cpr,&mut sources);
+            let at = 1792627201.0 + i as f64;
+            let decoded = decode_df17(&frame, at).unwrap();
+            consume(
+                Ingress::Beast { decoded, at },
+                &mut state,
+                &mut cpr,
+                &mut sources,
+            );
         }
-        assert_eq!(sources.active(1792627202.0),ActiveSource::Json);
-        assert_eq!(state.tracks.len(),3);
-        assert_eq!(state.tracks["icao:abc123"].position.as_ref().unwrap().lat,49.9);
-        consume(Ingress::BeastLink {at:1792627203.0,connected:false}, &mut state,&mut cpr,&mut sources);
-        assert_eq!(sources.active(1792627204.0),ActiveSource::Json);
-        consume(Ingress::JsonHealth {at:1792627220.0,ok:false}, &mut state,&mut cpr,&mut sources);
-        assert_eq!(sources.active(1792627220.0),ActiveSource::Offline);
-        consume(Ingress::BeastLink {at:1792627220.0,connected:true}, &mut state,&mut cpr,&mut sources);
-        for (i,case) in fixture["valid"].as_array().unwrap().iter().take(2).enumerate() {
+        assert_eq!(sources.active(1792627202.0), ActiveSource::Json);
+        assert_eq!(state.tracks.len(), 3);
+        assert_eq!(
+            state.tracks["icao:abc123"].position.as_ref().unwrap().lat,
+            49.9
+        );
+        consume(
+            Ingress::BeastLink {
+                at: 1792627203.0,
+                connected: false,
+            },
+            &mut state,
+            &mut cpr,
+            &mut sources,
+        );
+        assert_eq!(sources.active(1792627204.0), ActiveSource::Json);
+        consume(
+            Ingress::JsonHealth {
+                at: 1792627220.0,
+                ok: false,
+            },
+            &mut state,
+            &mut cpr,
+            &mut sources,
+        );
+        assert_eq!(sources.active(1792627220.0), ActiveSource::Offline);
+        consume(
+            Ingress::BeastLink {
+                at: 1792627220.0,
+                connected: true,
+            },
+            &mut state,
+            &mut cpr,
+            &mut sources,
+        );
+        for (i, case) in fixture["valid"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .take(2)
+            .enumerate()
+        {
             let frame = crate::contract::hex_decode(case["modeS"].as_str().unwrap()).unwrap();
-            let at = 1792627220.0+i as f64;
-            let decoded=decode_df17(&frame,at).unwrap();
-            consume(Ingress::Beast{decoded,at},&mut state,&mut cpr,&mut sources);
+            let at = 1792627220.0 + i as f64;
+            let decoded = decode_df17(&frame, at).unwrap();
+            consume(
+                Ingress::Beast { decoded, at },
+                &mut state,
+                &mut cpr,
+                &mut sources,
+            );
         }
-        assert_eq!(sources.active(1792627221.0),ActiveSource::Beast);
-        assert_eq!(state.tracks.len(),3);
-        assert!(state.tracks["icao:abc123"].last_position_at.unwrap()>1792627200.0);
-        consume(Ingress::BeastLink {at:1792627222.0,connected:false}, &mut state,&mut cpr,&mut sources);
-        assert_eq!(sources.active(1792627222.0),ActiveSource::Offline);
+        assert_eq!(sources.active(1792627221.0), ActiveSource::Beast);
+        assert_eq!(state.tracks.len(), 3);
+        assert!(state.tracks["icao:abc123"].last_position_at.unwrap() > 1792627200.0);
+        consume(
+            Ingress::BeastLink {
+                at: 1792627222.0,
+                connected: false,
+            },
+            &mut state,
+            &mut cpr,
+            &mut sources,
+        );
+        assert_eq!(sources.active(1792627222.0), ActiveSource::Offline);
     }
     #[test]
     fn beast_prefers_only_after_ten_seconds_healthy() {
-        let mut s=SourceArbiter::default();
-        s.json_seen=Some(200.0);
+        let mut s = SourceArbiter::default();
+        s.json_seen = Some(200.0);
         s.connected(true);
         s.beast_message(200.0);
-        assert_eq!(s.active(202.0),ActiveSource::Json);
+        assert_eq!(s.active(202.0), ActiveSource::Json);
         s.beast_message(205.0);
         s.beast_message(210.0);
-        assert_eq!(s.active(210.0),ActiveSource::Beast);
+        assert_eq!(s.active(210.0), ActiveSource::Beast);
         s.connected(false);
-        assert_eq!(s.active(210.0),ActiveSource::Offline);
+        assert_eq!(s.active(210.0), ActiveSource::Offline);
     }
     #[tokio::test]
     async fn beast_tcp_loopback_fragments_and_reconnect() {
@@ -386,12 +526,16 @@ mod tests {
             socket.write_all(&f[7..]).await.unwrap();
             let mut got = false;
             for _ in 0..3 {
-                match time::timeout(Duration::from_secs(2), rx.recv()).await.unwrap().unwrap() {
+                match time::timeout(Duration::from_secs(2), rx.recv())
+                    .await
+                    .unwrap()
+                    .unwrap()
+                {
                     Ingress::Beast { decoded, .. } => {
                         assert_eq!(decoded.key, "icao:abc123");
                         got = true;
                         break;
-                    },
+                    }
                     _ => {}
                 }
             }

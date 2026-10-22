@@ -45,7 +45,11 @@ pub fn parse_replay(
     let mut extras = std::collections::BTreeMap::new();
     if let Some(rows) = value.get("aircraft").and_then(serde_json::Value::as_array) {
         for row in rows {
-            if let Some(key) = row.get("hex").and_then(serde_json::Value::as_str).and_then(aircraft_key) {
+            if let Some(key) = row
+                .get("hex")
+                .and_then(serde_json::Value::as_str)
+                .and_then(aircraft_key)
+            {
                 extras.insert(key, FlightData::from_readsb(row));
             }
         }
