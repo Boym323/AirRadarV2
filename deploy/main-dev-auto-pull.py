@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import re
+import signal
 import subprocess
 import sys
 import tarfile
@@ -38,7 +39,7 @@ def fetch(url: str, max_size: int) -> bytes:
     if not url.startswith("https://"):
         raise ValueError("HTTP destination is not TLS")
     request = urllib.request.Request(url, headers=HEADERS)
-    with urllib.request.urlopen(request, timeout=30) as response:
+    with urllib.request.urlopen(request, timeout=15) as response:
         final = urllib.parse.urlparse(response.url)
         if final.scheme != "https" or final.hostname not in (
             "api.github.com", "github.com", "release-assets.githubusercontent.com",
@@ -247,11 +248,23 @@ def run() -> int:
                "LANG": "C.UTF-8",
                "AIRRADAR_V2_AUTO_DEPLOY": "1",
                "AIRRADAR_EXPECTED_SHA": main_sha}
-        result = subprocess.run(
+        process = subprocess.Popen(
             ["/usr/bin/bash", str(INSTALLER), str(location)],
-            cwd=staging, env=env, timeout=110, check=False,
+            cwd=staging, env=env,
         )
-    if result.returncode != 0 or current_sha() != main_sha:
+        try:
+            returncode = process.wait(timeout=180)
+        except subprocess.TimeoutExpired:
+            # Bash handles SIGTERM and executes its EXIT rollback; avoid
+            # subprocess.run(timeout=...), which would SIGKILL without cleanup.
+            process.send_signal(signal.SIGTERM)
+            try:
+                process.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=5)
+            raise ValueError("DEV installer deadline hit; verify rollback")
+    if returncode != 0 or current_sha() != main_sha:
         blocked.write_text(json.dumps({"sha": main_sha}) + "\n", encoding="utf-8")
         os.chmod(blocked, 0o600)
         write_status("ROLLED_BACK", main_sha, "Installer/health failed, same SHA blocked")

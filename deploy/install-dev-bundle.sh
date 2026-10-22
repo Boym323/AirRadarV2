@@ -93,7 +93,7 @@ rollback() {
       ln -sfn "$old" "$base/.rollback-next"
       mv -Tf "$base/.rollback-next" "$base/current"
       systemctl restart airradarv2-engine || true
-      systemctl restart nginx || true
+      if nginx -t; then systemctl reload nginx || true; fi
     else
       systemctl stop airradarv2-engine nginx || true
       rm -f "$base/current"
@@ -105,6 +105,7 @@ rollback() {
   exit "$exit_code"
 }
 trap 'rollback "$?"' EXIT
+trap 'exit 124' TERM INT # ensure EXIT rollback on systemd stop/timeout
 
 tar -xzf "$bundle" -C "$work" --no-same-owner
 test -s "$work/VERSION"
