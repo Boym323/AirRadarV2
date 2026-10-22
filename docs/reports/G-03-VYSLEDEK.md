@@ -45,3 +45,7 @@ curl -Ns http://127.0.0.1:4102/api/v1/stream
 [CI #39803605266](https://github.com/Boym323/AirRadarV2/actions/runs/39803605266) na `dbd9af7ceefe9455aae1297691f94cf2eeb9ea63` má **3/3 joby PASS** (Rust fmt, Clippy -D warnings, testy včetně snapshot/delta/gap, 5s izolovaného G-02 replay soak, Vite a dokumentace). Přímý HTTP test sleduje empty/full/health + SSE hlavičky; `deltas_reconstruct_exact_canonical_full_state` aplikuje skutečně publikované delty do G-01 `Replica` a srovnává s canonical snapshotem včetně TTL removal. Tyto testy **nejsou** 100-client HTTP/SSE benchmark a nedokládají proxy průchod ani provozní RSS.
 
 **Dílčí stav:** G-03.03/.04/.05 = TESTED v izolovaném CI. Zbývající kroky dokončit podle zadání, G-03 celá ROZPRACOVÁNO. Žádný zásah do DEV/V1/G-02 LIVE.
+
+## Integrace do nového main po úspěšné G-02 přejímce
+
+Větev PR #8 je od 22. 10. 2026 přímo založena na `main` s dokončenou G-02 (11/11) a samostatným bezpečným DEV auto-deploy mechanismem. Obsahuje pouze sedm souborů G-03 HTTP/SSE; žádné G-02 testy, receiver, DB ani LXC nebyly upraveny. Před sloučením G-03 je nutná nová CI kontrola přesného HEAD PR #8, zatím **NEOVĚŘENO**.
