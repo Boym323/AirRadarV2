@@ -1,7 +1,7 @@
 name: AirRadar V2 — automatický G-02 DEV balíček (bez nasazení)
 on:
   push:
-    branches: [main, codex/g02-auto-lxc-20261022]
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -70,7 +70,7 @@ jobs:
     needs: test-and-build
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    if: github.repository == 'Boym323/AirRadarV2' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: github.repository == 'Boym323/AirRadarV2' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
     steps:
@@ -97,37 +97,3 @@ jobs:
             --title "G-02 DEV kandidat $GITHUB_SHA" \
             --notes "Offline acceptance, bez automaticke instalace a bez zasahu do V1."
 
-  verify-dev-lxc:
-    # GitHub only reads the already public status; it never connects to V1 or runs
-    # arbitrary commands in the user's LAN. Any error fails this separate gate.
-    needs: publish-dev-candidate
-    if: github.repository == 'Boym323/AirRadarV2' && github.event_name == 'push'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 29
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-      - name: Ověřit SHA-připnutý veřejný report přímo z DEV LXC
-        env:
-          EXPECTED_SHA: ${{ github.sha }}
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          for attempt in $(seq 1 25); do
-            if curl --fail --silent --show-error \
-              --location --proto '=https' --proto-redir '=https' \
-              --max-time 15 \
-              --output /tmp/g02-lxc-status.json \
-              'https://airradarv2.pomykal.cz/g02-status.json'; then
-              if python3 tools/verify_g02_public_status.py \
-                --file /tmp/g02-lxc-status.json --sha "$EXPECTED_SHA"; then
-                echo "PASS: G-02.11 syntetická DEV LXC brána pro přesný SHA."
-                exit 0
-              fi
-            fi
-            echo "DEV LXC report zatím nemá potvrzené SHA; pokus $attempt/25"
-            if [ "$attempt" -lt 25 ]; then sleep 60; fi
-          done
-          echo "NEOVĚŘENO: 180s DEV LXC loopback acceptance nedoloženo."
-          exit 1

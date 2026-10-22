@@ -1,0 +1,64 @@
+name: AirRadar V2 — oddělená G-02 DEV LXC přejímka
+on:
+  workflow_run:
+    workflows: ["AirRadar V2 — automatický G-02 DEV balíček (bez nasazení)"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: "Ověřený plný SHA (40 znaků) existujícího G-02 DEV releasu"
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: g02-dev-verify-${{ github.event_name == 'workflow_dispatch' && inputs.expected_sha || github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+jobs:
+  verify-dev-lxc:
+    # Informational live DEV acceptance: never blocks the main release/deployment.
+    if: >-
+      github.repository == 'Boym323/AirRadarV2' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event_name == 'workflow_run' &&
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == 'main' &&
+          github.event.workflow_run.head_repository.full_name == github.repository
+        )
+      )
+    runs-on: ubuntu-24.04
+    timeout-minutes: 29
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+      - name: Ověřit SHA-připnutý veřejný report přímo z DEV LXC
+        env:
+          EXPECTED_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_sha || github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if [[ ! "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Neplatný schválený G-02 SHA" >&2
+            exit 2
+          fi
+          for attempt in $(seq 1 25); do
+            if curl --fail --silent --show-error \
+              --location --proto '=https' --proto-redir '=https' \
+              --max-time 15 \
+              --output /tmp/g02-lxc-status.json \
+              'https://airradarv2.pomykal.cz/g02-status.json'; then
+              if python3 tools/verify_g02_public_status.py \
+                --file /tmp/g02-lxc-status.json --sha "$EXPECTED_SHA"; then
+                echo "PASS: oddělená G-02.11 syntetická DEV LXC brána pro přesný SHA."
+                exit 0
+              fi
+            fi
+            echo "Samostatný G-02 DEV LXC report zatím neodpovídá SHA; pokus $attempt/25"
+            if [ "$attempt" -lt 25 ]; then sleep 60; fi
+          done
+          echo "NEOVĚŘENO: 180s DEV LXC loopback acceptance nedoloženo."
+          exit 1
