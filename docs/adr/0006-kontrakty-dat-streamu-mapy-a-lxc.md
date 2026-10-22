@@ -22,3 +22,7 @@ Minimalizovat dopad na existující PostgreSQL server, chybné deduplikace, nák
 [Hlavní rozcestník šesti kontraktů](../plan/TECHNICKE-KONTRAKTY-A-LIMITY.md) a připojené podrobné české dokumenty. Žádný DDL, skutečné Playwright testy, živé připojení nebo deploy se tímto ADR nespouštějí. Produktová matice ani zrušené požadavky se nemění.
 
 **Výsledný status:** architektura specifikována; funkce G-01 až G-11 nadále NEZAHÁJENO, dokud neexistují nezávislé důkazy implementace.
+
+## Pozdější optimalizace
+
+V otázce **deduplikace a frekvence historických zápisů** nahrazuje původní 15s interval [ADR 0007 — RAM-first adaptivní sampling](0007-ram-first-deduplikace-a-usporny-zapis.md). Zbývající protokoly a bezpečnostní brány zůstávají v platnosti. Současná maximální úspora SQL řádků je zatím pouze matematická, nikoli naměřené SSD IOPS.

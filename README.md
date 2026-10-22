@@ -101,3 +101,9 @@ PostgreSQL v existujícím separátním LXC potřebuje vlastní databázi/role a
 ## Konkretizace technologií před implementací (22. 10. 2026)
 
 [**Přesné technické kontrakty pro 6 oblastí**](docs/plan/TECHNICKE-KONTRAKTY-A-LIMITY.md) sjednocují PostgreSQL schéma/indexy/retenci/zálohy, readsb/BEAST a deduplikaci, SSE a limity paměti, výkonnost MapLibre, Playwright testy a bezpečné spojení LXC. Český [ADR 0006](docs/adr/0006-kontrakty-dat-streamu-mapy-a-lxc.md) je výchozím rozhodnutím. Parametry jsou **návrhem k měření, nikoli implementovaným produkčním řešením**.
+
+## Optimalizace CPU, RAM a diskových zápisů — 22. 10. 2026
+
+**Nově zvolená politika:** [deduplikace už v Rust RAM](docs/technical/RAM-CACHE-A-DEDUP-ZAPISU.md), adaptivní uložení běžných pohybujících se letadel **nejdříve po 60 s**, výjimka významný manévr nejdříve po 30 s, 30s UTC SQL deduplikační bucket, nejvýše 128 řádků v batch či 5s flush po uzavření bucketu. Živá mapa a 1Hz SSE čtou RAM bez DB dotazu na každý event.
+
+[Revidovaný fyzický model PostgreSQL](database/POSTGRES-DATOVY-MODEL.md) nezařazuje další indexy ani partitioning bez reálného měření. [ADR 0007](docs/adr/0007-ram-first-deduplikace-a-usporny-zapis.md) vysvětluje změnu proti pevné 15s historii. **Jde o implementační návrh, nikoli již dosaženou úsporu diskových IOPS.**

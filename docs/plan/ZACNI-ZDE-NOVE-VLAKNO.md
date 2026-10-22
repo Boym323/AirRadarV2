@@ -15,6 +15,8 @@
 
 **Povinná technická příloha před G-01 až G-11:** [přesné kontrakty PostgreSQL, readsb/BEAST, SSE, MapLibre, Playwright a zabezpečení LXC](TECHNICKE-KONTRAKTY-A-LIMITY.md). Jsou to výchozí návrhové limity a jejich měřicí brány, nikoliv důkaz provozu.
 
+**Aktuální provozní optimalizace:** [RAM-first deduplikace, cache a adaptivní minimalizace zápisů](../technical/RAM-CACHE-A-DEDUP-ZAPISU.md). G-04 nesmí implementovat starou pevnou 15s historii, neprokázané indexy ani neomezenou write queue. Související [ADR 0007](../adr/0007-ram-first-deduplikace-a-usporny-zapis.md).
+
 **Oddělený archiv budoucích návrhů není určen pro běžný vývoj**. Čti jej pouze na výslovnou žádost vlastníka, nikdy jej neimportuj do současné aplikace automaticky.
 
 ## Technologie: důležitý rozdíl mezi plánem a kódem

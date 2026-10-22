@@ -4,6 +4,14 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### Návrh RAM-first a ochrany SSD — 22. 10. 2026
+- Audit návrhu G-04: SQL unikátní klíč chránil jen stejný 15s časový bucket, ale nezabraňoval zbytečným zápisům nezměněné polohy mezi buckety.
+- Návrh revidován na **primární deduplikaci v Rust RAM**, adaptivní sampling (běžně nejdříve 60s; významné manévry nejdříve 30s), coalescing max 2048 pending/30s, dávkování max 128 vzorků/5s a pouze nezbytný výchozí SQL PK.
+- Druhý B-tree, BRIN a denní partitioning podmíněny EXPLAIN a měřením objemu/retence; denní agregace nanejvýš 1 UPSERT/5 min, živý SSE bez SQL.
+- Přidán deterministický model `tools/check-eco-sampling.mjs` a [ADR 0007](docs/adr/0007-ram-first-deduplikace-a-usporny-zapis.md); **modelová úspora řádků není měření fyzických SSD zápisů**.
+- Žádné DB migrace, produkční zásahy, benchmark PostgreSQL ani změny 45 aktivních funkcí.
+
+
 ### Průzkum 22. 10. 2026
 - Dokončeny české technické návrhy pro PostgreSQL fyzický model, indexy a retenci 30/365 dní, off-LXC zálohy, readsb/BEAST a deduplikaci, 1Hz SSE s bounded frontami, MapLibre profilování, Playwright browser E2E a TLS/SCRAM spojení k existujícímu DB LXC.
 - Přidán [rozcestník](docs/plan/TECHNICKE-KONTRAKTY-A-LIMITY.md) a ADR 0006. Neprovedeno žádné SQL, nasazení, reálné Playwright E2E ani výkonový benchmark. Výběr 45 funkcí zůstává nezměněn.

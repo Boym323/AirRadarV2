@@ -28,3 +28,7 @@ Všechna čísla skutečného výkonu uváděj s metodikou a přesným SHA. Stav
 ## Technické kontrakty
 
 Při každé práci na G-01 až G-11 zkontroluj [závazný rozcestník](docs/plan/TECHNICKE-KONTRAKTY-A-LIMITY.md) a příslušnou z šesti technických specifikací. Výchozí sampling, retenci, SSE limity, MapLibre render a PostgreSQL TLS/backup neměň bez konkrétního měření a českého ADR. Tyto návrhové hodnoty ještě nejsou naměřené ani implementované.
+
+## Úspornost provozu jako závazné pravidlo
+
+Před G-01/G-02/G-04/G-09 přečti [RAM-first deduplikaci a adaptivní sampler](docs/technical/RAM-CACHE-A-DEDUP-ZAPISU.md), [revidovaný DB model](database/POSTGRES-DATOVY-MODEL.md) a [ADR 0007](docs/adr/0007-ram-first-deduplikace-a-usporny-zapis.md). Neimplementuj pevný 15s INSERT, per-aircraft SQL query, nekonečné SQL fronty, cache server navíc ani druhý SQL index/partition bez měření. Testovací model `node tools/check-eco-sampling.mjs` není důkaz reálných IOPS; uživatelskou kvalitu historie a bezpečnou obnovu musí doložit G-04.

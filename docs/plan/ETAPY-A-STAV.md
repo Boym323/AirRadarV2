@@ -51,3 +51,7 @@ G-01 → G-02 → G-03 → G-04/G-05; G-06 doplní mapový katalog; G-07 přidá
 ## Detailní technické kontrakty před realizací
 
 Podklad pro G-01 až G-11: [PostgreSQL, readsb/BEAST, SSE, MapLibre, Playwright a propojení LXC](TECHNICKE-KONTRAKTY-A-LIMITY.md). Jde výlučně o **návrhové parametry s měřicími kritérii**, nikoli o implementovaný produktový modul. Počet a pořadí kroků G-XX.YY se nemění.
+
+## RAM-first optimalizace — návaznost bez změny etap
+
+Audit úspornosti vedl k [adaptivní deduplikaci v Rust RAM](../technical/RAM-CACHE-A-DEDUP-ZAPISU.md) a [revidovanému PostgreSQL modelu](../../database/POSTGRES-DATOVY-MODEL.md). Nová politika snižuje **potenciální** počet historických vzorků; nesmí se vykazovat jako skutečně naměřená úspora. G-01/G-02 definují a implementují per-field freshness/dedup; G-04 experimentálně uzavře sampling, batch, indexy, partitioning a obnovu. Funkce zůstávají NEZAHÁJENO, počet kroků beze změny.

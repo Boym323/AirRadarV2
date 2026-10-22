@@ -35,11 +35,11 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Ověření:** Ztráta připojení neblokuje readsb→RAM→SSE a nezacyklí retry.
 
 - [ ] **G-04.06 — Sampling politika**  
-  **Implementace:** Vzorkuj pouze validní změny polohy v řízeném intervalu a se stejnou identitou jako live stav; žádné raw BEAST dumpy.  
+  **Implementace:** Implementuj [RAM-first adaptivní sampler](../technical/RAM-CACHE-A-DEDUP-ZAPISU.md): žádné opakované/staré polohy, běžně nejdříve 60 s s informačním prahem, významný manévr nejdříve 30 s, stojící 120/600 s; SQL 30s dedup bucket a bez raw BEAST dumpů.  
   **Ověření:** Test vzorkování a deduplikace pro konstantní i pohybující se letadlo.
 
 - [ ] **G-04.07 — Bounded batch writer**  
-  **Implementace:** Zaveď asynchronní ohraničenou frontu a dávkové UPSERT/INSERT s retry a metrikami ztrát při přetížení.  
+  **Implementace:** Použij bounded RAM coalescing (max 2048 pending záznamů, 30s časové omezení po uzavření bucketu), jeden append-only SQLx writer, batch 128 řádků nebo 5 s po uzavření, bez prázdných transakcí, bez neomezeného retry backlogu.  
   **Ověření:** Test saturace a restartu nevede k nekonečné frontě ani dvojímu zápisu.
 
 - [ ] **G-04.08 — Query-first čtení**  
@@ -47,7 +47,7 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Ověření:** SQL dotazy mají test korektního časového okna a EXPLAIN/BUFFERS v DEV.
 
 - [ ] **G-04.09 — Retence a indexy**  
-  **Implementace:** Retenční interval odvoď z reálného provozu, zdokumentuj variantu DELETE/partitioning podle naměřeného objemu; nevol složité partitioning předčasně.  
+  **Implementace:** Porovnej plain/denně partitionovanou tabulku a index pouze PK proti PK + B-tree přes EXPLAIN/BUFFERS a WAL. 30d detail a 365d agregace jako výchozí retence; partitioning ani BRIN nevytvářej bez přínosu.  
   **Ověření:** Retenční test i test po smazání uchovají indexy a plánovaný limit dat.
 
 - [ ] **G-04.10 — Výpadek a zotavení**  
@@ -81,3 +81,7 @@ Všechny kroky mají skutečné odkazy na důkazy a všechny této etapě primá
 - [TLS, firewall, role a bezpečná obnova](../runbooks/POSTGRES-LXC-SECURITY-BACKUP.md)
 
 Výchozí číselné limity jsou **neověřené konfigurace pro první test**, nikoli PASS. Všechny checkboxy a stav KEEP zachovat, dokud nevznikne reálný kód, fixture a testovací důkazy.
+
+### Důležitá projektová změna proti staršímu návrhu
+
+Po auditu diskového I/O **nelze použít fixní 15s INSERT, který byl uveden v první verzi databázového návrhu**. Jediný Rust RAM state rozhoduje o čerstvosti a informační hodnotě pozice, teprve poté `bounded coalescing → dávkový SQLx INSERT`. Před implementací povinně přečíst [novou policy](../technical/RAM-CACHE-A-DEDUP-ZAPISU.md), [revidované SQL schema](../../database/POSTGRES-DATOVY-MODEL.md) a [ADR 0007](../adr/0007-ram-first-deduplikace-a-usporny-zapis.md). `node tools/check-eco-sampling.mjs` je pouze modelový test; měření PostgreSQL a kvalita rekonstruované historie musí být doloženy v G-04 reportu.

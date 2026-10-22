@@ -57,3 +57,7 @@ Realizace probíhá po jednotlivých českých zadáních [G-00 až G-13](ETAPY-
 ## Technické limity a navazující průzkum
 
 Výchozí datový model, retence, návrhové parametry SSE, readsb/BEAST, mapy, Playwright a spojení LXC jsou v [šesti technických kontraktech](TECHNICKE-KONTRAKTY-A-LIMITY.md) a v [ADR 0006](../adr/0006-kontrakty-dat-streamu-mapy-a-lxc.md). Zůstává nutné jejich správnost ověřit v G-01 až G-11; samostatné DB LXC se touto rešerší neměnilo.
+
+## RAM-first a minimalizace opotřebení SSD
+
+[ADR 0007](../adr/0007-ram-first-deduplikace-a-usporny-zapis.md) a [detailní RAM-first návrh](../technical/RAM-CACHE-A-DEDUP-ZAPISU.md) nahrazují pevnou 15s historii: Rust drží jediný hot state/trail/cache; SQLx ukládá jen významně novou validní polohu po adaptivní minimálně 60s politice (výjimka velkých manévrů), dávkově a přes bounded buffer. Nebude přidáváno diskové cache, sekundární indexy, partitions ani další DB služby bez měřeného opodstatnění. Úspora se musí doložit replay, CPU/RSS, SQL rows/s, WAL a IOPS. Databázová dostupnost nesmí ovlivnit živý radar.

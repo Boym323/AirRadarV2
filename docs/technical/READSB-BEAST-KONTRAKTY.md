@@ -103,3 +103,7 @@ AircraftObservation {
 
 - [readsb README-json.md](https://github.com/wiedehopf/readsb/blob/dev/README-json.md) — \`now\`, \`seen\`, \`seen_pos\`, volitelnost polí a ne-ICAO \`hex\`.
 - [BEAST protokol](https://github.com/firestuff/adsb-tools/blob/master/protocols/beast.md) — escaping, délky a MLAT čítač.
+
+## Důsledek deduplikace pro SQL a šetření SSD
+
+Kanonická RAM identita a pole `lastPositionAt` jsou základ pro [úsporný adaptivní sampler](RAM-CACHE-A-DEDUP-ZAPISU.md). JSON/BEAST opakovaně reportující již známou polohu **nesmí vytvořit nový PostgreSQL vzorek**, i kdyby se měnil čas posledního příjmu zprávy. Primární SQL unikátní `(bucket_at,aircraft_key)` s 30s bucketem je druhá ochrana, nikoli hlavní filtr. Čítače zpráv a běžné SSE aktualizace se agregují v RAM, bez SQL na každý rámec.

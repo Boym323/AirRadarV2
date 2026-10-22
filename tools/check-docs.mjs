@@ -19,6 +19,8 @@ const required = [
   "docs/plan/TECHNICKE-KONTRAKTY-A-LIMITY.md",
   "docs/adr/0006-kontrakty-dat-streamu-mapy-a-lxc.md",
   "database/POSTGRES-DATOVY-MODEL.md",
+  "docs/technical/RAM-CACHE-A-DEDUP-ZAPISU.md",
+  "docs/adr/0007-ram-first-deduplikace-a-usporny-zapis.md",
   "docs/technical/READSB-BEAST-KONTRAKTY.md",
   "docs/technical/SSE-PROTOKOL-A-LIMITY.md",
   "docs/technical/MAPLIBRE-VYKON-A-ZATEZ.md",
@@ -40,6 +42,8 @@ if (!read("AGENTS.md").includes("češtině")) fail("Chybí české pravidlo AGE
 if (!read("apps/web/index.html").includes('lang="cs"')) fail("Web nemá lang=cs.");
 if (!read("apps/web/src/App.tsx").includes("Není připojen živý provoz")) fail("Úvodní stránka není česky.");
 execFileSync(process.execPath, [resolve(root,"tools/generate-feature-matrix.mjs"),"--check"], {stdio:"inherit"});
+// Modelový důkaz, nikoliv produkční DB benchmark.
+execFileSync(process.execPath, [resolve(root,"tools/check-eco-sampling.mjs")], {stdio:"inherit"});
 
 const activeData = JSON.parse(read("contracts/feature-matrix.json"));
 const active = activeData.features;
