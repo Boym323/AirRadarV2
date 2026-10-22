@@ -81,3 +81,20 @@ První [CI #39833985212](https://github.com/Boym323/AirRadarV2/actions/runs/3983
 ## G-03.08 — Nginx streaming smoke v CI (čeká výsledek)
 
 Nový nezávislý CI krok dočasně instaluje Nginx jen na izolovaný GitHub runner, načítá `deploy/nginx-g03.example.conf` (loopback:8082 → Rust:4102), ověřuje health a přes `curl -N` postupný snapshot i 15s heartbeat. Nejde o nasazení do DEV LXC ani browser EventSource přejímku, G-03.08 proto zůstává otevřené.
+
+## Uzavřená dílčí CI přejímka 22. 10. 2026 — 7/10 TESTED
+
+[**Run #39835102766**](https://github.com/Boym323/AirRadarV2/actions/runs/39835102766) na **přesném SHA `db4078fa854e84ec741ba21c72bbc30301f19a65`**, joby Rust/web/česká dokumentace **3/3 PASS**. Podrobné logy obsahují každý `G03_SSE_SCENARIO`; výsledky jednoho konkrétního běhu:
+
+| Klienti | Letadla | Aktualizace | p95 od zápisu JSON (ms) | p99 (ms) | CPU (% jednoho jádra) | RSS max Rust (KiB) | Nové SSE B/s |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 25 | 1 | 1 908 | 1 908 | 0,0 | 6 888 | 4 105 |
+| 10 | 250 | 10 | 1 840 | 1 840 | 7,61 | 9 108 | 414 967 |
+| 100 | 250 | 100 | 1 786 | 1 794 | 72,39 | 11 448 | 4 310 981 |
+| 10 | 1 000 | 10 | 1 840 | 1 840 | 30,42 | 14 252 | 1 654 993 |
+
+Metodika: Ubuntu GitHub-hosted runner, samostatný opt-in Rust binární proces, vygenerované lokální readsb JSON, 1Hz JSON poll a 1Hz RAM publish, měření od atomického rename souboru do přijetí validní SSE události; p95/p99 z jednotlivých klientů metodou nearest rank. Není to čistá síťová SSE RTT ani browser latency. CPU je spotřeba procesu vyjádřená jako procento jednoho CPU jádra z `/proc/PID/stat`; RSS pouze Rust proces z `VmRSS`, vzorkováno po 50 ms. B/s jsou nově přečtené SSE bytes ve stejné době, bez úvodních snapshotů a bez Nginx TCP režie. Hardware runneru není referenční 1vCPU DEV LXC.
+
+PASS: všechna doručení 1/10/100, 101. klient HTTP 503, uvolnění capacity, malformovaný JSON bez ztráty RAM, obnovení aktualizací, Rust SSE 15s heartbeat, **reálná CI Nginx reverse proxy** 127.0.0.1:8082 → 4102 s `curl -N` snapshot + heartbeat. G-03.06/.09 jsou nyní TESTED; J06/J07/J08 jsou `TESTED`, bez akceptace produkce.
+
+**Otevřeno:** G-03.07 deadline a závislost skutečně zablokovaných konzumentů; G-03.08 browser EventSource/streaming na izolovaném cílovém DEV Nginx; G-03.10 5k state/snapshot limit, 1/10/100 na cílovém 1vCPU LXC, RSS/CPU a p95/p99 vůči měřicím kritériím. Neoznačovat G-03 jako HOTOVO. Původní V1, její DB i LXC se neměnily.

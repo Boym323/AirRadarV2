@@ -1,6 +1,6 @@
 # SSE full/delta — frekvence, kontrakt a ohraničená paměť
 
-**Stav:** implementační rozhodnutí pro G-01/G-03, **zatím neměřené a neimplementované**. Funkce J06/J07/J08, navazuje R01/R06/R08 a diagnostické O08.
+**Stav k 22. 10. 2026:** G-03 částečně implementováno a otestováno v izolované CI ([#39835102766](https://github.com/Boym323/AirRadarV2/actions/runs/39835102766)); cílový DEV LXC, skuteční pomalí klienti a browser streaming jsou nadále **NEOVĚŘENO**. Návrhové limity zůstávají nezměněné. Funkce J06/J07/J08, navazuje R01/R06/R08 a diagnostické O08.
 
 ## Zvolený protokol
 

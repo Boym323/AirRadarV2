@@ -4,6 +4,12 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-03 — průběžná dílčí přejímka 7/10 TESTED (22. 10. 2026)
+- [CI #39835102766](https://github.com/Boym323/AirRadarV2/actions/runs/39835102766) pro `db4078fa`: Rust, web, dokumentace 3/3 PASS; SSE 1/10/100 klientů, validní delta/snapshot, 15s heartbeat přes skutečný testový Nginx, 101. klient 503, JSON invalid/recovery.
+- Pro 100 souběžných SSE klientů a 250 syntetických letadel p95 **1 786 ms** od JSON rename do přijetí (včetně dvou 1Hz cyklů), RSS peak **11 448 KiB**, CPU **72,39 % jednoho jádra** na GitHub runneru. Není to výkon cílového DEV LXC.
+- G-03.06/.09 nově TESTED, J07/J08 v aktivní matici TESTED. G-03.07/.08/.10 stále otevřené; žádný G-03 release ani zásah do V1.
+
+
 ### G-03.08 — skutečný průchod SSE přes Nginx v izolované CI (před přejímkou)
 - CI připravuje dočasný Nginx podle odděleného G-03 vzoru a testuje HTTP `/api/v1/health`, průběžné doručení SSE snapshotu a heartbeat přes 127.0.0.1:8082; neinstaluje ani nepřepíná skutečný DEV web. Browser EventSource a LXC zůstávají NEOVĚŘENO.
 

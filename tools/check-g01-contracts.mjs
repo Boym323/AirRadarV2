@@ -9,7 +9,7 @@ const data=p=>JSON.parse(read(p));
 
 const matrix=data("contracts/feature-matrix.json");
 assert.equal(matrix.features.length,45);
-const tested = new Set(["J01","J02","J03","J04","J05","J11","J06"]);
+const tested = new Set(["J01","J02","J03","J04","J05","J11","J06","J07","J08"]);
 assert.ok(matrix.features.every(x =>
   x.decision === "KEEP" &&
   (tested.has(x.id) ? x.status === "TESTED" && x.tests.length > 0 : x.status === "NOT_STARTED")

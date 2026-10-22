@@ -1,6 +1,6 @@
 # G-03 — Rust HTTP API a SSE full/delta
 
-**Stav:** NEZAHÁJENO (podrobné zadání; nejde o implementaci).  
+**Stav:** ROZPRACOVÁNO — 7/10 kroků TESTED v CI, 3 provozní brány dosud otevřeny.  
 **Odpovědnost:** M02 — Axum.  
 **Závislosti:** G-01 a G-02.  
 **Primární KEEP ID:** `J06`, `J07`, `J08`.  
@@ -34,7 +34,7 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Implementace:** Specifikuj monotónní pořadí a řízený resync při zmeškané sekvenci; nepředstírej neomezený server-side replay.  
   **Ověření:** Odpojení během více delt skončí novým korektním snapshotem.
 
-- [ ] **G-03.06 — Heartbeat a lifecycle**  
+- [x] **G-03.06 — Heartbeat a lifecycle**  
   **Implementace:** Přidej heartbeat/keepalive, cleanup po disconnectu a správné hlavičky text/event-stream.  
   **Ověření:** Ověřený reconnect nemá uniklé úlohy ani rostoucí počet subscriberů.
 
@@ -46,7 +46,7 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Implementace:** Ve Vite dev proxy a budoucím Nginx konfiguraci zajisti stejný origin /api, vypnutý SSE buffering a přiměřené timeouty.  
   **Ověření:** curl -N a browser smoke ověří postupné doručování, nikoliv dávkové flush po ukončení.
 
-- [ ] **G-03.09 — Regresní testy**  
+- [x] **G-03.09 — Regresní testy**  
   **Implementace:** Doplň concurrency, reconnect, malformed payload, slow consumer a konverzi veřejných jednotek.  
   **Ověření:** Rust unit/integration a TS kontraktové testy PASS.
 
@@ -89,3 +89,9 @@ G-03.01/.02/.06/.07: doplněn oddělený runtime OpenAPI kontrakt a Rust regresn
 ## Doložená dílčí přejímka G-03.01 a G-03.02
 
 [CI #39814106622](https://github.com/Boym323/AirRadarV2/actions/runs/39814106622) na `d7483417f80ce1820d84b2e377e3b709db93a153`: 3/3 PASS, samostatná G-03 OpenAPI 3.1 + validační fixture a Rust HTTP 200/400/503 včetně privacy. Proto .01/.02 jsou TESTED. G-03.06/.07 stále potřebují heartbeat, skutečný RSS/backpressure; .08 proxy browser, .09 další regresi a .10 zátěž.
+
+## Nová přejímka G-03.06 a G-03.09 — CI 39835102766
+
+Doložen [GitHub Actions #39835102766](https://github.com/Boym323/AirRadarV2/actions/runs/39835102766), přesný SHA `db4078fa854e84ec741ba21c72bbc30301f19a65`: Rust/web/docs 3/3 PASS, 15s SSE heartbeat přímo i přes Nginx, reconnect a uvolnění permitů, pomalý klient a 1/10/100 spojení, malformovaný syntetický readsb JSON a pokračující aktualizace bez poškození RAM. J07/J08 mají důkaz `TESTED`, nejde o schválení G-03 v produkci.
+
+**Zbývá:** .07 explicitní deadline při skutečně zablokovaném pomalém TCP konzumentovi a definitivní backpressure/RSS hranice; .08 browser EventSource přes cílový DEV Nginx; .10 rozšíření testu 1000/5000 letadel a reálné LXC p95/p99, CPU/RSS. CI test není náhradou za provozní přejímku.
