@@ -90,7 +90,7 @@ jobs:
     needs: test-and-build
     # P0 G-03 audit: no deployable release on a G-03 main push. Both the
     # self-hosted runner and any external release poller have nothing to fetch.
-    if: needs.test-and-build.outputs.g03_runtime == 'false'
+    if: ${{ needs['test-and-build'].outputs.g03_runtime == 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     if: github.repository == 'Boym323/AirRadarV2' && github.ref == 'refs/heads/main'

@@ -23,7 +23,7 @@ class DeployWorkflowTests(unittest.TestCase):
 
     def test_g03_release_is_fail_closed(self):
         self.assertIn("g03_runtime: ${{ steps.stage.outputs.g03_runtime }}", TEXT)
-        self.assertIn("if: needs.test-and-build.outputs.g03_runtime == 'false'", TEXT)
+        self.assertIn("if: ${{ needs['test-and-build'].outputs.g03_runtime == 'false' }}", TEXT)
         self.assertIn("test -f package/web/g03-runtime-required.txt", TEXT)
         self.assertIn("grep -qx 'G-03' package/web/g03-runtime-required.txt", TEXT)
         self.assertIn("echo 'g03_runtime=true'", TEXT)

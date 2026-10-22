@@ -21,6 +21,9 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
+      - name: Statická validace GitHub Actions pracovních postupů
+        # P0 release gate: parsování a validace expressions ještě před merge.
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -color
       - name: Kontrola dokumentace a 45 aktivních funkcí
         run: node tools/check-docs.mjs
       - name: Kontrola syntaxe skriptů DEV LXC
