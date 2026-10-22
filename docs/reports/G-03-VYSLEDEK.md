@@ -69,3 +69,7 @@ Tento report je přenesen do samostatné integrační větve od `main` po G-02 1
 [CI #39814106622](https://github.com/Boym323/AirRadarV2/actions/runs/39814106622), přesné SHA `d7483417f80ce1820d84b2e377e3b709db93a153`: Rust fmt/Clippy/test, Vite lint/typy/test/build, OpenAPI 3.1, JSON Schema a izolované HTTP/SSE curl smoke — **3/3 joby PASS**. Ověřeno odmítnutí nepovolených query parametrů 400/`CONTRACT_INVALID`, překročení 100 SSE spojení 503/`UNAVAILABLE`, reconnect na novém snapshotu, cleanup permitů a koalescence změn při pomalém konzumentovi. **J06 = TESTED** se skutečným testovacím důkazem; G-03 nyní **5/10 testově doložených kroků**, nikoliv HOTOVO.
 
 Limitace: testy v CI jsou syntetické bez skutečného přijímače; nejsou měření 100 klientů přes Nginx/browser, heartbeat v reálné síti, p95/p99 přenosu ani RSS cílového LXC. Provozní G-03.06–.10 zůstává otevřeno.
+
+## Pokračování — měřicí brána G-03.07/.09/.10
+
+Připraven `tools/benchmark_g03_sse.py`: izolační test s vlastní Rust instancí, syntetickými readsb JSON soubory a 1/10/100 HTTP SSE klienty. Po prvním snapshotu měří reakci na nová pozorování, kontroluje 503 u 101. klienta, restart capacity a vypisuje CPU (Linux `/proc`), RSS, bytes/s, p95 a p99. Měření je **CI na sdíleném runneru**, nikoli cílové 1vCPU DEV LXC nebo browser/Nginx; aktuální stav pro finální report **NEOVĚŘENO do dokončení CI**. Checkbox .07/.09/.10 zůstává otevřený.

@@ -4,6 +4,9 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-03.07/.09/.10 — izolovaný 1/10/100 SSE zátěžový scénář (čeká CI)
+- Přidán standard-library Python harness spouštějící pouze opt-in Rust API na loopback s atomicky obnovovaným syntetickým readsb JSON. Ověřuje 1/10/100 SSE klientů, delta/snapshot, limit 101. klienta a návrat kapacity; reportuje p95/p99, CPU, RSS a bytes/s. Čísla nejsou výkon cílového DEV LXC, proxy ani prohlížeče.
+
 ### G-03.01/.02 — 5/10 testově uzavřeno na CI #39814106622
 - Public API J06 označeno `TESTED` po formální OpenAPI 3.1 validaci, HTTP 200/400/503, privacy a SSE reconnect testech (3/3 CI PASS); neznamená to provozní G-03 release.
 

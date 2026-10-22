@@ -115,6 +115,13 @@ jobs:
             http://127.0.0.1:4102/api/v1/stream -o /tmp/g03-heartbeat.txt || test "$?" -eq 28
           grep -q ': heartbeat' /tmp/g03-heartbeat.txt
 
+      - name: G-03.07/.09/.10 syntetický 1/10/100 HTTP SSE load
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile tools/benchmark_g03_sse.py
+          python3 tools/benchmark_g03_sse.py --binary target/debug/airradarv2-engine
+
   vite-web:
     runs-on: ubuntu-24.04
     defaults:
