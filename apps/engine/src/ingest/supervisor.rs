@@ -133,7 +133,9 @@ async fn poll_beast(addr: &str, sender: mpsc::Sender<Observation>) {
         if sender.is_closed() {
             break;
         }
-        time::sleep(Duration::from_secs(delay)).await;
+        // Krátký omezený jitter proti synchronním reconnect bouřím.
+        let jitter_ms = (wall_seconds() * 1000.0) as u64 % 251;
+        time::sleep(Duration::from_secs(delay) + Duration::from_millis(jitter_ms)).await;
         delay = (delay * 2).min(30);
     }
 }

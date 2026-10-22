@@ -65,4 +65,27 @@ mod tests {
         );
         assert!(parse_replay(b"{", "rx-primary", 1792627200.0).is_err());
     }
+    #[tokio::test]
+    async fn skutečný_readsb_file_a_chybný_snapshot() {
+        let file = std::env::temp_dir().join(format!(
+            "airradar-g02-json-{}-{}.json",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let content=serde_json::json!({
+            "now":wall_seconds(), "messages":1,
+            "aircraft":[{"hex":"abc123","seen":0.0}]
+        });
+        tokio::fs::write(&file,content.to_string()).await.unwrap();
+        let observations=read_snapshot(&file,"rx-primary").await.unwrap();
+        assert_eq!(observations.len(),1);
+        assert_eq!(observations[0].aircraft_key,"icao:abc123");
+        tokio::fs::write(&file,b"{").await.unwrap();
+        assert!(read_snapshot(&file,"rx-primary").await.is_err());
+        tokio::fs::remove_file(&file).await.unwrap();
+    }
+
 }
