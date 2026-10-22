@@ -82,3 +82,7 @@ G-00 (hotový skeleton)
 ## Nejbližší krok
 
 **G-01.01 — Zafixovat rozsah a vlastnictví.** Následně pokračovat v [G-01](../ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) podle pořadí. Celý projekt lze převzít v novém chatu z [průvodce](ZACNI-ZDE-NOVE-VLAKNO.md). Samotný zápis tohoto dokumentu nemění funkční stav aplikace.
+
+## Detailní technické kontrakty před realizací
+
+Podklad pro G-01 až G-11: [PostgreSQL, readsb/BEAST, SSE, MapLibre, Playwright a propojení LXC](TECHNICKE-KONTRAKTY-A-LIMITY.md). Jde výlučně o **návrhové parametry s měřicími kritérii**, nikoli o implementovaný produktový modul. Počet a pořadí kroků G-XX.YY se nemění.

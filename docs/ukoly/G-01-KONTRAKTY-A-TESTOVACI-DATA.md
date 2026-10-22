@@ -66,3 +66,11 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
 ## Definice HOTOVO
 
 Všechny kroky mají skutečné odkazy na důkazy a všechny této etapě primárně přiřazené KEEP funkce jsou `TESTED` nebo `ACCEPTED` po doložení odpovídajících testů. U G-01 stačí ověřit kontrakty a připravenost pro implementaci — **žádná produktová funkce tím automaticky není hotová**. CI finálního SHA je úspěšné, report a changelog popisují realitu.
+
+## Návrhové technické specifikace (22. 10. 2026)
+
+- [readsb/BEAST přesné vstupní typy a deduplikace](../technical/READSB-BEAST-KONTRAKTY.md)
+- [SSE události, seq a memory limity](../technical/SSE-PROTOKOL-A-LIMITY.md)
+- [Playwright browser smoke plán](../technical/PLAYWRIGHT-BROWSEROVE-TESTY.md)
+
+Výchozí číselné limity jsou **neověřené konfigurace pro první test**, nikoli PASS. Všechny checkboxy a stav KEEP zachovat, dokud nevznikne reálný kód, fixture a testovací důkazy.

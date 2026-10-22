@@ -66,3 +66,10 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
 ## Definice HOTOVO
 
 Všechny kroky mají skutečné odkazy na důkazy a všechny této etapě primárně přiřazené KEEP funkce jsou `TESTED` nebo `ACCEPTED` po doložení odpovídajících testů. U G-01 stačí ověřit kontrakty a připravenost pro implementaci — **žádná produktová funkce tím automaticky není hotová**. CI finálního SHA je úspěšné, report a changelog popisují realitu.
+
+## Návrhové technické specifikace (22. 10. 2026)
+
+- [SSE protokol a limity](../technical/SSE-PROTOKOL-A-LIMITY.md)
+- [Browser reconnect testy](../technical/PLAYWRIGHT-BROWSEROVE-TESTY.md)
+
+Výchozí číselné limity jsou **neověřené konfigurace pro první test**, nikoli PASS. Všechny checkboxy a stav KEEP zachovat, dokud nevznikne reálný kód, fixture a testovací důkazy.

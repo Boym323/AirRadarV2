@@ -47,3 +47,7 @@ Každá níže uvedená etapa G-01 až G-13 má konkrétní kroky `G-XX.YY` s ch
 G-01 → G-02 → G-03 → G-04/G-05; G-06 doplní mapový katalog; G-07 přidá počasí; G-08 přidá nouzové kódy; G-09 diagnostiku; G-10 dokončí web; G-11 je bezpečnostní a výkonnostní přejímka; G-12 odpojený shadow; G-13 odděleně schválený release. Při vývoji lze bezpečně paralelizovat nezávislé moduly, ale funkce označit `ACCEPTED` pouze po testu.
 
 **Zdroj pravdy:** `contracts/feature-matrix.json`, [moduly](MODULY-A-ROZSAH.md), a [závazné zadání](ZADANI-AIRRADAR-V2.md). Rozšíření mimo tento rozsah se nepřidávají automaticky.
+
+## Detailní technické kontrakty před realizací
+
+Podklad pro G-01 až G-11: [PostgreSQL, readsb/BEAST, SSE, MapLibre, Playwright a propojení LXC](TECHNICKE-KONTRAKTY-A-LIMITY.md). Jde výlučně o **návrhové parametry s měřicími kritérii**, nikoli o implementovaný produktový modul. Počet a pořadí kroků G-XX.YY se nemění.

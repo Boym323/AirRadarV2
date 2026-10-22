@@ -65,3 +65,10 @@ Kroky lze řešit malými samostatnými PR / ucelenými commity. Zaškrtávej po
 ## Převzetí
 
 Všechna primárně přidělená ID mají vlastní testovací důkaz a odpovídající status; dokumentace nevydává neprovedený krok za hotový. Finální CI na přesném SHA PASS, bez kritických regresí. Změny provádět pouze v odděleném prostředí V2.
+
+## Návrhové technické specifikace (22. 10. 2026)
+
+- [Validace squawk a idempotence alarmu](../technical/READSB-BEAST-KONTRAKTY.md)
+- [Dry-run browser testy](../technical/PLAYWRIGHT-BROWSEROVE-TESTY.md)
+
+Výchozí číselné limity jsou **neověřené konfigurace pro první test**, nikoli PASS. Všechny checkboxy a stav KEEP zachovat, dokud nevznikne reálný kód, fixture a testovací důkazy.

@@ -73,3 +73,13 @@ Kroky lze řešit malými samostatnými PR / ucelenými commity. Zaškrtávej po
 ## Převzetí
 
 Brána se uzavírá pouze písemným GO se všemi odkazovanými důkazy, jinak zůstává NO-GO/BLOKOVÁNO. Finální CI na přesném SHA PASS, bez kritických regresí. Změny provádět pouze v odděleném prostředí V2.
+
+## Návrhové technické specifikace (22. 10. 2026)
+
+- [Šest oblastí a návrhové limity](../plan/TECHNICKE-KONTRAKTY-A-LIMITY.md)
+- [Obnova PostgreSQL](../../database/POSTGRES-DATOVY-MODEL.md)
+- [MapLibre zátěž](../technical/MAPLIBRE-VYKON-A-ZATEZ.md)
+- [Playwright test suite](../technical/PLAYWRIGHT-BROWSEROVE-TESTY.md)
+- [Zabezpečení LXC](../runbooks/POSTGRES-LXC-SECURITY-BACKUP.md)
+
+Výchozí číselné limity jsou **neověřené konfigurace pro první test**, nikoli PASS. Všechny checkboxy a stav KEEP zachovat, dokud nevznikne reálný kód, fixture a testovací důkazy.
