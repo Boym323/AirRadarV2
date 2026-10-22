@@ -4,6 +4,8 @@ Tento soubor eviduje **skutečně dokončené a ověřené změny**, nikoli jen 
 
 ## [Nepublikováno]
 
+- G-13: zdokumentována a regresně testována korektní validace kořenových záznamů GNU tar (`.`/`./`) pro DEV auto-deploy; bezpečnostní kontroly zůstávají povinné.
+
 ### Změněno
 - Rozsah na základě výslovného rozhodnutí vlastníka: **46 KEEP / 132 REMOVE**; odstraněno 34 dříve plánovaných funkcí, vrácena **L06 (squawk 7500/7600/7700)**.
 - Matice JSON, český katalog všech 178 funkcí, 9 logických modulů, etapový plán a implementační úkoly byly sladěny. Nevyřazené O11/O12 infrastruktury se drží jako technická povinnost, nikoli jako samostatný produkt.
