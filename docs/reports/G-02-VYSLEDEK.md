@@ -118,3 +118,7 @@ V kroku **G-02.11 (J02/J03/J04/J05/J11)** rozšiřuje `--g02-benchmark` následn
 ### Prodloužení G-02.11 soak na skutečných 180 sekund release binárky
 
 V optimalizovaném **release** sestavení provádí nově integrovaný izolovaný loopback test skutečný časový běh **180 sekund** s opakovaným BEAST TCP fragment/reconnect; CI debug test stejné logiky běží nejméně 5 sekund. Měří počty TCP up/down, BEAST frame, JSON výpadků, chyb fronty, p95 zpracování, RSS na začátku/špičce a TTL. Stávající DEV LXC agent má timeout 300 sekund pro `--g02-benchmark` a systemd maximum 600 sekund, takže **bez aktualizace agenta** novou binárku při novém SHA vyhodnotí. Hodinový test skutečného readsb a plné G-02.11 jsou nadále neověřené. Na LXC zatím nelze předem tvrdit PASS.
+
+### Připraveno automatické externí ověření z GitHub Actions
+
+Samostatný job [G-02 DEV kandidát](../../.github/workflows/g02-dev-candidate.yml) nyní po vydání balíčku čte veřejný `g02-status.json`, nepoužívá V1 ani žádná tajemství a kontroluje **přesnou shodu plného SHA** plus 180s loopback a RAM/reconnect kritéria. Před úspěchem jobu pro aktuální commit zůstává vzdálená evidence **NEOVĚŘENO**. Automatické potvrzení samo o sobě není 60min provozní test skutečného receiveru.
