@@ -297,23 +297,46 @@ pub fn replay() -> Result<RadarState, &'static str> {
     // Běh CLI musí pokrýt OBA transporty v téže RAM autoritě, bez TCP/LAN.
     let cases: serde_json::Value = serde_json::from_str(include_str!(
         "../../../../contracts/fixtures/beast/cases.json"
-    )).map_err(|_| "beast fixture")?;
+    ))
+    .map_err(|_| "beast fixture")?;
     let mut cpr = CprCache::default();
     let mut source = SourceArbiter::default();
-    consume(Ingress::BeastLink { at: 1792627206.0, connected: true }, &mut state, &mut cpr, &mut source);
-    for (i, case) in cases["valid"].as_array().ok_or("beast cases")?.iter().take(2).enumerate() {
+    consume(
+        Ingress::BeastLink {
+            at: 1792627206.0,
+            connected: true,
+        },
+        &mut state,
+        &mut cpr,
+        &mut source,
+    );
+    for (i, case) in cases["valid"]
+        .as_array()
+        .ok_or("beast cases")?
+        .iter()
+        .take(2)
+        .enumerate()
+    {
         let bytes = crate::contract::hex_decode(case["modeS"].as_str().ok_or("modeS")?)?;
         let at = 1792627206.0 + i as f64;
         let decoded = decode_df17(&bytes, at).ok_or("beast crc")?;
-        consume(Ingress::Beast { decoded, at }, &mut state, &mut cpr, &mut source);
+        consume(
+            Ingress::Beast { decoded, at },
+            &mut state,
+            &mut cpr,
+            &mut source,
+        );
     }
-    let bad = crate::contract::hex_decode(cases["invalid"][3]["hex"].as_str().ok_or("invalid frame")?)?;
+    let bad =
+        crate::contract::hex_decode(cases["invalid"][3]["hex"].as_str().ok_or("invalid frame")?)?;
     let mut decoder = Decoder::default();
     let frames = decoder.push(&bad);
     if frames.len() != 1 || decode_df17(&frames[0].payload, 1792627210.0).is_some() {
         return Err("bad CRC accepted");
     }
-    if state.tracks.len() != 3 { return Err("duplicate aircraft identity"); }
+    if state.tracks.len() != 3 {
+        return Err("duplicate aircraft identity");
+    }
     Ok(state)
 }
 /// G-02.11: srovnatelné syntetické 1×/2×/4× na stejných fixture.
@@ -367,8 +390,12 @@ pub fn benchmark() -> Result<(), &'static str> {
     // Rychlosti jsou syntetické, nikoli měření RF toku v cílovém LXC.
     let baseline = parse_replay(
         include_bytes!("../../../../contracts/fixtures/readsb/initial.json"),
-        "rx-primary", 1792627200.0,
-    )?.into_iter().next().ok_or("baseline")?;
+        "rx-primary",
+        1792627200.0,
+    )?
+    .into_iter()
+    .next()
+    .ok_or("baseline")?;
     for ratio in [1usize, 2, 4] {
         let mut state = RadarState::default();
         let mut batch_us = Vec::new();
@@ -381,7 +408,9 @@ pub fn benchmark() -> Result<(), &'static str> {
             sample.aircraft_key = format!("icao:{index:06x}");
             state.apply(&sample);
         }
-        if state.tracks.len() != 5000 { return Err("RAM bound on fill"); }
+        if state.tracks.len() != 5000 {
+            return Err("RAM bound on fill");
+        }
         for cycle in 0..(ratio * 8) {
             let start = Instant::now();
             let now = 1792627201.0 + cycle as f64;
@@ -411,7 +440,9 @@ pub fn benchmark() -> Result<(), &'static str> {
             state.counters.capacity_drops
         );
         state.cleanup(1792627201.0 + (ratio * 8) as f64 + 61.0);
-        if !state.tracks.is_empty() { return Err("RAM track expiry"); }
+        if !state.tracks.is_empty() {
+            return Err("RAM track expiry");
+        }
     }
     Ok(())
 }
