@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ruční atomická instalace nebo rollback G-00/G-01 artefaktu jen v DEV LXC.
+# G03_STAGE_GATE_V1 — strict stage-aware SSE health/rollback. G00 stays unchanged.
 set -Eeuo pipefail
 if [ "$(id -u)" -ne 0 ] || [ "$#" -ne 1 ]; then
   echo "Použití: bash install-dev-bundle.sh /root/airradarv2-dev-linux-amd64-....tar.gz" >&2
@@ -118,6 +118,19 @@ else
   # Do not delete the staging directory until healthcheck has used it.
 fi
 
+# G03_STAGE_GATE_V1: verify the approved systemd mode & installed verifier
+# before switching symlink. Without root-owned gate, refuse G03 deployment.
+requires_g03=0
+if [[ -f "$target/web/g03-runtime-required.txt" ]]; then
+  test "$(tr -d '\r\n' < "$target/web/g03-runtime-required.txt")" == "G-03"
+  test -r /usr/local/libexec/airradarv2-verify-g03-runtime.py
+  grep -qF -- '--g03-live-api' /etc/systemd/system/airradarv2-engine.service || {
+    echo "ERROR: G-03 release vyžaduje aktivovaný systemd --g03-live-api; neprovádím cutover" >&2
+    exit 1
+  }
+  requires_g03=1
+fi
+
 ln -sfn "$target" "$base/.current-next"
 mv -Tf "$base/.current-next" "$base/current"
 activated=1
@@ -138,15 +151,20 @@ systemctl reload nginx
 ready=0
 for attempt in $(seq 1 25); do
   if curl -fsS --max-time 3 http://127.0.0.1:4101/api/v1/health -o "$health_tmp" 2>/dev/null &&
-     python3 - "$health_tmp" <<'PY'
+     python3 - "$health_tmp" "$requires_g03" <<'PY'
 import json,sys
 try:
     with open(sys.argv[1],encoding="utf-8") as f:
         d=json.load(f)
-    assert d.get("status") in ("bootstrap","waiting_for_observations","live")
-    assert isinstance(d.get("live_ingest"),bool)
-    assert isinstance(d.get("database_connected"),bool)
-    assert isinstance(d.get("stage"),str) and d["stage"].startswith("G-")
+    if sys.argv[2] == "1":
+        assert d.get("stage") == "G-03"
+        assert d.get("status") in ("live", "waiting_for_observations")
+        assert d.get("live_ingest") is (d["status"] == "live")
+    else:
+        assert d.get("stage") == "G-00"
+        assert d.get("status") == "bootstrap"
+        assert d.get("live_ingest") is False
+    assert d.get("database_connected") is False
 except (OSError,ValueError,KeyError,AssertionError,TypeError):
     sys.exit(1)
 PY
@@ -165,6 +183,13 @@ bind_ip="$(sed -nE 's/^[[:space:]]*listen ([0-9.]+):8080;.*$/\1/p' \
 test -n "$bind_ip"
 curl -fsS --max-time 5 "http://$bind_ip:8080/" |
   grep -q '<div id="root"></div>'
+if [[ "$requires_g03" == 1 ]]; then
+  # Still inside the EXIT rollback trap: a missing/blocked proxy SSE stream
+  # restores the previous release instead of marking a false deployment PASS.
+  python3 /usr/local/libexec/airradarv2-verify-g03-runtime.py \
+    --direct http://127.0.0.1:4101 \
+    --proxy "http://$bind_ip:8080"
+fi
 systemctl is-active --quiet airradarv2-engine
 systemctl is-active --quiet nginx
 echo "PASS: DEV AirRadar V2 SHA=$sha"

@@ -98,3 +98,9 @@ vypnutý. Při kolizi s G-02 deployment bezpečně čeká přes sdílený lock.
 Odstraněná historická workflow (stále dostupná v Gitu): `dev-package.yml` byl duplicitní manuální build bez nasazení; `g02-live-dev-acceptance.yml` byla jednorázová hodinová G-02.11 přejímka, která již proběhla a má důkaz [run #39795592425](https://github.com/Boym323/AirRadarV2/actions/runs/39795592425). Python přejímací nástroje, golden fixture, regresní testy a záznamy skutečného provozu zůstávají zachovány. Historický `PASS_LIVE_BEAST_60MIN` není vyžadován při každém běžném deploymentu.
 
 Postup ověření: PR CI (tři PASS joby); potom kontrola, že jeden nový push main spustí jen **DEV release workflow**, které nejprve zavolá reusable CI, sestaví a ověří release a provede Runner deployment se healthcheckem. **Znovunasazení samostatného LXC nebo změna V1 se neprovádí.**
+
+## P1 — stage-aware přejímka budoucí G-03 (připraveno, neaktivováno)
+
+SHA-připnutý balíček s `contracts/openapi.g03.yaml` dostane při buildu `web/g03-runtime-required.txt`. Před deploymentem Runner ověřuje přítomnost nainstalovaného root instalátoru `G03_STAGE_GATE_V1` a verifikátoru `verify-g03-runtime.py`; pokud chybí, deploy odmítne **před přepnutím symlinku**. Instalátor vyžaduje aktivní systemd `--g03-live-api` a následně ověřuje HTTP health `stage=G-03`, pravdivý `live`/`waiting_for_observations`, nový `snapshot` s epoch/seq, stream přes DEV Nginx a 15s heartbeat do 20s. `bootstrap` ani `degraded` nesmí projít. Chyba G-03 streamu ještě uvnitř root EXIT trap vyvolá rollback.
+
+**G-03 cutover dosud NO-GO:** PR neinstaluje do LXC nový root-owned skript. Před prvním G-03 deploymentem je potřeba bezpečně aktualizovat instalátor z ověřeného commitu, schválit změnu systemd režimu a ověřit celý config+binary rollback (starý G-00 binary nemusí umět `--g03-live-api`). Dokud se neověří tato atomická konfigurace a cílový DEV streaming, neslučovat G-03 do main. Provozní G-00/G-02 Runner workflow zůstává neměnné.

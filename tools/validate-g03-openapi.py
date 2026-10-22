@@ -42,7 +42,17 @@ check("LiveHealthV1", {
     "live_ingest": False,
     "database_connected": False,
 })
+check("LiveHealthV1", {
+    "status": "degraded",
+    "stage": "G-03",
+    "live_ingest": False,
+    "database_connected": False,
+})
 check("ErrorV1", {"code": "UNAVAILABLE", "message": "Limit SSE spojení byl vyčerpán."})
 check("ErrorV1", {"code": "CONTRACT_INVALID", "message": "Nepodporované parametry."})
 check("DeltaV1", sequence["delta"])
 print("PASS G-03: oddělený OpenAPI 3.1, public snapshot/delta, health, typované chyby.")
+
+# P1: Typovaný HTTP 503 response při CAPACITY_EXCEEDED.
+for path in ("/api/v1/aircraft", "/api/v1/stream"):
+    assert "503" in api["paths"][path]["get"]["responses"]
