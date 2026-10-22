@@ -22,10 +22,17 @@
 
 Obě odpovědi byly doloženy skutečným `curl` na loopback Rust API. `NOT_IMPLEMENTED` je očekávaný výsledek před G-02/G-03, nikoli chyba instalace. Instalační skript také při PASS provádí smoke test Nginx HTML.
 
+## Dodatečná síťová kontrola předaná správcem
+
+- `curl -fsS` proti webovému LAN endpointu v novém LXC vrátil HTML dokument v češtině (`<!doctype html>`, `<html lang="cs">`) s názvem AirRadar V2. To potvrzuje skutečný HTTP provoz přes Nginx z kontejneru; nevypovídá to samo o sobě o dostupnosti z jiných zařízení v LAN.
+- `ss -lntp | grep -E '4101|8080'` potvrdil Rust **jen na IPv4 loopback `127.0.0.1:4101`** a Nginx **jen na explicitní privátní IPv4 portu `8080`**. Na těchto dvou portech se ve výpisu neobjevil IPv6 listener ani wildcard listener.
+- **Bezpečnostní omezení:** tento výpis neprokazuje zákaz veřejného IPv6 provozu na všech *ostatních* portech ani pravidla Proxmox firewallu. To je oddělená síťová kontrola.
+- **Podklad:** výpis konzole DEV LXC, poskytnutý správcem dne 22. 10. 2026. Přístup ChatGPT k LXC nebyl použit.
+
 ## Co ještě nebylo doloženo
 
-- Interaktivní otevření webu v prohlížeči uživatele přes LAN.
-- Ověření skutečných poslouchajících portů (včetně veřejné IPv6) a kontrola firewallu Proxmoxu.
+- Interaktivní otevření webu v prohlížeči uživatele přes LAN (zatím není potvrzené).
+- Kontrola pravidel firewallu Proxmoxu včetně IPv6 (nebyla provedena); listenery služeb na příslušných portech byly ověřeny níže.
 - Dlouhodobý soak, restart LXC a provozní metriky.
 - Živý readsb/BEAST, SSE a PostgreSQL: tyto funkce **zatím nemají implementaci**.
 

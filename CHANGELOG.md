@@ -5,6 +5,7 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 ## [Nepublikováno]
 
 ### První úspěšné DEV LXC nasazení — 22. 10. 2026
+- Dodatečný konzolový HTTP test potvrdil českou HTML stránku přes Nginx a `ss -lntp` prokázal lokální Rust `127.0.0.1:4101` a Nginx jen na privátní IPv4:8080, bez IPv6 listeneru na těchto portech. Přístup z jiného LAN zařízení a Proxmox firewall/IPv6 pravidla zůstávají neověřené.
 - Správce doložil nasazený balíček `227a8619b590d2c536761ffefc75cd0a5633936c`, SHA-256 OK, Rust i Nginx aktivní, bootstrap health a korektní `NOT_IMPLEMENTED` aircraft API.
 - [Přejímací report](docs/reports/DEV-LXC-PRVNI-NASAZENI-2026-10-22.md) rozlišuje ověřený lokální provoz a dosud neověřený prohlížeč, IPv6 firewall a soak. G-02/G-03/G-04 a V1 beze změny.
 
