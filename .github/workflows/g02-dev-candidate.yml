@@ -134,8 +134,18 @@ jobs:
             curl -fsSL --location -H 'Accept: application/octet-stream' -H "Authorization: Bearer ${GH_TOKEN}" "$url" -o "$staging/$asset"
           done
           (cd "$staging" && sha256sum -c "$name.sha256")
-          tar -xOf "$staging/$name" ./VERSION > "$staging/VERSION.check"
-          test "$(tr -d '\r\n' < "$staging/VERSION.check")" = "$GITHUB_SHA"
+          python3 - "$staging/$name" "$GITHUB_SHA" <<'PY'
+          import sys, tarfile
+          archive, expected = sys.argv[1:]
+          with tarfile.open(archive, 'r:gz') as bundle:
+              version = next((item for item in bundle.getmembers()
+                              if item.name in ('VERSION', './VERSION')), None)
+              if version is None or not version.isfile():
+                  raise SystemExit('VERSION is missing or not a regular file')
+              actual = bundle.extractfile(version).read(256).decode('ascii').strip()
+          if actual != expected:
+              raise SystemExit('VERSION does not match GITHUB_SHA')
+          PY
           current_main="$(curl -fsSL -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${GH_TOKEN}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" | jq -r '.object.sha')"
           test "$current_main" = "$GITHUB_SHA"
           tar -tzf "$staging/$name" | grep -Eq '^\./(VERSION|airradarv2-engine|web/index\.html)$'
