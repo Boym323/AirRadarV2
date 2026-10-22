@@ -4,7 +4,7 @@
 
 | Etapa | Výstup a zadání | Stav |
 |---|---|---|
-| G-00 | Samostatný základ Rust + Next.js | **HOTOVO — pouze scaffold** |
+| G-00 | Samostatný základ Rust + Vite/React | **HOTOVO — pouze scaffold** |
 | G-01 | [Kontrakty a deterministické fixture](../ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) | NEZAHÁJENO |
 | G-02 | [Lokální ADS-B ingest a RAM](../ukoly/G-02-LOKALNI-INGEST.md) | NEZAHÁJENO |
 | G-03 | [Verzované HTTP API a SSE](../ukoly/G-03-API-A-SSE.md) | NEZAHÁJENO |
@@ -55,3 +55,7 @@ Podklad pro G-01 až G-11: [PostgreSQL, readsb/BEAST, SSE, MapLibre, Playwright 
 ## RAM-first optimalizace — návaznost bez změny etap
 
 Audit úspornosti vedl k [adaptivní deduplikaci v Rust RAM](../technical/RAM-CACHE-A-DEDUP-ZAPISU.md) a [revidovanému PostgreSQL modelu](../../database/POSTGRES-DATOVY-MODEL.md). Nová politika snižuje **potenciální** počet historických vzorků; nesmí se vykazovat jako skutečně naměřená úspora. G-01/G-02 definují a implementují per-field freshness/dedup; G-04 experimentálně uzavře sampling, batch, indexy, partitioning a obnovu. Funkce zůstávají NEZAHÁJENO, počet kroků beze změny.
+
+## Audit před přejímkou G-01 — 22. 10. 2026
+
+[**Úplný architektonický audit**](../audits/ARCHITEKTONICKY-AUDIT-AIRRADAR-V2-2026-10-22.md) konstatuje **GO pro zahájení G-01**, avšak **NO-GO pro její převzetí**, dokud nebudou testem doloženy: (1) `timeBasis/positionOrigin` a BEAST-only režim, (2) slučování identit a konfliktních pozorování, (3) formální DTO a atomický SSE snapshot/delta. Navazující úkoly G-04/G-08/G-09 mají další nezávislé brány. G-01 až G-13 jsou nadále NEZAHÁJENO.

@@ -4,6 +4,12 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### Architektonický audit 22. 10. 2026
+- Přidán [audit připravenosti V2](docs/audits/ARCHITEKTONICKY-AUDIT-AIRRADAR-V2-2026-10-22.md) na stavu `f97ba6e0`; 3 kontraktové blokace G-01 a další etapová rizika, zejména časová semantika BEAST/readsb, identita, SSE race, SQL ack, logbook/statistiky a bezpečná správa notifikačních odběrů.
+- Opraven zastaralý údaj o Next.js v aktuální G-00 tabulce; historické ADR výslovně označeno jako supersedované v části sampling.
+- Žádné implementace 45 KEEP funkcí, SQL migrace, produktové rozšíření ani produkční nasazení.
+
+
 ### Pravidla původu lokálního příjmu — 22. 10. 2026
 - [ADR 0008](docs/adr/0008-identita-puvodu-lokalniho-prijmu.md): oddělit stabilní neveřejný `receiverId` od JSON/BEAST transportu; stejný readsb nezapočítávat jako dvě RF stanice a nespojovat receiver s identitou letadla.
 - Scénáře dalších přijímačů a případných externích služeb jsou zapsány **jen v odděleném backlogu**, mimo 45 aktivních funkcí. Původní přepínač LOCAL/EXTENDED se nevrací.

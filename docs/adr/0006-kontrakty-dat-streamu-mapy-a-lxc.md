@@ -1,6 +1,6 @@
 # ADR 0006 — Technické kontrakty dat, streamu, mapy a LXC
 
-**Datum:** 22. 10. 2026. **Stav:** schválený výchozí technický návrh pro implementační etapy; benchmarky dosud neprovedeny. Navazuje na [ADR 0005](0005-vite-a-postgresql-v2.md).
+**Datum:** 22. 10. 2026. **Stav:** historický výchozí technický návrh. **Pozor:** jeho původní 15s DB sampling, předem vytvořený druhý index a automatický partitioning byly následně revidovány [ADR 0007](0007-ram-first-deduplikace-a-usporny-zapis.md). [Audit 22. 10. 2026](../audits/ARCHITEKTONICKY-AUDIT-AIRRADAR-V2-2026-10-22.md) uvádí otevřené otázky; benchmarky dosud neprovedeny. Navazuje na [ADR 0005](0005-vite-a-postgresql-v2.md).
 
 ## Kontext a rozhodnutí
 

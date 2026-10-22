@@ -107,3 +107,7 @@ PostgreSQL v existujícím separátním LXC potřebuje vlastní databázi/role a
 **Nově zvolená politika:** [deduplikace už v Rust RAM](docs/technical/RAM-CACHE-A-DEDUP-ZAPISU.md), adaptivní uložení běžných pohybujících se letadel **nejdříve po 60 s**, výjimka významný manévr nejdříve po 30 s, 30s UTC SQL deduplikační bucket, nejvýše 128 řádků v batch či 5s flush po uzavření bucketu. Živá mapa a 1Hz SSE čtou RAM bez DB dotazu na každý event.
 
 [Revidovaný fyzický model PostgreSQL](database/POSTGRES-DATOVY-MODEL.md) nezařazuje další indexy ani partitioning bez reálného měření. [ADR 0007](docs/adr/0007-ram-first-deduplikace-a-usporny-zapis.md) vysvětluje změnu proti pevné 15s historii. **Jde o implementační návrh, nikoli již dosaženou úsporu diskových IOPS.**
+
+## Architektonický audit před implementací
+
+[**Audit 22. 10. 2026 — uzavřená rozhodnutí a zbývající rizika**](docs/audits/ARCHITEKTONICKY-AUDIT-AIRRADAR-V2-2026-10-22.md) potvrzuje stabilní stack Rust/Vite/PostgreSQL, ale dokumentuje otevřené kontrakty časových značek, integrity pozorování, SSE atomického snapshotu, logbooku, notifikačních oprávnění a skutečné DB infrastruktury. **G-01 lze zahájit; jeho převzetí vyžaduje tři blokující kontraktové testy.** Zelené G-00 CI není potvrzení implementace 45 funkcí.

@@ -36,3 +36,7 @@ Před G-01/G-02/G-04/G-09 přečti [RAM-first deduplikaci a adaptivní sampler](
 ## Identita původu lokálního přijímače
 
 Při G-01/G-02 dodrž [ADR 0008](docs/adr/0008-identita-puvodu-lokalniho-prijmu.md): `receiverId` není `transport` a ani jedno není `aircraftKey`. Dvě cesty JSON/BEAST téhož readsb tvoří **jednu RF stanici**; nezdvojovat letadla, statistiky ani SQL vzorky. Tento minimální kontrakt **nepovoluje** žádné další datové kanály či UI; případné návrhy jsou izolovány výhradně v jediném archivu budoucích rozšíření.
+
+## Architektonické blokace před přejímkou G-01
+
+Před G-01 si přečti [audit 22. 10. 2026](docs/audits/ARCHITEKTONICKY-AUDIT-AIRRADAR-V2-2026-10-22.md). Uzavři P0-01 až P0-03 přímo v G-01: skutečný čas/původ polohy (`readsb`/BEAST), konfliktní identitu a atomický, verzovaný SSE snapshot+delta. Ostatní P1 body patří před přejímku cílových G-XX etap. Audit neznamená schválení dalších zdrojů nebo funkcí a není náhradou za testy.

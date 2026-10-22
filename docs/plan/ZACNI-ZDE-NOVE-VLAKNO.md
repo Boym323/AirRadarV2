@@ -37,3 +37,7 @@ Ověř aktuální HEAD/branch/CI. V izolovaném checkoutu implementuj pouze konk
 ## Zadání k vložení do dalšího vlákna
 
 > Pracuj v `Boym323/AirRadarV2`. Přečti `AGENTS.md`, `docs/plan/ZACNI-ZDE-NOVE-VLAKNO.md`, aktuální plán a jediný následující úkol. Aplikace je nový **místní ADS-B radar**, má pouze **45 aktivních funkcí**, žádné volby zdroje dat. Všechny dokumenty i výchozí uživatelské texty piš česky. Nepřebírej zdrojový strom V1. Zkontroluj aktuální main/CI a [krokový plán](KROKOVY-IMPLEMENTACNI-PLAN.md), implementuj jediný `G-XX.YY` krok s testy, aktualizuj `CHANGELOG.md` a český etapový report. Původní V1 a její DB/LXC neměň a bez samostatného souhlasu nic nenasazuj do produkce.
+
+## Aktuální audit před vývojem
+
+Před převzetím G-01 použij [audit architektury z 22. 10. 2026](../audits/ARCHITEKTONICKY-AUDIT-AIRRADAR-V2-2026-10-22.md): P0-01 čas a původ polohy, P0-02 identita/konflikty, P0-03 SSE atomické DTO. Neznamená změnu 45 aktivních funkcí ani implementaci dalších zdrojů.
