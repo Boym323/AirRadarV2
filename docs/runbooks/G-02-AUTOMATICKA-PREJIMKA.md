@@ -1,6 +1,6 @@
 # G-02.11 — automatická přejímka v izolovaném DEV LXC
 
-**Stav: připraveno v GitHubu; instalace časovače do soukromého LXC dosud neproběhla.** Tento postup je alternativou k ručnímu sestavení, stahování ZIP a kopírování souborů. V1 a její data zůstávají mimo rozsah. Není to automatické nasazení webu.
+**Stav 22. 10. 2026: časovač nainstalován podle uživatele; offline výsledky z cílového LXC doloženy HTTP 200 / PASS_SYNTHETIC_LXC na SHA `daa15703610b219b5b413319a4920659e19a8694`.** Podrobné hodnoty a metodika jsou v [G-02 reportu](../reports/G-02-VYSLEDEK.md). Tento postup je alternativou k ručnímu sestavení, stahování ZIP a kopírování souborů. V1 a její data zůstávají mimo rozsah. Není to automatické nasazení webu.
 
 ## Co se děje automaticky
 
@@ -50,3 +50,7 @@ Instalační skript na DEV LXC vytvoří izolované systemd jednotky, přidá p�
 ## Co automatika zatím NEOVĚŘUJE
 
 Trvalý příjem **živého** BEAST/readsb, dlouhodobý reconnect/soak, výpadek fyzické stanice a bezpečnostní kontroly produkčního nasazení. Připojení V1 přijímače bez výslovného schválení nepouštět. G-02 nadále **10/11, TESTED**, dokud nebude doložen provozní test a přejímka. GitHub runner pro veřejný repozitář v domácí LAN záměrně nepoužíváme.
+
+## Potvrzená první automatická přejímka
+
+Uživatel dodal 22. 10. 2026 HTTP výstup z veřejné reverzní proxy: `/g02-status.json` vrací `PASS_SYNTHETIC_LXC` (14:02 SELČ, SHA `daa15703`, replay i benchmark PASS). **Potvrzuje to dostupnost status endpointu i funkční testovací řetězec z pohledu uživatelova Macu**. Z prostředí asistenta nemohl být endpoint nezávisle načten. Nyní je status rovněž veřejně dostupný přes `https://airradarv2.pomykal.cz/g02-status.json`, nejen v LAN; neuváděj do něj interní IP, tajemství ani diagnostické údaje mimo přejímku. Druhá brána live-soak nadále neproběhla.

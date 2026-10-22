@@ -4,10 +4,10 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
-### Automatická G-02.11 acceptance — připraveno v repozitáři, LXC dosud nezapnuto
+### Automatická G-02.11 acceptance — offline test na DEV LXC PASS, live-soak čeká
 - GitHub Actions při zelených testech vydá immutable SHA-pripnutý DEV prerelease bez nasazení.
-- Samostatný rootless systemd timer v DEV LXC může jednorázově po instalaci stahovat nové ověřené balíčky přes HTTPS, spouštět offline replay + 5000-track benchmark a zveřejnit výsledek na LAN-only `/g02-status.json`.
-- Žádný GitHub self-hosted runner, žádná V1/DB, žádné změny nasazené produkce a žádné automatické přepnutí aplikace. Provozní G-02.11 zůstává NEOVĚŘENO.
+- Samostatný rootless systemd timer v DEV LXC stahuje ověřené balíčky přes HTTPS a spouští offline replay + 5000-track benchmark. Uživatel doložil HTTP 200 i přes veřejnou reverse proxy `/g02-status.json`.
+- Doložený build `daa15703` v DEV LXC: PASS replay i benchmark, 5 000 tracků p95 2,40–2,55 ms, RSS do 5 256 KiB. Live-soak/reconnect a provozní G-02.11 přejímka stále NEOVĚŘENO. Žádný self-hosted runner ani automatické přepnutí webu/V1.
 
 
 ### G-02 — rozšíření testového pokrytí na 10/11 kroků (22. 10. 2026)

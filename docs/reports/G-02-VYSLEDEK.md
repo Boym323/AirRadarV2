@@ -87,3 +87,26 @@ Při revizi bylo opraveno **uvolňování interní mapy `position_quality` spole
 ### Automatizace přejímky G-02.11 (návrh; NENASAZENO)
 
 Bezpečné [automatické DEV ověření](../runbooks/G-02-AUTOMATICKA-PREJIMKA.md) zahrnuje SHA-pripnuté prerelease balíčky z důvěryhodného GitHub CI a odchozí rootless pull časovač v samostatném DEV LXC. JSON report přes existující privátní Nginx. Samotná instalace skriptu v LXC, syntetické výsledky přímo v LXC a reálný dlouhodobý BEAST/JSON soak zůstávají **NEOVĚŘENO**. Nepovažovat za přijetí G-02.
+
+## Výsledek automatického offline benchmarku přímo z DEV LXC — 22. 10. 2026
+
+**První brána G-02.11 = PASS (syntetická zátěž).** Uživatel 22. 10. 2026 doložil výstup `curl -i https://airradarv2.pomykal.cz/g02-status.json` z Macu: HTTP 200, JSON `status=PASS_SYNTHETIC_LXC`, `replay=PASS`, `benchmark=PASS`. Přímé nezávislé načtení veřejného endpointu z prostředí asistenta nebylo možné (síťový přístup omezen). Tento záznam vychází z **uživatelem předaného skutečného výstupu**, nikoli z odhadu nebo reprodukce na GitHub runneru.
+
+- **Testovaný SHA binárky:** `daa15703610b219b5b413319a4920659e19a8694`.
+- **UTC:** `2026-10-22T12:02:06.838135+00:00` (= 14:02 SELČ), publikovaný HTTP výstup ze 14:10 SELČ.
+- **Prostředí:** samostatný DEV LXC; `visibleCpuCount=1`; `cpuQuota=max 100000` (bez cgroup CPU quota; přímá verifikace affinity/cpuset zatím chybí).
+- **Sestavení:** [GitHub Actions #39774198432](https://github.com/Boym323/AirRadarV2/actions/runs/39774198432) (opakovaný PASS 26 Rust + 3 Python testy), [SHA-pripnutý release](https://github.com/Boym323/AirRadarV2/releases/tag/g02-dev-daa15703610b219b5b413319a4920659e19a8694).
+- **Metoda:** release Rust binárka `--g02-replay` a `--g02-benchmark` mimo běžící systemd aplikaci; žádný živý readsb/BEAST, DB, API, SSE ani zápisy historických dat.
+
+| Offline scénář | Celkem | p95 na průchod/dávku | RSS | CPU raw ticks |
+|---|---:|---:|---:|---:|
+| Fixture replay 1× (1 000 průchodů) | 24,2 ms | 26 µs | 2 332 KiB | 2 |
+| Fixture replay 2× (2 000 průchodů) | 47,5 ms | 24 µs | 2 364 KiB | 5 |
+| Fixture replay 4× (4 000 průchodů) | 99,5 ms | 38 µs | 2 392 KiB | 10 |
+| 5 000 identit 1× (45 000 pozorování) | 23,4 ms | 2 399 µs/dávka 5 000 | 5 236 KiB | 2 |
+| 5 000 identit 2× (85 000 pozorování) | 40,9 ms | 2 546 µs/dávka 5 000 | 5 256 KiB | 4 |
+| 5 000 identit 4× (165 000 pozorování) | 77,0 ms | 2 467 µs/dávka 5 000 | 5 256 KiB | 8 |
+
+`--g02-replay`: 3 tracky / 3 aktualizace / 1 duplicita / 0 konfliktů. U všech tří 5 000-track variant `drops=1` je **úmyslný negativní kapacitní test 5 001. identity**. RSS z `/proc/self/status` je hodnota příslušného krátkého testu; raw ticks z `/proc/self/stat` nepřevádět na procenta CPU bez metodiky HZ a wall-clock/cgroup evidence. Neprokazuje maximální paměť ani CPU za hodinový soak. Není metodicky správné přímo porovnávat výsledky s **debug** profilem předchozích GitHub CI měření: LXC testuje `--release` optimalizovanou binárku.
+
+**Přejímací závěr:** Offline replay a syntetické testy na cílovém LXC úspěšné, bez požadavku na ruční přenos binárky. **Druhá brána G-02.11 zůstává NEOVĚŘENO:** bezpečný reálný JSON/BEAST long-running soak, reconnect, bounded RAM/CPU a kontrola provozních dropů. Pořád **G-02 = 10/11, ROZPRACOVÁNO; J01/J02/J03/J04/J05/J11 = TESTED**, ne ACCEPTED. Nejde o doklad automatického nasazení G-02 do běžícího webu a nebyl proveden zásah do V1.

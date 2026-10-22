@@ -1,6 +1,6 @@
 # G-02 — Lokální readsb/BEAST ingest a jediný RAM state
 
-**Stav:** **10/11 testově doložených kroků; G-02.11 čeká měření v cílovém DEV LXC**. [Průběžný report](../reports/G-02-VYSLEDEK.md), [aktuální CI #39769778992](https://github.com/Boym323/AirRadarV2/actions/runs/39769778992).  
+**Stav:** **10/11 testově doložených kroků; G-02.11 má PASS offline benchmarku na DEV LXC, čeká dlouhodobý živý JSON/BEAST soak/reconnect**. [Průběžný report](../reports/G-02-VYSLEDEK.md), [aktuální CI #39769778992](https://github.com/Boym323/AirRadarV2/actions/runs/39769778992).  
 **Odpovědnost:** M01 — Rust/Tokio.  
 **Závislosti:** G-01 kontrakty a golden fixtures.  
 **Primární KEEP ID:** `J01`, `J02`, `J03`, `J04`, `J05`, `J11`.  
@@ -91,3 +91,7 @@ Při předchozí kontrole byly G-02.04/.05/.06/.08/.10/.11 pouze částečně ov
 - Nevznikla žádná produkční integrace, nasazení G-02 na DEV LXC ani změna V1, databáze či readsb.
 
 **Postup zbývajícího měření:** [G-02.11 — bezpečná DEV LXC přejímka](../runbooks/G-02-DEV-LXC-PREJIMKA.md).
+
+## Doložená první brána G-02.11 — DEV LXC 22. 10. 2026
+
+Přes automatický pull timer uživatel doložil `PASS_SYNTHETIC_LXC` na SHA `daa15703610b219b5b413319a4920659e19a8694`: 1 v systému viditelný CPU, p95 při dávce 5 000 unikátních identit 2,399/2,546/2,467 ms (1×/2×/4×), RSS 5 236–5 256 KiB a očekávané `drops=1` při vložení 5 001. tracku. [Kompletní metodika a čísla](../reports/G-02-VYSLEDEK.md#výsledek-automatického-offline-benchmarku-přímo-z-dev-lxc--22-10-2026). **Checkbox G-02.11 zůstává nevyplněný**, protože live-soak s reconnectem nebyl proveden. Měření není nasazení webového G-02 ingestu.
