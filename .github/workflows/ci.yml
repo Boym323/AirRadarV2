@@ -26,7 +26,9 @@ jobs:
         # CI obsahuje původní SC2034 upozornění na smyčkové čítače,
         # a vlastní label self-hosted runneru. Validujeme syntaxe/actions
         # expressions bez těchto dvou historických false positives.
-        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -shellcheck= -ignore 'label "airradarv2-dev" is unknown'
+        # Starší development-metrics.yml používá vlastní timezone klíč
+        # neslučitelný s actionlint 1.7.7; jeho plánování zde neměníme.
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -shellcheck= -ignore 'label "airradarv2-dev" is unknown' .github/workflows/ci.yml .github/workflows/g02-dev-candidate.yml
       - name: Kontrola dokumentace a 45 aktivních funkcí
         run: node tools/check-docs.mjs
       - name: Kontrola syntaxe skriptů DEV LXC

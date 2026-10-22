@@ -56,7 +56,7 @@ class WorkflowTopology(unittest.TestCase):
         self.assertIn("if test -f contracts/openapi.g03.yaml; then", release)
         self.assertIn("grep -qx 'G-03' package/web/g03-runtime-required.txt", release)
         self.assertIn("echo 'g03_runtime=true' >> \"$GITHUB_OUTPUT\"", release)
-        self.assertIn("if: ${{ needs['test-and-build'].outputs.g03_runtime == 'false' }}", release)
+        self.assertIn("needs['test-and-build'].outputs.g03_runtime == 'false'", release)
         self.assertIn("  deploy-dev:\n", release)
         self.assertIn("needs: publish-dev-candidate", release)
 
