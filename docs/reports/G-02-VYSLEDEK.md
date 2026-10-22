@@ -122,3 +122,8 @@ V optimalizovaném **release** sestavení provádí nově integrovaný izolovan�
 ### Připraveno automatické externí ověření z GitHub Actions
 
 Samostatný job [G-02 DEV kandidát](../../.github/workflows/g02-dev-candidate.yml) nyní po vydání balíčku čte veřejný `g02-status.json`, nepoužívá V1 ani žádná tajemství a kontroluje **přesnou shodu plného SHA** plus 180s loopback a RAM/reconnect kritéria. Před úspěchem jobu pro aktuální commit zůstává vzdálená evidence **NEOVĚŘENO**. Automatické potvrzení samo o sobě není 60min provozní test skutečného receiveru.
+
+
+## Připraven skutečný 60min BEAST read-only soak — NEPROVEDENO
+
+Pro G-02.11 připraven samostatný [návod s omezenými oprávněními](../runbooks/G-02-SKUTECNY-BEAST-SOAK.md) a [orchestrátor testu](../../deploy/g02-live-soak.py), využívající pouze BEAST TCP read-only výstup a SHA-připnutý kandidát. Jeho výsledky bude po celých 3600 sekund ověřeného provozu možné sledovat v existujícím veřejném status JSON jako liveSoak. **Zatím nemáme skutečný výsledek; G-02 stále 10/11, TESTED.**

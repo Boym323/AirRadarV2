@@ -4,6 +4,12 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-02.11 — připraven hodinový reálný BEAST read-only soak (NEPROVEDENO)
+- Samostatný rootless diagnostický proces připojí existující G-02 engine pouze k BEAST TCP OUTPUT 30005. Bez změny V1, DB či běžícího webu.
+- Po dobu 3600 sekund měří tracky, přijaté zprávy, dropy, RSS a CPU. Veřejný status dostane oddělenou sekci liveSoak bez adres nebo dat letadel.
+- Provedení a posouzení výsledků stále čeká. **G-02 10/11.**
+
+
 ### G-02: oprava výběru nejnovějšího GitHub prerelease
 - Github API nevracelo seznam vydání v chronologickém pořadí; dosavadní pull agent vybíral první starší SHA místo nového, takže automatický DEV LXC 180s test zůstával nespouštěný.
 - Nově se řadí validní připnuté releasy podle `published_at`. Regresní testy pokrývají nesetříděnou odpověď. Vyžaduje jednorázovou aktualizaci nainstalovaného agenta v DEV LXC (bez restartu běžícího radaru).
