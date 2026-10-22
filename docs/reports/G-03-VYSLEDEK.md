@@ -98,3 +98,11 @@ Metodika: Ubuntu GitHub-hosted runner, samostatný opt-in Rust binární proces,
 PASS: všechna doručení 1/10/100, 101. klient HTTP 503, uvolnění capacity, malformovaný JSON bez ztráty RAM, obnovení aktualizací, Rust SSE 15s heartbeat, **reálná CI Nginx reverse proxy** 127.0.0.1:8082 → 4102 s `curl -N` snapshot + heartbeat. G-03.06/.09 jsou nyní TESTED; J06/J07/J08 jsou `TESTED`, bez akceptace produkce.
 
 **Otevřeno:** G-03.07 deadline a závislost skutečně zablokovaných konzumentů; G-03.08 browser EventSource/streaming na izolovaném cílovém DEV Nginx; G-03.10 5k state/snapshot limit, 1/10/100 na cílovém 1vCPU LXC, RSS/CPU a p95/p99 vůči měřicím kritériím. Neoznačovat G-03 jako HOTOVO. Původní V1, její DB i LXC se neměnily.
+
+## Oprava po auditu — P1 SSE a DEV stage gate / P2 dokumentace
+
+- Nové sdílené `Bytes` a 16KiB SSE chunky zabraňují samostatné serializaci 1MiB eventu pro každého ze 100 klientů; nejnovější frame zůstává v jednom `watch` produceru. Reálný TCP buffering a RSS pro 100 pomalých klientů jsou stále **NEOVĚŘENO**.
+- Při přetečení 1MiB snapshotu / překročení počtu 5000 přechod do `degraded`, HTTP 503 `CAPACITY_EXCEEDED`, explicitní `unavailable` pro stávající SSE a poté obnovení novým `snapshot`, nikoli ponechání starých LIVE letadel.
+- G-03 DEV releasy nesou `web/g03-runtime-required.txt`. Runner odmítne starý root-owned installer ještě před instalací. Nový root rollback ověřuje `--g03-live-api` a skutečný snapshot/heartbeat přes Nginx; G-00 bootstrap není G-03 přejímka.
+- **NO-GO pro sloučení G-03 do main** dokud není aktualizován root instalátor a ověřen návrat konfigurace systemd společně s binárkou. Při změně režimu nemusí pouhý rollback symlinku z G-03 na G-00 obnovit běh aplikace.
+- Změny jsou ve vývojovém PR #16 bez přímého zásahu do LXC, V1 nebo G-04 databáze. Stav PASS potvrdit až finálním zeleným CI a reálným síťovým měřením.

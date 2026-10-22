@@ -36,11 +36,16 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ErrorV1" }
+        '503':
+          description: Příliš velký full snapshot, nelze podávat historický stav jako LIVE
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorV1" }
   /api/v1/stream:
     get:
       operationId: g03Stream
       summary: SSE snapshot, delta a heartbeat každých 15 sekund
-      description: Po připojení vždy snapshot. Last-Event-ID není server-side replay.
+      description: Pokud není přetížení, po připojení vždy snapshot. Při overflow stream vyšle unavailable/ErrorV1 a skončí. Last-Event-ID není server-side replay.
       responses:
         '200':
           description: SSE snapshot/delta, žádný proxy buffering
@@ -53,7 +58,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ErrorV1" }
         '503':
-          description: Dosažen limit 100 klientů
+          description: Dosažen limit 100 klientů nebo snapshot nad 1 MiB
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ErrorV1" }
@@ -64,7 +69,7 @@ components:
       additionalProperties: false
       required: [status, stage, live_ingest, database_connected]
       properties:
-        status: { type: string, enum: [live, waiting_for_observations] }
+        status: { type: string, enum: [live, waiting_for_observations, degraded] }
         stage: { type: string, const: G-03 }
         live_ingest: { type: boolean }
         database_connected: { type: boolean, const: false }

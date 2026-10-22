@@ -62,3 +62,10 @@ data: {"epoch":"epoch123","seq":18002,"generatedAt":"...Z",
 
 - [MDN EventSource/SSE](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events) — formát, reconnect, limit HTTP/1.1 a heartbeat.
 - [Axum](https://docs.rs/axum/latest/axum/response/sse/) — server-side SSE.
+
+## P1: bounded SSE a explicitní přetížení (izolované PR #16)
+
+- Jednou připravený sdílený SSE `Bytes` payload, max. 16KiB blok na jeden poll HTTP Body, žádná privátní aplikační fronta na klienta; Tokio `watch` drží jen poslední frame.
+- 256KiB aplikační budget **nezahrnuje OS TCP socket buffer**; skutečný RSS/p95/p99 pro 1/10/100 klientů na DEV stále vyžaduje provozní přejímku.
+- Více než 1MiB serializovaného full snapshotu nebo 5000 veřejných cílů: `health=degraded`, `GET aircraft/stream = 503 CAPACITY_EXCEEDED`, existující stream dostane `event: unavailable` a skončí. Starý validní stav se nikdy neposílá jako nové LIVE údaje.
+- Po obnově pod limit server emituje nový plný snapshot, ne delta proti zahozenému stavu. Vlastní Rust RAM ingest se neodřezává. Testy jsou připraveny pro 5000 úsporných a 5000 plných objektů.

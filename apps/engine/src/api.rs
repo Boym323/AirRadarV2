@@ -4,15 +4,13 @@
 use crate::contract::PublicAircraft;
 use axum::{
     Json, Router,
+    body::{Body, Bytes},
     extract::{RawQuery, State},
     http::{HeaderValue, StatusCode, header},
-    response::{
-        IntoResponse, Response,
-        sse::{Event, KeepAlive, Sse},
-    },
+    response::{IntoResponse, Response},
     routing::get,
 };
-use futures_util::{StreamExt, stream};
+use futures_util::stream;
 use serde::Serialize;
 use std::{
     collections::BTreeMap,
@@ -24,6 +22,13 @@ use tokio::sync::{Semaphore, watch};
 
 const MAX_SNAPSHOT_BYTES: usize = 1024 * 1024;
 const MAX_CLIENTS: usize = 100;
+// Per-client application stream owns one reference to shared payload and
+// returns at most one <=16KiB Bytes slice per poll. No per-client event queue.
+const MAX_CLIENT_PENDING_BYTES: usize = 256 * 1024;
+const SSE_CHUNK_BYTES: usize = 16 * 1024;
+const _: () = assert!(SSE_CHUNK_BYTES <= MAX_CLIENT_PENDING_BYTES);
+const HEARTBEAT: &[u8] = b": heartbeat\n\n";
+const CAPACITY_ERROR: &str = "Snímek překročil bezpečný limit; živý stav je dočasně nedostupný.";
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -49,7 +54,13 @@ pub struct Delta {
 #[derive(Clone)]
 struct Frame {
     snapshot: Arc<Snapshot>,
+    #[cfg_attr(not(test), allow(dead_code))]
     delta: Option<Arc<Delta>>,
+    // One prepared wire-format SSE payload per frame, shared by all clients.
+    encoded_snapshot: Bytes,
+    encoded_delta: Option<Bytes>,
+    // Do not serve a previous snapshot when the next state exceeds 1 MiB.
+    unavailable: bool,
 }
 
 #[derive(Clone)]
@@ -98,6 +109,17 @@ fn timestamp(now: f64) -> String {
     )
 }
 
+// Valid SSE on the wire, encoded ONCE by the publisher and shared as Bytes.
+// No Event::json_data per client: a 1MiB frame must not create 100 copies.
+fn encode_sse(json: &[u8], kind: &str, epoch: &str, seq: u64) -> Bytes {
+    let header = format!("event: {kind}\nid: {epoch}:{seq}\ndata: ");
+    let mut result = Vec::with_capacity(header.len() + json.len() + 2);
+    result.extend_from_slice(header.as_bytes());
+    result.extend_from_slice(json);
+    result.extend_from_slice(b"\n\n");
+    Bytes::from(result)
+}
+
 pub fn new() -> (Feed, Publisher) {
     let epoch = format!(
         "g03-{}-{}",
@@ -106,15 +128,20 @@ pub fn new() -> (Feed, Publisher) {
             .duration_since(UNIX_EPOCH)
             .map_or(0, |v| v.as_nanos())
     );
+    let snapshot = Arc::new(Snapshot {
+        kind: "snapshot",
+        epoch: epoch.clone(),
+        seq: 0,
+        generated_at: timestamp(unix_now()),
+        aircraft: Vec::new(),
+    });
+    let encoded = serde_json::to_vec(&*snapshot).expect("initial snapshot");
     let initial = Arc::new(Frame {
-        snapshot: Arc::new(Snapshot {
-            kind: "snapshot",
-            epoch: epoch.clone(),
-            seq: 0,
-            generated_at: timestamp(unix_now()),
-            aircraft: Vec::new(),
-        }),
+        encoded_snapshot: encode_sse(&encoded, "snapshot", &epoch, 0),
+        snapshot,
         delta: None,
+        encoded_delta: None,
+        unavailable: false,
     });
     let (sender, rx) = watch::channel(initial);
     (
@@ -135,7 +162,7 @@ impl Publisher {
         now: f64,
     ) -> Result<bool, &'static str> {
         let previous = self.sender.borrow().clone();
-        if previous.snapshot.aircraft == aircraft {
+        if !previous.unavailable && previous.snapshot.aircraft == aircraft {
             return Ok(false);
         }
         let seq = previous
@@ -151,12 +178,34 @@ impl Publisher {
             generated_at: generated_at.clone(),
             aircraft,
         };
-        if serde_json::to_vec(&snapshot)
-            .map_err(|_| "snapshot serialize")?
-            .len()
-            > MAX_SNAPSHOT_BYTES
-        {
-            return Err("snapshot exceeds 1 MiB");
+        let encoded = serde_json::to_vec(&snapshot).map_err(|_| "snapshot serialize")?;
+        if encoded.len() > MAX_SNAPSHOT_BYTES || snapshot.aircraft.len() > 5000 {
+            // Fail closed: replace the last good public frame with an explicit
+            // unavailable state. Never leave an apparently live OLD track map.
+            // Send a single transition event to existing clients, not 1Hz spam.
+            if previous.unavailable {
+                return Ok(false);
+            }
+            let unavailable = Snapshot {
+                kind: "snapshot",
+                epoch: self.epoch.clone(),
+                seq,
+                generated_at,
+                aircraft: Vec::new(),
+            };
+            let error = ApiError {
+                code: "CAPACITY_EXCEEDED",
+                message: CAPACITY_ERROR,
+            };
+            let error_json = serde_json::to_vec(&error).map_err(|_| "capacity serialize")?;
+            self.sender.send_replace(Arc::new(Frame {
+                snapshot: Arc::new(unavailable),
+                delta: None,
+                encoded_snapshot: encode_sse(&error_json, "unavailable", &self.epoch, seq),
+                encoded_delta: None,
+                unavailable: true,
+            }));
+            return Err("snapshot exceeds bounded public capacity; API now unavailable");
         }
         let before: BTreeMap<_, _> = previous
             .snapshot
@@ -190,25 +239,34 @@ impl Publisher {
             upsert,
             removed,
         };
-        // A delta may be large; a subscriber can always resynchronize via snapshot.
-        let delta = if serde_json::to_vec(&delta)
-            .map_err(|_| "delta serialize")?
-            .len()
-            <= MAX_SNAPSHOT_BYTES
-        {
-            Some(Arc::new(delta))
+        // When recovering from overflow, force a full snapshot even if seq
+        // increments by one; a previous unavailable event invalidated replicas.
+        let (delta, encoded_delta) = if previous.unavailable {
+            (None, None)
         } else {
-            None
+            let json = serde_json::to_vec(&delta).map_err(|_| "delta serialize")?;
+            if json.len() <= MAX_SNAPSHOT_BYTES {
+                (
+                    Some(Arc::new(delta)),
+                    Some(encode_sse(&json, "delta", &self.epoch, seq)),
+                )
+            } else {
+                (None, None)
+            }
         };
         self.sender.send_replace(Arc::new(Frame {
+            encoded_snapshot: encode_sse(&encoded, "snapshot", &self.epoch, seq),
             snapshot: Arc::new(snapshot),
             delta,
+            encoded_delta,
+            unavailable: false,
         }));
         Ok(true)
     }
 }
 
 impl Feed {
+    #[cfg(test)]
     fn latest(&self) -> Arc<Snapshot> {
         self.rx.borrow().snapshot.clone()
     }
@@ -263,10 +321,12 @@ async fn health(State(state): State<ApiState>, query: RawQuery) -> Response {
     if let Some(response) = reject_parameters(query) {
         return response;
     }
-    let snapshot = state.feed.latest();
-    let active = receiver_is_fresh(&snapshot);
+    let frame = state.feed.rx.borrow().clone();
+    let active = !frame.unavailable && receiver_is_fresh(&frame.snapshot);
     Json(Health {
-        status: if active {
+        status: if frame.unavailable {
+            "degraded"
+        } else if active {
             "live"
         } else {
             "waiting_for_observations"
@@ -283,21 +343,33 @@ async fn aircraft(State(state): State<ApiState>, query: RawQuery) -> Response {
         return response;
     }
     // HTTP data and status are computed from the same immutable version.
-    let snapshot = state.feed.latest();
-    let active = receiver_is_fresh(&snapshot);
+    let frame = state.feed.rx.borrow().clone();
+    if frame.unavailable {
+        return error_response(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "CAPACITY_EXCEEDED",
+            CAPACITY_ERROR,
+        );
+    }
+    let active = receiver_is_fresh(&frame.snapshot);
     Json(serde_json::json!({
         "status": if active { "live" } else { "waiting_for_observations" },
-        "data": &*snapshot,
+        "data": &*frame.snapshot,
     }))
     .into_response()
 }
 
-fn sse_event(event: &impl Serialize, kind: &'static str, epoch: &str, seq: u64) -> Event {
-    Event::default()
-        .event(kind)
-        .id(format!("{epoch}:{seq}"))
-        .json_data(event)
-        .expect("DTO is already serializable")
+// Emits at most one 16KiB slice per poll. The current Bytes refers to ONE
+// globally serialized immutable event, not a separate serialized client copy.
+// Client-local pending application queue is exactly zero, i.e. <=256KiB.
+// TCP/kernel buffers and total RSS require the separate 1/10/100 load gate.
+struct SseCursor {
+    receiver: watch::Receiver<Arc<Frame>>,
+    payload: Option<Bytes>,
+    offset: usize,
+    seq: u64,
+    closing: bool,
+    _permit: tokio::sync::OwnedSemaphorePermit,
 }
 
 async fn events(State(state): State<ApiState>, query: RawQuery) -> Response {
@@ -314,44 +386,77 @@ async fn events(State(state): State<ApiState>, query: RawQuery) -> Response {
             );
         }
     };
-    // subscribe() before reading borrow_and_update: no snapshot->delta race.
+    // Subscribe before reading current frame, so snapshot -> delta is atomic.
     let mut receiver = state.feed.rx.clone();
     let start = receiver.borrow_and_update().clone();
-    let last_seq = start.snapshot.seq;
-    let first = sse_event(
-        &*start.snapshot,
-        "snapshot",
-        &start.snapshot.epoch,
-        last_seq,
-    );
-    let next = stream::unfold(
-        (receiver, last_seq, permit),
-        |(mut rx, old_seq, permit)| async move {
-            if rx.changed().await.is_err() {
+    if start.unavailable {
+        return error_response(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "CAPACITY_EXCEEDED",
+            CAPACITY_ERROR,
+        );
+    }
+    let cursor = SseCursor {
+        receiver,
+        payload: Some(start.encoded_snapshot.clone()),
+        offset: 0,
+        seq: start.snapshot.seq,
+        closing: false,
+        _permit: permit,
+    };
+    let chunks = stream::unfold(cursor, |mut cursor| async move {
+        loop {
+            if let Some(payload) = &cursor.payload {
+                if cursor.offset < payload.len() {
+                    let end = (cursor.offset + SSE_CHUNK_BYTES).min(payload.len());
+                    let part = payload.slice(cursor.offset..end);
+                    cursor.offset = end;
+                    if end == payload.len() {
+                        cursor.payload = None;
+                    }
+                    return Some((Ok::<Bytes, Infallible>(part), cursor));
+                }
+                cursor.payload = None;
+            }
+            if cursor.closing {
                 return None;
             }
-            let frame = rx.borrow_and_update().clone();
-            let snapshot = &frame.snapshot;
-            let event = if snapshot.seq == old_seq.saturating_add(1) {
-                match &frame.delta {
-                    Some(delta) => sse_event(&**delta, "delta", &snapshot.epoch, snapshot.seq),
-                    None => sse_event(&**snapshot, "snapshot", &snapshot.epoch, snapshot.seq),
+            tokio::select! {
+                changed = cursor.receiver.changed() => {
+                    if changed.is_err() {
+                        return None;
+                    }
+                    let frame = cursor.receiver.borrow_and_update().clone();
+                    let next_seq = frame.snapshot.seq;
+                    // A missed watch value or degraded-to-live recovery MUST
+                    // resynchronize via full snapshot, not an incomplete delta.
+                    cursor.payload = Some(
+                        if !frame.unavailable && next_seq == cursor.seq.saturating_add(1) {
+                            frame.encoded_delta.as_ref().unwrap_or(&frame.encoded_snapshot).clone()
+                        } else {
+                            frame.encoded_snapshot.clone()
+                        }
+                    );
+                    cursor.seq = next_seq;
+                    cursor.offset = 0;
+                    if frame.unavailable {
+                        // An explicit error event closes the stream. New
+                        // subscribers receive 503 until state is valid again.
+                        cursor.closing = true;
+                    }
                 }
-            } else {
-                // watch coalesces by design; missed seq requires a fresh full snapshot.
-                sse_event(&**snapshot, "snapshot", &snapshot.epoch, snapshot.seq)
-            };
-            Some((Ok::<Event, Infallible>(event), (rx, snapshot.seq, permit)))
-        },
+                () = tokio::time::sleep(Duration::from_secs(15)) => {
+                    cursor.payload = Some(Bytes::from_static(HEARTBEAT));
+                    cursor.offset = 0;
+                }
+            }
+        }
+    });
+    let mut response = Body::from_stream(chunks).into_response();
+    response.headers_mut().insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("text/event-stream; charset=utf-8"),
     );
-    let combined = stream::once(async move { Ok::<Event, Infallible>(first) }).chain(next);
-    let mut response = Sse::new(combined)
-        .keep_alive(
-            KeepAlive::new()
-                .interval(Duration::from_secs(15))
-                .text("heartbeat"),
-        )
-        .into_response();
     response.headers_mut().insert(
         header::CACHE_CONTROL,
         HeaderValue::from_static("no-cache, no-transform"),
@@ -377,6 +482,7 @@ mod tests {
         body::{Body, to_bytes},
         http::{Request, StatusCode},
     };
+    use futures_util::StreamExt;
     use tower::ServiceExt;
 
     fn fixture_tracks() -> Vec<PublicAircraft> {
@@ -769,5 +875,181 @@ mod tests {
         assert!(event.contains(r#""seq":64"#));
         drop(stream);
         assert_eq!(feed.clients.available_permits(), MAX_CLIENTS);
+    }
+    #[tokio::test]
+    async fn five_thousand_aircraft_shared_snapshot_is_chunked_under_16k() {
+        let (feed, mut publisher) = new();
+        let mut base = fixture_tracks().remove(0);
+        base.position = None;
+        base.last_position_at = None;
+        base.callsign = None;
+        base.squawk = None;
+        base.telemetry = crate::contract::FlightData::default();
+        let tracks: Vec<_> = (0..5000)
+            .map(|i| {
+                let mut track = base.clone();
+                track.id = format!("icao:{i:06x}");
+                track
+            })
+            .collect();
+        assert!(publisher.publish(tracks, 1792627200.0).unwrap());
+        let frame = feed.rx.borrow().clone();
+        assert_eq!(frame.snapshot.aircraft.len(), 5000);
+        assert!(!frame.unavailable);
+        // All clients share this payload; each stream yields <=16KiB slices.
+        assert!(frame.encoded_snapshot.len() > MAX_CLIENT_PENDING_BYTES);
+        assert!(frame.encoded_snapshot.len() < MAX_SNAPSHOT_BYTES + 100);
+        let response = router(feed)
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/stream")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let mut stream = response.into_body().into_data_stream();
+        let mut combined = Vec::new();
+        loop {
+            let chunk = tokio::time::timeout(Duration::from_secs(2), stream.next())
+                .await
+                .unwrap()
+                .unwrap()
+                .unwrap();
+            assert!(chunk.len() <= SSE_CHUNK_BYTES);
+            combined.extend_from_slice(&chunk);
+            if combined.ends_with(b"\n\n") {
+                break;
+            }
+            assert!(combined.len() < MAX_SNAPSHOT_BYTES + 200);
+        }
+        let message = std::str::from_utf8(&combined).unwrap();
+        assert!(message.starts_with("event: snapshot\nid: "));
+        assert!(message.ends_with("\n\n"));
+        let json = message
+            .lines()
+            .find_map(|line| line.strip_prefix("data: "))
+            .unwrap();
+        let snapshot: serde_json::Value = serde_json::from_str(json).unwrap();
+        assert_eq!(snapshot["aircraft"].as_array().unwrap().len(), 5000);
+    }
+
+    #[tokio::test]
+    async fn oversize_snapshot_marks_api_degraded_not_stale_and_recovers() {
+        let (feed, mut publisher) = new();
+        let mut one = fixture_tracks().remove(0);
+        one.last_message_at = unix_now();
+        assert!(publisher.publish(vec![one.clone()], unix_now()).unwrap());
+        let app = router(feed.clone());
+
+        // Existing subscriber must receive explicit unavailable event and close.
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/stream")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        let mut stream = response.into_body().into_data_stream();
+        assert!(
+            std::str::from_utf8(&stream.next().await.unwrap().unwrap())
+                .unwrap()
+                .contains("event: snapshot")
+        );
+
+        let mut dense = Vec::with_capacity(5000);
+        one.callsign = Some("ABCDEFGH".to_owned());
+        one.telemetry = crate::contract::FlightData {
+            altitude_baro_ft: Some(35000),
+            ground_speed_kt: Some(455.5),
+            track_degrees: Some(179.2),
+            vertical_rate_fpm: Some(-1500),
+            on_ground: Some(false),
+        };
+        for i in 0..5000 {
+            let mut track = one.clone();
+            track.id = format!("icao:{i:06x}");
+            dense.push(track);
+        }
+        assert!(serde_json::to_vec(&dense).unwrap().len() > MAX_SNAPSHOT_BYTES);
+        let error = publisher.publish(dense, unix_now()).unwrap_err();
+        assert!(error.contains("capacity"));
+        assert!(feed.rx.borrow().unavailable);
+        assert!(feed.latest().aircraft.is_empty());
+        // Repeating overload must not create 1Hz error/event storms.
+        // The overloaded state is intentionally explicit (503), not empty live.
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/aircraft")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+        let payload = to_bytes(response.into_body(), 4096).await.unwrap();
+        let err: serde_json::Value = serde_json::from_slice(&payload).unwrap();
+        assert_eq!(err["code"], "CAPACITY_EXCEEDED");
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        let payload = to_bytes(response.into_body(), 4096).await.unwrap();
+        let health: serde_json::Value = serde_json::from_slice(&payload).unwrap();
+        assert_eq!(health["status"], "degraded");
+        assert_eq!(health["live_ingest"], false);
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/stream")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+
+        let error_event = stream.next().await.unwrap().unwrap();
+        let message = std::str::from_utf8(&error_event).unwrap();
+        assert!(message.contains("event: unavailable"));
+        assert!(message.contains("CAPACITY_EXCEEDED"));
+        assert!(stream.next().await.is_none());
+
+        // A valid observation state becomes a fresh full snapshot, not a
+        // misleading delta computed against the discarded previous state.
+        assert!(publisher.publish(vec![one], unix_now()).unwrap());
+        let recovered = feed.rx.borrow().clone();
+        assert!(!recovered.unavailable);
+        assert!(recovered.delta.is_none());
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/stream")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let mut reconnect = response.into_body().into_data_stream();
+        let first = reconnect.next().await.unwrap().unwrap();
+        assert!(
+            std::str::from_utf8(&first)
+                .unwrap()
+                .contains("event: snapshot")
+        );
     }
 }

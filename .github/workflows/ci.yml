@@ -37,6 +37,8 @@ jobs:
           python3 -m py_compile deploy/g02-auto-pull.py
           python3 -m unittest discover -s tools -p 'test_g02_auto_pull.py'
           python3 -m unittest discover -s tools -p 'test_workflows_layout.py'
+          python3 -m py_compile deploy/verify-g03-runtime.py
+          python3 -m unittest discover -s tools -p 'test_verify_g03_runtime.py'
       - name: G-03.08 statická kontrola proxy (bez instalace)
         run: node tools/check-g03-network.mjs
       - name: Formální validace OpenAPI a JSON Schema G-01

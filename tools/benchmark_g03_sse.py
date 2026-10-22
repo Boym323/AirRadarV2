@@ -56,17 +56,42 @@ def proc_stats(pid: int) -> tuple[float, int]:
 
 
 class SseClient:
-    def __init__(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+    def __init__(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter,
+                 chunked: bool = False):
         self.reader = reader
         self.writer = writer
+        self.chunked = chunked
+        self.raw_buffer = b""
         self.bytes_read = 0
+
+    async def readline(self) -> bytes:
+        """Decode HTTP/1.1 chunk framing before parsing SSE lines.
+
+        SSE JSON may span many 16KiB shared Bytes chunks; interpreting raw
+        chunk sizes or CRLF boundaries as SSE frames corrupts the benchmark.
+        """
+        if not self.chunked:
+            return await self.reader.readline()
+        while b"\n" not in self.raw_buffer:
+            size_header = await self.reader.readline()
+            if not size_header:
+                return b""
+            size = int(size_header.split(b";", 1)[0].strip(), 16)
+            if size == 0:
+                return b""
+            part = await self.reader.readexactly(size)
+            assert await self.reader.readexactly(2) == b"\r\n"
+            self.raw_buffer += part
+        sep = self.raw_buffer.index(b"\n") + 1
+        line, self.raw_buffer = self.raw_buffer[:sep], self.raw_buffer[sep:]
+        return line
 
     async def event(self, seconds: float = 25.0) -> dict:
         async def receive() -> dict:
             kind = None
             payload = []
             while True:
-                line = await self.reader.readline()
+                line = await self.readline()
                 if not line:
                     raise AssertionError("SSE stream ukončen před očekávanou zprávou")
                 self.bytes_read += len(line)
@@ -100,7 +125,7 @@ async def connect() -> tuple[int, SseClient]:
     first = headers.splitlines()[0].split()
     if len(first) < 2:
         raise AssertionError("Neplatný HTTP status")
-    return int(first[1]), SseClient(reader, writer)
+    return int(first[1]), SseClient(reader, writer, b"transfer-encoding: chunked" in headers.lower())
 
 
 async def await_live(count: int) -> None:
