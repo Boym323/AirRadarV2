@@ -492,7 +492,10 @@ mod tests {
     }
     #[test]
     fn beast_prefers_only_after_ten_seconds_healthy() {
-        let mut s = SourceArbiter { json_seen: Some(200.0), ..Default::default() };
+        let mut s = SourceArbiter {
+            json_seen: Some(200.0),
+            ..Default::default()
+        };
         s.connected(true);
         s.beast_message(200.0);
         assert_eq!(s.active(202.0), ActiveSource::Json);
@@ -525,10 +528,11 @@ mod tests {
             socket.write_all(&f[7..]).await.unwrap();
             let mut got = false;
             for _ in 0..3 {
-                if let Ingress::Beast { decoded, .. } = time::timeout(Duration::from_secs(2), rx.recv())
-                    .await
-                    .unwrap()
-                    .unwrap()
+                if let Ingress::Beast { decoded, .. } =
+                    time::timeout(Duration::from_secs(2), rx.recv())
+                        .await
+                        .unwrap()
+                        .unwrap()
                 {
                     assert_eq!(decoded.key, "icao:abc123");
                     got = true;
