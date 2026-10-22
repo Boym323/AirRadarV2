@@ -102,7 +102,7 @@ for (const file of taskFiles) {
   if (!textTask.includes("**Ověření:**")) fail("Chybí ověřovací scénáře v " + file);
   totalImplementationSteps += matches.length;
   if (Number(stage) >= 2 && Number(stage) <= 10) {
-    const match = textTask.match(/^\*\*Primární KEEP ID:\*\* ([^\n]+)\.$/m);
+    const match = textTask.match(/^\*\*Primární KEEP ID:\*\* ([^\n]+)/m);
     if (!match) fail("Chybí primární aktivní ID v " + file);
     primaryStepIds.push(...[...match[1].matchAll(/`([A-Z]\d{2})`/g)].map(x => x[1]));
   }
