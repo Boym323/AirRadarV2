@@ -122,3 +122,22 @@ V optimalizovaném **release** sestavení provádí nově integrovaný izolovan�
 ### Připraveno automatické externí ověření z GitHub Actions
 
 Samostatný job [G-02 DEV kandidát](../../.github/workflows/g02-dev-candidate.yml) nyní po vydání balíčku čte veřejný `g02-status.json`, nepoužívá V1 ani žádná tajemství a kontroluje **přesnou shodu plného SHA** plus 180s loopback a RAM/reconnect kritéria. Před úspěchem jobu pro aktuální commit zůstává vzdálená evidence **NEOVĚŘENO**. Automatické potvrzení samo o sobě není 60min provozní test skutečného receiveru.
+
+## Potvrzený 180s izolovaný DEV LXC reconnect soak — PASS 22. 10. 2026
+
+**Ověřený SHA:** `d0cefc4a5c3332eadccf8ab21c96bae51987abe9`. **Důkaz:** [GitHub Actions #39781158565 / `verify-dev-lxc`](https://github.com/Boym323/AirRadarV2/actions/runs/39781158565) a log jobu `119837359043`. Kontrola načetla veřejný HTTPS report `https://airradarv2.pomykal.cz/g02-status.json`, ověřila přesný plný SHA, PASS replay/benchmark, syntetické 1×/2×/4× a 180s loopback kritéria. Zaznamenala závěrečný PASS **22. 10. 2026 v 13:11:09 UTC (15:11:09 SELČ)**. Tento odkaz dokládá výsledek v čase běhu; veřejný report se při pozdějších testech přepisuje.
+
+| Kontrola skutečně změřená na DEV LXC | Hodnota |
+|---|---:|
+| Doba trvání loopback soak | 180 002 ms |
+| TCP spojení / ukončení + reconnect | 151 / 151 |
+| BEAST rámce přijaté izolovaným testerem | 151 |
+| JSON health OK / fail | 13 / 168 |
+| Interní queue drops | **0** |
+| P95 příjmu (měřený interní event; ne end-to-end síťové RF zpoždění) | 24 µs |
+| Špičková RSS paměť testovacího procesu | 5 576 KiB |
+| Tracky po TTL expiraci | **0** |
+
+**Závěr úzké části:** izolované automatické testy replay, 5 000 identit a 180s TCP/JSON reconnect na skutečném DEV LXC **PASS**. Původní nejnovější-release blokace odstraněna aktualizací Python agenta potvrzenou následným reportem přesné verze.
+
+**Zůstává NEOVĚŘENO:** dlouhodobý provozní test s **opravdovým, výslovně povoleným read-only readsb/BEAST přijímačem**, chování při skutečné RF zátěži a trvalé CPU/RAM měření; stávající uživatelský web běží v G-00/G-01 bootstrap režimu a G-02 běžící web nenahrazuje. Proto **G-02 stále 10/11 (ROZPRACOVÁNO), šest KEEP ID zůstává TESTED, nikoli ACCEPTED**. Nelze vydávat 180s syntetickou zkoušku za 60min fyzický receiver soak.

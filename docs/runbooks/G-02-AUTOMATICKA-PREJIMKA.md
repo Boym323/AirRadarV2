@@ -73,7 +73,7 @@ a proto nemusel vůbec spustit novější 180sekundový G-02.11 test.
 Opraven `deploy/g02-auto-pull.py`: vybírá nejnovější validní release podle `published_at`;
 regresní test ověřuje několik různých pořadí.
 
-**Stávající DEV LXC vyžaduje jednorázovou aktualizaci pouze tohoto skriptu.**
+**Historický návod: jednorázová aktualizace tohoto skriptu již byla podle uživatele provedena a následný GitHub SHA report PASS ji funkčně potvrdil.**
 GitHub sám neumí automaticky přepsat lokálně nainstalovaný Python agent.
 Na ověřeném **DEV LXC** jako root spusť (po úspěšné CI posledního commitu):
 
@@ -89,3 +89,9 @@ journalctl -u airradarv2-g02-auto.service -n 30 --no-pager
 
 To nemění běžící web, službu AirRadar ani V1. Výsledek se zobrazí na
 `https://airradarv2.pomykal.cz/g02-status.json` pod aktuálním SHA.
+
+## Přejímací výsledek pro poslední potvrzený build
+
+GitHub job `verify-dev-lxc` v [runu #39781158565](https://github.com/Boym323/AirRadarV2/actions/runs/39781158565) dne 22. 10. 2026 v 15:11 SELČ skutečně potvrdil 180sekundový izolovaný test pro plný SHA `d0cefc4a5c3332eadccf8ab21c96bae51987abe9`: `duration_ms=180002`, `TCP=151/151`, `BEAST=151`, `JSON=13/168`, `queue_drops=0`, `p95_us=24`, `rss_peak_kib=5576`, `ttl=0`. Ověření nezávisí na ručním kopírování logů. [Důkaz a omezení](../reports/G-02-VYSLEDEK.md#potvrzený-180s-izolovaný-dev-lxc-reconnect-soak--pass-22-10-2026).
+
+Dlouhodobý test autorizovaného **skutečného** readsb přijímače ještě neproběhl; CI PASS jej nenahrazuje.

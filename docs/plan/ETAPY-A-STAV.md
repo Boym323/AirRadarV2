@@ -6,7 +6,7 @@
 |---|---|---|
 | G-00 | Samostatný základ Rust + Vite/React | **HOTOVO — pouze scaffold** |
 | G-01 | [Kontrakty a deterministické fixture](../ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) | **HOTOVO — 10/10, CI PASS** |
-| G-02 | [Lokální ADS-B ingest a RAM](../ukoly/G-02-LOKALNI-INGEST.md) | **10/11 testově ověřeno — DEV LXC offline PASS; čeká G-02.11 live-soak** |
+| G-02 | [Lokální ADS-B ingest a RAM](../ukoly/G-02-LOKALNI-INGEST.md) | **10/11 — DEV LXC replay + 180s loopback soak PASS; zbývá fyzický přijímač** |
 | G-03 | [Verzované HTTP API a SSE](../ukoly/G-03-API-A-SSE.md) | NEZAHÁJENO |
 | G-04 | [Úsporná historie](../ukoly/G-04-POSTGRESQL-HISTORIE.md) | NEZAHÁJENO |
 | G-05 | [Živá mapa a základní ovládání](../ukoly/G-05-ZIVA-MAPA.md) | NEZAHÁJENO |
@@ -83,3 +83,9 @@ Kód `81a27295d78753a6a3d987e7d68d6b8394c12ef5` má [CI #39769323592](https://gi
 ## Automatická první brána DEV LXC G-02.11 — 22. 10. 2026
 
 Doložen uživatelský výstup z `https://airradarv2.pomykal.cz/g02-status.json` (HTTP 200). Syntetický offline replay + 5 000 unikátních letadel na skutečném DEV LXC pro build `daa15703610b219b5b413319a4920659e19a8694` **PASS**, viditelný 1 CPU, p95 dávek 2,40–2,55 ms, RSS do 5 256 KiB. [Měření, provenance, metodika](../reports/G-02-VYSLEDEK.md#výsledek-automatického-offline-benchmarku-přímo-z-dev-lxc--22-10-2026). Nejde o HTTP/SSE/live-ingest test; zůstává G-02 **10/11, ROZPRACOVÁNO** do bezpečného dlouhodobého JSON/BEAST reconnect soak a vyhodnocení CPU/RAM. Produkční V1 se nemění.
+
+## Potvrzeno: automatický 180s G-02.11 DEV LXC soak (22. 10. 2026)
+
+Na SHA `d0cefc4a5c3332eadccf8ab21c96bae51987abe9` získal GitHub kontrolní job [#39781158565](https://github.com/Boym323/AirRadarV2/actions/runs/39781158565) **PASS z veřejného reportu** přímo v cílovém LXC. Doba 180 002 ms, 151 TCP reconnectů, 151 BEAST rámců, nulové frontové ztráty, P95 24 µs, peak RSS 5 576 KiB, RAM po TTL prázdná. [Zdrojový report, podmínky a reziduální rizika](../reports/G-02-VYSLEDEK.md#potvrzený-180s-izolovaný-dev-lxc-reconnect-soak--pass-22-10-2026).
+
+**Nejde o 60min test fyzického ADS-B přijímače ani produkční nasazení.** Přechod G-02 na 11/11/HOTOVO se nesmí provést bez ověření reálného bezpečného příjmu. AirRadar V1 a databáze zůstaly nedotčeny.

@@ -4,6 +4,13 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### Potvrzen 180s DEV LXC G-02.11 izolovaný reconnect soak — 22. 10. 2026
+- [GitHub Actions #39781158565](https://github.com/Boym323/AirRadarV2/actions/runs/39781158565) ověřil veřejný `g02-status.json` přesným SHA `d0cefc4a` a potvrdil `PASS` na reálném DEV LXC.
+- 180 002 ms, 151 TCP reconnectů, BEAST 151, JSON health 13 OK/168 FAIL (umělé výpadky), queue drops 0, P95 24 µs, RSS peak 5 576 KiB, TTL po vypršení prázdný.
+- K dokončení G-02.11 ještě chybí bezpečný test skutečného readsb/BEAST přijímače a dlouhodobé provozní metriky. **G-02 stále 10/11; nezasahovalo se do V1.**
+
+
+
 ### G-02: oprava výběru nejnovějšího GitHub prerelease
 - Github API nevracelo seznam vydání v chronologickém pořadí; dosavadní pull agent vybíral první starší SHA místo nového, takže automatický DEV LXC 180s test zůstával nespouštěný.
 - Nově se řadí validní připnuté releasy podle `published_at`. Regresní testy pokrývají nesetříděnou odpověď. Vyžaduje jednorázovou aktualizaci nainstalovaného agenta v DEV LXC (bez restartu běžícího radaru).
