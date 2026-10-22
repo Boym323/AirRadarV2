@@ -68,7 +68,7 @@ class SoakTests(unittest.TestCase):
                     mod.validate_live_context(report, sha, request_id, deployed)
         report["liveSoak"]["status"] = "PASS_LIVE_BEAST_60MIN"
         with self.assertRaises(ValueError):
-            mod.validate_live_context(report, "a" * 40, 123, "a" * 40")
+            mod.validate_live_context(report, "a" * 40, 123, "a" * 40)
 
 
 if __name__ == "__main__":
