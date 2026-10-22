@@ -1,0 +1,20 @@
+# AirRadar V2 — závazné technické kontrakty a limity
+
+**Datum:** 22. 10. 2026. **Stav:** dokončený podrobný návrh; **bez reálného měření, vytvořených DB tabulek nebo spuštěných browserových testů**. Rozsah nadále obsahuje pouze 45 aktivních funkcí.
+
+| Oblast | Startovací rozhodnutí | Detailní české zadání | Etapa |
+|---|---|---|---|
+| PostgreSQL | SQLx, 15 s vzorkování, denní UTC partition, primární a sekundární B-tree; 30 dní detail, 365 dní agregace; BRIN pouze při změřeném přínosu | [Datový model, SQL a zálohy](../../database/POSTGRES-DATOVY-MODEL.md) | G-04 |
+| readsb/BEAST | JSON jako referenční zdroj, BEAST s validací DF/CRC/CPR, jedna RAM autorita; ICAO a ne-ICAO odděleně | [Kontrakty a deduplikace](../technical/READSB-BEAST-KONTRAKTY.md) | G-01/G-02 |
+| SSE | initial snapshot + delta 1 Hz, 15 s heartbeat, 100 klientů, max. 256 KiB pending fronta na klienta, seq/epoch resync | [SSE a paměť](../technical/SSE-PROTOKOL-A-LIMITY.md) | G-01/G-03 |
+| MapLibre | jedna Map instance, GeoJSON source + symbol layers, stabilní ID; `setData` baseline, `updateData` po měření | [Výkon mapy](../technical/MAPLIBRE-VYKON-A-ZATEZ.md) | G-05 |
+| Browser E2E | Microsoft Playwright, izolované fixture, Chromium/Firefox/WebKit/mobil, trace na chyby | [Automatické testy](../technical/PLAYWRIGHT-BROWSEROVE-TESTY.md) | G-01/G-05/G-10/G-11 |
+| Síť obou LXC | samostatné V2 DB/role, hostssl+SCRAM, TLS verify-full, firewall povolí jen V2 app | [Bezpečnost a obnova](../runbooks/POSTGRES-LXC-SECURITY-BACKUP.md) | G-04/G-11 |
+
+## Výslovné omezení
+
+Tato čísla jsou **konfigurační výchozí hodnoty**, nikoli garantovaný výkon existujícího LXC. Zálohovací cíle: denní logický dump V2 mimo DB LXC, 14 denních a 8 týdenních kopií, měsíční nezávislá testovací obnova; RPO 24 h a RTO 2 h jsou **cíle k ověření**, cluster WAL/PITR ověřuje správce. Testovat replay a obnovení před definitivní akceptací.
+
+K implementaci nejprve G-01 fixture a kontrakty, potom G-02 ingest, G-03 SSE, G-04 DB, G-05 mapa. Playwright a bezpečnostní testy běží v izolovaném DEV/CI bez skutečných notifikací a bez přístupu k V1. Každou změnu rozhodnutí je třeba podložit měřením a českým reportem.
+
+**Neprováděno:** žádná databázová migrace, instalace Playwright, nasazení, změna firewallu, TLS či LXC. Závěry shrnuje [ADR 0006](../adr/0006-kontrakty-dat-streamu-mapy-a-lxc.md).
