@@ -13,19 +13,19 @@ Aktualizace statistik: **denně ve 03:17 (Europe/Prague)** a ručně na vyžád�
 
 | Ukazatel | Stav |
 |---|---:|
-| Řádky zdrojového kódu, včetně prázdných | **496** |
+| Řádky zdrojového kódu, včetně prázdných | **628** |
 | Rust | 149 |
-| TypeScript / JavaScript / CSS | 347 |
-| Soubory zdrojového kódu | 12 |
-| Testovací soubory (ne počet testů) | 1 |
-| Dokumenty Markdown | 21 |
-| Všechny sledované soubory | 48 |
-| Dokončené etapy | **1/16** (6,3 %) |
+| TypeScript / JavaScript / CSS | 479 |
+| Soubory zdrojového kódu | 14 |
+| Testovací soubory (ne počet testů) | 2 |
+| Dokumenty Markdown | 58 |
+| Všechny sledované soubory | 91 |
+| Dokončené etapy | **1/14** (7,1 %) |
 | Ověřené KEEP funkce | **0/45** (0,0 %) |
 
 ![Historie řádků zdrojového kódu](docs/metrics/loc.svg)
 
-Měřený commit: [8b3c6d17](https://github.com/Boym323/AirRadarV2/commit/8b3c6d17726ce3898fe220dfbfc421c04b4bec44) · [Historie](docs/metrics/history.json) · [Metodika](docs/metrics/README.md) · [Výsledky CI](https://github.com/Boym323/AirRadarV2/actions/workflows/ci.yml).
+Měřený commit: [288a2020](https://github.com/Boym323/AirRadarV2/commit/288a2020f0535a452ae191751af360b9fce50ba7) · [Historie](docs/metrics/history.json) · [Metodika](docs/metrics/README.md) · [Výsledky CI](https://github.com/Boym323/AirRadarV2/actions/workflows/ci.yml).
 
 > Jde o vývojové statistiky repozitáře, nikoli o výkon živého radaru. Funkce se počítají jen ze strojové matice s důkazem testu. Úspěšná CI sama o sobě nedokazuje dokončení funkcí.
 <!-- AIRRADAR_STATS_END -->
