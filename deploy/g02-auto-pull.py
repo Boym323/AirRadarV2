@@ -38,6 +38,9 @@ def download(url, limit):
 
 
 def candidate(releases):
+    # GitHub may return releases out of chronological order.
+    # Never trust the first matching entry; select the newest publication.
+    valid = []
     for rel in releases:
         match = PATTERN.fullmatch(rel.get("tag_name", ""))
         if not match or rel.get("draft") or not rel.get("prerelease"):
@@ -47,10 +50,21 @@ def candidate(releases):
             continue
         filename = "airradarv2-dev-linux-amd64-" + sha[:12] + ".tar.gz"
         assets = {a["name"]: a for a in rel.get("assets", [])}
-        if filename in assets and filename + ".sha256" in assets:
-            return sha, rel["tag_name"], assets[filename], assets[filename + ".sha256"]
-    return None
-
+        if filename not in assets or filename + ".sha256" not in assets:
+            continue
+        try:
+            published = dt.datetime.fromisoformat(
+                rel["published_at"].replace("Z", "+00:00")
+            )
+        except (KeyError, TypeError, ValueError):
+            continue
+        if published.tzinfo is None:
+            continue
+        valid.append((published, sha, rel["tag_name"], assets[filename], assets[filename + ".sha256"]))
+    if not valid:
+        return None
+    latest = max(valid, key=lambda entry: entry[0])
+    return latest[1:]
 
 def fetch_asset(asset, limit):
     url = asset.get("browser_download_url", "")

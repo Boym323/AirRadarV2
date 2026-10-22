@@ -39,12 +39,30 @@ class AgentTests(unittest.TestCase):
         filename = "airradarv2-dev-linux-amd64-" + sha[:12] + ".tar.gz"
         valid = {"tag_name": "g02-dev-" + sha, "draft": False,
                  "prerelease": True, "target_commitish": sha,
+                 "published_at": "2026-10-22T11:00:00Z",
                  "assets": [{"name": filename}, {"name": filename + ".sha256"}]}
         self.assertEqual(agent.candidate([valid])[0], sha)
         for change in [{"target_commitish": "b" * 40}, {"draft": True},
                        {"prerelease": False}, {"tag_name": "release-latest"},
                        {"assets": []}]:
             self.assertIsNone(agent.candidate([{**valid, **change}]))
+
+    def test_latest_valid_release_even_when_list_unsorted(self):
+        def make(sha, published):
+            filename = "airradarv2-dev-linux-amd64-" + sha[:12] + ".tar.gz"
+            return {"tag_name": "g02-dev-" + sha, "target_commitish": sha,
+                    "published_at": published, "draft": False, "prerelease": True,
+                    "assets": [{"name": filename}, {"name": filename + ".sha256"}]}
+
+        older = make("a" * 40, "2026-10-22T11:56:30Z")
+        latest = make("b" * 40, "2026-10-22T12:32:01Z")
+        middle = make("c" * 40, "2026-10-22T12:27:30Z")
+        self.assertEqual(agent.candidate([older, middle, latest])[0], "b" * 40)
+        self.assertEqual(agent.candidate([latest, older, middle])[0], "b" * 40)
+        self.assertEqual(agent.candidate([middle, latest, older])[0], "b" * 40)
+        invalid = make("d" * 40, "2099-10-22T12:27:30Z")
+        del invalid["published_at"]
+        self.assertEqual(agent.candidate([invalid, older])[0], "a" * 40)
 
     def test_reject_symlinks_and_wrong_version(self):
         sha = "b" * 40
@@ -83,7 +101,8 @@ class AgentTests(unittest.TestCase):
              "digest": "sha256:" + hashlib.sha256(checksum).hexdigest()},
         ]
         release = {"tag_name": "g02-dev-" + sha, "target_commitish": sha,
-                   "prerelease": True, "draft": False, "assets": assets}
+                   "prerelease": True, "draft": False, "assets": assets,
+                   "published_at": "2026-10-22T14:00:00Z"}
 
         def mocked_download(url, limit):
             if url.endswith("/releases?per_page=25"):
