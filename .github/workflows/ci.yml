@@ -24,6 +24,11 @@ jobs:
           node-version-file: .node-version
       - name: Kontrola dokumentace a 45 aktivních funkcí
         run: node tools/check-docs.mjs
+      - name: Formální validace OpenAPI a JSON Schema G-01
+        run: |
+          python3 -m venv /tmp/airradar-g01-venv
+          /tmp/airradar-g01-venv/bin/pip install --disable-pip-version-check --quiet "openapi-spec-validator==0.7.2" "jsonschema==4.25.1" "PyYAML==6.0.3"
+          /tmp/airradar-g01-venv/bin/python tools/validate-g01-schemas.py
   rust-engine:
     runs-on: ubuntu-24.04
     steps:
