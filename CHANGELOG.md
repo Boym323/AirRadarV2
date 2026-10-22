@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-01 — první implementace kontraktů (22. 10. 2026)
+- Přidány sdílené syntetické JSON golden případy, Rust/TS validace identity, provenance, času a bezpečných SQL vzorků; modelové testy sekvence SSE.
+- G-01 je **rozpracováno**, skutečný BEAST parser, plné OpenAPI schéma, E2E a runtime SSE nejsou hotové; 45 produktových funkcí není touto změnou dokončeno.
+
+
 ### Architektonický audit 22. 10. 2026
 - Přidán [audit připravenosti V2](docs/audits/ARCHITEKTONICKY-AUDIT-AIRRADAR-V2-2026-10-22.md) na stavu `f97ba6e0`; 3 kontraktové blokace G-01 a další etapová rizika, zejména časová semantika BEAST/readsb, identita, SSE race, SQL ack, logbook/statistiky a bezpečná správa notifikačních odběrů.
 - Opraven zastaralý údaj o Next.js v aktuální G-00 tabulce; historické ADR výslovně označeno jako supersedované v části sampling.

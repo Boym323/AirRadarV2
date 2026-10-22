@@ -1,6 +1,6 @@
 # G-01 — Kontrakty a deterministická testovací data
 
-**Stav:** NEZAHÁJENO (podrobné zadání; nejde o implementaci).  
+**Stav:** ROZPRACOVÁNO (podrobné zadání; nejde o implementaci).  
 **Odpovědnost:** Průřezový kontrakt pro všech 45 aktivních funkcí (neznamená jejich implementaci).  
 **Závislosti:** G-00; schválená matice a Vite/Rust scaffold.  
 **Primární KEEP ID:** průřezový kontrakt všech aktivních funkcí; nepřebírá vlastnictví modulů.  
