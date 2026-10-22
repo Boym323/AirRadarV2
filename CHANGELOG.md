@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-03 — 10/10 implementačních kroků TESTED v CI; DEV cutover zatím NO-GO
+- [CI #39848794079](https://github.com/Boym323/AirRadarV2/actions/runs/39848794079), SHA `c43ab9d543a740020ac9133941f1a4829b2c7dea`: 3/3 PASS; 5k/100 SSE klientů bez ztracené aktualizace (p95 1 576 ms, p99 1 630 ms, Rust RSS max 48 764 KiB); 90 nečtoucích klientů s 5/5 aktualizací zdravého a RSS +15 112 KiB; Chromium EventSource Vite + Nginx snapshot/delta/reconnect PASS.
+- Oprava ztráty 5000 JSON identit v 2048-elementovém mpsc používá jeden bounded `JsonBatch` se single-pending atomickou branou, žádná duplikace RAM stavu a žádné DB přístupy; doplněny regresní testy.
+- PR #11 zůstává draft, **NO-GO** pro merge kvůli dosud neověřenému DEV přepnutí systemd a rollbacku; V1 a její produkce nedotčeny.
+
 ### G-03.07 — 90 skutečně nečtoucích SSE klientů
 - Syntetický HTTP TCP zátěžový test drží 90 spojení bez čtení body a kontroluje 5 úplných aktualizací zdravého klienta nad 5k cíli při přírůstku Rust RSS ≤25 MiB. Test odlišuje Rust RSS od OS socket bufferů; čeká na CI a cílovou DEV přejímku.
 

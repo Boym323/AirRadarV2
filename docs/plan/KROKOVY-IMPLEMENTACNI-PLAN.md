@@ -3,7 +3,7 @@
 **Datum:** 22. 10. 2026 · **Aktuální branch:** `main`  
 **Rozsah:** přesně **45 aktivních produktových funkcí** v 9 logických modulech, bez automatického rozšiřování.  
 **Technologie:** Rust/Tokio/Axum, Vite/React/TypeScript/MapLibre, PostgreSQL/SQLx na již provozovaném samostatném DB LXC.  
-**Stav k 22. 10. 2026:** G-00 scaffold, G-01 HOTOVO 10/10, G-02 HOTOVO 11/11, G-03 ROZPRACOVÁNO 7/10; G-04 až G-13 NEZAHÁJENO. Tento plán jsou instrukce a odkazy na důkazy v etapových reportech.
+**Stav k 22. 10. 2026:** G-00 scaffold, G-01 HOTOVO 10/10, G-02 HOTOVO 11/11, G-03 10/10 TESTED v CI (DEV release NO-GO); G-04 až G-13 NEZAHÁJENO. Tento plán jsou instrukce a odkazy na důkazy v etapových reportech.
 
 ## Implementační seznam
 

@@ -1,6 +1,6 @@
 # G-03 — výsledkový report Rust HTTP API a SSE
 
-**Datum:** 22. 10. 2026. **Stav:** ROZPRACOVÁNO, dosud NEPŘEVZATO. **Vývoj izolován ve větvi**, bez nasazení a bez změny produkční V1 či G-02.11 live-soak.
+**Datum:** 22. 10. 2026. **Stav:** **G-03 10/10 TESTED v izolované CI**; DEV LXC a nasazení **dosud NEPŘEVZATO**. **Vývoj izolován ve větvi**, bez nasazení a bez změny produkční V1 či G-02.11 live-soak.
 
 ## První implementační celek — G-03.01 až G-03.06 (CI PASS, dílčí přejímka)
 
@@ -135,3 +135,25 @@ PASS: všechna doručení 1/10/100, 101. klient HTTP 503, uvolnění capacity, m
 ## G-03.07 — reálná síťová zkouška nečtoucích SSE klientů (nově zařazena do CI)
 
 Test nyní drží **90 TCP SSE spojení bez jakéhokoliv čtení odpovědi**, ve stejnou chvíli musí zdravý SSE klient dostat pět aktualizací 5 000 kompaktních cílů. Zaznamenává a ověřuje přírůstek **Rust VmRSS ≤25 MiB** oproti době před připojením nečtoucích klientů. Kernel TCP receive/send buffery se z VmRSS Rust procesu **nezapočítávají**; samostatně platí sdílený payload + 16KiB chunky, 30s aplikační poll watchdog a Nginx `send_timeout 30s`. Test čeká na zelené CI; dokud neprojde, neoznačovat G-03.07 za přijaté.
+
+## Závěrečné testové výsledky 10/10 — bez nasazení
+
+[**CI #39848794079**](https://github.com/Boym323/AirRadarV2/actions/runs/39848794079), source SHA **`c43ab9d543a740020ac9133941f1a4829b2c7dea`**, GitHub-hosted `ubuntu-24.04` (přesný CPU model/logické CPU a fyzická RAM se od následujícího CI budou tisknout jako `G03_SSE_HOST`). Rust fmt, Clippy, unit/integrační testy, česká dokumentace, OpenAPI, Vite a skutečný Chromium browser: **3/3 PASS**. Žádná produkční V1, lokální ADS-B stanice ani DB při měření nebyla oslovena.
+
+| Klienti | Letadla | Doručeno | p95 od atomického JSON (ms) | p99 (ms) | CPU % jednoho jádra | Peak Rust RSS (KiB) | Aktualizační SSE B/s |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 25 | 1/1 | 1 917 | 1 917 | 0,52 | 7 016 | 4 081 |
+| 10 | 250 | 10/10 | 1 975 | 1 975 | 1,01 | 9 324 | 389 187 |
+| 100 | 250 | 100/100 | 1 878 | 1 884 | 1,06 | 11 272 | 4 105 916 |
+| 10 | 1 000 | 10/10 | 1 899 | 1 899 | 3,16 | 16 216 | 1 604 125 |
+| 1 | 5 000 kompaktních | 1/1 | 1 777 | 1 777 | 9,00 | 36 848 | 534 284 |
+| 10 | 5 000 kompaktních | 10/10 | 1 889 | 1 889 | 9,53 | 42 108 | 5 000 629 |
+| 100 | 5 000 kompaktních | 100/100 | 1 576 | 1 630 | 20,52 | 48 764 | 57 005 762 |
+
+**Pozor:** latence zahrnuje 1Hz JSON poll i SSE publish, CPU procenta platí pro samotný Rust proces ve sdíleném GitHub runneru (nikoli pro cílový 1vCPU LXC), VmRSS **nezahrnuje OS TCP buffery**, throughput se počítá z nových SSE bytes během měřené aktualizace (bez initial snapshotu). 5k sparse stav nemá souřadnice/telemetrii; 5k dense může přesáhnout 1MiB veřejný limit a skončí explicitním `degraded` / HTTP 503, nikoliv tichou ztrátou cílů. Čísla jsou jednotlivý izolovaný CI běh, ne výkonový SLA.
+
+**G-03.07 další chaos důkaz:** 90 skutečných TCP klientů bez čtení response body + 1 rychlý čtenář doručil **5/5 aktualizací**, Rust RSS vzrostlo o **15 112 KiB** proti předběžné baseline (≤25MiB budget), špička **63 876 KiB**. Aplikační `ClientLease` vrací permit po 30s bez Body poll; Nginx vzor má `send_timeout 30s`. Neprokázána pevná hranice RAM pro kernel socket buffers ani skutečný cílový LXC.
+
+**G-03.08 browser:** skutečný Chromium EventSource na `http://127.0.0.1:4100/` (Vite) i `http://127.0.0.1:8082/` (Nginx) předal snapshot, delta a nový full snapshot po reconnectu, bez výpadku (log `G03_BROWSER_EVENTSOURCE`).
+
+**Před provozním GO:** nainstalovat schválený root-owned verifier a stage-aware systemd/instalátor na izolované V2 DEV LXC, ověřit reálný Nginx streaming/RSS/p95/p99 s explicitním souhlasem a nanečisto úspěšný návrat G-03→G-00 včetně systemd režimu. Automatická release pipeline na `main` by jinak mohla zahájit přepnutí služby, proto **NO-GO pro merge do main**, PR zůstává draft. Tato omezení nepopírají 10/10 implementačních testů v CI.

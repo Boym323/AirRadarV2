@@ -1,6 +1,6 @@
 # G-03 — Rust HTTP API a SSE full/delta
 
-**Stav:** ROZPRACOVÁNO — 7/10 kroků TESTED v CI, 3 provozní brány dosud otevřeny.  
+**Stav:** **10/10 kroků TESTED v izolované CI**, provozní DEV LXC a release **NEPŘEVZATY (NO-GO pro merge)**.  
 **Odpovědnost:** M02 — Axum.  
 **Závislosti:** G-01 a G-02.  
 **Primární KEEP ID:** `J06`, `J07`, `J08`.  
@@ -38,11 +38,11 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Implementace:** Přidej heartbeat/keepalive, cleanup po disconnectu a správné hlavičky text/event-stream.  
   **Ověření:** Ověřený reconnect nemá uniklé úlohy ani rostoucí počet subscriberů.
 
-- [ ] **G-03.07 — Backpressure a kapacita**  
+- [x] **G-03.07 — Backpressure a kapacita**  
   **Implementace:** Každý klient má ohraničenou frontu a deadline; při pomalém klientovi provést coalescing/resync/odpojení; nový klient může dostat 503.  
   **Ověření:** Pomalý klient neblokuje producer a RSS roste pouze do deklarovaného limitu.
 
-- [ ] **G-03.08 — Síťový web kontrakt**  
+- [x] **G-03.08 — Síťový web kontrakt**  
   **Implementace:** Ve Vite dev proxy a budoucím Nginx konfiguraci zajisti stejný origin /api, vypnutý SSE buffering a přiměřené timeouty.  
   **Ověření:** curl -N a browser smoke ověří postupné doručování, nikoliv dávkové flush po ukončení.
 
@@ -50,7 +50,7 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Implementace:** Doplň concurrency, reconnect, malformed payload, slow consumer a konverzi veřejných jednotek.  
   **Ověření:** Rust unit/integration a TS kontraktové testy PASS.
 
-- [ ] **G-03.10 — Měření SSE**  
+- [x] **G-03.10 — Měření SSE**  
   **Implementace:** Na syntetickém radarovém replay změř 1/10/100 klientů, bytes/s, CPU, RSS, p95/p99 a počet discard/resync.  
   **Ověření:** Výsledky s hardwarem a SHA v českém reportu, bez nevysvětlené ztráty pozic.
 
@@ -58,7 +58,7 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
 
 Na commitu `dbd9af7ceefe9455aae1297691f94cf2eeb9ea63` prošla [CI #39803605266](https://github.com/Boym323/AirRadarV2/actions/runs/39803605266): Rust fmt/Clippy/test, offline G-02 replay, Vite lint/TypeScript/test/build a česká dokumentace, 3/3 PASS. Nové testy `sse_snapshot_delta_and_resync_after_coalesced_seq` a `deltas_reconstruct_exact_canonical_full_state` přímo ověřují HTTP SSE snapshot, delta upsert/removed, resynchronizaci při ztraceném watch okně a shodu výsledné replica RAM s kanonickým stavem. SSE klient se na žádná data z V1 nepřipojoval.
 
-Zaškrtnuté **G-03.03/.04/.05 jsou unit/integračně TESTED**, nikoli reálně provozně ACCEPTED. G-03.01/.02/.06/.07 mají část implementace, ale ještě nejsou přejaty v rozsahu všech ověřovacích kritérií. G-03.08–.10 nejsou implementovány. Celá G-03 zůstává ROZPRACOVÁNO a žádný release se nenasadil.
+Zaškrtnuté **G-03.03/.04/.05 jsou unit/integračně TESTED**, nikoli reálně provozně ACCEPTED. G-03.01/.02/.06/.07 mají část implementace, ale ještě nejsou přejaty v rozsahu všech ověřovacích kritérií. G-03.08–.10 nebyly **v tomto historickém mezistavu** implementovány. V té době se release nenasadil; aktuální dokončení syntetických CI testů je doloženo v závěru dokumentu.
 
 ## Povinné výsledky a testovací brána
 
@@ -82,7 +82,7 @@ Výchozí číselné limity jsou **neověřené konfigurace pro první test**, n
 
 ## Integrační pokračování
 
-G-03.08 obsahuje jen izolovaný Nginx vzor, opt-in Vite proxy a CI statickou kontrolu; skutečný DEV streaming přes proxy ještě nebyl ověřen. Checkbox zůstává neoznačen.
+**Historický mezistav před CI browser testy:** G-03.08 tehdy obsahoval pouze izolovaný Nginx vzor a Vite proxy; cílový DEV streaming přes proxy stále nebyl ověřen. Checkbox zůstává neoznačen.
 
 G-03.01/.02/.06/.07: doplněn oddělený runtime OpenAPI kontrakt a Rust regresní scénáře; výsledky se stanou TESTED až po zelené CI a případných provozních měřeních.
 
@@ -99,3 +99,9 @@ Doložen [GitHub Actions #39835102766](https://github.com/Boym323/AirRadarV2/act
 ## Pokračování G-03.07/.10 — skutečný CI důkaz, ale ne provozní převzetí
 
 [CI #39845031595](https://github.com/Boym323/AirRadarV2/actions/runs/39845031595) 3/3 PASS, SHA `ea64497d7079f65e474969a8a2f44df5d49a6b8a`, 42/42 Rust testů. Nový `ClientLease` po 30s bez HTTP Body poll (5s perioda watchdogu) nezávisle uvolní permit i při zablokovaném downstreamu; neprokazuje fyzické ukončení TCP. Syntetická G-03.10 měří 1/10/100 SSE klientů při 5000 sparse letadlech (VmRSS max 43396 KiB, P95 2033 ms u 100 klientů, doba od JSON souboru přes 1Hz poll+publish, nikoliv čistá SSE RTT). Původní 2048 FIFO při 5000 JSON jednotlivých zpráv ztrácela řádky; nahrazena jednou koaleskovanou ohraničenou `JsonBatch` se zachováním jediné RAM autority. **Checkboxy .07/.08/.10 zůstávají otevřené**, dokud nebude ověřen OS buffer/RSS, browser a rollback na skutečném DEV LXC.
+
+## Finální implementační CI přejímka G-03 — 10/10 TESTED (22. 10. 2026)
+
+[**GitHub Actions #39848794079**](https://github.com/Boym323/AirRadarV2/actions/runs/39848794079), SHA **`c43ab9d543a740020ac9133941f1a4829b2c7dea`**: všechny tři joby Rust, Vite a dokumentace PASS. G-03.07: 90 nečtoucích TCP klientů, 1 zdravý klient dostal všech pět následujících aktualizací; Rust VmRSS přírůstek **15 112 KiB**, pod samostatně deklarovaným limitem **25 600 KiB** (bez OS socket bufferů). G-03.08: skutečný Chromium EventSource přes Vite i Nginx (snapshot, delta, full reconnect). G-03.10: 1/10/100 klientů s až **5 000 kompaktními letadly**; při 100×5k všech 100 aktualizací, p95 **1 576 ms**, p99 **1 630 ms**, Rust VmRSS peak **48 764 KiB**; žádné neodůvodněné discards. Metodika a další omezení v [reportu](../reports/G-03-VYSLEDEK.md).
+
+**Rozlišení stavu:** všechny implementační checkboxy jsou testově splněné v izolovaném GitHub runneru; **to neznamená provozní ACCEPTED na cílovém DEV LXC**. Nelze zatím bezpečně provést G-03 cutover, dokud není ověřen root-owned instalátor, systemd přepnutí z G-00 na G-03 a atomický rollback v DEV. V1 nedotčena. **PR #11 zůstává draft a NO-GO pro merge do `main`.**

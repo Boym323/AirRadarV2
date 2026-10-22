@@ -358,6 +358,18 @@ def main() -> int:
         raise RuntimeError("Chybí Rust binary, předem sestav --g02-replay/--g02-benchmark")
     if not sys.platform.startswith("linux"):
         raise RuntimeError("Měření /proc vyžaduje Linux")
+    cpuinfo = Path("/proc/cpuinfo").read_text(encoding="utf-8", errors="replace")
+    model = next((line.split(":", 1)[1].strip()
+                  for line in cpuinfo.splitlines() if line.startswith("model name")), "unknown")
+    meminfo = Path("/proc/meminfo").read_text(encoding="ascii")
+    total = next((int(line.split()[1]) for line in meminfo.splitlines()
+                  if line.startswith("MemTotal:")), 0)
+    print("G03_SSE_HOST=" + json.dumps({
+        "os": os.uname().sysname, "kernel": os.uname().release,
+        "cpu_model": model, "logical_cpu_count": os.cpu_count(),
+        "mem_total_kib": total, "github_runner": os.getenv("RUNNER_NAME", "local"),
+        "github_pr_checkout_sha": os.getenv("GITHUB_SHA", "local"),
+    }, sort_keys=True), flush=True)
     with tempfile.TemporaryDirectory(prefix="airradarv2-g03-sse-") as work:
         try:
             results = asyncio.run(benchmark(binary, Path(work)))
