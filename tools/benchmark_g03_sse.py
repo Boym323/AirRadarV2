@@ -259,7 +259,9 @@ async def benchmark(binary: Path, temp: Path) -> list[dict]:
             try:
                 initial = await malformed_client.event()
                 assert initial["kind"] == "snapshot"
-                before_seq = initial["body"]["seq"]
+                before_ids = {a["id"] for a in initial["body"]["aircraft"]}
+                # Předchozí dávka může legitimně posunout seq ještě po připojení;
+                # chybný nový JSON nesmí ztratit žádnou dosavadní identitu.
                 # Původní data jsou v RAM, syntetický JSON pouze záměrně poškodíme.
                 broken = fixture.with_suffix(".tmp")
                 broken.write_text("{invalid-json", encoding="utf-8")
@@ -271,12 +273,15 @@ async def benchmark(binary: Path, temp: Path) -> list[dict]:
                     f"http://{HOST}:{PORT}/api/v1/aircraft", timeout=3
                 ) as response:
                     retained = json.load(response)["data"]
-                assert retained["seq"] == before_seq, "Chybný JSON změnil canonical state"
+                retained_ids = {a["id"] for a in retained["aircraft"]}
+                assert retained_ids == before_ids, (
+                    "Chybný JSON odstranil nebo přidal identitu v kanonickém RAM stavu"
+                )
+                before_seq = retained["seq"]
                 write_fixture(fixture, 1000, 100)
                 while True:
                     recovered = await malformed_client.event(seconds=8)
-                    if recovered["body"]["seq"] > before_seq:
-                        assert recovered["kind"] in ("delta", "snapshot")
+                    if recovered["kind"] in ("delta", "snapshot") and recovered["body"]["seq"] > before_seq:
                         break
                 print("PASS G-03.09: malformed JSON, zachování RAM a zotavení")
             finally:
