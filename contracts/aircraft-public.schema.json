@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Veřejný Aircraft DTO v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "lastMessageAt",
+    "lastPositionAt",
+    "position",
+    "positionOrigin",
+    "stale",
+    "callsign",
+    "squawk"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^(icao|nonicao):[0-9a-f]{6}$"
+    },
+    "lastMessageAt": {
+      "type": "number"
+    },
+    "lastPositionAt": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "position": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "lat",
+            "lon"
+          ],
+          "properties": {
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "lon": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          }
+        }
+      ]
+    },
+    "positionOrigin": {
+      "enum": [
+        "adsb",
+        "mlat",
+        "tisb",
+        "rebroadcast",
+        "estimated",
+        "unknown"
+      ]
+    },
+    "stale": {
+      "type": "boolean"
+    },
+    "callsign": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 8
+    },
+    "squawk": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^[0-7]{4}$"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "snapshot": {
+    "kind": "snapshot",
+    "epoch": "demo-epoch",
+    "seq": 5,
+    "generatedAt": "2026-10-21T00:00:00Z",
+    "aircraft": [
+      {
+        "id": "icao:abc123",
+        "lastMessageAt": 1792627200,
+        "lastPositionAt": 1792627198.5,
+        "position": {
+          "lat": 49.9,
+          "lon": 15.3
+        },
+        "positionOrigin": "adsb",
+        "stale": false,
+        "callsign": "TEST123",
+        "squawk": "7600"
+      }
+    ]
+  },
+  "delta": {
+    "kind": "delta",
+    "epoch": "demo-epoch",
+    "seq": 6,
+    "generatedAt": "2026-10-21T00:00:01Z",
+    "upsert": [
+      {
+        "id": "icao:abc123",
+        "lastMessageAt": 1792627205,
+        "lastPositionAt": 1792627204.5,
+        "position": {
+          "lat": 49.91,
+          "lon": 15.35
+        },
+        "positionOrigin": "adsb",
+        "stale": false,
+        "callsign": "TEST123",
+        "squawk": "7700"
+      }
+    ],
+    "removed": []
+  },
+  "removed": {
+    "kind": "delta",
+    "epoch": "demo-epoch",
+    "seq": 7,
+    "generatedAt": "2026-10-21T00:00:02Z",
+    "upsert": [],
+    "removed": [
+      "icao:abc123"
+    ]
+  },
+  "gap": {
+    "kind": "delta",
+    "epoch": "demo-epoch",
+    "seq": 9,
+    "generatedAt": "2026-10-21T00:00:03Z",
+    "upsert": [],
+    "removed": []
+  },
+  "restart": {
+    "kind": "snapshot",
+    "epoch": "new-epoch",
+    "seq": 0,
+    "generatedAt": "2026-10-21T00:00:04Z",
+    "aircraft": []
+  },
+  "oversizedMode": "reject_then_reconnect"
+}

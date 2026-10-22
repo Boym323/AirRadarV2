@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "now",
+    "messages",
+    "aircraft"
+  ],
+  "properties": {
+    "now": {
+      "type": "number"
+    },
+    "messages": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "aircraft": {
+      "type": "array",
+      "maxItems": 5000,
+      "items": {
+        "type": "object",
+        "required": [
+          "hex",
+          "seen"
+        ],
+        "properties": {
+          "hex": {
+            "type": "string",
+            "pattern": "^~?[0-9a-fA-F]{6}$"
+          },
+          "seen": {
+            "type": "number",
+            "minimum": 0
+          },
+          "seen_pos": {
+            "type": "number",
+            "minimum": 0
+          },
+          "lat": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "lon": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "squawk": {
+            "type": "string",
+            "pattern": "^[0-7]{4}$"
+          }
+        }
+      }
+    }
+  }
+}

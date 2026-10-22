@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SSE G-01 v1",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "epoch",
+        "seq",
+        "generatedAt",
+        "aircraft"
+      ],
+      "properties": {
+        "kind": {
+          "const": "snapshot"
+        },
+        "epoch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "generatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "aircraft": {
+          "type": "array",
+          "items": {
+            "$ref": "aircraft-public.schema.json"
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "epoch",
+        "seq",
+        "generatedAt",
+        "upsert",
+        "removed"
+      ],
+      "properties": {
+        "kind": {
+          "const": "delta"
+        },
+        "epoch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "generatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "upsert": {
+          "type": "array",
+          "items": {
+            "$ref": "aircraft-public.schema.json"
+          }
+        },
+        "removed": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^(icao|nonicao):[0-9a-f]{6}$"
+          }
+        }
+      }
+    }
+  ]
+}

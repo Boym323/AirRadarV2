@@ -1,0 +1,29 @@
+{
+  "now": 1792627200,
+  "messages": 12345,
+  "aircraft": [
+    {
+      "hex": "abc123",
+      "type": "adsb_icao",
+      "seen": 0.3,
+      "seen_pos": 1,
+      "lat": 91,
+      "lon": 14.4,
+      "squawk": "8888"
+    },
+    {
+      "hex": "GGGGGG",
+      "seen": 0.2
+    },
+    {
+      "hex": "fff111",
+      "seen": -1
+    },
+    {
+      "hex": "aaa111",
+      "lat": 49,
+      "lon": 14,
+      "seen_pos": -1
+    }
+  ]
+}

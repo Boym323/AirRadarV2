@@ -1,0 +1,36 @@
+{
+  "now": 1792627200,
+  "messages": 12345,
+  "aircraft": [
+    {
+      "hex": "abc123",
+      "type": "adsb_icao",
+      "seen": 0.2,
+      "seen_pos": 1.5,
+      "lat": 49.9,
+      "lon": 15.3,
+      "alt_baro": 10000,
+      "gs": 180,
+      "track": 270,
+      "flight": "TEST123 ",
+      "squawk": "7600"
+    },
+    {
+      "hex": "~abc123",
+      "type": "tisb_other",
+      "seen": 2,
+      "flight": "GROUND  "
+    },
+    {
+      "hex": "def456",
+      "type": "mlat",
+      "seen": 0.3,
+      "seen_pos": 0.7,
+      "lat": 50.1,
+      "lon": 14.4,
+      "alt_baro": "ground",
+      "track": 0,
+      "squawk": "0001"
+    }
+  ]
+}

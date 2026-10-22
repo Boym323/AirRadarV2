@@ -1,0 +1,19 @@
+{
+  "now": 1792627201,
+  "messages": 12355,
+  "aircraft": [
+    {
+      "hex": "abc123",
+      "type": "adsb_icao",
+      "seen": 0.2,
+      "seen_pos": 2.5,
+      "lat": 49.9,
+      "lon": 15.3,
+      "alt_baro": 10000,
+      "gs": 180,
+      "track": 270,
+      "flight": "TEST123 ",
+      "squawk": "7600"
+    }
+  ]
+}
