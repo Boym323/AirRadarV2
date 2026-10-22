@@ -280,11 +280,14 @@ async fn poll_beast(addr: &str, sender: mpsc::Sender<Ingress>, dropped: Arc<Atom
 pub async fn loopback_soak() -> Result<(), &'static str> {
     use std::time::Instant;
     use tokio::{io::AsyncWriteExt, net::TcpListener};
-    let fixture: serde_json::Value =
-        serde_json::from_str(include_str!("../../../../contracts/fixtures/beast/cases.json"))
-            .map_err(|_| "soak fixture")?;
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../contracts/fixtures/beast/cases.json"
+    ))
+    .map_err(|_| "soak fixture")?;
     let frame = crate::contract::hex_decode(
-        fixture["valid"][0]["hex"].as_str().ok_or("soak beast frame")?,
+        fixture["valid"][0]["hex"]
+            .as_str()
+            .ok_or("soak beast frame")?,
     )?;
     let listener = TcpListener::bind("127.0.0.1:0")
         .await
@@ -317,9 +320,15 @@ pub async fn loopback_soak() -> Result<(), &'static str> {
                 .await
                 .map_err(|_| "soak tcp accept timeout")?
                 .map_err(|_| "soak tcp accept")?;
-            socket.write_all(&frame[..9]).await.map_err(|_| "soak fragment")?;
+            socket
+                .write_all(&frame[..9])
+                .await
+                .map_err(|_| "soak fragment")?;
             time::sleep(Duration::from_millis(15)).await;
-            socket.write_all(&frame[9..]).await.map_err(|_| "soak payload")?;
+            socket
+                .write_all(&frame[9..])
+                .await
+                .map_err(|_| "soak payload")?;
             time::sleep(Duration::from_millis(50)).await;
             drop(socket);
         }
