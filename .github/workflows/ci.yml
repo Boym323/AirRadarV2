@@ -23,7 +23,10 @@ jobs:
           node-version-file: .node-version
       - name: Statická validace GitHub Actions pracovních postupů
         # P0 release gate: parsování a validace expressions ještě před merge.
-        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -color
+        # CI obsahuje původní SC2034 upozornění na smyčkové čítače,
+        # a vlastní label self-hosted runneru. Validujeme syntaxe/actions
+        # expressions bez těchto dvou historických false positives.
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -shellcheck= -ignore 'label "airradarv2-dev" is unknown'
       - name: Kontrola dokumentace a 45 aktivních funkcí
         run: node tools/check-docs.mjs
       - name: Kontrola syntaxe skriptů DEV LXC
@@ -40,6 +43,7 @@ jobs:
           python3 -m py_compile deploy/g02-auto-pull.py
           python3 -m unittest discover -s tools -p 'test_g02_auto_pull.py'
           python3 -m unittest discover -s tools -p 'test_workflows_layout.py'
+          python3 -m unittest discover -s tools -p 'test_deploy_workflow.py'
           python3 -m py_compile deploy/verify-g03-runtime.py
           python3 -m unittest discover -s tools -p 'test_verify_g03_runtime.py'
           python3 -m unittest discover -s tools -p 'test_benchmark_g03_sse.py'
