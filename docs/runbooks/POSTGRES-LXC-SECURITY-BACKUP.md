@@ -1,6 +1,6 @@
 # Propojení aplikačního LXC s existujícím PostgreSQL LXC
 
-**Stav:** postup G-04 bez změn síťových a autentizačních pravidel databázového serveru, nikoli provedená konfigurace. Read-only audit DEV 23. 10. 2026 prokázal PostgreSQL 17.10, konektivitu a omezená runtime práva; **síťová izolace, firewall, externí zálohy a provozní RPO/RTO nejsou z runtime účtu ověřitelné**. Vlastník zvolil 23. 10. 2026 pro V2 důvěryhodnou LAN bez TLS, viz [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md).
+**Stav:** postup G-04 bez změn síťových a autentizačních pravidel databázového serveru, nikoli provedená konfigurace. Read-only audit DEV 23. 10. 2026 prokázal PostgreSQL 17.10, konektivitu a omezená runtime práva; **síťová izolace, firewall a kapacita sdíleného LXC nejsou z runtime účtu plně ověřitelné**. Zálohy postradatelné historie V2 nejsou dle [ADR 0010](../adr/0010-g04-postradatelna-historie-bez-zaloh.md) vyžadovány. Vlastník zvolil 23. 10. 2026 pro V2 důvěryhodnou LAN bez TLS, viz [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md).
 
 ## 1. Topologie a oddělení práv
 
@@ -46,14 +46,13 @@ Toto rozhodnutí není přenositelné na WAN, nedůvěryhodnou VPN či sdílené
 | Negativní test hesla | Odmítnuto, bez úniku údajů do logu; rozsah IP přístupu se auditně vyhodnotí |
 | Negativní DDL, UPDATE/DELETE a přístup k jiným DB | Runtime role nemá potřebná oprávnění |
 | Restart klienta/DB a síťový výpadek | Zachována živá RAM/SSE, žádný neomezený SQL backlog |
-| Backup/restore v izolovaném cíli | Obnovená V2 historie bez zásahu do jiných databází |
+| Izolovaný export/restore G-04.11 | Technický test již proveden; pravidelný backup V2 není přejímací brána dle ADR 0010 |
 
-## 5. Zálohy a provoz
+## 5. Postradatelná V2 historie — ochrana sdílené DB
 
-- Výchozí **denní \`pg_dump -Fc\` V2** off-LXC, 14 denních + 8 týdenních kopií, měsíční restore test. Nepoužívat úložiště uvnitř stejných LXC jako jedinou zálohu.
-- **Cluster PITR** se řeší na úrovni existujícího PostgreSQL serveru; ověřit \`pg_basebackup\`, WAL archivační status, retenci a RPO/RTO, ale nemačkat \`archive_mode\` naslepo kvůli V2.
-- Při nesouladu s existující backup politikou se koordinuje s DBA. V2 logický dump je doplňková obnova jediné aplikace, ne náhrada fyzické cluster zálohy.
-- Zálohy šifrovat, omezit přístup, ověřit možné GDPR/retention dopady. Provozní logy nesmějí obsahovat hesla ani raw BEAST.
+- Dle [ADR 0010](../adr/0010-g04-postradatelna-historie-bez-zaloh.md) zálohy, PITR ani provozní RPO/RTO pro V2 historii nepožadujeme. Při havárii může nenávratně zmizet celá stará historie; v izolaci otestovaný G-04.11 pg_dump/restore zůstává historickým důkazem.
+- **Neměnit** zálohování PP Studio, V1 či jiných databází ani globální WAL nastavení sdíleného PostgreSQL LXC. Bez automatického backup timeru pro G-04.
+- Povinné jsou volné místo dat/WAL, CPU/RAM, omezení zápisů, 30denní retence, bezpečný přístup, oddělený read-only canary feed a rollback bez mazání dat. SQL nesmí blokovat Rust RAM/SSE.
 
 ## Zdroje
 

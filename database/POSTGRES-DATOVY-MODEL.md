@@ -1,4 +1,4 @@
-# PostgreSQL V2 — deduplikovaný úsporný datový model a zálohy
+# PostgreSQL V2 — deduplikovaný úsporný datový model
 
 **Revize:** 22. 10. 2026 — RAM-first optimalizace; **nahrazuje původní pevné 15s vzorkování**.  
 **Stav:** schválený model G-04; DEV schema/tabulka byly auditně ověřeny a izolovaný benchmark/restore proběhl, nikoli však proti sdílenému LXC.
@@ -116,12 +116,11 @@ Hypotetických 50 letadel, neustále čerstvé polohy, žádné výjimečné vel
 
 To je **matematika počtu vzorků**, ne měřené zmenšení WAL, skutečných diskových zápisů ani CPU. Deduplikace stejné polohy může ušetřit více, záznamy prudkých manévrů naopak vedou k vyšší četnosti. Počet vzorků nesmí být optimalizován na úkor použitelnosti J09/R08/S09; potřebujeme skutečný replay a profilování.
 
-## 7. Zálohy a obnova zůstávají nezbytné
+## 7. Postradatelná historie a přijatá ztráta dat
 
-- **Denní logický \`pg_dump -Fc\` jen DB \`airradar_v2\`**, šifrovaně mimo databázový LXC, výchozí 14 denních a 8 týdenních kopií, měsíční restore do izolovaného testovacího cíle.
-- Existující fyzickou cluster backup/WAL archivaci musí ověřit správce sdílené PostgreSQL instance. Denní \`pg_dump\` **není PITR** a není bezpečné globálně měnit WAL režim bez nezávislého schválení.
-- **RPO ≤ 24 h / RTO ≤ 2 h** jsou prozatím **cíle k testu**, nikoli garantovaná SLA; RAM pending data do posledního úspěšného commit nejsou zahrnutá.
-- Zálohám musí předcházet audit práv, SSL, provozní kapacity a oddělení od V1. Test \`pg_restore\` se spouští pouze na izolované prázdné DEV databázi.
+Aktuální [ADR 0010](../docs/adr/0010-g04-postradatelna-historie-bez-zaloh.md) nahrazuje původní povinné zálohování V2. Historie letadel je postradatelná; její celá dosavadní část může být po havárii nenávratně ztracena. Nevyžadují se denní `pg_dump`, externí kopie, PITR ani provozní RPO/RTO. Izolovaný `pg_dump/pg_restore` test G-04.11 je již dokončen a zachovává se jako technický důkaz.
+
+Při ztrátě V2 databáze se může jen po schválení DBA znovu vytvořit schéma ze schválených migrací a nová historie se začne sbírat od nuly. Nedotýká se to zálohování PP Studio, V1 a jiných databází. Nadále hlídat disk/WAL/CPU/RAM společného LXC, retenci a bounded SQL writer; globální nastavení serveru neměnit.
 
 ## 8. Podmínky přejímky a povinná měření G-04
 
@@ -132,7 +131,7 @@ To je **matematika počtu vzorků**, ne měřené zmenšení WAL, skutečných d
 - [ ] Správnost PK při restartu/retry a \`ON CONFLICT DO NOTHING\`, nedvojí započtení potvrzeného sample.
 - [ ] Porovnání nepartitionované vs denně partitionované tabulky a PK-only vs s přidaným indexem.
 - [ ] CPU/RSS Rust, SQL transakce/s, \`pg_stat_user_tables\`, \`pg_total_relation_size\`, \`EXPLAIN/BUFFERS\`, WAL a I/O (jen izolovaně; \`pg_stat_wal\` agreguje *celý cluster*).
-- [ ] Reálně otestovaný restore, práva/firewall/SCRAM a nulový dopad restartu PostgreSQL na živé RAM/SSE.
+- [ ] Izolovaný pg_dump/restore test je doložen, provozní zálohování historie V2 není požadováno (ADR 0010); povinné jsou práva, volná kapacita a nulový dopad SQL výpadku na RAM/SSE.
 
 Žádné označení \`ACCEPTED\` G-04/J09 nevzniká schválením tohoto dokumentu.
 

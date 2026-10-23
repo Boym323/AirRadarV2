@@ -13,7 +13,7 @@
 
 ## Výslovné omezení
 
-Tato čísla jsou **konfigurační výchozí hodnoty**, nikoli garantovaný výkon existujícího LXC. Zálohovací cíle: denní logický dump V2 mimo DB LXC, 14 denních a 8 týdenních kopií, měsíční nezávislá testovací obnova; RPO 24 h a RTO 2 h jsou **cíle k ověření**, cluster WAL/PITR ověřuje správce. Testovat replay a obnovení před definitivní akceptací.
+Tato čísla jsou **konfigurační výchozí hodnoty**, nikoli garantovaný výkon existujícího LXC. Podle [ADR 0010](../adr/0010-g04-postradatelna-historie-bez-zaloh.md) vlastník pravidelné zálohy postradatelné historie V2 (dump/PITR/RPO/RTO) nepožaduje. Izolovaný export/restore test G-04.11 již prošel; nadále je povinné ověřit kapacitu sdíleného DB LXC, WAL/CPU/RAM, bezpečný canary a rollback.
 
 K implementaci nejprve G-01 fixture a kontrakty, potom G-02 ingest, G-03 SSE, G-04 DB, G-05 mapa. Playwright a bezpečnostní testy běží v izolovaném DEV/CI bez skutečných notifikací a bez přístupu k V1. Každou změnu rozhodnutí je třeba podložit měřením a českým reportem.
 
