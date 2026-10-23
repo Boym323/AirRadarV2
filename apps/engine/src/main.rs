@@ -5,6 +5,7 @@
 mod contract;
 
 mod api;
+mod history;
 #[allow(dead_code)]
 mod ingest;
 
