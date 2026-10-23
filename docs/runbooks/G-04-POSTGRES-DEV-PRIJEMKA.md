@@ -88,4 +88,10 @@ DB LXC. Chybějící hodnota je FAIL.
 
 Připravená jednotka `deploy/systemd/airradarv2-g04-canary.service` není součástí běžného G-03 installeru a nesmí být před GO instalována. Port `4114` je pouze interní loopback; G-03 `4101` se nemění. `tools/evaluate_g04_canary.py` je rozhodovací brána (exit 0 = PASS, exit 1 = FAIL) a `tools/rollback_g04_canary.sh` neobsahuje mazání DB dat. Požadované provozní důkazy: DB readback s novými reálnými ICAO, poslední `pending=0`/`inflight=0`, nulové SQL timeouty, `connection=up`, ztráta kandidátů nejvýše 1 %, stabilní G-03 heartbeat a známé CPU/RAM/WAL/volné místo DB LXC.
 
+### Automatický fail-closed dohled
+
+`tools/monitor_g04_canary.sh` je wrapper SHA-pinned release. Každých 15 s provádí pouze `SELECT` přes existující runtime přístup, read-only příkaz přes schválený SSH cíl DB LXC (`AIRRADAR_G04_DB_MONITOR_SSH_TARGET`) a health kontrolu G-03. Sleduje volné místo dat/WAL filesystemu (minimum 2 GiB), kumulativní růst WAL, load/CPU, RAM a G-04 diagnostiku. Při chybě aktuální metriky, SQL timeoutu, `connection != up`, degradaci G-03 nebo překročení limitu ukončí pouze podřízený G-04 proces; G-03 nereštartuje. Unit má navíc `CPUQuota=50%`, `MemoryMax=2G`, `Restart=no`.
+
+Před instalací jednotky musí být monitorovací skript a binárka společně vloženy do stejného immutable release adresáře a ověřeny proti SHA; chybějící skript je blokován `ConditionPathExists`. Cílový env soubor zůstává `root:root`, `0600`; hodnoty tajemství se nekopírují do reportů. Chybějící SSH cíl nebo jeho výpadek je záměrně NO-GO/fail-closed.
+
 **Zákaz:** změnit V1, starou historii, DB nastavení jiných služeb či automaticky přesměrovat aplikaci na SQL.

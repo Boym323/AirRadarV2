@@ -3,8 +3,11 @@
 Description=AirRadar V2 DEV — G-04 historie canary (opt-in)
 After=network-online.target
 Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=3
 # Canary artefact is immutable and SHA-bound; it is never the G-03 current release.
 ConditionPathExists=/opt/airradar-v2/canary/releases/fe0ac66fdebea25d21a2d211cd74cab922dd7d05/airradarv2-engine
+ConditionPathExists=/opt/airradar-v2/canary/releases/fe0ac66fdebea25d21a2d211cd74cab922dd7d05/monitor_g04_canary.sh
 
 [Service]
 Type=simple
@@ -14,18 +17,17 @@ WorkingDirectory=/opt/airradar-v2/canary/releases/fe0ac66fdebea25d21a2d211cd74ca
 EnvironmentFile=/etc/airradar-v2/g04-canary.env
 Environment=AIRRADAR_V2_BIND=127.0.0.1:4114
 Environment=AIRRADAR_V2_HISTORY_TRACE=1
-ExecStart=/opt/airradar-v2/canary/releases/fe0ac66fdebea25d21a2d211cd74cab922dd7d05/airradarv2-engine --g04-dev-history
+ExecStart=/opt/airradar-v2/canary/releases/fe0ac66fdebea25d21a2d211cd74cab922dd7d05/monitor_g04_canary.sh -- /opt/airradar-v2/canary/releases/fe0ac66fdebea25d21a2d211cd74cab922dd7d05/airradarv2-engine --g04-dev-history
 # Jednorázový, tvrdě omezený běh. Selhání nesmí restartovat canary ani G-03.
 Restart=no
 # 1800 s důkaz + 35 s (30s bucket + 5s close delay) + 40s rezerva na drain.
 RuntimeMaxSec=1875
 TimeoutStartSec=30
 TimeoutStopSec=15
-StartLimitIntervalSec=300
-StartLimitBurst=3
 NoNewPrivileges=yes
 UMask=0027
 LimitNOFILE=4096
+CPUQuota=50%
 MemoryMax=2G
 ProtectSystem=strict
 ProtectHome=yes

@@ -19,6 +19,98 @@ se nemění. Úmyslný běh canary, rollback v LXC a read-only audit DB LXC neby
 commitem spuštěny; provozní důkazy proto zůstávají NEOVĚŘENO.
 **Větev/PR:** `codex/g04-history-20261023`, draft PR #21. **Implementační SHA:** `fe0ac66fdebea25d21a2d211cd74cab922dd7d05`. **Předchozí benchmark binárky:** `36afdda5e752cc320496f44672a94e9434eea9eb`. **Měřicí harnessy/report:** `ebc20307c8962593c3895908f4b54e2f63aeaa8a` / `4e1ff8b7396f78377ce3f429c5fe663e8fd1df67`.
 
+## DEV preflight 23. 10. 2026 — canary nespouštěn
+
+Preflight proběhl přímo na DEV LXC `lo-dev-airradarv2` (x86-64, Debian 13) bez startu,
+restartu nebo enable G-04. Pracovní větev byla před kontrolou fast-forwardována na PR tip
+`d1c54d1807bb093c0c63f6535908a3abc988004a`; canary artefakt byl záměrně sestaven z přesného
+implementačního SHA `fe0ac66fdebea25d21a2d211cd74cab922dd7d05` v izolovaném worktree.
+
+### Artefakt a instalace
+
+- Příkaz: `cargo build --release --locked -p airradarv2-engine`.
+- Toolchain: `rustc 1.99.1 (58cf8f9c3 2026-10-13)`, `cargo 1.99.1`, `stable-x86_64-unknown-linux-gnu`.
+- Výsledný SHA-256: `1dd11387635eeb16040b69f33e09a6108d1fecf2491dde56699cc9b5971ba21b`.
+- Artefakt: `/opt/airradar-v2/canary/releases/fe0ac66fdebea25d21a2d211cd74cab922dd7d05/airradarv2-engine`,
+  `root:root`, `0755`, ELF x86-64; `ldd` nehlásí chybějící knihovnu. Vazba commit/toolchain/build/hash
+  je v `BUILD-METADATA.txt` vedle binárky. `/opt/airradar-v2/current` ani G-03 release nebyly změněny.
+
+### Aktuální G-03 baseline
+
+`airradarv2-engine.service` je `active/enabled`, PID `8924`, `--g03-live-api`,
+`AIRRADAR_V2_BEAST_ADDR=192.168.1.50:30005`; RSS procesu bylo `5 116 KiB`,
+`MemoryCurrent=4 317 184 B`. Health `127.0.0.1:4101/api/v1/health` vrátil
+`status=live`, `stage=G-03`, `live_ingest=true`, `database_connected=false`.
+Aircraft endpoint vrátil HTTP 200 a 29 087 B, `/api/v1/stream` vrátil živý snapshot
+a proces měl navázané TCP spojení na readsb `192.168.1.50:30005`.
+
+### Canary unit a credentials
+
+Unit `/etc/systemd/system/airradarv2-g04-canary.service` je načtená jako `static`,
+`inactive/dead`, bez listeneru na `127.0.0.1:4114`; není povolená pro boot ani deployment.
+`systemd-analyze verify` pro G-04 již nemá chybu vlastní jednotky; vypisuje pouze starší
+nesouvisející varování G-03 `ConditionPathIsExecutable` a G-02 oneshot `RuntimeMaxSec`.
+Ověřeno: SHA-bound `ExecStart`, samostatný `EnvironmentFile`, `Restart=no`, `MemoryMax=2G`,
+`RuntimeMaxSec=1875`, oddělený working directory a `--g04-dev-history`.
+
+Na DEV je `/etc/airradar-v2/g04-canary.env`, `root:root`, `0600`, s adresou DB
+`192.168.1.55:5432`, uživatelem `airradar_v2_dev_app` a BEAST adresou. Neprázdnost hesla
+byla ověřena bez jeho čtení do výstupu; samotná hodnota zůstává neveřejná. Runtime credentials
+jsou tedy připravené, jednotka se však stále nesmí spustit bez monitorovacího přístupu.
+
+### DB, monitoring a návrat
+
+`pg_isready` pro `192.168.1.55:5432` potvrdil pouze `accepting connections`; autentizovaný
+SQL/capacitní audit zatím neproběhl, protože v env chybí schválený SSH cíl pro read-only metriky
+DB LXC. Volné místo DB filesystemu, WAL, CPU/RAM hostitele, SQL připojení a fronty proto zůstávají
+**NEOVĚŘENO**. Nový monitor tuto situaci správně ukončí fail-closed před startem child procesu.
+
+`tools/rollback_g04_canary.sh` prošel `bash -n` a statickou kontrolou a byl spuštěn s G-04
+ve stavu `inactive`; skončil `0`, kontrola G-03 zůstala `active` a data se neměnila.
+ADR 0010 potvrzuje, že ztráta historie V2 je přijatá; neodstraňuje však povinné kapacitní,
+bezpečnostní, monitoringové a rollback brány. Readsb konfigurace zůstává beze změny a G-04
+je nakonfigurován na stejný read-only BEAST server přes vlastní TCP spojení až po případném GO.
+
+### Výsledek preflightu
+
+| Kontrola | Výsledek |
+|---|---|
+| SHA-pinned binárka, architektura, knihovny, metadata | PASS |
+| Credentials root:root `0600` s neprázdným heslem | PASS, hodnota nebyla vypsána |
+| Unit validní, static/inactive, oddělená od G-03 | PASS s nesouvisejícími verify varováními |
+| G-03 HTTP/SSE a BEAST baseline | PASS |
+| PostgreSQL dostupnost | ČÁSTEČNĚ — TCP/`pg_isready` PASS, SQL/capacita NEOVĚŘENO |
+| Vynucovaný monitoring CPU/RAM/WAL/místa/front | PASS implementace/test; DB LXC přístup NEOVĚŘEN |
+| Rollback a ochrana historie | PASS staticky i proti neaktivní G-04 |
+| PR #21 CI | PASS: run `39956195962` a `39956196089`, všechny 4 kontroly PASS |
+
+**Závěr: NO-GO. Výsledek není `READY FOR USER GO — CANARY NOT STARTED`, protože chybí schválený
+read-only přístup k aktuálním metrikám sdíleného PostgreSQL LXC a jeho kapacitní audit.
+Canary nebyl spuštěn. G-04/J09 zůstává `ROZPRACOVÁNO` / `IN_PROGRESS`; nic není `HOTOVO` ani `ACCEPTED`.**
+
+## Příprava fail-closed monitoringu — 23. 10. 2026
+
+Do PR byla doplněna implementace `tools/monitor_g04_canary.sh` a její syntaxní/kontraktní test
+`tools/test_monitor_g04_canary.sh`. Monitor je součástí stejného SHA-pinned release jako binárka,
+vyžaduje `root:root 0600` env soubor a schválený `AIRRADAR_G04_DB_MONITOR_SSH_TARGET`; bez něj
+končí před spuštěním G-04. SQL dotaz čte pouze WAL metriky, hostitelský dohled přes SSH používá
+jen `loadavg`, `free -b` a `df -Pk`. Limity jsou 2 GiB volného místa, 10 MiB/s růst WAL, 80 %
+load/cpu na počet CPU a 90 % použité RAM; limity procesu G-04 jsou `CPUQuota=50%` a `MemoryMax=2G`.
+Hodnoty jsou výchozí provozní brána a musí být před canary potvrzeny skutečným DBA auditním výstupem.
+Monitor byl do release adresáře na DEV nainstalován jako `root:root`, `0755`; SHA-256 zdroje i
+instalované kopie je `efc90cf43bc60a307fe81aa15865ab940db8fcfe96ec4b8443aef5a71d8eb94e`.
+
+Provedené důkazy bez spuštění canary:
+
+- env soubor existuje jako `root:root`, `0600`; neprázdnost hesla byla ověřena bez jeho čtení do výstupu;
+- chybějící monitorovací přístup vedl k očekávanému exit `78` před startem child procesu;
+- rollback skript byl spuštěn při neaktivní G-04 a skončil `0`; G-03 zůstal `active`;
+- `bash -n`, monitor kontraktní test a boundary test prošly; žádná změna V1, PP Studio, `pg_hba.conf`, firewallu ani globální PostgreSQL konfigurace nebyla provedena.
+
+Aktuální stav zůstává **NO-GO**: v chráněném DEV env není schválený SSH cíl/read-only přístup
+k metrikám sdíleného PostgreSQL LXC. Canary nebyl spuštěn. Po doplnění přístupu je nutné znovu
+provést preflight a teprve po výslovném GO instalovat monitor i binárku do stejného release.
+
 ## Audit G-04.01–G-04.12
 
 | Krok | Stav | Důkaz / zbývá |

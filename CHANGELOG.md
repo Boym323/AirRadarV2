@@ -4,6 +4,10 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-04 — DEV preflight canary 23. 10. 2026: NO-GO
+- Na DEV LXC byl z přesného SHA `fe0ac66fdebea25d21a2d211cd74cab922dd7d05` sestaven a mimo `current` atomicky nainstalován x86-64 artefakt SHA-256 `1dd11387635eeb16040b69f33e09a6108d1fecf2491dde56699cc9b5971ba21b`; G-04 unit je `static/inactive`, nikdy nespouštěná.
+- Doplněn SHA-pinned fail-closed monitor pro read-only SQL/DB-LXC metriky, disk pod 2 GiB, WAL, CPU/RAM, SQL timeouty a degradaci G-03; jeho kontrakt a rollback test prošly. Env je `root:root 0600` s neprázdným heslem, ale schválený SSH cíl DB LXC v env chybí, proto kapacita zůstává NEOVĚŘENA a preflight NO-GO. Canary nebyl spuštěn; G-04/J09 zůstává `IN_PROGRESS`.
+
 ### G-04 — ADR 0010: postradatelná historie V2 bez povinných záloh
 - Vlastník výslovně přijal možnost ztráty celé historické databáze V2; denní dump, PITR a provozní RPO/RTO nejsou přejímací bránou. Izolovaný pg_dump/pg_restore zůstává technickým důkazem G-04.11, backup timer se nezavádí. Zůstává povinné sledovat volné místo/WAL/CPU/RAM sdíleného LXC a bezpečný canary/rollback. Zálohování PP Studio, AirRadar V1 a ostatních databází se nemění.
 
