@@ -98,7 +98,7 @@ function addRadarLayers(map: LibreMap) {
   if (!map.getLayer(PLANE_LAYER))
     map.addLayer({
       id: PLANE_LAYER, type: "symbol", source: AIRCRAFT_SOURCE,
-      filter: ["has", "heading"],
+      filter: ["==", ["typeof", ["get", "heading"]], "number"],
       layout: {
         "icon-image": "radar-plane",
         "icon-size": ["case", ["get", "selected"], 1.3, .95],
@@ -115,7 +115,7 @@ function addRadarLayers(map: LibreMap) {
   if (!map.getLayer(DOT_LAYER))
     map.addLayer({
       id: DOT_LAYER, type: "circle", source: AIRCRAFT_SOURCE,
-      filter: ["!", ["has", "heading"]],
+      filter: ["!=", ["typeof", ["get", "heading"]], "number"],
       paint: {
         "circle-radius": ["case", ["get", "selected"], 9, 6],
         "circle-color": "#73cbea",
@@ -134,6 +134,7 @@ type Props = {
 };
 export function RadarMap({ frame, selectedId, follow, style, onSelect, onStopFollow }: Props) {
   const container = useRef<HTMLDivElement>(null);
+  const currentStyle = useRef(style);
   const map = useRef<LibreMap | null>(null);
   const props = useRef({ frame, selectedId, follow, onSelect, onStopFollow });
   props.current = { frame, selectedId, follow, onSelect, onStopFollow };
@@ -147,7 +148,7 @@ export function RadarMap({ frame, selectedId, follow, style, onSelect, onStopFol
     }
     const instance = new LibreMap({
       container: container.current,
-      style: STYLES.liberty,
+      style: STYLES[currentStyle.current],
       center: [17.67, 49.23],
       zoom: 7.7,
       attributionControl: true,
@@ -163,7 +164,7 @@ export function RadarMap({ frame, selectedId, follow, style, onSelect, onStopFol
         ?.setData(trailGeoJSON(current.frame, current.selectedId));
     };
     instance.on("style.load", refresh);
-    const click = (event: { features?: Array<{ properties?: { id?: unknown } }> }) => {
+    const click = (event: { features?: Array<{ properties: Record<string, unknown> | null }> }) => {
       const id = event.features?.[0]?.properties?.id;
       if (typeof id === "string") props.current.onSelect(id);
     };
@@ -189,9 +190,8 @@ export function RadarMap({ frame, selectedId, follow, style, onSelect, onStopFol
     };
   }, []);
   useEffect(() => {
-    if (map.current && map.current.getStyle().sprite !== undefined) {
-      map.current.setStyle(STYLES[style]);
-    } else if (map.current) {
+    if (map.current && currentStyle.current !== style) {
+      currentStyle.current = style;
       map.current.setStyle(STYLES[style]);
     }
   }, [style]);
