@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-04 — řízené vypuštění SQL writeru po 30 minutách (ADR 0013)
+- Nová opt-in G-04 implementace po 1 802 s vypne jen vlastní příjem, nejvýše 60 s čeká na uzavření 30s bucketů a potvrzení SQL ack, nejvýše 3 s na konec writeru; vypíše finální diagnostiku a při úspěchu ukončí proces s návratovým kódem 0. `systemd RuntimeMaxSec=1875`, nouzový rychlý STOP, G-03 a PostgreSQL zůstávají beze změn.
+- Doplněny Rust testy drainu (PASS ack, FAIL ack, nedoručený ack) a izolovaná PostgreSQL/SQLx regrese se skutečným závěrečným drainem. Nová systemd šablona odkazuje na zdrojový commit `e186c54f8304c3e437f6ed9a54c6bd31722dde7c` v odděleném immutable release. Binární SHA nové verze dosud neověřeno na DEV.
+- Aktualizovaný read-only postup pro ruční DB host snapshots, G-03 SSE heartbeat, nové SQL řádky a PASS/FAIL evaluator. Fyzické DEV nasazení a opakovaný canary **neprovedeny**, G-04/J09 zůstává IN_PROGRESS.
+
 ### G-04 — skutečný BEAST/CPR 31min DEV canary, dílčí PASS
 - Ve skutečném BEAST-only DEV provozu vznikaly reálné SQL historické vzorky (snímek tabulky doložen vlastníkem); poslední diagnostika `eligible=1502`, `committed=1489`, `coalesced=17754`, 63/63 úspěšných SQL dávek, 0 SQL timeoutů, 0 zaznamenaných `dropped_*`, `connection=Up`. G-03 po testu `active`.
 - Systemd dosažením `RuntimeMaxSec=1875` ukončil canary výsledkem `timeout` (nikoli SQL timeout). V poslední diagnostice zůstalo `pending=13` (0,87 % kandidátů), bez potvrzeného závěrečného flush; G-04 nemá prokazatelný graceful drain. CPU canary 6,499 s, RSS peak 3,8 MB. Bez kompletního DB host readback/metrik a plné evaluace neoznačovat G-04/J09 `ACCEPTED`. Detaily v `docs/reports/G-04-VYSLEDEK.md`.
