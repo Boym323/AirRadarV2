@@ -30,7 +30,7 @@ Měřený commit: [f07fdb35](https://github.com/Boym323/AirRadarV2/commit/f07fdb
 > Jde o vývojové statistiky repozitáře, nikoli o výkon živého radaru. Funkce se počítají jen ze strojové matice s důkazem testu. Úspěšná CI sama o sobě nedokazuje dokončení funkcí.
 <!-- AIRRADAR_STATS_END -->
 
-> **Poznámka k metrikám:** automatický blok výše zachycuje pouze commit uvedený v položce „Měřený commit“ (dosud starší `f07fdb35`). Zobrazené počty dokončených etap/funkcí proto nejsou aktuálním stavem. Autoritativní stav k 23. 10. je **4/14 HOTOVO** a **9/45 funkcí TESTED**, podle [stavu etap](docs/plan/ETAPY-A-STAV.md) a [aktivní matice](docs/plan/MATICE-FUNKCI.md); blok přepočítává samostatné denní workflow.
+> **Poznámka k metrikám:** automatický blok zachycuje **commit uvedený v položce „Měřený commit“**. Dokud se liší od aktuálního `main`, jeho čísla jsou historický snapshot, nikoli aktuální provozní stav. K uzavření G-03 dne 23. 10. platí **4/14 etap HOTOVO** a **9/45 funkcí TESTED**, viz [stav etap](docs/plan/ETAPY-A-STAV.md) a [aktivní matice](docs/plan/MATICE-FUNKCI.md). Denní workflow blok průběžně přepočítává; tuto poznámku ponech i po přepočtu.
 
 ## Kontinuální DEV nasazování z main
 
