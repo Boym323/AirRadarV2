@@ -1,0 +1,65 @@
+import { describe, expect, it } from "vitest";
+import { AircraftStore, type Aircraft } from "../src/radar/aircraft-store";
+import { toGeoJSON } from "../src/radar/RadarMap";
+
+const aircraft = (id = "icao:abc123", at = 1000): Aircraft => ({
+  id, lastMessageAt: at, lastPositionAt: at,
+  position: { lon: 17.5, lat: 49.2 }, positionOrigin: "adsb", stale: false,
+  callsign: "OKTEST", squawk: null, telemetry: { trackDegrees: 92, altitudeBaroFt: 6500 },
+});
+const generatedAt = (at: number) => new Date(at * 1000).toISOString();
+const snapshot = (items: Aircraft[], epoch = "epoch-a", seq = 0, now = 1000) =>
+  ({ kind: "snapshot", epoch, seq, generatedAt: generatedAt(now), aircraft: items });
+const delta = (upsert: Aircraft[], removed: string[], seq: number, epoch = "epoch-a", now = 1010) =>
+  ({ kind: "delta", epoch, seq, generatedAt: generatedAt(now), upsert, removed });
+
+describe("G-05.02 atomický G-03 SSE adapter", () => {
+  it("přijme snapshot + delta, aktualizuje identitu a odstraní správný cíl", () => {
+    const store = new AircraftStore();
+    expect(store.apply(snapshot([aircraft(), aircraft("nonicao:abc123")]))).toBe("applied");
+    expect(store.apply(delta([{ ...aircraft(), callsign: "OKNEW" }], ["nonicao:abc123"], 1))).toBe("applied");
+    expect(store.snapshot().aircraft).toHaveLength(1);
+    expect(store.snapshot().aircraft[0].callsign).toBe("OKNEW");
+    expect(store.apply(delta([], ["icao:abc123"], 2))).toBe("applied");
+    expect(store.snapshot().aircraft).toHaveLength(0);
+    expect(store.snapshot().trails.size).toBe(0);
+  });
+  it("odmítne přeskočené seq a epoch, další snapshot atomicky obnoví stav", () => {
+    const store = new AircraftStore();
+    expect(store.apply(snapshot([aircraft()]))).toBe("applied");
+    expect(store.apply(delta([aircraft("icao:bbbbbb")], [], 3))).toBe("resync");
+    expect(store.snapshot().aircraft).toHaveLength(1);
+    expect(store.apply(delta([], [], 1, "epoch-new"))).toBe("resync");
+    expect(store.apply(snapshot([aircraft("icao:cccccc")], "epoch-new", 0))).toBe("applied");
+    expect(store.snapshot().aircraft.map(a => a.id)).toEqual(["icao:cccccc"]);
+  });
+  it("nepovolí duplicitní ID, nedovolený rozsah GPS ani část chybných delt", () => {
+    const store = new AircraftStore();
+    expect(store.apply(snapshot([aircraft(), aircraft()]))).toBe("invalid");
+    expect(store.apply(snapshot([aircraft()]))).toBe("applied");
+    expect(store.apply(delta([aircraft("icao:bbbbbb"), {...aircraft(), position: {lat: 96, lon: 17}}],[],1))).toBe("invalid");
+    expect(store.snapshot().aircraft).toHaveLength(1);
+    expect(store.version.seq).toBe(0);
+  });
+  it("uchovává jen skutečné body, maximálně 64 a 20 minut", () => {
+    const store = new AircraftStore();
+    store.apply(snapshot([aircraft()], "e", 0));
+    for(let i = 1; i <= 90; i++) {
+      const item = { ...aircraft("icao:abc123", 1000 + i), position: { lon: 17.5 + i * 0.0001, lat: 49.2 }};
+      expect(store.apply(delta([item], [], i, "e", 1000 + i))).toBe("applied");
+    }
+    const trail = store.snapshot().trails.get("icao:abc123")!;
+    expect(trail).toHaveLength(64);
+    expect(trail.at(-1)?.at).toBe(1090);
+    expect(store.apply(snapshot([aircraft("icao:abc123", 3000)], "e", 91, 3000))).toBe("applied");
+    expect(store.snapshot().trails.get("icao:abc123")).toHaveLength(1);
+  });
+  it("mapová projekce obsahuje jen platné čerstvé cíle a respektuje skutečný heading", () => {
+    const points = toGeoJSON([aircraft(), {...aircraft("icao:bbbbbb"), stale: true}], "icao:abc123");
+    expect(points.features.map(x => x.id)).toEqual(["icao:abc123"]);
+    expect(points.features[0].properties?.heading).toBe(92);
+    expect(points.features[0].properties?.selected).toBe(true);
+    const unknown = toGeoJSON([{...aircraft(), telemetry: undefined}], null);
+    expect(unknown.features[0].properties?.heading).toBeNull();
+  });
+});

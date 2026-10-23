@@ -1,6 +1,6 @@
 # G-05 — MapLibre mapa v již připraveném Vite webu
 
-**Stav:** NEZAHÁJENO (podrobné zadání; nejde o implementaci).  
+**Stav:** ROZPRACOVÁNO v [PR #22](https://github.com/Boym323/AirRadarV2/pull/22); 4 z 11 kroků mají první automatické důkazy, úplný benchmark a letiště nejsou hotové.  
 **Odpovědnost:** M04 — Vite/React/MapLibre.  
 **Závislosti:** G-03; letištní vrstva se dokončí po G-06, ostatní části lze provést dříve.  
 **Primární KEEP ID:** `R01`, `R03`, `R04`, `R06`, `R08`, `R09`, `R12`, `R14`.  
@@ -14,11 +14,11 @@ Samostatně otestovaný modul odpovídající uvedeným schváleným ID; zbyteč
 
 Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu**; pokud má krok vlastní závislost, nejdříve ověř jeho předchozí části. Zaškrtávej jen s odkazy na implementaci a reálné testy, nikdy pouze za napsání tohoto plánu.
 
-- [ ] **G-05.01 — Založit MapLibre klienta**  
+- [x] **G-05.01 — Založit MapLibre klienta**  
   **Implementace:** Přidej MapLibre do Vite a jedinou stabilní Map instanci; SSR není potřeba, nepřeváděj Next.js ani vytvářej druhý mapový engine.  
   **Ověření:** Browser smoke potvrdí mapu bez opakovaných remountů a bez chyb WebGL.
 
-- [ ] **G-05.02 — SSE stavový adapter**  
+- [x] **G-05.02 — SSE stavový adapter**  
   **Implementace:** Založ úzký klient nad /api/v1/stream; aplikuj snapshot/delta na vlastní browser store s kontrolou sekvence.  
   **Ověření:** Unit test normalizuje, maže a obnoví tracky při resync.
 
@@ -30,11 +30,11 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Implementace:** Zobraz stručné popisky jen pro dostupný callsign/výšku, MapLibre collision a minimalizovanou práci React.  
   **Ověření:** Test hustého provozu nepřekrývá obrazovku nekontrolovanými DOM markery.
 
-- [ ] **G-05.05 — Seznam a vyhledávání v provozu**  
+- [x] **G-05.05 — Seznam a vyhledávání v provozu**  
   **Implementace:** Vytvoř živý seznam letadel se základními filtry a řazením; používej stejný state jako mapa.  
   **Ověření:** Seznam a mapa jsou konzistentní po ztrátě/reconnect streamu.
 
-- [ ] **G-05.06 — Výběr cíle**  
+- [x] **G-05.06 — Výběr cíle**  
   **Implementace:** Kliknutí v mapě nebo seznamu aktivuje výběr pro stopu/follow; nevytvářet zbytečný samostatný analytický panel.  
   **Ověření:** Výběr reaguje správně i při zániku tracku a opětovném výskytu.
 
