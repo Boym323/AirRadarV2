@@ -1,6 +1,6 @@
 # G-05 — průběžný výsledek implementace živé mapy
 
-**Datum:** 23. 10. 2026 · **Stav:** ROZPRACOVÁNO · [PR #22](https://github.com/Boym323/AirRadarV2/pull/22) (draft). Implementace je izolovaná od `main` a automatického DEV deploymentu, k žádnému produktovému nasazení nedošlo.
+**Datum:** 23. 10. 2026 · **Stav:** ROZPRACOVÁNO, první 4/11 kroků ověřené (G-05.01/.02/.05/.06) · [PR #22](https://github.com/Boym323/AirRadarV2/pull/22) (draft). Implementace je izolovaná od `main` a automatického DEV deploymentu, k žádnému produktovému nasazení nedošlo.
 
 ## Implementované části
 
@@ -15,7 +15,7 @@
 
 - **G-05.10** letištní zdroj je závislý na G-06; žádný falešný katalog nebyl přidán.
 - **G-05.11** Playwright se skutečným browser/WebGL, referenční výkon/FPS pro 25/100/500/2000 a setData vs updateData se musí změřit v samostatném prostředí; čísla nejsou vydávána za ověřená.
-- Přestože základ G-05.01–.09 existuje v kódu, **žádná z mapových KEEP funkcí není zatím `TESTED`**, dokud nebude vyhodnoceno plné CI a odpovídající browser test. Etapa se tedy neuzavírá.
+- Ověřené části **R01 a R06 mají stav `TESTED`**: [hlavní CI #40024971130](https://github.com/Boym323/AirRadarV2/actions/runs/40024971130) PASS včetně Chromium reálného map canvasu nad deterministickým SSE a offline podkladem. Další mapové funkce mají stav IN_PROGRESS, R12 NOT_STARTED; etapa se neuzavírá.
 
 ## Hranice bezpečnosti
 
@@ -26,4 +26,4 @@
 
 ## Důkazy
 
-Doplňte přesná čísla běhů CI po dokončení [PR #22](https://github.com/Boym323/AirRadarV2/pull/22). Výkon GPU, browser E2E a kompatibilitu mobilních zařízení zatím označujeme **NEOVĚŘENO**.
+**První důkaz:** CI #40024971130 PASS: Rust, Vite ESLint/TypeScript/Vitest/build, dokumentace a skutečný Chromium canvas se SSE snapshot/delta, odstraněním cíle, výběrem, style switch a bez remountu. Skutečný GPU/FPS benchmark, mobilní browser a celkovou G-05.11 akceptaci označujeme **NEOVĚŘENO**.
