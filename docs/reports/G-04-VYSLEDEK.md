@@ -2,6 +2,10 @@
 
 **Aktualizace:** 23. 10. 2026. **Etapa:** ROZPRACOVÁNO. **Primární KEEP:** J09 (`IN_PROGRESS`).
 
+## Návaznost runtime artefaktu po opravě BEAST/CPR
+
+Opravená implementace je v commitu `232d92840a0b053feba3ee13868d8b28be8ed821`, ověřená binární SHA-256 `fdb9e3e3c96372637e770d03f22fca1e0b947b1ab614a2ca65f413cab46b774a`. Šablona canary unit nyní odkazuje na samostatný `/opt/airradar-v2/canary/releases/232d92840a0b053feba3ee13868d8b28be8ed821/airradarv2-engine`; statická kontrola blokuje původní implementační SHA `fe0ac66...`. **Nahrání nové binárky a instalace nové jednotky na skutečný DEV LXC nejsou tímto PR commitem prokázány.** Žádný další live canary zatím nebyl doložen. Před dalším startem ověřit skutečné SHA binárky, service `ExecStart`, `inactive`, G-03 a DB baseline + přítomnost lidského dohledu. PR se neslučuje a další canary se bez provozních podmínek nespouští.
+
 ## Oprava PR #21 — BEAST-only historie (23. 10. 2026)
 
 Příčina původního canary `eligible=0` byla potvrzena v kódu: `beast_arrival()`
