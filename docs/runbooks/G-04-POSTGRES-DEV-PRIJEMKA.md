@@ -1,6 +1,6 @@
 # G-04 — postup bezpečné instalace PostgreSQL historie do DEV
 
-**Stav:** připravený runbook; read-only audit DEV je doložen, canary není schválen. **Týká se pouze AirRadar V2.** Před operacemi musí správce potvrdit oddělení V2 od databází V1 a dalších aplikací. Neprovádí se žádná automatická instalace ani migrace po merge do `main`.
+**Stav:** J09 funkčně TESTED v reálném DEV canary (23. 10. 2026); provozní akceptace G-04 stále čeká na důkazy DB host/SSE. Historický postup pro další případný re-test níže zůstává platný. **Týká se pouze AirRadar V2.** Před operacemi musí správce potvrdit oddělení V2 od databází V1 a dalších aplikací. Neprovádí se žádná automatická instalace ani migrace po merge do `main`.
 
 ## 1. Čistě read-only kontrola G-04.01–.02
 
@@ -141,7 +141,7 @@ Při opakování uchovej oba SSE soubory odděleně, aby se první důkaz nepře
 
 **Po doběhnutí** ulož kompletní journal přes `journalctl -u airradarv2-g04-canary.service --since '<skutečný začátek>' --no-pager -o cat`, výsledek `systemctl show -p Result -p ExecMainStatus -p ActiveState` a závěrečný SQL `COUNT(*)` / `MAX(position_at)`; dolož počet **nově** vložených řádků proti předstartovnímu stavu. Soubor `metrics.json` pro `python3 tools/evaluate_g04_canary.py --diagnostics ... --metrics ...` musí obsahovat skutečné `started_at`, `finished_at`, kladný počet nových řádků a podložené hodnoty `db_readback_verified`, `g03_sse_healthy`, `g03_sse_heartbeat_count`, `cpu_ram_recorded`, `wal_recorded`, `db_free_space_recorded`. Není dovoleno nastavovat hodnoty `true` jen proto, aby evaluator prošel.
 
-**Stav:** funkční prvotní writer prokázán, graceful shutdown nové binárky zatím ověřen jen v izolovaných testech. Bez dalšího živého dozorovaného testu a výše uvedených DB/SSE důkazů neuzavírat G-04/J09 jako ACCEPTED.
+**Aktuální výsledek:** skutečný DEV canary (23. 10. 2026) již prokázal `eligible=committed=1312`, 61/61 SQL dávek, nulové ztráty a úspěšný `drained=true writer_finished=true`, `systemd Result=success`, databáze +1312 řádků. J09 je funkčně TESTED. Dokud nejsou doloženy časované DB host disk/WAL/CPU/RAM kontroly a závěrečná G-03 SSE kontrola, označení celé G-04 jako provozně ACCEPTED by bylo předčasné. Znovu nespouštět canary jen kvůli opakování již potvrzené SQL funkčnosti.
 
 **Nezbytné před startem:** ověřit nainstalovanou unit a odpovídající SHA binárky, práva env, běžící G-03, read-only databázové připojení a dostupnost správce s možností okamžitého STOP. Nevyžaduj SSH forced-command účet ani automatický DB monitoring. Trvalý bezobslužný provoz historie není tímto schválen.
 
