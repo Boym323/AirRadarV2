@@ -88,11 +88,25 @@ def main():
             canvas = page.locator(".maplibregl-canvas")
             expect(canvas).to_be_visible(timeout=12000)
             canvas.evaluate("(el) => { el.dataset.g05Mounted = 'once'; }")
-            page.get_by_role("button", name="OKTEST").click()
-            expect(page.get_by_role("heading", name="OKTEST")).to_be_visible()
+            page.get_by_role("button", name="OKTWO").click()
+            expect(page.get_by_role("heading", name="OKTWO")).to_be_visible()
             page.evaluate("window.__emitRadar('delta', window.__radarFixture.next)")
             expect(page.get_by_text("1 letadel")).to_be_visible(timeout=12000)
             expect(page.get_by_role("button", name="OKTWO")).to_have_count(0)
+            expect(page.get_by_role("heading", name="OKTWO")).to_have_count(0)
+            # Re-appearance of a removed ID must not silently restore selection.
+            page.evaluate("""() => {
+              const fixture = window.__radarFixture;
+              window.__emitRadar('delta', {
+                kind: 'delta', epoch:'g05-ci', seq:2,
+                generatedAt:new Date().toISOString(),
+                upsert: [fixture.initial.aircraft[1]], removed:[]
+              });
+            }""")
+            expect(page.get_by_text("2 letadel")).to_be_visible(timeout=12000)
+            expect(page.get_by_role("heading", name="OKTWO")).to_have_count(0)
+            page.get_by_role("button", name="OKTEST").click()
+            expect(page.get_by_role("heading", name="OKTEST")).to_be_visible()
             assert canvas.get_attribute("data-g05-mounted") == "once", "MapLibre remount během SSE"
             page.get_by_label("Mapový podklad").select_option("fiord")
             expect(canvas).to_be_visible()
