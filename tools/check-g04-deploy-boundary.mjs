@@ -17,7 +17,7 @@ assert.match(canary, /127\.0\.0\.1:4114/);
 assert.match(canary, /Restart=no/);
 assert.match(canary, /RuntimeMaxSec=1875/);
 assert.doesNotMatch(canary, /\/opt\/airradar-v2\/current\/airradarv2-engine/);
-assert.match(canary, /releases\/587624b5dd381b90f61a5765ff13a8218ebc7867\/airradarv2-engine/);
+assert.match(canary, /releases\/fe0ac66fdebea25d21a2d211cd74cab922dd7d05\/airradarv2-engine/);
 assert.match(rollback, /systemctl stop airradarv2-g04-canary\.service/);
 assert.match(rollback, /systemctl is-active --quiet airradarv2-engine\.service/);
 assert.doesNotMatch(rollback, /systemctl restart airradarv2-engine\.service/);

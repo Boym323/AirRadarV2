@@ -17,7 +17,7 @@ Canary unit je SHA-bound mimo `/opt/airradar-v2/current`, má `MemoryMax=2G`,
 pro drain) a `Restart=no`; G-03 unit, port 4101 a automatický deployment
 se nemění. Úmyslný běh canary, rollback v LXC a read-only audit DB LXC nebyly tímto
 commitem spuštěny; provozní důkazy proto zůstávají NEOVĚŘENO.
-**Větev/PR:** `codex/g04-history-20261023`, draft PR #21. **Implementační SHA:** `0daeb2f755bff81ce518a0415942a7e6b82579b0`. **Předchozí benchmark binárky:** `36afdda5e752cc320496f44672a94e9434eea9eb`. **Měřicí harnessy/report:** `ebc20307c8962593c3895908f4b54e2f63aeaa8a` / `4e1ff8b7396f78377ce3f429c5fe663e8fd1df67`.
+**Větev/PR:** `codex/g04-history-20261023`, draft PR #21. **Implementační SHA:** `fe0ac66fdebea25d21a2d211cd74cab922dd7d05`. **Předchozí benchmark binárky:** `36afdda5e752cc320496f44672a94e9434eea9eb`. **Měřicí harnessy/report:** `ebc20307c8962593c3895908f4b54e2f63aeaa8a` / `4e1ff8b7396f78377ce3f429c5fe663e8fd1df67`.
 
 ## Audit G-04.01–G-04.12
 
