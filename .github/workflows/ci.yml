@@ -193,6 +193,13 @@ jobs:
           trap 'sudo nginx -s stop 2>/dev/null || true' EXIT
           /tmp/airradar-g03-browser/bin/python tools/test_g03_browser.py --binary target/debug/airradarv2-engine
 
+      - name: G-05 izolovaný Chromium smoke MapLibre + SSE (bez RF/DB)
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npm run build --prefix apps/web
+          /tmp/airradar-g03-browser/bin/python tools/test_g05_browser.py
+
   vite-web:
     runs-on: ubuntu-24.04
     defaults:
