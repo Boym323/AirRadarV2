@@ -981,11 +981,31 @@ mod tests {
         }
         let history = state.history.as_mut().unwrap();
         assert_eq!(history.counters.eligible, 1);
-        let batch = history.next_batch(base + 36.0);
-        assert_eq!(batch.len(), 1);
-        assert_eq!(batch[0].aircraft_key, "icao:abc123");
-        assert_eq!(insert_batch(&pool, &batch).await.unwrap(), 1);
-        history.finish_batch(true, base + 36.0);
+        // Stejný závěrečný drain jako v DEV canary, tentokrát s reálným SQLx.
+        let (tx, mut rx) = mpsc::channel::<Vec<Sample>>(1);
+        let (ack_tx, mut ack_rx) = mpsc::channel::<bool>(1);
+        let write_pool = pool.clone();
+        let writer = tokio::spawn(async move {
+            while let Some(batch) = rx.recv().await {
+                let ok = insert_batch(&write_pool, &batch).await.is_ok();
+                if ack_tx.send(ok).await.is_err() {
+                    break;
+                }
+            }
+        });
+        let drained = drain_history_until(
+            history,
+            &tx,
+            &mut ack_rx,
+            Instant::now() + Duration::from_secs(3),
+            || base + 36.0,
+        )
+        .await;
+        drop(tx);
+        writer.await.unwrap();
+        assert!(drained);
+        assert_eq!(history.counters.committed, 1);
+        assert_eq!(history.pending_len(), 0);
         let rows = read_history(&pool, "icao:abc123", base - 1.0, base + 30.0, 10)
             .await
             .unwrap();
@@ -999,6 +1019,79 @@ mod tests {
         .await
         .unwrap();
         pool.close().await;
+    }
+
+    #[tokio::test]
+    async fn g04_shutdown_flushes_pending_and_waits_for_ack() {
+        let mut history = HistorySampler::default();
+        let mut sample = crate::contract::beast_arrival(
+            "abc123", 1800.0, crate::contract::Position { lat: 49.0, lon: 17.0 },
+        ).unwrap();
+        sample.position_origin = "adsb_cpr".to_owned();
+        assert!(history.observe(&sample));
+        let (tx, mut rx) = mpsc::channel::<Vec<Sample>>(1);
+        let (ack_tx, mut ack_rx) = mpsc::channel::<bool>(1);
+        let writer = tokio::spawn(async move {
+            let batch = rx.recv().await.unwrap();
+            assert_eq!(batch.len(), 1);
+            assert_eq!(batch[0].aircraft_key, "icao:abc123");
+            ack_tx.send(true).await.unwrap();
+        });
+        let drained = drain_history_until(
+            &mut history,
+            &tx,
+            &mut ack_rx,
+            Instant::now() + Duration::from_secs(1),
+            || 1836.0,
+        ).await;
+        assert!(drained);
+        assert_eq!(history.counters.committed, 1);
+        assert_eq!(history.pending_len(), 0);
+        writer.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn g04_shutdown_rejects_failed_sql_ack() {
+        let mut history = HistorySampler::default();
+        let mut sample = crate::contract::beast_arrival(
+            "abc123", 1800.0, crate::contract::Position { lat: 49.0, lon: 17.0 },
+        ).unwrap();
+        sample.position_origin = "adsb_cpr".to_owned();
+        assert!(history.observe(&sample));
+        let (tx, mut rx) = mpsc::channel::<Vec<Sample>>(1);
+        let (ack_tx, mut ack_rx) = mpsc::channel::<bool>(1);
+        let writer = tokio::spawn(async move {
+            let _batch = rx.recv().await.unwrap();
+            ack_tx.send(false).await.unwrap();
+        });
+        assert!(!drain_history_until(
+            &mut history, &tx, &mut ack_rx,
+            Instant::now() + Duration::from_secs(1), || 1836.0,
+        ).await);
+        assert_eq!(history.counters.dropped_writer, 1);
+        writer.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn g04_shutdown_is_bounded_without_sql_ack() {
+        let mut history = HistorySampler::default();
+        let mut sample = crate::contract::beast_arrival(
+            "abc123", 1800.0, crate::contract::Position { lat: 49.0, lon: 17.0 },
+        ).unwrap();
+        sample.position_origin = "adsb_cpr".to_owned();
+        assert!(history.observe(&sample));
+        let (tx, mut rx) = mpsc::channel::<Vec<Sample>>(1);
+        let (_ack_tx, mut ack_rx) = mpsc::channel::<bool>(1);
+        let held_writer = tokio::spawn(async move {
+            let _ = rx.recv().await;
+            time::sleep(Duration::from_secs(1)).await;
+        });
+        assert!(!drain_history_until(
+            &mut history, &tx, &mut ack_rx,
+            Instant::now() + Duration::from_millis(30), || 1836.0,
+        ).await);
+        assert_eq!(history.diagnostics().inflight, 1);
+        held_writer.abort();
     }
 
     #[test]
