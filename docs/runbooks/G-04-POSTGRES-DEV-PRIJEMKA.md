@@ -15,7 +15,7 @@ SELECT current_setting('server_version'),
 SELECT pg_size_pretty(pg_database_size(current_database()));
 ```
 
-Pokud spojení uspěje, ověřit `pg_stat_ssl.ssl=false`, skutečný účet/DB a odmítnutí chybného hesla. Kontrola backup/PITR, prostoru, HA a existujících `pg_hba_file_rules` patří správci, **bez změny pravidel**. Pokud spojení selže (např. žádné odpovídající pravidlo), označit přístup jako BLOKOVÁNO a nic neotevírat. Jméno a heslo nešifrují data; vzdálenou či veřejnou síť nepovolovat.
+Pokud spojení uspěje, ověřit `pg_stat_ssl.ssl=false`, skutečný účet/DB a odmítnutí chybného hesla. Kontrola volného místa/WAL, CPU/RAM, HA a existujících `pg_hba_file_rules` patří správci; historie V2 nemá povinné zálohy dle ADR 0010, **bez změny pravidel**. Pokud spojení selže (např. žádné odpovídající pravidlo), označit přístup jako BLOKOVÁNO a nic neotevírat. Jméno a heslo nešifrují data; vzdálenou či veřejnou síť nepovolovat.
 
 ## 2. DBA připraví novou izolovanou DB
 
@@ -42,7 +42,7 @@ Engine používá pevně databázi `airradar_v2_dev`, `sslmode=disable`, bez CA/
 
 Výchozí retence detailu je 30 dní. Skript `database/maintenance/g04_retention_once.sql` odmítne nesprávnou DB a maže nanejvýš 1 000 starých poloh v jedné krátké transakci; **nemá automatický timer**. Další index nebo partitioning přidat jen po reprodukovatelném `EXPLAIN (ANALYZE, BUFFERS)`, vyhodnocení WAL/CPU a schválení.
 
-Denní `pg_dump -Fc` pouze V2 DB má být šifrovaně uložen mimo DB LXC; návrhová retence 14 denních + 8 týdenních a měsíční nezávislá obnova. Cíle RPO 24 h a RTO 2 h nejsou ověřené. PostgreSQL fyzické zálohy/PITR společného clusteru musí doložit DBA; neměnit globální WAL parametry.
+**ADR 0010:** historie V2 je postradatelná a vlastník výslovně nevyžaduje denní zálohy, PITR ani provozní RPO/RTO. V případě havárie může nenávratně zmizet celá historie; jiné databáze a jejich zálohování zůstávají nedotčené. Přesto je nutné před canary ověřit volné místo, WAL/CPU/RAM a ochranu sdíleného clusteru.
 
 Připravený `tools/backup_g04_dev.sh` odmítne jinou databázi než `airradar_v2_dev`, vyžaduje `PGPASSFILE` mimo Git a provede pouze `pg_dump -Fc`. Jeho výstup musí být uložen v adresáři 0700, soubor 0600, následně šifrován a kopírován mimo DB LXC. Skript sám nic nemaže ani neobnovuje; restore patří do nově vytvořené izolované testovací databáze. Aktuální dump 23. 10. 2026 má SHA-256 `8419d06ab60736b47f6d54e0d7571e8d4beaf0c4e07d8d8d8d5e632bf37d51c8`; tento důkaz není potvrzením provozního RPO/RTO.
 
@@ -51,9 +51,9 @@ Připravený `tools/backup_g04_dev.sh` odmítne jinou databázi než `airradar_v
 - ověřené G-04.01–.03 na reálném DB LXC bez změn `pg_hba.conf` či firewallu; existující síťový přístup a oprávnění DB musí být prokázána; pokud nejsou, G-04 zůstává BLOKOVÁNO;
 - samostatný DB test na nové DEV DB: migrace až po schválení, kontrola `pg_stat_ssl.ssl=false`, odmítnutí špatného hesla, kontrola skutečného síťového dosahu, negativní DDL test a zotavení SQLx bez výpadku G-03;
 - reálný identický replay pro 15s/30s/60s profily, indexy a partitions, SQL p95/p99, RAM/CPU, WAL/IOPS a sémantická kvalita historie;
-- skutečně obnovená záloha v nezávislém DEV cíli, potvrzený rollback a písemný GO.
+- izolovaný pg_dump/pg_restore test G-04.11 již doložen. Pravidelné zálohy/RPO/RTO historie V2 nejsou bránou; zůstávají kapacitní limity, potvrzený nedestruktivní rollback a písemné GO.
 
-## 6. Read-only audit hostitele DB a zálohy
+## 6. Read-only audit kapacity sdíleného DB LXC
 
 Skript `database/maintenance/g04_readonly_audit.sql` ověří pouze aktuální DB, WAL
 počítadla a bezpečné provozní nastavení. Volné místo filesystemu DB LXC, CPU a RAM
@@ -63,12 +63,7 @@ nesmí nahrazovat velikostí databáze. Kapacita WAL musí obsahovat použití, 
 WAL filesystemu a upozornění na `archive_mode=off`; globální WAL ani `pg_hba.conf`
 se nemění.
 
-Pravidelný externí návrh: denní `pg_dump -Fc` pouze databáze V2 mimo DB LXC,
-šifrovaný přenos, 14 denních a 8 týdenních kopií, měsíční obnova do nové izolované
-databáze. Cíl je RPO 24 hodin a RTO 2 hodiny; do přejímky se zapíše skutečný čas
-poslední úspěšné kopie a obnovy. PITR není podmínkou, pokud vlastník písemně schválí
-tento logický režim a doloží jeho RPO/RTO. `tools/backup_g04_dev.sh` zůstává pouze
-read-only dump helper; timer se nezavádí automaticky.
+Podle [ADR 0010](../adr/0010-g04-postradatelna-historie-bez-zaloh.md) se pro historii V2 pravidelné zálohy a provozní RPO/RTO nepožadují; žádný timer se nezavádí. Volný disk/WAL a CPU/RAM sdíleného PostgreSQL LXC zůstávají nepřekročitelnou provozní bránou.
 
 ## 7. Kontrolní seznam prvního časově omezeného canary
 
@@ -84,7 +79,7 @@ počtem nových řádků, nejméně dva G-03 SSE heartbeat důkazy, CPU/RAM/WAL 
 DB LXC. Chybějící hodnota je FAIL.
 
 - [ ] Správce písemně potvrdil DB ownera `airradar_v2_dev_migrator`, skutečné vlastníky schématu/tabulky (`postgres`) a postup DDL/migrací bez změny ownerů.
-- [ ] Správce doložil externí `pg_dump`/PITR, umístění kopií, retenci, RPO/RTO a nezávislý restore; `archive_mode=off` se nepovažuje za zálohu.
+- [ ] Potvrzeno rozhodnutí [ADR 0010](../adr/0010-g04-postradatelna-historie-bez-zaloh.md): akceptujeme úplnou ztrátu historie V2. Nevyžaduje se provozní záloha/RPO/RTO; otestovaná je bezpečná degradace G-04 bez vlivu na G-03 a kapacita sdíleného LXC.
 - [ ] Před startem je uložen baseline G-03: proces, SHA, BEAST/RAM/SSE, CPU/RSS, DB row count a rollback příkaz.
 - [ ] Canary má samostatný read-only JSON/BEAST feed; druhé BEAST TCP připojení je povoleno jen po ověření podpory receiveru a nulového dopadu na G-03. Jinak je canary BLOKOVÁNO.
 - [ ] Canary běží pouze časově omezeně, s monitoringem `pending`, `inflight`, `committed`, všech drop counters, SQL timeoutů a `connection=up`.

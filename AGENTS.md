@@ -17,7 +17,7 @@
 - Živá letadla mají jediného vlastníka — Rust RAM; web přijímá pouze verzovaná HTTP/SSE DTO. Fronty a retry jsou ohraničené.
 - Radar přijímá místní readsb/BEAST. Web nikdy nepotřebuje volit zdroj dat.
 - DB, počasí ani notifikační doručení nesmějí blokovat živý příjem. Ve vývojových/replay/shadow testech nikdy neposílej reálné upozornění.
-- Ochrana soukromí veřejných DTO, bezpečná práce s tajemstvími, přístupová ochrana mutací, zálohy a rollback jsou povinné i bez zvláštní produktové funkce.
+- Ochrana soukromí veřejných DTO, bezpečná práce s tajemstvími, přístupová ochrana mutací a bezpečný rollback jsou povinné i bez zvláštní produktové funkce. Zálohy se řídí hodnotou dat: **výhradně postradatelná historie AirRadar V2 G-04 má výjimku [ADR 0010](docs/adr/0010-g04-postradatelna-historie-bez-zaloh.md)**. Zálohování PP Studio, V1 a dalších databází se nemění.
 - CI nyní provádí Rust fmt/Clippy/test, **Vite/React** lint/typecheck/test/build a `node tools/check-docs.mjs`. CI používá čisté npm ci, Vite build a kontrolu statického webu. Další kontrakt/E2E/load testy zaváděj podle etapy.
 - Nevyžaduj ani nevymýšlej hesla a interní adresy; nevytvářej produkční deploy bez výslovného schválení.
 
