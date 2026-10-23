@@ -51,7 +51,7 @@ CPU jsou součet Linux `/proc/<pid>/stat` user+system ticků procesu; nejsou to 
 
 ### Časově rozložený replay a férovost
 
-Harness `tools/benchmark_g04_writer_long.sh` na SHA `0daeb2f755bff81ce518a0415942a7e6b82579b0` poslal 16 atomických readsb snapshotů po 10 s, celkem 64 letadel. Každý snapshot měl nové časové pozorování a pohyb; po doběhnutí byly v izolované PostgreSQL ověřeny `rows=64`, `aircraft=64`, `min_rows_per_aircraft=3`, `max_rows_per_aircraft=3`, `avg_rows_per_aircraft=3,00`. Žádné letadlo nebylo zvýhodněno ani ztraceno; běh nepřekročil pending limit 2048.
+Harness `tools/benchmark_g04_writer_long.sh` na SHA `0daeb2f755bff81ce518a0415942a7e6b82579b0` poslal 16 atomických readsb snapshotů po 10 s, celkem 64 letadel. Měřená binárka byla `36afdda5e752cc320496f44672a94e9434eea9eb`; pozdější změny v `0daeb2f` přidaly diagnostiku a regresní test, nikoli změnu sampleru/writeru. Každý snapshot měl nové časové pozorování a pohyb; po doběhnutí byly v izolované PostgreSQL ověřeny `rows=64`, `aircraft=64`, `min_rows_per_aircraft=3`, `max_rows_per_aircraft=3`, `avg_rows_per_aircraft=3,00`. Žádné letadlo nebylo zvýhodněno ani ztraceno; běh nepřekročil pending limit 2048.
 
 ### Interní diagnostika
 
