@@ -67,7 +67,7 @@ Podle [ADR 0010](../adr/0010-g04-postradatelna-historie-bez-zaloh.md) se pro his
 
 ## 7. Kontrolní seznam prvního časově omezeného canary
 
-Canary se smí spustit až po samostatném GO a pouze s `AIRRADAR_V2_HISTORY_TRACE=1` v chráněném lokálním prostředí. Unit používá samostatný artefakt v `/opt/airradar-v2/canary/releases/<ověřený SHA>/`, nikdy `/opt/airradar-v2/current`, má `MemoryMax=2G`, `RuntimeMaxSec=1875` a `Restart=no`. Prvních 1 800 s je minimální důkazní běh; zbývajících 75 s pokrývá uzavření posledního 30s bucketu (nejpozději bucket + 35 s) a vyprázdnění fronty. Evaluator i tak vyžaduje minimálně 1 800 s skutečných časových důkazů a poslední `pending=0`/`inflight=0`. Výchozí akceptační limit je **nejvýše 1 % kandidátních historických vzorků** ztracených součtem `dropped_capacity`, `dropped_stale` a `dropped_writer`; jmenovatel je poslední Rust `eligible`, protože drop counter je jeho podmnožina. Předchozí hodnoty 18,1 % a 59,0 % z 2×/4× testu tento limit nesplňují.
+Canary se smí spustit až po samostatném GO, při osobním dohledu správce a pouze s `AIRRADAR_V2_HISTORY_TRACE=1` v chráněném lokálním prostředí. Unit používá samostatný artefakt v `/opt/airradar-v2/canary/releases/<ověřený SHA>/`, nikdy `/opt/airradar-v2/current`, má `MemoryMax=2G`, `RuntimeMaxSec=1875` a `Restart=no`. Prvních 1 800 s je minimální důkazní běh; zbývajících 75 s pokrývá uzavření posledního 30s bucketu (nejpozději bucket + 35 s) a vyprázdnění fronty. Evaluator i tak vyžaduje minimálně 1 800 s skutečných časových důkazů a poslední `pending=0`/`inflight=0`. Výchozí akceptační limit je **nejvýše 1 % kandidátních historických vzorků** ztracených součtem `dropped_capacity`, `dropped_stale` a `dropped_writer`; jmenovatel je poslední Rust `eligible`, protože drop counter je jeho podmnožina. Předchozí hodnoty 18,1 % a 59,0 % z 2×/4× testu tento limit nesplňují.
 
 Evaluator vyžaduje v každém diagnostickém snapshotu všechny countery, `connection=up`
 a `observed_at`; musí existovat nejméně čtyři časově seřazené snapshoty pokrývající
@@ -82,44 +82,24 @@ DB LXC. Chybějící hodnota je FAIL.
 - [ ] Potvrzeno rozhodnutí [ADR 0010](../adr/0010-g04-postradatelna-historie-bez-zaloh.md): akceptujeme úplnou ztrátu historie V2. Nevyžaduje se provozní záloha/RPO/RTO; otestovaná je bezpečná degradace G-04 bez vlivu na G-03 a kapacita sdíleného LXC.
 - [ ] Před startem je uložen baseline G-03: proces, SHA, BEAST/RAM/SSE, CPU/RSS, DB row count a rollback příkaz.
 - [ ] Canary má samostatný read-only JSON/BEAST feed; druhé BEAST TCP připojení je povoleno jen po ověření podpory receiveru a nulového dopadu na G-03. Jinak je canary BLOKOVÁNO.
-- [ ] Canary běží pouze časově omezeně, s monitoringem `pending`, `inflight`, `committed`, všech drop counters, SQL timeoutů a `connection=up`.
+- [ ] Canary běží časově omezeně; G-04 diagnostika `pending`, `inflight`, `committed`, všechny drop counters, SQL timeouty a `connection=up` budou při ručním dohledu a následném vyhodnocení zkontrolovány. Automatické monitorování DB LXC se podle ADR 0011 nepožaduje.
 - [ ] Na konci platí `pending=0`, `inflight=0`, `connection=up`, žádné SQL timeouty a ztráta nejvýše 1 %; jinak NO-GO.
 - [ ] Rollback znamená pouze zastavení opt-in writeru, návrat na `--g03-live-api`, kontrolu BEAST/RAM/SSE a nedestruktivní ponechání DB dat.
 
 Připravená jednotka `deploy/systemd/airradarv2-g04-canary.service` není součástí běžného G-03 installeru a nesmí být před GO instalována. Port `4114` je pouze interní loopback; G-03 `4101` se nemění. `tools/evaluate_g04_canary.py` je rozhodovací brána (exit 0 = PASS, exit 1 = FAIL) a `tools/rollback_g04_canary.sh` neobsahuje mazání DB dat. Požadované provozní důkazy: DB readback s novými reálnými ICAO, poslední `pending=0`/`inflight=0`, nulové SQL timeouty, `connection=up`, ztráta kandidátů nejvýše 1 %, stabilní G-03 heartbeat a známé CPU/RAM/WAL/volné místo DB LXC.
 
-### Automatický fail-closed dohled
+### Jednorázový ručně dozorovaný canary — aktuální ADR 0011
 
-`tools/monitor_g04_canary.sh` je wrapper SHA-pinned release. Každých 15 s provádí pouze `SELECT` přes existující runtime přístup, read-only příkaz přes schválený SSH cíl DB LXC (`AIRRADAR_G04_DB_MONITOR_SSH_TARGET`) a health kontrolu G-03. Sleduje volné místo dat/WAL filesystemu (minimum 2 GiB), kumulativní růst WAL, load/CPU, RAM a G-04 diagnostiku. Při chybě aktuální metriky, SQL timeoutu, `connection != up`, degradaci G-03 nebo překročení limitu ukončí pouze podřízený G-04 proces; G-03 nereštartuje. Unit má navíc `CPUQuota=50%`, `MemoryMax=2G`, `Restart=no`.
+Vlastník schválil přípravu prvního **ručně hlídaného** DEV testu bez automatického DB monitoringu a bez nového SSH účtu. Viz [ADR 0011](../adr/0011-g04-rucne-hlidany-canary.md). Dřívější forced-command SSH helper a monitorovací wrapper jsou jen archivní podklady; **nejsou aktivní ani nejsou podmínkou GO pro tento jediný test**. Samotný start vyžaduje zvláštní výslovné GO.
 
-Monitor nepoužívá `pg_ls_waldir()`. SQL čte pouze `pg_stat_wal.wal_bytes` s `PGCONNECT_TIMEOUT=2` a `statement_timeout=5 s`; volné místo datového a WAL filesystemu poskytuje [omezený helper](../../deploy/g04-db-monitor-readonly.sh) přes forced-command SSH účet. Helper nepřijímá argumenty a má pevné cesty, které DBA před instalací ověří.
+- Canary unit spouští **přímo** SHA-pinned engine `fe0ac66fdebea25d21a2d211cd74cab922dd7d05`; port 4114, G-03 na 4101. Zachováno `Restart=no`, `CPUQuota=50%`, `MemoryMax=2G`, `RuntimeMaxSec=1875`, chráněný `EnvironmentFile` root:root 0600.
+- **Není zapnut automatický dohled disku/WAL/CPU/RAM databázového LXC**. Systemd limity omezují pouze canary na aplikačním LXC; nedokážou zastavit zatížení či zaplnění sdílené databáze. Test musí být osobně sledován správcem.
+- Na PostgreSQL LXC před GO zopakuj read-only baseline: `date -Is`, `df -h /var/lib/postgresql`, `free -h`, `vmstat 1 5` a `du -sh /var/lib/postgresql/17/main/pg_wal` (pouze pokud tyto cesty skutečně odpovídají `PGDATA`; jinak použij ověřené cesty). Na aplikačním LXC potvrď G-03 health, SSE a nezávislou BEAST konektivitu.
+- Během canary nejpozději každých **5 minut** opakuj a časově zaznamenej volné místo DB/WAL, CPU/load, dostupnou RAM a zdraví G-03 a PP Studio. Na první odchylku reaguj ihned, nečekej na další 5min interval. Doporučený diskový varovný práh 2,5 GiB, **STOP při méně než 2 GiB**, SQL timeoutu, nedostupnosti G-03/PP Studio, trvalém přetížení CPU/IO, neobvyklém růstu WAL, úniku paměti nebo nemožnosti sledovat DB.
+- Ruční STOP: `systemctl stop airradarv2-g04-canary.service` **pouze na DEV aplikačním LXC**. Následně ověř `systemctl is-active airradarv2-engine.service` a `curl -fsS --max-time 5 http://127.0.0.1:4101/api/v1/health`. **Nikdy nerestartuj G-03 ani DB server.**
+- Na konci sbírej skutečné diagnostické snapshoty G-04, pozitivní readback nových vzorků z V2 DB, zdravé G-03 SSE a ruční host metriky s časem/původem. Stávající `tools/evaluate_g04_canary.py` vyhodnocuje důkazy **až po testu**: `eligible`, `committed`, drop counters, `pending/inflight=0`, `connection=up`, nulové SQL timeouty, ztráty nejvýše 1 % a alespoň 1800 s. Bez důkazů nesmí výsledek dostat PASS.
+- Při úvodní pětiminutové kontrole lze běh ukončit dříve; v takovém případě jde o **částečný smoke**, nikoli dokončený 30minutový canary, a G-04/J09 zůstávají IN_PROGRESS.
 
-Před instalací jednotky musí být monitorovací skript a binárka společně vloženy do stejného immutable release adresáře a ověřeny proti SHA; chybějící skript je blokován `ConditionPathExists`. Cílový env soubor zůstává `root:root`, `0600`; hodnoty tajemství se nekopírují do reportů. Chybějící SSH cíl nebo jeho výpadek je záměrně NO-GO/fail-closed.
-
-### Přesné příkazy k předložení správci PostgreSQL LXC — nespouštět bez samostatného schválení
-
-Následující příkazy jsou návrh žádosti správci; tento agent je na DB LXC nespouštěl. Zástupné
-hodnoty `<APP_LXC_IP>`, `<DB_LXC>` a `<PUBLIC_KEY>` musí správce nahradit skutečnými hodnotami.
-Neobsahují root SSH, `sudo`, změnu firewallu, `pg_hba.conf` ani konfigurace PostgreSQL.
-
-```sh
-# Na DB LXC jako schválený správce: nejprve ověřit DATA_PATH/WAL_PATH v helperu,
-# poté nainstalovat pouze tento soubor root:root 0755.
-install -o root -g root -m 0755 /tmp/g04-db-monitor-readonly.sh /usr/local/libexec/airradar-g04-db-monitor
-
-# Samostatný systémový účet bez interaktivního shellu a hesla.
-useradd --system --create-home --home-dir /var/lib/airradar-g04-monitor --shell /usr/sbin/nologin airradar-g04-monitor
-passwd --lock airradar-g04-monitor
-install -d -o airradar-g04-monitor -g airradar-g04-monitor -m 0700 /var/lib/airradar-g04-monitor/.ssh
-printf '%s\n' 'command="/usr/local/libexec/airradar-g04-db-monitor",from="<APP_LXC_IP>/32",no-agent-forwarding,no-port-forwarding,no-pty,no-user-rc,no-X11-forwarding <PUBLIC_KEY>' \
-  > /var/lib/airradar-g04-monitor/.ssh/authorized_keys
-chown airradar-g04-monitor:airradar-g04-monitor /var/lib/airradar-g04-monitor/.ssh/authorized_keys
-chmod 0600 /var/lib/airradar-g04-monitor/.ssh/authorized_keys
-```
-
-Po schválení správce se na aplikačním LXC pouze otestuje `ssh -T -o BatchMode=yes -o
-ConnectTimeout=3 airradar-g04-monitor@<DB_LXC>` bez příkazu za cílem; forced command vrátí
-jen `load1`, počet CPU, RAM a volné KiB datového/WAL filesystemu. Selhání helperu, klíče nebo
-spojení zastaví G-04 a G-03 zůstane nedotčené.
+**Nezbytné před startem:** ověřit nainstalovanou unit a odpovídající SHA binárky, práva env, běžící G-03, read-only databázové připojení a dostupnost správce s možností okamžitého STOP. Nevyžaduj SSH forced-command účet ani automatický DB monitoring. Trvalý bezobslužný provoz historie není tímto schválen.
 
 **Zákaz:** změnit V1, starou historii, DB nastavení jiných služeb či automaticky přesměrovat aplikaci na SQL.
