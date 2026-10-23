@@ -45,4 +45,4 @@ Před převzetím G-01 použij [audit architektury z 22. 10. 2026](../audits/ARC
 
 ## Aktuální etapa k převzetí
 
-**Navazuj G-04** podle [zadání historie](../ukoly/G-04-POSTGRESQL-HISTORIE.md) a [průběžného reportu](../reports/G-04-VYSLEDEK.md). G-03 je již uzavřena; [její runbook](../runbooks/DEV-MAIN-AUTODEPLOY.md) popisuje fungující automatické nasazení do izolovaného DEV LXC. Kód G-04 nesmí aktivovat DB připojení ani přepisovat produkční V1 bez vlastních schválených provozních bran. **G-05** může paralelně připravovat mapu nad G-03 API.
+**Navazuj G-05** podle [zadání mapy](../ukoly/G-05-ZIVA-MAPA.md) a [průběžného reportu](../reports/G-05-VYSLEDEK.md). G-04 byla DEV ACCEPTED a PR #21 sloučen do main na `e9e38689`. G-03 je již uzavřena; [její runbook](../runbooks/DEV-MAIN-AUTODEPLOY.md) popisuje fungující automatické nasazení do izolovaného DEV LXC. G-05 se vyvíjí v draft PR #22 samostatně, bez nasazení do DEV až do CI/browser gate. Trvalý G-04 writer ani produkční V1 nebyly zapnuty.
