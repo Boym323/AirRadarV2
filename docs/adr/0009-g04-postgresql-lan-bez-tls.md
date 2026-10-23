@@ -5,18 +5,18 @@
 
 ## Kontext
 
-Původní návrh vyžadoval mezi aplikačním a databázovým LXC šifrování TLS (`verify-full`). Vlastník výslovně zvolil přímé připojení v důvěryhodné místní síti **bez TLS** a přihlášení samostatným uživatelským jménem a heslem.
+Původní návrh vyžadoval mezi aplikačním a databázovým LXC šifrování TLS (`verify-full`). Vlastník výslovně zvolil přímé připojení v důvěryhodné místní síti **bez TLS** a přihlášení samostatným uživatelským jménem a heslem. Dále výslovně odmítl požadavek přidávat pravidlo `hostnossl` nebo jinak měnit existující `pg_hba.conf`.
 
 ## Rozhodnutí
 
 - SQLx v režimu `--g04-dev-history` používá `PgSslMode::Disable`; konfigurace vyžaduje `AIRRADAR_V2_DEV_DB_HOST`, `_PORT`, `_USER` a `_PASSWORD`, nikoli CA certifikát.
-- Přístup z konkrétní IP aplikačního LXC (`/32`) přes privátní síť; TCP 5432 mimo tuto cestu blokován host/Proxmox firewallem. Žádný veřejný přístup ani zbytečné otevírání jiných VLAN.
-- PostgreSQL pravidlo `hostnossl airradar_v2_dev airradar_v2_dev_app <IP_APP>/32 scram-sha-256`; nikdy `trust` ani široké povolení `all`. Zásahy do sdíleného `pg_hba.conf` jsou pouze po schválení správce a bez dopadu na ostatní služby.
+- Připojení proběhne pouze přes existující privátní LAN. Existující firewall/Proxmox pravidla se nemění; jejich skutečný stav je třeba nejprve read-only ověřit. Není povoleno automaticky otevřít port 5432 do internetu ani dalších sítí.
+- **Žádné nové pravidlo `hostnossl` ani změna `pg_hba.conf`.** Použije se stávající autorizace PostgreSQL. Existující pravidlo typu `host` je kompatibilní s TCP připojením se SSL i bez SSL; existující `hostssl` bez TLS nefunguje. Server určuje výsledný autentizační mechanismus; SCRAM-SHA-256 je doporučený, ale nesmí být prosazován změnou pravidel bez nového rozhodnutí. `trust` nesmí být považován za splnění požadavku přihlášení heslem.
 - Samostatná runtime role smí jen `USAGE` schématu a `SELECT, INSERT` příslušné tabulky; DDL a mazání pouze odděleným migračním postupem. Heslo musí být jedinečné a uchované mimo Git a logy v chráněné konfiguraci LXC.
-- Přejímka musí ověřit `current_database()`, `current_user`, `pg_stat_ssl.ssl = false`, omezení přístupu podle zdrojové IP a odmítnutí nesprávného hesla či DDL. Není povoleno aktivovat DB při běžném G-03 režimu.
+- Přejímka začne pouze **read-only pokusem** o připojení existujícím účtem bez TLS; při neúspěchu má být hlášena blokace, nikoli automaticky změněna pravidla. Pokud je spojení povoleno, ověří se `current_database()`, `current_user`, `pg_stat_ssl.ssl = false`, skutečný přístupový rozsah a odmítnutí nesprávného hesla či DDL. Není povoleno aktivovat DB při běžném G-03 režimu.
 
 ## Přijaté riziko
 
 **SCRAM autentizuje, ale nešifruje provoz.** Na LAN mohou být viditelné SQL příkazy, historie letadel a výsledky; kompromitovaný host na téže síti může útočit na spojení. Tato volba je určena jen pro důvěryhodnou izolovanou LAN. Pro internet, cizí VLAN, VPN nebo jiný nedůvěryhodný transport je nutné rozhodnutí přehodnotit a použít ověřené šifrování. Není důvod vypínat TLS globálně na sdíleném PostgreSQL serveru.
 
-Toto ADR v G-04 nahrazuje pouze dřívější požadavek na **povinné TLS** (včetně příslušné části ADR 0006), nikoli ostatní požadavky na izolaci, zálohy, role a obnovu. Změna v kódu a dokumentaci **není důkazem** skutečného bezpečného nastavení DB LXC.
+Toto ADR v G-04 nahrazuje dřívější požadavek na **povinné TLS** a návrh **nového pravidla `hostnossl`** (včetně příslušné části ADR 0006), nikoli ostatní požadavky na izolaci, zálohy, role a obnovu. Změna v kódu a dokumentaci **není důkazem** skutečného bezpečného nastavení DB LXC.

@@ -4,7 +4,7 @@
 
 ## 1. Čistě read-only kontrola G-04.01–.02
 
-S přihlašovacím účtem určeným správcem, `PGSSLMODE=disable` a pouze z povolené IP důvěryhodné LAN ověřit:
+S již existujícím účtem z důvěryhodné LAN nejprve bez úprav PostgreSQL ověřit, zda **stávající pravidla** dovolují `PGSSLMODE=disable`:
 
 ```sql
 SELECT current_database(), current_user, version();
@@ -15,7 +15,7 @@ SELECT current_setting('server_version'),
 SELECT pg_size_pretty(pg_database_size(current_database()));
 ```
 
-Kontrola backup/PITR, prostoru, HA a `pg_hba_file_rules` patří správci. Ověřit, že `pg_stat_ssl.ssl=false` a že přístup jiných IP/rolí i chybného hesla je odmítnut. Jméno a heslo nešifrují data; vzdálenou či veřejnou síť nepovolovat. Nevytvářet účet ani DB bez schválení.
+Pokud spojení uspěje, ověřit `pg_stat_ssl.ssl=false`, skutečný účet/DB a odmítnutí chybného hesla. Kontrola backup/PITR, prostoru, HA a existujících `pg_hba_file_rules` patří správci, **bez změny pravidel**. Pokud spojení selže (např. žádné odpovídající pravidlo), označit přístup jako BLOKOVÁNO a nic neotevírat. Jméno a heslo nešifrují data; vzdálenou či veřejnou síť nepovolovat.
 
 ## 2. DBA připraví novou izolovanou DB
 
@@ -34,7 +34,7 @@ AIRRADAR_V2_DEV_DB_USER=airradar_v2_dev_app
 AIRRADAR_V2_DEV_DB_PASSWORD=<vložit pouze do chráněného lokálního env souboru>
 ```
 
-Jméno a heslo jsou samostatné hodnoty (není potřeba URL escapování ani `DATABASE_URL`). V produkčním repozitáři nesmějí být skutečné údaje. Použít správně zabezpečený systemd `EnvironmentFile` (s přístupem jen pro oprávněný účet), případně systemd credentials; nikdy nezadávat tajemství do argumentů procesu, veřejných logů nebo do chatu. Přihlášení vyžaduje `SCRAM-SHA-256` přes konkrétní `hostnossl` pravidlo pro DB, roli a IP aplikačního LXC `/32`. Heslo autentizuje, ale spojení **není šifrováno**. Jde o výjimku pro izolovanou LAN dle [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md).
+Jméno a heslo jsou samostatné hodnoty (není potřeba URL escapování ani `DATABASE_URL`). V produkčním repozitáři nesmějí být skutečné údaje. Použít správně zabezpečený systemd `EnvironmentFile` (s přístupem jen pro oprávněný účet), případně systemd credentials; nikdy nezadávat tajemství do argumentů procesu, veřejných logů nebo do chatu. Autentizaci řídí **existující konfigurace PostgreSQL**; žádné nové `hostnossl` ani změna `pg_hba.conf` nejsou součástí G-04. Pro připojení bez TLS stačí již platné a oprávněné pravidlo typu `host`, pokud skutečně pokrývá uživatele, databázi a zdrojovou IP. SCRAM je doporučený mechanismus pro heslo, ale jeho dostupnost je třeba ověřit, ne předpokládat. Spojení **není šifrováno**. Viz [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md).
 
 Engine používá pevně databázi `airradar_v2_dev`, `sslmode=disable`, bez CA/certifikátu; pool má max. 2 spojení a krátký timeout. Na sdíleném DB serveru **nevypínat TLS globálně**, mohou ho potřebovat jiné aplikace. Nejprve otestovat pouze v izolovaném DEV prostředí; výpadek SQL nesmí ovlivnit příjem a SSE. Ověřit `pg_stat_ssl` na spojení runtime role, nezapisovat reálné adresy či hesla do reportu.
 
@@ -46,8 +46,8 @@ Denní `pg_dump -Fc` pouze V2 DB má být šifrovaně uložen mimo DB LXC; návr
 
 ## 5. Důkazní brána před G-04 HOTOVO
 
-- ověřené G-04.01–.03 na reálném DB LXC v izolované LAN s firewallem/`hostnossl` a schválená migrační práva;
-- samostatný DB test na nové DEV DB: migrace, kontrola `pg_stat_ssl.ssl=false`, odmítnutí špatného hesla a jiné IP, negativní DDL test, zotavení SQLx bez výpadku G-03;
+- ověřené G-04.01–.03 na reálném DB LXC bez změn `pg_hba.conf` či firewallu; existující síťový přístup a oprávnění DB musí být prokázána; pokud nejsou, G-04 zůstává BLOKOVÁNO;
+- samostatný DB test na nové DEV DB: migrace až po schválení, kontrola `pg_stat_ssl.ssl=false`, odmítnutí špatného hesla, kontrola skutečného síťového dosahu, negativní DDL test a zotavení SQLx bez výpadku G-03;
 - reálný identický replay pro 15s/30s/60s profily, indexy a partitions, SQL p95/p99, RAM/CPU, WAL/IOPS a sémantická kvalita historie;
 - skutečně obnovená záloha v nezávislém DEV cíli, potvrzený rollback a písemný GO.
 

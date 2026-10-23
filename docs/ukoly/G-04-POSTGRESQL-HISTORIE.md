@@ -19,8 +19,8 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Ověření:** Evidence schváleného názvu nové DB, přístupového modelu a potvrzené izolace od jiných aplikací.
 
 - [ ] **G-04.02 — Důvěryhodná LAN a autentizace SCRAM**  
-  **Implementace:** Dle volby vlastníka použij pouze privátní LAN bez TLS (`sslmode=disable`), firewall /32, `hostnossl` a SCRAM. Nezapisuj heslo do GitHubu; viz [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md).  
-  **Ověření:** Read-only spojení prokáže správnou V2 DB/roli a `pg_stat_ssl.ssl=false`; nesprávné heslo, cizí IP nebo přístup do jiné DB jsou odmítnuty. Provoz není šifrován.
+  **Implementace:** Dle volby vlastníka použij privátní LAN bez TLS (`sslmode=disable`) a existující pravidla PostgreSQL/host firewallu. **Nevytvářej nové `hostnossl`, neupravuj `pg_hba.conf` ani firewall.** Zjisti read-only, zda stávající `host` pravidlo a autentizace heslem dovolují spojení. Jinak krok BLOKOVÁNO. Viz [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md).  
+  **Ověření:** Read-only spojení prokáže správnou V2 DB/roli a `pg_stat_ssl.ssl=false`, chybné heslo bude odmítnuto; přístupový rozsah se auditně zjistí a bez změn vyhodnotí. Není-li spojení možné, není G-04.02 přijato. Provoz není šifrován.
 
 - [ ] **G-04.03 — DEV databáze a role**  
   **Implementace:** Pověřený správce vytvoří samostatnou DEV DB, migrační a runtime roli s nejnižšími nutnými právy, bez SUPERUSER/CREATEDB/CREATEROLE.  

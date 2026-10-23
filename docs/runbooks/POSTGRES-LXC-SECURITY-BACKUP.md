@@ -1,6 +1,6 @@
 # Propojení aplikačního LXC s existujícím PostgreSQL LXC
 
-**Stav:** konkrétní bezpečnostní projekt a postup G-04, nikoliv provedená konfigurace. Uživatel potvrdil, že PostgreSQL existuje v odděleném LXC; **verze serveru, síťová izolace, firewall, zálohy ani skutečná konektivita nejsou ověřené**. Vlastník zvolil 23. 10. 2026 pro V2 důvěryhodnou LAN bez TLS, viz [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md).
+**Stav:** postup G-04 bez změn síťových a autentizačních pravidel databázového serveru, nikoli provedená konfigurace. Uživatel potvrdil, že PostgreSQL existuje v odděleném LXC; **verze serveru, síťová izolace, firewall, zálohy ani skutečná konektivita nejsou ověřené**. Vlastník zvolil 23. 10. 2026 pro V2 důvěryhodnou LAN bez TLS, viz [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md).
 
 ## 1. Topologie a oddělení práv
 
@@ -18,17 +18,13 @@ klientský prohlížeč → HTTPS → [V2 aplikační LXC] → SQLx/TCP LAN bez 
 
 ## 2. Síť, firewall, `pg_hba.conf` a LAN bez TLS
 
-1. Spojení obou LXC musí probíhat jen přes důvěryhodný privátní segment. TCP 5432 nesmí být publikován do internetu; Proxmox/firewall povolí pouze přesnou IP V2 aplikačního LXC (/32).
+1. Spojení obou LXC má probíhat jen přes existující důvěryhodnou privátní LAN. **Žádné nové firewall pravidlo není součástí G-04**. Read-only ověřit dostupnost a to, že TCP 5432 není veřejně vystaven. Pokud přístup neexistuje, nevytvářet jej automaticky.
 2. Podle [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md) používá G-04 výslovně `sslmode=disable`. Nejde o šifrovaný přenos. Na PostgreSQL serveru **nevypínat SSL globálně**: ostatní databáze a aplikace ho mohou dál potřebovat.
-3. Správce umístí do `pg_hba.conf` úzce cílené `hostnossl` s `scram-sha-256` pouze pro DB `airradar_v2_dev`, runtime roli a /32 IP aplikačního LXC. Zkontrolovat první odpovídající pravidlo pomocí `pg_hba_file_rules`, nepoužívat `trust`, `password` ani `host all all`.
-4. Jméno a unikátní silné heslo poskytuje správce mimo GitHub a logy; ukládají se do chráněné systemd konfigurace. SCRAM autentizuje klienta, ale SQL dotazy a výsledky na LAN nejsou šifrovány. Nepovolovat přístup z cizích zařízení, VLAN nebo internetu.
-5. Přístup do jiné databáze, přihlášení nesprávným heslem i z nepovolené IP musí být odmítnut. Změny sdíleného PostgreSQL/firewallu jsou možné jen po odsouhlasení správce a bez dopadu na stávající systémy.
+3. **`pg_hba.conf` se nemění.** Běžné existující pravidlo typu `host` připouští šifrované i nešifrované TCP spojení; `hostssl` nešifrované připojení nepřijme. Nejprve read-only zkontrolovat existující pravidla (`pg_hba_file_rules`) a otestovat spojení z aplikace. Pokud se nelze přihlásit, evidovat blokaci; nevyžadovat speciální `hostnossl` ani automatické otevření přístupu.
+4. Jméno a unikátní silné heslo poskytuje správce mimo GitHub a logy; ukládají se do chráněné systemd konfigurace. Způsob heslového ověření určuje existující pravidlo serveru (SCRAM je vhodnější než MD5). Nešifrované SQL dotazy a výsledky na LAN zůstávají rizikem.
+5. Ověřit odmítnutí nesprávného hesla a práv do cizí DB. Skutečný rozsah síťového přístupu zjistit, nikoli předpokládat. Na žádost vlastníka se pravidla sdíleného PostgreSQL a firewallu **neupravují**.
 
-**Pouze šablona pro DBA, nikoli příkaz ke spuštění:**
-
-~~~conf
-hostnossl airradar_v2_dev airradar_v2_dev_app <V2_APP_IP>/32 scram-sha-256
-~~~
+**Žádná šablona nového pravidla se nenasazuje.** Pro přístup bez TLS se spoléháme výhradně na již existující odpovídající pravidlo. Není-li použitelné, přejímka G-04.02 je BLOKOVÁNO.
 
 Toto rozhodnutí není přenositelné na WAN, nedůvěryhodnou VPN či sdílené sítě. V takovém případě znovu vyhodnotit ověřené šifrování.
 
@@ -37,7 +33,7 @@ Toto rozhodnutí není přenositelné na WAN, nedůvěryhodnou VPN či sdílené
 - Migrační účet je používán při řízeném G-04 migracím, nikoli v běžném systemd env. Aplikační účet nemá DDL/role management práva.
 - Schéma \`airradar_v2\`: \`REVOKE ALL ON SCHEMA public FROM PUBLIC\` v nové V2 DB pouze po schválení a kontrole rozdílů, žádné změny práv ve stávajících DB jiných služeb.
 - Preferovat explicitní SQLx \`search_path\`, nikdy nevěřit libovolnému schema z \`public\`. SQLx runtime pool má ohraničenou velikost; čekání na DB není v živé ingest hot path.
-- Konfigurace app service uživatele s \`chmod 0600\` pro tajemství, oddělený neprivilegovaný systemd účet. Při selhání TLS/role se engine může spustit ve **degraded persistence** stavu, ale nesmí zveřejnit detailní credentials ani zastavit lokální RAM/SSE.
+- Konfigurace app service uživatele s \`chmod 0600\` pro tajemství, oddělený neprivilegovaný systemd účet. Při selhání spojení/role se engine může spustit ve **degraded persistence** stavu, ale nesmí zveřejnit detailní credentials ani zastavit lokální RAM/SSE.
 - Spojení Rust → PG jen se známým zdrojem; reverse proxy ven má pouze web/HTTP read-only endpointy.
 
 ## 4. Ověření před první SQLx migrací
@@ -46,8 +42,8 @@ Toto rozhodnutí není přenositelné na WAN, nedůvěryhodnou VPN či sdílené
 |---|---|
 | `SELECT version(), current_database(), current_user` | Skutečná verze a pouze schválená V2 DEV DB a role |
 | `SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid()` | `false`, v souladu s výslovně zvoleným LAN režimem |
-| Firewall a `pg_hba_file_rules` | Jen konkrétní /32 IP klienta, přesná DB/role a SCRAM |
-| Negativní test hesla a zdrojové IP | Odmítnuto, bez úniku údajů do logu |
+| Existující firewall a `pg_hba_file_rules` | Skutečný povolený rozsah zdrojů a typ autentizace; bez požadavku na změnu konfigurace |
+| Negativní test hesla | Odmítnuto, bez úniku údajů do logu; rozsah IP přístupu se auditně vyhodnotí |
 | Negativní DDL, UPDATE/DELETE a přístup k jiným DB | Runtime role nemá potřebná oprávnění |
 | Restart klienta/DB a síťový výpadek | Zachována živá RAM/SSE, žádný neomezený SQL backlog |
 | Backup/restore v izolovaném cíli | Obnovená V2 historie bez zásahu do jiných databází |
