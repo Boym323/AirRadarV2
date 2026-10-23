@@ -8,7 +8,7 @@
 | G-01 | [Kontrakty a deterministické fixture](../ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) | **HOTOVO — 10/10, CI PASS** |
 | G-02 | [Lokální ADS-B ingest a RAM](../ukoly/G-02-LOKALNI-INGEST.md) | **HOTOVO — 11/11 TESTED, reálný 60min BEAST PASS; živé HTTP/SSE nyní zajišťuje G-03** |
 | G-03 | [Verzované HTTP API a SSE](../ukoly/G-03-API-A-SSE.md) | **HOTOVO — 10/10 TESTED, DEV ACCEPTED; automatický deployment #39906245759 PASS na `29ee2ee75fea`** |
-| G-04 | [Úsporná historie](../ukoly/G-04-POSTGRESQL-HISTORIE.md) | **ROZPRACOVÁNO — fail-closed monitor má funkční regresní testy pro PASS, timeouty, stale diagnostiku, disk/WAL/SQL/G-03 degradaci; `pg_ls_waldir()` ani neportable `df --output` se nepoužívají. Schválený forced-command SSH účet na DB LXC dosud nebyl vytvořen ani schválen, proto preflight NO-GO. Canary nespouštěn. Povinné zálohy historie V2 vyřazeny ADR 0010; žádné změny `pg_hba.conf` ani firewallu.** |
+| G-04 | [Úsporná historie](../ukoly/G-04-POSTGRESQL-HISTORIE.md) | **ROZPRACOVÁNO — ADR 0011: jednorázový, osobně dozorovaný DEV canary bez automatického DB monitoringu nebo SSH účtu. Opt-in SHA-pinned binárka/CPUQuota/MemoryMax/RuntimeMaxSec zachovány; nový preflight, ruční baseline sdílené DB LXC a výslovné GO před spuštěním. G-03/V1/ostatní DB nedotčeny; pravidelné zálohy historie V2 nejsou povinné (ADR 0010). Canary dosud nespouštěn.** |
 | G-05 | [Živá mapa a základní ovládání](../ukoly/G-05-ZIVA-MAPA.md) | NEZAHÁJENO |
 | G-06 | [Letiště a NAVAID/FIX](../ukoly/G-06-LETISTE-NAVAID.md) | NEZAHÁJENO |
 | G-07 | [Vybraná meteorologie](../ukoly/G-07-VYBRANE-POCASI.md) | NEZAHÁJENO |
