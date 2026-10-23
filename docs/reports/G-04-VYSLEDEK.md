@@ -1,7 +1,7 @@
 # G-04 — výsledek auditu a průběžná přejímka PostgreSQL historie
 
 **Aktualizace:** 23. 10. 2026. **Etapa:** ROZPRACOVÁNO. **Primární KEEP:** J09 (`IN_PROGRESS`).
-**Větev/PR:** `codex/g04-history-20261023`, draft PR #21. **Testovací kód:** `36afdda5e752cc320496f44672a94e9434eea9eb`.
+**Větev/PR:** `codex/g04-history-20261023`, draft PR #21. **Implementační SHA:** `36afdda5e752cc320496f44672a94e9434eea9eb`. **Měřicí harnessy/report:** `ebc20307c8962593c3895908f4b54e2f63aeaa8a`.
 
 ## Audit G-04.01–G-04.12
 
@@ -39,7 +39,7 @@ Lokální PostgreSQL 17.11 na `127.0.0.1:55432` byl inicializován jako samostat
 
 - **Výpadek/reconnect:** při zastavení clusteru zůstal JSON ingest, Rust RAM a G-03 API aktivní; `aircraft` vracel živý stav, zatímco databáze byla nedostupná. Po restartu a novém validním vzorku se počet řádků zvýšil z `20001` na `20002`. Retry má 3 pokusy s prodlevami 100/250 ms a neomezený backlog nevzniká.
 - **5000 cílů:** kompaktní fixture 5000 letadel prošla přes `--g04-dev-history`; `/api/v1/aircraft` HTTP 200, payload 994062 B. Plnější fixture s callsign/telemetrií správně vrátila 503 `CAPACITY_EXCEEDED`, což potvrzuje bezpečný limit payloadu, nikoli zablokování ingestu.
-- **Skutečný SQLx writer:** harness `tools/benchmark_g04_writer.sh` spustil binárku `36afdda`, `--g04-dev-history`, lokální JSON source, G-03 SSE a PostgreSQL 17.11 na loopbacku. Každý profil začal čistým `TRUNCATE`, resetem WAL statistik a novou fixture; čekalo se na potvrzený počet řádků, nikoli na timeout. `accepted` je počet potvrzených SQL řádků, `dropped_by_bound` je záměrný limit RAM pending 2048.
+- **Skutečný SQLx writer:** harness `tools/benchmark_g04_writer.sh` z SHA `ebc20307c8962593c3895908f4b54e2f63aeaa8a` spustil binárku implementačního SHA `36afdda`, `--g04-dev-history`, lokální JSON source, G-03 SSE a PostgreSQL 17.11 na loopbacku. Každý profil začal čistým `TRUNCATE`, resetem WAL statistik a novou fixture; čekalo se na potvrzený počet řádků, nikoli na timeout. `accepted` je počet potvrzených SQL řádků, `dropped_by_bound` je záměrný limit RAM pending 2048.
 
 | Profil | vstup | accepted | dropped_by_bound | wall | batch | CPU ticks | RSS | WAL | SSE bytes |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -66,7 +66,7 @@ CPU jsou součet Linux `/proc/<pid>/stat` user+system ticků procesu; nejsou to 
 | 60 s | 11 | 895,87 m | 2 | 925 B |
 | adaptivní | 12 | 232,83 m | 3 | 1 015 B |
 
-Stejná deterministická 10min trasa obsahovala 60s obrat a stoupání; jde o reprodukovatelný kvalitativní replay, ne o skutečný RF záznam. Agresivnější 60s profil proto nebyl plošně povolen.
+Stejná deterministická 10min trasa obsahovala 60s obrat a stoupání; jde o reprodukovatelný kvalitativní replay skriptu `ebc20307c8962593c3895908f4b54e2f63aeaa8a`, ne o skutečný RF záznam. Agresivnější 60s profil proto nebyl plošně povolen.
 
 ## Backup a RPO/RTO
 

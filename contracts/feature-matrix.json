@@ -110,9 +110,9 @@
         "DEV SQLx dedup/read test proti airradar_v2_dev: PASS 23. 10. 2026",
         "Izolovaný PostgreSQL výpadek/reconnect, 5000 cílů a pg_dump/pg_restore: PASS, SHA 4659d63822d842a69fb0e141b9dcf1c5480e381e",
     "Izolovaný 1×/2×/4× SQL dávkový benchmark: PASS, SHA 4659d63822d842a69fb0e141b9dcf1c5480e381e",
-    "Izolovaná retence 2501 řádků v dávkách 1000/1000/501: PASS",
-    "Skutečný Rust/SQLx writer 1×/2×/4× s bounded ztrátou, WAL, RSS, CPU a SSE: PASS",
-    "Srovnání stejné rekonstruované trasy 15/30/60/adaptive: PASS"
+    "Izolovaná retence 2501 řádků v dávkách 1000/1000/501: PASS, SHA ebc20307c8962593c3895908f4b54e2f63aeaa8a",
+    "Skutečný Rust/SQLx writer 1×/2×/4× s bounded ztrátou, WAL, RSS, CPU a SSE: PASS, binární SHA 36afdda5e752cc320496f44672a94e9434eea9eb, harness SHA ebc20307c8962593c3895908f4b54e2f63aeaa8a",
+    "Srovnání stejné rekonstruované trasy 15/30/60/adaptive: PASS, SHA ebc20307c8962593c3895908f4b54e2f63aeaa8a"
       ],
   "notes": "G-04 SQLx+RAM-first, 30s bucket, bounded 2048/128, retry/backoff, izolovaný reconnect, retence, skutečný SQLx-writer replay a sampling replay jsou doložené v izolaci. Provozní backup/RPO/RTO sdíleného LXC, skutečný RF replay a serverové CPU zůstávají NEOVĚŘENO; proto J09 není TESTED/ACCEPTED."
     },
