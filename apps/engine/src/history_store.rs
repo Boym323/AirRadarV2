@@ -35,8 +35,8 @@ fn dev_options(
         .ssl_mode(PgSslMode::Disable))
 }
 
-/// Pouze explicitní G-04 DEV runtime, ověření certifikátu serveru zůstává povinné.
-/// Samotné jméno a heslo nezaručuje šifrování přenosu.
+/// Pouze explicitní G-04 DEV runtime v důvěryhodné LAN bez TLS.
+/// Heslo autentizuje (SCRAM), ale SQL a data na síti nejsou šifrována.
 pub fn dev_pool_from_env() -> Result<PgPool, Box<dyn std::error::Error>> {
     let host = std::env::var("AIRRADAR_V2_DEV_DB_HOST")?;
     let port: u16 = std::env::var("AIRRADAR_V2_DEV_DB_PORT")
@@ -159,7 +159,7 @@ mod tests {
         };
     }
     #[test]
-    fn g04_username_password_and_tls_config_validate_without_network() {
+    fn g04_username_password_and_lan_config_validate_without_network() {
         // Hesla mohou obsahovat znaky, které by vyžadovaly URL escapování.
         let options = dev_options(
             "postgres-dev.example.test",
@@ -173,6 +173,27 @@ mod tests {
         assert!(dev_options("host", 5432, "", "pass").is_err());
         assert!(dev_options("host", 5432, "user", "").is_err());
         assert!(dev_options("postgres://host", 5432, "user", "pass").is_err());
+    }
+
+    #[tokio::test]
+    async fn g04_explicit_lan_connection_has_no_tls_in_ci() {
+        // Pouze jednorázová CI DB v loopback síti; nikdy vzdálené DB LXC.
+        if std::env::var_os("AIRRADAR_G04_CI_DATABASE_URL").is_none() {
+            return;
+        }
+        let user = std::env::var("PGUSER").expect("CI PGUSER");
+        let password = std::env::var("PGPASSWORD").expect("CI PGPASSWORD");
+        let options = dev_options("127.0.0.1", 5432, &user, &password).unwrap();
+        let pool = PgPool::connect_with(options).await.expect("CI PostgreSQL");
+        let (db, tls): (String, bool) = sqlx::query_as(
+            "SELECT current_database(), ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid()",
+        )
+        .fetch_one(&pool)
+        .await
+        .expect("pg_stat_ssl");
+        assert_eq!(db, "airradar_v2_dev");
+        assert!(!tls, "G-04 LAN profil nesmí používat TLS");
+        pool.close().await;
     }
 
     #[tokio::test]
