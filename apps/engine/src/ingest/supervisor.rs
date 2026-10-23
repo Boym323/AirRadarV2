@@ -7,7 +7,10 @@ use super::{
     state::RadarState,
 };
 use crate::contract::Observation;
-use crate::{history::{HistorySampler, Sample}, history_store::WriterDiagnostics};
+use crate::{
+    history::{HistorySampler, Sample},
+    history_store::WriterDiagnostics,
+};
 use std::future::Future;
 use std::{
     path::{Path, PathBuf},
@@ -180,7 +183,13 @@ pub async fn run_with_publisher_and_history(
     publisher: Option<crate::api::Publisher>,
     history_pool: Option<sqlx::PgPool>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    run_with_publisher_and_history_until(config, publisher, history_pool, std::future::pending::<()>()).await
+    run_with_publisher_and_history_until(
+        config,
+        publisher,
+        history_pool,
+        std::future::pending::<()>(),
+    )
+    .await
 }
 
 /// Jen opt-in G-04 dostává jednorázový signál pro řízený drain.
@@ -314,16 +323,22 @@ pub async fn run_with_publisher_and_history_until<F: Future<Output = ()>>(
         // 30s UTC bucket + 5s close-delay a bounded SQL potvrzení.
         // 60s limit ponechává rezervu pod systemd RuntimeMaxSec=1875.
         drain_history_until(
-            history, &history_tx, &mut history_ack_rx,
+            history,
+            &history_tx,
+            &mut history_ack_rx,
             Instant::now() + Duration::from_secs(60),
             wall_seconds,
-        ).await
+        )
+        .await
     } else {
         true
     };
     drop(history_tx);
     let writer_finished = if let Some(writer) = writer_task {
-        matches!(time::timeout(Duration::from_secs(3), writer).await, Ok(Ok(())))
+        matches!(
+            time::timeout(Duration::from_secs(3), writer).await,
+            Ok(Ok(()))
+        )
     } else {
         true
     };
@@ -358,7 +373,9 @@ async fn drain_history_until<F: Fn() -> f64>(
             match time::timeout_at(deadline, ack.recv()).await {
                 Ok(Some(success)) => {
                     history.finish_batch(success, now());
-                    if !success { return false; }
+                    if !success {
+                        return false;
+                    }
                 }
                 _ => return false,
             }
@@ -380,12 +397,20 @@ fn log_history_trace(history: &HistorySampler, writer: &WriterDiagnostics, now: 
     let memory = history.diagnostics();
     eprintln!(
         "G-04 history observed_at={} pending={} inflight={} eligible={} coalesced={} committed={} dropped_capacity={} dropped_stale={} dropped_writer={} sql_attempts={} committed_batches={} failed_batches={} sql_timeouts={} connection={:?}",
-        now, memory.pending, memory.inflight, memory.eligible, memory.coalesced,
-        memory.committed, memory.dropped_capacity, memory.dropped_stale,
-        memory.dropped_writer, writer.sql_attempts.load(Ordering::Relaxed),
+        now,
+        memory.pending,
+        memory.inflight,
+        memory.eligible,
+        memory.coalesced,
+        memory.committed,
+        memory.dropped_capacity,
+        memory.dropped_stale,
+        memory.dropped_writer,
+        writer.sql_attempts.load(Ordering::Relaxed),
         writer.committed_batches.load(Ordering::Relaxed),
         writer.failed_batches.load(Ordering::Relaxed),
-        writer.sql_timeouts.load(Ordering::Relaxed), writer.connection_state(),
+        writer.sql_timeouts.load(Ordering::Relaxed),
+        writer.connection_state(),
     );
 }
 
@@ -1025,8 +1050,14 @@ mod tests {
     async fn g04_shutdown_flushes_pending_and_waits_for_ack() {
         let mut history = HistorySampler::default();
         let mut sample = crate::contract::beast_arrival(
-            "abc123", 1800.0, crate::contract::Position { lat: 49.0, lon: 17.0 },
-        ).unwrap();
+            "abc123",
+            1800.0,
+            crate::contract::Position {
+                lat: 49.0,
+                lon: 17.0,
+            },
+        )
+        .unwrap();
         sample.position_origin = "adsb_cpr".to_owned();
         assert!(history.observe(&sample));
         let (tx, mut rx) = mpsc::channel::<Vec<Sample>>(1);
@@ -1043,7 +1074,8 @@ mod tests {
             &mut ack_rx,
             Instant::now() + Duration::from_secs(1),
             || 1836.0,
-        ).await;
+        )
+        .await;
         assert!(drained);
         assert_eq!(history.counters.committed, 1);
         assert_eq!(history.pending_len(), 0);
@@ -1054,8 +1086,14 @@ mod tests {
     async fn g04_shutdown_rejects_failed_sql_ack() {
         let mut history = HistorySampler::default();
         let mut sample = crate::contract::beast_arrival(
-            "abc123", 1800.0, crate::contract::Position { lat: 49.0, lon: 17.0 },
-        ).unwrap();
+            "abc123",
+            1800.0,
+            crate::contract::Position {
+                lat: 49.0,
+                lon: 17.0,
+            },
+        )
+        .unwrap();
         sample.position_origin = "adsb_cpr".to_owned();
         assert!(history.observe(&sample));
         let (tx, mut rx) = mpsc::channel::<Vec<Sample>>(1);
@@ -1064,10 +1102,16 @@ mod tests {
             let _batch = rx.recv().await.unwrap();
             ack_tx.send(false).await.unwrap();
         });
-        assert!(!drain_history_until(
-            &mut history, &tx, &mut ack_rx,
-            Instant::now() + Duration::from_secs(1), || 1836.0,
-        ).await);
+        assert!(
+            !drain_history_until(
+                &mut history,
+                &tx,
+                &mut ack_rx,
+                Instant::now() + Duration::from_secs(1),
+                || 1836.0,
+            )
+            .await
+        );
         assert_eq!(history.counters.dropped_writer, 1);
         writer.await.unwrap();
     }
@@ -1076,8 +1120,14 @@ mod tests {
     async fn g04_shutdown_is_bounded_without_sql_ack() {
         let mut history = HistorySampler::default();
         let mut sample = crate::contract::beast_arrival(
-            "abc123", 1800.0, crate::contract::Position { lat: 49.0, lon: 17.0 },
-        ).unwrap();
+            "abc123",
+            1800.0,
+            crate::contract::Position {
+                lat: 49.0,
+                lon: 17.0,
+            },
+        )
+        .unwrap();
         sample.position_origin = "adsb_cpr".to_owned();
         assert!(history.observe(&sample));
         let (tx, mut rx) = mpsc::channel::<Vec<Sample>>(1);
@@ -1086,10 +1136,16 @@ mod tests {
             let _ = rx.recv().await;
             time::sleep(Duration::from_secs(1)).await;
         });
-        assert!(!drain_history_until(
-            &mut history, &tx, &mut ack_rx,
-            Instant::now() + Duration::from_millis(30), || 1836.0,
-        ).await);
+        assert!(
+            !drain_history_until(
+                &mut history,
+                &tx,
+                &mut ack_rx,
+                Instant::now() + Duration::from_millis(30),
+                || 1836.0,
+            )
+            .await
+        );
         assert_eq!(history.diagnostics().inflight, 1);
         held_writer.abort();
     }
