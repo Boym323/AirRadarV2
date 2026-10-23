@@ -171,7 +171,7 @@ impl HistorySampler {
             self.counters.skipped += 1;
             return false;
         }
-        if self.pending.len() >= MAX_PENDING {
+        if self.pending.len() + self.in_flight.len() >= MAX_PENDING {
             // Odhození nejstaršího neuloženého bucketu, nikoli živého RAM tracku.
             self.pending.pop_first();
             self.counters.dropped_capacity += 1;

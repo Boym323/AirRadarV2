@@ -12,6 +12,10 @@ on:
       - 'tools/test_g04_migrations.sh'
       - '.github/workflows/g04-postgres-migrations.yml'
       - 'apps/engine/src/history_store.rs'
+      - 'apps/engine/src/history.rs'
+      - 'apps/engine/src/ingest/state.rs'
+      - 'tools/test_g04_backup_restore.sh'
+      - 'database/maintenance/**'
   workflow_dispatch:
 
 permissions:
@@ -54,4 +58,6 @@ jobs:
         env:
           AIRRADAR_G04_CI_DATABASE_URL: postgres://postgres:ci-temporary-not-a-real-secret@127.0.0.1:5432/airradar_v2_dev?sslmode=disable
         run: cargo test --locked -p airradarv2-engine g04_postgres_batch_dedup_and_bounded_history
+      - name: Skutečný izolovaný pg_dump/pg_restore a jednorázová retence
+        run: bash tools/test_g04_backup_restore.sh
 
