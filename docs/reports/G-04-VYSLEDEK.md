@@ -2,7 +2,23 @@
 
 **Aktualizace:** 23. 10. 2026. **Etapa:** ROZPRACOVÁNO. **Primární KEEP:** J09 (`IN_PROGRESS`).
 
-## Oprava graceful drain po prvním úspěšném canary (ADR 0013)
+## Závěrečný opakovaný DEV canary — technický PASS (23. 10. 2026)
+
+**Doložený výsledek skutečné služby po opravě ADR 0013: PASS pro G-04/J09 historický writer i korektní automatické ukončení.** Vlastník dodal výstup systemd, posledních 20 řádků journalu a přímo z PostgreSQL výsledný počet řádků. Samostatná G-04 binárka postavená z `e186c54f8304c3e437f6ed9a54c6bd31722dde7c` byla před testem ověřena SHA-256 `7b7cbf291141bdfbfa4e3a4e8ea7c8914d687cbf1824089721afdcd43e5f5d1e`; žádná změna hlavního G-03 release není doložena.
+
+- **Trvání diagnostických vzorků:** první `observed_at=1792786157.6443596`, poslední `observed_at=1792787975.1425016`: **1817,498 s** (přes 30 minut). Proces po aktivním příjmu inicioval `G-04 canary: completed live window, initiating bounded SQL drain`.
+- **Po finálním drainu:** `eligible=1312`, `committed=1312`, `pending=0`, `inflight=0`, `coalesced=15239`, `dropped_capacity=0`, `dropped_stale=0`, `dropped_writer=0`; tedy **0 % evidované ztráty**. `sql_attempts=61`, `committed_batches=61`, `failed_batches=0`, `sql_timeouts=0`, `connection=Up`.
+- **Graceful shutdown potvrzen:** `G-04 shutdown drained=true writer_finished=true`, `G-04 canary: successful bounded shutdown`, systemd `Result=success`, `ExecMainStatus=0`, `ActiveState=inactive`. Žádný závěrečný systemd timeout.
+- **Skutečný PostgreSQL readback:** před během 1 490 řádků, po běhu **2 802 řádků**, přírůstek přesně **1 312 = committed**; po běhu **326 různých identit**. Důkaz potvrzuje SQL writer a závěrečný drain (bez přisuzování dalších neověřených výsledků).
+- **Spotřeba procesu G-04:** CPU time **6,085 s** a memory peak **3,8 MB** dle systemd; nejde o metriky PostgreSQL hostitele.
+- **DB host baseline PŘED během (Proxmox LXC konzole):** ověřeno `PGDATA=/var/lib/postgresql/17/main`, volné místo **3,1 GiB** (63 % obsazeno), velikost `pg_wal` **59 MiB**, dostupná RAM **796 MiB**, přibližně 65–92 % idle CPU v pěti `vmstat` vzorcích. To **nedokazuje** stav disku, WAL, CPU a RAM v průběhu a po skončení testu.
+- **G-03 SSE:** před opakovaným canary doloženy 3 heartbeat události; v předložených výstupech dosud chybí závěrečný SSE důkaz.
+
+**Přejímací hranice:** J09 funkčně `TESTED`, ale kompletní provozní G-04 `ACCEPTED` dosud **NEOVĚŘENO**, dokud nebudou předložena skutečná 5min provozní DB host měření / záznam osobního dohledu, závěrečná kontrola G-03 SSE a kompletní vstupy pro `tools/evaluate_g04_canary.py`. Žádná z chybějících boolean metrik se nesmí nastavovat `true` bez důkazu. Případná absence časovaných záznamů z tohoto testu znamená neprokázané operační kritérium, nikoli chybu v historickém writeru.
+
+Starší níže uvedený 31min canary, který skončil `timeout` a `pending=13`, je historický podklad **před** opravou; není aktuálním výsledkem. PR #21 zůstává draft bez merge do `main`. Tento report nepovoluje automatické trvalé spuštění SQL writeru ani produktový deploy.
+
+## Historie opravy graceful drain po prvním canary (ADR 0013)
 
 **Stav: implementováno v PR #21, nikoli dosud akceptováno živým DEV re-testem.** Nový zdrojový implementační SHA `e186c54f8304c3e437f6ed9a54c6bd31722dde7c` obsahuje časově řízené zastavení G-04 příjmu po 1 802 s, do 60 s ohraničené čekání na uzavření bucketů a ack SQL dávek, do 3 s dokončení writeru a závěrečný diagnostický snapshot. Úspěch znamená `pending=0`, `inflight=0`, `G-04 shutdown drained=true writer_finished=true`, bez `systemd Result=timeout`. Nouzové `systemctl stop` zůstává okamžitý ochranný zásah.
 
