@@ -28,6 +28,19 @@ class DeployWorkflowTests(unittest.TestCase):
         self.assertIn("grep -qx 'G-03' package/web/g03-runtime-required.txt", TEXT)
         self.assertIn("G03_STAGE_GATE_V2", TEXT)
 
+    def test_metrics_serialize_and_cannot_invalidate_valid_app_release(self):
+        metrics = WORKFLOW.with_name("development-metrics.yml").read_text(encoding="utf-8")
+        self.assertIn("group: airradarv2-dev-release-refs/heads/main", metrics)
+        self.assertIn("group: airradarv2-dev-release-${{ github.ref }}", TEXT)
+        self.assertIn("cancel-in-progress: false", metrics)
+        self.assertIn("compare/${GITHUB_SHA}...${current_main}", TEXT)
+        self.assertIn("(.commits | length) == .ahead_by", TEXT)
+        self.assertIn('"docs: automatická aktualizace statistik vývoje"', TEXT)
+        self.assertIn('.author.login == "github-actions[bot]"', TEXT)
+        self.assertIn('.parents[0].sha == $parent', TEXT)
+        self.assertIn('(.filename == "README.md" or (.filename | startswith("docs/metrics/")))', TEXT)
+        self.assertIn('(.files | length) > 0', TEXT)
+
     def test_release_and_deploy_dependencies_remain(self):
         self.assertIn("needs: test-and-build", TEXT)
         self.assertIn("needs: publish-dev-candidate", TEXT)

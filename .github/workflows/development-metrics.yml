@@ -9,8 +9,10 @@ on:
 permissions:
   contents: write
 
+# Stejná repo-wide concurrency jako release z main: statistiky nesmějí
+# změnit HEAD main uprostřed SHA-připnutého DEV deploymentu.
 concurrency:
-  group: airradar-v2-development-metrics
+  group: airradarv2-dev-release-refs/heads/main
   cancel-in-progress: false
 
 jobs:

@@ -4,6 +4,10 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### 23. 10. 2026 — oprava kolize automatických statistik s DEV releasem
+- Při [hlavním deploymentu #39909065853](https://github.com/Boym323/AirRadarV2/actions/runs/39909065853) se po zelené CI a publish změnil `main` jen bot commitem statistik `6162c00c`; runner odmítl starší HEAD. Opraveno sdíleným concurrency lockem a přísnou výjimkou jen pro ověřené lineární bot commity, které mění výhradně README/metriky. Bez obecného oslabení immutable SHA nebo zásahu do V1/DB; nová CI/deploy přejímka musí ověřit nový commit.
+
+
 ### 23. 10. 2026 — G-03 uzavřena: HOTOVO 10/10, DEV ACCEPTED
 - **Referenční přijatý runtime:** `29ee2ee75feab9279123b77d50895d648c5419d7`. [Main deployment #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759) **6/6 PASS**, včetně self-hosted runneru a post-deploy ověření HTTP/SSE. Předchozí opravy a nasazení [#39905085484](https://github.com/Boym323/AirRadarV2/actions/runs/39905085484) a [#39905632012](https://github.com/Boym323/AirRadarV2/actions/runs/39905632012) také SUCCESS.
 - Ve skutečném DEV provozu doložen `stage=G-03`, `status=live`, read-only BEAST, snapshot/delta, prioritní ~15s heartbeat a reconnect. G-02 testovací služby inactive, V1/DB nezměněny.

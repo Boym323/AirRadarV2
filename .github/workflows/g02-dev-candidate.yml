@@ -158,8 +158,39 @@ jobs:
           if actual != expected:
               raise SystemExit('VERSION does not match GITHUB_SHA')
           PY
+          # A metrics-only main push may occur while the previous SHA is being
+          # built. Permit this narrow non-app race, never an unknown code commit.
           current_main="$(curl -fsSL -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${GH_TOKEN}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" | jq -r '.object.sha')"
-          test "$current_main" = "$GITHUB_SHA"
+          if [[ "$current_main" != "$GITHUB_SHA" ]]; then
+            echo "main se během vydávání posunul; kontroluji výhradně bot metriky."
+            compare="$(curl -fsSL -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${GH_TOKEN}" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/compare/${GITHUB_SHA}...${current_main}")"
+            jq -e --arg base "$GITHUB_SHA" --arg head "$current_main" '
+              .status == "ahead" and .base_commit.sha == $base and
+              .ahead_by > 0 and .ahead_by <= 3 and
+              (.commits | length) == .ahead_by and
+              .commits[-1].sha == $head
+            ' <<<"$compare" >/dev/null
+            parent="$GITHUB_SHA"
+            while IFS= read -r metric_sha; do
+              metadata="$(curl -fsSL -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer ${GH_TOKEN}" \
+                "https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${metric_sha}")"
+              jq -e --arg sha "$metric_sha" --arg parent "$parent" '
+                .sha == $sha and (.parents | length) == 1 and
+                .parents[0].sha == $parent and
+                .author.login == "github-actions[bot]" and
+                .committer.login == "github-actions[bot]" and
+                .commit.message == "docs: automatická aktualizace statistik vývoje" and
+                (.files | length) > 0 and
+                all(.files[];
+                  .status == "modified" and
+                  (.filename == "README.md" or (.filename | startswith("docs/metrics/"))))
+              ' <<<"$metadata" >/dev/null
+              parent="$metric_sha"
+            done < <(jq -r '.commits[].sha' <<<"$compare")
+            test "$parent" = "$current_main"
+            echo "::notice::Mezilehlé commity mění jen README/metriky; nasazuji aplikaci $GITHUB_SHA."
+          fi
           tar -tzf "$staging/$name" > "$staging/archive.list"
           grep -Eq '^\./(VERSION|airradarv2-engine|web/index\.html)$' "$staging/archive.list"
           # G03_STAGE_GATE_V1: fail BEFORE deploying if root installer is stale.
