@@ -4,4 +4,10 @@
 from pathlib import Path
 import runpy
 
-runpy.run_path(str(Path(__file__).with_name("verify-g03-runtime.py")), run_name="__main__")
+here = Path(__file__).resolve().parent
+for candidate in (here / "airradarv2-verify-g03-runtime.py", here / "verify-g03-runtime.py"):
+    if candidate.is_file():
+        runpy.run_path(str(candidate), run_name="__main__")
+        break
+else:
+    raise SystemExit("chybí stage-aware runtime verifier")
