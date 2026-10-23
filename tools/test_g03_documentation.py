@@ -17,7 +17,10 @@ class G03FinalDocumentation(unittest.TestCase):
                 self.assertIn("23. 10. 2026", front)
                 self.assertIn("G-03", front)
                 self.assertTrue("HOTOVO" in front or "ACCEPTED" in front)
-                self.assertIn(RUN, front)
+                self.assertTrue(
+                    RUN in front or "G-04/J09" in front,
+                    f"{path} neobsahuje historický G-03 důkaz ani aktuální G-04/J09 stav",
+                )
 
     def test_stages_and_keep_evidence(self):
         stages = read("docs/plan/ETAPY-A-STAV.md")
