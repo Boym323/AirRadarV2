@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-04 — etapa uzavřena v DEV (J09 ACCEPTED, 23. 10. 2026)
+- Vlastník přijal skutečný 1817,498s DEV canary: `eligible=committed=1312`, 61/61 SQL dávek, 0 dropů/SQL timeoutů, `pending=inflight=0`, `drained=true writer_finished=true`, systemd `Result=success`/`ExecMainStatus=0`/`ActiveState=inactive`, PostgreSQL 1490 → 2802 (+1312). Rust/Web/docs a izolované PostgreSQL CI PASS.
+- **DEV ACCEPTED s výslovnou evidenční výjimkou:** doložena vstupní DB baseline, chybí průběžné 5min host disk/WAL/CPU/RAM záznamy a závěrečný G-03 SSE. To není dodatečně vydáváno za naměřené hodnoty ani za PASS úplného evaluatoru. Vlastník na tomto podkladě uzavřel DEV G-04 a nepožaduje další SQL soak; omezení evidence se nepřenáší na produkční akceptaci.
+- J09 stav `ACCEPTED`, G-04 `DEV ACCEPTED`. PR #21 zatím bez merge, trvalé spouštění G-04, DB konfigurace, G-03, AirRadar V1 a PP Studio beze změny. Starší níže uvedené stavy `IN_PROGRESS` patří k historickým etapám testování.
+
 ### G-04 — opakovaný 30min DEV canary: historický writer a graceful drain PASS
 - Na novém immutable G-04 releasu z implementačního SHA `e186c54f8304c3e437f6ed9a54c6bd31722dde7c` (binární SHA-256 `7b7cbf291141bdfbfa4e3a4e8ea7c8914d687cbf1824089721afdcd43e5f5d1e`) správce doložil skutečný 1817,498s DEV canary: `eligible=1312`, `committed=1312`, `pending=0`, `inflight=0`, `coalesced=15239`, 61/61 SQL dávek bez chyby, nulové dropy/SQL timeouty, `connection=Up`.
 - Autonomní drain dokončil s `drained=true writer_finished=true`, `Result=success`, `ExecMainStatus=0`, `ActiveState=inactive`, bez systemd timeoutu. Read-only DB readback se změnil z 1490 na 2802 řádků (+1312), po běhu 326 identit; G-04 CPU time 6,085s, peak 3,8MB. **J09 označeno funkčně TESTED.**
