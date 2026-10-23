@@ -12,6 +12,23 @@ Journal prokázal dvě oddělené příčiny:
 
 Oprava patří ke krokům **G-03.06/G-03.08**, konzumenty jsou Rust HTTP/SSE, DEV Nginx a root-owned deployment bridge. Přidán je persistentní ticker, Nginx no-buffer konfigurace, retry po DHCP a rollback bez destruktivního restartu. Kontrolovaný ruční cutover existujícího immutable releasu na DEV proběhl a vrátil `stage=G-03`, `status=live`; finální důkaz musí pocházet z nového pushu do `main`.
 
+## Provozní přejímka DEV — PASS 23. 10. 2026
+
+Finální commit `749ffb942407f7c7cd88f3d983a72841664f52ee` je shodný s `main` i s `/opt/airradar-v2/current/VERSION`. GitHub Actions [run #39905632012](https://github.com/Boym323/AirRadarV2/actions/runs/39905632012) skončil `SUCCESS`; přímý runner journal potvrzuje start deploymentu v 07:29:05, přepnutí releasu v 07:29:08 a dokončení celého jobu v 07:29:44 bez ručního opakování.
+
+Na cílovém LXC byly po deploymentu ověřeny:
+
+- `airradarv2-engine.service`, Nginx a GitHub runner jsou `active`;
+- systemd používá `/opt/airradar-v2/current/airradarv2-engine --g03-live-api` a BEAST `192.168.1.50:30005`;
+- `/api/v1/health` vrací `stage=G-03`, `status=live`, `live_ingest=true`, `database_connected=false`;
+- root verifier prošel direct i proxované SSE: snapshot, epoch/seq, `aircraft=67`, `proxySeq=87`;
+- samostatný test přes `192.168.1.126:8080` obdržel při živých deltách heartbeat za **15,000 ms** a po reconnectu znovu snapshot, heartbeat a stejnou epochu;
+- G-02 služby během finální kontroly neběžely; G-04 databáze nebyla aktivována.
+
+Rollback důkaz: při incidentním selhání `03be...` journal zachytil obnovení předchozího symlinku `812a858237f7` a odstranění G-03 drop-inu; po bootu běžel G-00 health bez falešného `PASS`. Nová implementace navíc před rollback restartem kontroluje stav systemd a při shutdownu obnoví pointer i režim bez destruktivní transakce. Izolovaný úmyslný rollback na živém DEV nebyl proveden, aby se nerušil právě přijatý stav; riziko je kryto existujícími unit/regresními testy a incidentním důkazem.
+
+**Výsledek:** G-03 DEV HTTP/SSE a automatické `main → CI → immutable release → runner → LXC → healthcheck` jsou ACCEPTED pro vývojový LXC. Produkční AirRadar V1, jeho LXC, databáze a konfigurace readsb nebyly měněny.
+
 ## První implementační celek — G-03.01 až G-03.06 (CI PASS, dílčí přejímka)
 
 - **G-03.01 / J06:** Veřejná `PublicAircraft` projekce z již existující G-01 typové smlouvy; nevystavuje `receiverId`, transport, IP, raw BEAST zprávu ani privátní čas doručení. Stabilní epoch a monotónní sequence, RFC3339 UTC čas snímku.

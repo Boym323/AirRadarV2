@@ -8,6 +8,10 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 - Opraven heartbeat SSE: samostatný 15s ticker se po každé deltě neresetuje, takže aktivní stream nezůstane bez keepalive při živém 1Hz příjmu.
 - Nginx DEV dostává no-buffer hlavičky a systemd retry po DHCP boot race; rollback nepoužívá destruktivní `restart` transakci během shutdownu LXC.
 - Přidány diagnostické návratové kódy pro obsazený deployment lock a kontrola Nginx před přepnutím releasu. Změny se týkají G-03.06/.08 a G-13 bridge; V1, DB a receiver zůstávají nedotčené.
+- Následná oprava dává heartbeat explicitní prioritu před stále připravenými živými deltami; tím je odstraněna i možnost starvation při trvalém 1Hz provozu.
+
+### G-03 — DEV ACCEPTED po automatickém nasazení
+- Commit `749ffb942407f7c7cd88f3d983a72841664f52ee`, GitHub Actions run [#39905632012](https://github.com/Boym323/AirRadarV2/actions/runs/39905632012): validační CI, immutable release, publish a self-hosted DEV deployment **SUCCESS**.
 
 ### G-03 — obnoven automatický main → V2 DEV deployment
 - Release workflow po PASS CI opět publikuje SHA256 prerelease a spouští již registrovaný runner. Stage-aware root instalátor automaticky přepne `--g03-live-api` i immutable release a provede kompletní systemd+binary rollback při chybě. Source čte již schválený read-only G-02 BEAST (privátní LAN TCP 30005). Jednorázový root helper připravuje prostředí bez restartu; samotné automatické vydávání už nevyžaduje ruční schválení každého commitu.
