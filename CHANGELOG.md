@@ -4,6 +4,9 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-04 — opravená BEAST/CPR binárka musí být odděleně nasazena
+- Šablona ručně dozorovaného canary nyní ukazuje na SHA-pinned release `232d92840a0b053feba3ee13868d8b28be8ed821` (binární SHA-256 `fdb9e3e3c96372637e770d03f22fca1e0b947b1ab614a2ca65f413cab46b774a`). Deployment boundary test výslovně odmítá původní nefunkční `fe0ac66` cestu. V GitHubu není žádný důkaz, že byl nový release fyzicky instalován na DEV; nový live canary proto musí počkat na samostatnou kontrolu a lidský dohled.
+
 ### G-04 — oprava BEAST-only ukládání historie v PR #21
 - Opravena skutečná příčina `eligible=0`: validní polohy rekonstruované z DF17/CPR jsou označeny `positionOrigin=adsb_cpr`, ale čas zůstává pravdivě `timeBasis=server_arrival`; obecné serverové pozice zůstávají odmítnuté.
 - Zachovány jsou `rx-primary`, `beast_tcp`, shodný čerstvý čas, CRC/CPR a fyzikální plausibilita, jediný RAM stav, adaptivní sampler, bounded fronty a SQLx writer. Přidána regrese BEAST-only → RAM → sampler → SQLx → izolovaný PostgreSQL.
