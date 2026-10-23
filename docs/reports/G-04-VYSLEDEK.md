@@ -27,11 +27,11 @@ Read-only/transaction test z aplikačního hostitele (`192.168.1.126 → 192.168
 - `current_database() = airradar_v2_dev`, `current_user = airradar_v2_dev_app`, `pg_stat_ssl.ssl = false`;
 - `airradar_v2.flight_samples` existuje;
 - runtime má `USAGE` schématu a `SELECT, INSERT`, ale nemá `CREATE, UPDATE, DELETE, TRUNCATE`;
-- SQLx integrační test deduplikace a čtení prošel proti této DB; zápis byl idempotentní přes PK `(bucket_at, aircraft_key)`;
+- SQLx integrační test deduplikace a čtení prošel proti této DB; zápis byl idempotentní přes PK `(bucket_at, aircraft_key)` a zanechal jeden testovací vzorek `icao:fed123`;
 - transakční zápis/čtení vzorku proběhl a byl vrácen `ROLLBACK`, takže test nezanechal fixture;
 - špatné heslo a DDL runtime účtem byly odmítnuty.
 
-Heslo ani interní tajemství nejsou součástí reportu, Git historie ani CI logu. Migrace, role ani nastavení sdíleného DB LXC nebyly tímto testem měněny.
+Heslo ani interní tajemství nejsou součástí reportu, Git historie ani CI logu. Testovací vzorek byl vložen pouze do již připravené tabulky; migrace, role ani nastavení sdíleného DB LXC nebyly tímto testem měněny. Runtime účet nemá `DELETE`, proto se vzorek neodstraňoval destruktivním obcházením oprávnění.
 
 ## Co je implementováno
 
