@@ -360,7 +360,7 @@ mod tests {
         duplicate.transport = "beast_tcp".into();
         duplicate.time_basis = "server_arrival".into();
         assert!(!s.observe(&duplicate));
-        let mut corrupted = observation(1800.0, f64::NAN);
+        let corrupted = observation(1800.0, f64::NAN);
         assert!(!s.observe(&corrupted));
         assert_eq!(s.pending_len(), 1);
     }
