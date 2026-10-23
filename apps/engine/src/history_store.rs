@@ -14,7 +14,6 @@ fn dev_options(
     port: u16,
     username: &str,
     password: &str,
-    ca: &str,
 ) -> Result<PgConnectOptions, &'static str> {
     if host.is_empty()
         || host.trim() != host
@@ -24,9 +23,8 @@ fn dev_options(
         || port == 0
         || username.trim().is_empty()
         || password.is_empty()
-        || ca.trim().is_empty()
     {
-        return Err("G-04: neplatná konfigurace host/port/uživatel/heslo/CA");
+        return Err("G-04: neplatná konfigurace host/port/uživatel/heslo");
     }
     Ok(PgConnectOptions::new()
         .host(host)
@@ -34,8 +32,7 @@ fn dev_options(
         .username(username)
         .password(password)
         .database("airradar_v2_dev")
-        .ssl_mode(PgSslMode::VerifyFull)
-        .ssl_root_cert(ca))
+        .ssl_mode(PgSslMode::Disable))
 }
 
 /// Pouze explicitní G-04 DEV runtime, ověření certifikátu serveru zůstává povinné.
@@ -47,8 +44,7 @@ pub fn dev_pool_from_env() -> Result<PgPool, Box<dyn std::error::Error>> {
         .parse()?;
     let username = std::env::var("AIRRADAR_V2_DEV_DB_USER")?;
     let password = std::env::var("AIRRADAR_V2_DEV_DB_PASSWORD")?;
-    let ca = std::env::var("AIRRADAR_V2_DEV_CA_CERT")?;
-    let options = dev_options(&host, port, &username, &password, &ca)?;
+    let options = dev_options(&host, port, &username, &password)?;
     Ok(PgPoolOptions::new()
         .max_connections(2)
         .min_connections(0)
@@ -170,15 +166,13 @@ mod tests {
             5432,
             "airradar_v2_dev_app",
             "a:@ /?#%v2",
-            "/etc/airradar-v2/pg-ca.pem",
         );
         assert!(options.is_ok());
-        assert!(dev_options("", 5432, "user", "pass", "ca.pem").is_err());
-        assert!(dev_options("host", 0, "user", "pass", "ca.pem").is_err());
-        assert!(dev_options("host", 5432, "", "pass", "ca.pem").is_err());
-        assert!(dev_options("host", 5432, "user", "", "ca.pem").is_err());
-        assert!(dev_options("host", 5432, "user", "pass", "").is_err());
-        assert!(dev_options("postgres://host", 5432, "user", "pass", "ca.pem").is_err());
+        assert!(dev_options("", 5432, "user", "pass").is_err());
+        assert!(dev_options("host", 0, "user", "pass").is_err());
+        assert!(dev_options("host", 5432, "", "pass").is_err());
+        assert!(dev_options("host", 5432, "user", "").is_err());
+        assert!(dev_options("postgres://host", 5432, "user", "pass").is_err());
     }
 
     #[tokio::test]
