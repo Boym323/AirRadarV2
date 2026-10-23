@@ -44,6 +44,8 @@ Výchozí retence detailu je 30 dní. Skript `database/maintenance/g04_retention
 
 Denní `pg_dump -Fc` pouze V2 DB má být šifrovaně uložen mimo DB LXC; návrhová retence 14 denních + 8 týdenních a měsíční nezávislá obnova. Cíle RPO 24 h a RTO 2 h nejsou ověřené. PostgreSQL fyzické zálohy/PITR společného clusteru musí doložit DBA; neměnit globální WAL parametry.
 
+Připravený `tools/backup_g04_dev.sh` odmítne jinou databázi než `airradar_v2_dev`, vyžaduje `PGPASSFILE` mimo Git a provede pouze `pg_dump -Fc`. Jeho výstup musí být uložen v adresáři 0700, soubor 0600, následně šifrován a kopírován mimo DB LXC. Skript sám nic nemaže ani neobnovuje; restore patří do nově vytvořené izolované testovací databáze. Aktuální dump 23. 10. 2026 má SHA-256 `8419d06ab60736b47f6d54e0d7571e8d4beaf0c4e07d8d8d8d5e632bf37d51c8`; tento důkaz není potvrzením provozního RPO/RTO.
+
 ## 5. Důkazní brána před G-04 HOTOVO
 
 - ověřené G-04.01–.03 na reálném DB LXC bez změn `pg_hba.conf` či firewallu; existující síťový přístup a oprávnění DB musí být prokázána; pokud nejsou, G-04 zůstává BLOKOVÁNO;
@@ -61,5 +63,7 @@ Canary se smí spustit až po samostatném GO a pouze s `AIRRADAR_V2_HISTORY_TRA
 - [ ] Canary běží pouze časově omezeně, s monitoringem `pending`, `inflight`, `committed`, všech drop counters, SQL timeoutů a `connection=up`.
 - [ ] Na konci platí `pending=0`, `inflight=0`, `connection=up`, žádné SQL timeouty a ztráta nejvýše 1 %; jinak NO-GO.
 - [ ] Rollback znamená pouze zastavení opt-in writeru, návrat na `--g03-live-api`, kontrolu BEAST/RAM/SSE a nedestruktivní ponechání DB dat.
+
+Připravená jednotka `deploy/systemd/airradarv2-g04-canary.service` není součástí běžného G-03 installeru a nesmí být před GO instalována. Port `4114` je pouze interní loopback; G-03 `4101` se nemění. `tools/evaluate_g04_canary.py` je rozhodovací brána (exit 0 = PASS, exit 1 = FAIL) a `tools/rollback_g04_canary.sh` neobsahuje mazání DB dat. Požadované provozní důkazy: DB readback s novými reálnými ICAO, poslední `pending=0`/`inflight=0`, nulové SQL timeouty, `connection=up`, ztráta kandidátů nejvýše 1 %, stabilní G-03 heartbeat a známé host CPU/RAM/WAL.
 
 **Zákaz:** změnit V1, starou historii, DB nastavení jiných služeb či automaticky přesměrovat aplikaci na SQL.

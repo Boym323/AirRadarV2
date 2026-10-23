@@ -1,0 +1,29 @@
+[Unit]
+# Unit name: airradarv2-g04-canary.service; nikdy se nepovoluje automaticky.
+Description=AirRadar V2 DEV — G-04 historie canary (opt-in)
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/opt/airradar-v2/current/airradarv2-engine
+
+[Service]
+Type=simple
+User=airradarv2
+Group=airradarv2
+WorkingDirectory=/opt/airradar-v2/current
+EnvironmentFile=/etc/airradar-v2/g04-canary.env
+Environment=AIRRADAR_V2_BIND=127.0.0.1:4114
+Environment=AIRRADAR_V2_HISTORY_TRACE=1
+ExecStart=/opt/airradar-v2/current/airradarv2-engine --g04-dev-history
+Restart=on-failure
+RestartSec=5s
+StartLimitIntervalSec=300
+StartLimitBurst=3
+NoNewPrivileges=yes
+UMask=0027
+LimitNOFILE=4096
+MemoryMax=2G
+StandardOutput=journal
+StandardError=journal
+
+# Tato jednotka se do DEV LXC sama neinstaluje ani nepovoluje.
+# G-03 zůstává v airradarv2-engine.service na portu 4101.

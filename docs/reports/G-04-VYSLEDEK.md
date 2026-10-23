@@ -7,7 +7,7 @@
 
 | Krok | Stav | Důkaz / zbývá |
 |---|---|---|
-| G-04.01 | ČÁSTEČNĚ | Read-only audit PASS: PostgreSQL 17.10, DB 7 558 kB, `max_connections=100`, `shared_buffers=128MB`, `wal_level=replica`, `fsync/full_page_writes/synchronous_commit=on`; `archive_mode=off`, `archive_command=(disabled)`. Kapacita filesystemu, externí backup politika a RPO/RTO sdíleného LXC nejsou dostupné runtime účtem. |
+| G-04.01 | ČÁSTEČNĚ | Read-only audit PASS: PostgreSQL 17.10, DB 7 558 kB, `max_connections=100`, `shared_buffers=128MB`, `wal_level=replica`, `fsync/full_page_writes/synchronous_commit=on`; `archive_mode=off`, `archive_command=(disabled)`. Externí `pg_dump -Fc` je uložen mimo DB LXC, ale filesystemové volné místo, host CPU/RAM, WAL disk a provozní RPO/RTO sdíleného LXC nejsou dostupné runtime účtem. |
 | G-04.02 | TESTED pro DEV | Připojení přes `PgSslMode::Disable`, `pg_stat_ssl.ssl=false`, bez změny `pg_hba.conf`/firewallu; důvěryhodnost LAN je provozní riziko. |
 | G-04.03 | TESTED pro přístup | DB owner `airradar_v2_dev_migrator`, schema/table owner `postgres`; obě aplikační role jsou bez SUPERUSER/CREATEDB/CREATEROLE, runtime má pouze USAGE + SELECT/INSERT. Vlastnictví `postgres` neblokuje runtime, ale další DDL musí provést migrátor nebo vlastník s explicitním právem; vlastníci nebyli měněni. |
 | G-04.04 | TESTED v CI/DEV kompatibilitě | Jedna tabulka, 30s bucket, PK deduplikace, opakované `up` a odmítnutý destruktivní `down`; migrace na skutečné DB nebyla spuštěna. |
@@ -18,7 +18,7 @@
 | G-04.09 | TESTED izolovaně | 2 501 starých řádků v izolované DB se odstranilo dávkami 1 000/1 000/501, nový řádek zůstal, PK index zůstal jediným indexem; 360 448 B relation / 8 099 507 B DB. Sdílená DEV retence nebyla spuštěna. |
 | G-04.10 | TESTED izolovaně | Lokální PostgreSQL na `127.0.0.1:55432` byl zastaven/spuštěn; JSON/RAM/G-03 SSE zůstaly živé a po obnově se zapsal nový vzorek. Sdílený LXC nebyl dotčen. |
 | G-04.11 | TESTED izolovaně | `pg_dump -Fc` + `pg_restore` do samostatné lokální `airradar_v2_restore_ci`: schema, 1 řádek, 8 constraintů a 1 index PASS. RPO/RTO níže platí pouze pro tento malý izolovaný dump. |
-| G-04.12 | ČÁSTEČNĚ TESTED | Skutečný Rust→RAM sampler→bounded fronta→SQLx→PostgreSQL writer replay PASS; 1×/2×/4× hodnoty níže včetně ztrát bounded fronty, RSS, CPU ticků, WAL a SSE. Serverové CPU sdílené DB a skutečný DEV LXC zůstávají NEOVĚŘENO. |
+| G-04.12 | ČÁSTEČNĚ TESTED | Skutečný Rust→RAM sampler→bounded fronta→SQLx→PostgreSQL writer replay PASS; 1×/2×/4× hodnoty níže včetně ztrát bounded fronty, RSS, CPU ticků, WAL a SSE. Serverové CPU sdílené DB a skutečný DEV LXC zůstávají NEOVĚŘENO. Připraven je 30min evaluator; canary dosud neběžel. |
 
 ## Skutečné DEV ověření
 
@@ -79,6 +79,20 @@ Stejná deterministická 10min trasa obsahovala 60s obrat a stoupání; jde o re
 ## Backup a RPO/RTO
 
 Read-only audit skutečné DEV DB zjistil `archive_mode=off` a `archive_command=(disabled)`. Runtime účet nemá přístup ke cluster filesystemu ani k externí backup politice; existence denních dumpů, WAL/PITR a retenčních kopií tedy zůstává **NEZNÁMÁ**, nikoli PASS. Dříve naměřené dump/restore časy jsou pouze test izolovaného malého datasetu a nesmí se vydávat za provozní RPO/RTO.
+
+Přípravný read-only dump `pg_dump -Fc` z 23. 10. 2026 byl uložen mimo DB LXC do lokálního chráněného artefaktu (mode 0600, adresář 0700), velikost 4 165 B, SHA-256 `8419d06ab60736b47f6d54e0d7571e8d4beaf0c4e07d8d8d8d5e632bf37d51c8`. `pg_restore --list` prošel. Obnova proběhla pouze do nezávislé izolované databáze; to dokládá obnovitelnost tohoto snapshotu, nikoli denní plán, dostupnost kopií ani provozní RPO/RTO. Připravený `tools/backup_g04_dev.sh` vyžaduje chráněný `PGPASSFILE`, pevně kontroluje databázi `airradar_v2_dev` a nemění serverovou konfiguraci. Denní timer smí být zaveden až po schválení umístění, šifrování, retence 14 denních + 8 týdenních kopií a nezávislého měsíčního restore.
+
+Z runtime SQL účtu nebylo možné bezpečně zjistit volné místo filesystému DB LXC, CPU/RAM hostitele ani WAL disk. Tyto tři hodnoty jsou provozní blokace pro canary; nesmí se nahrazovat velikostí databáze 7 558 kB.
+
+### Vlastnictví objektů a migrace
+
+DB vlastní `airradar_v2_dev_migrator`, ale schéma `airradar_v2` a tabulku `flight_samples` vlastní `postgres`. Runtime role smí pouze `USAGE`, `SELECT` a `INSERT`; migrace proto nesmí běžet pod `airradar_v2_dev_app`. Každou budoucí změnu musí předem prověřit a provést DBA pod vlastníkem objektu nebo schváleným migračním účtem s dočasným, přesně omezeným DDL právem. V tomto PR se vlastníci ani granty nemění.
+
+### Připravený canary a hranice automatického deploymentu
+
+`deploy/systemd/airradarv2-g04-canary.service` je pouze neinstalovaná šablona: používá loopback port `4114`, chráněný `/etc/airradar-v2/g04-canary.env` mode 0600 a `--g04-dev-history`; nikdy se sama nepovoluje. G-03 zůstává v existující jednotce na portu `4101` s `--g03-live-api`. `tools/check-g04-deploy-boundary.mjs` kontroluje, že main auto-deploy ani G-03 instalační skripty neobsahují přepnutí na G-04. Merge do `main` tedy podle aktuální topologie nemá tento canary unit instalovat ani spouštět.
+
+Předpokladem 30minutového běhu je samostatný schválený readsb/BEAST vstup nebo bezpečně multiplexovaný feed; canary se nesmí spustit pouze přidáním druhého konzumenta produkčního receiveru. `tools/evaluate_g04_canary.py` vyžaduje diagnostický log, minimálně 1 800 s, SQL readback, G-03 SSE heartbeat, CPU/RAM a WAL měření. Vrací FAIL při ztrátě nad 1 %, timeoutu, trvalém růstu fronty, nedostupném spojení nebo chybějícím provozním důkazu. Návrat provádí výhradně `tools/rollback_g04_canary.sh`: zastaví opt-in unit, ověří aktivní G-03 a nemaže historii.
 
 ## Co je implementováno
 

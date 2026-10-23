@@ -39,6 +39,9 @@ jobs:
           python3 -m unittest discover -s tools -p 'test_g02_live_auto.py'
           bash -n deploy/install-g02-live-auto.sh
           bash -n deploy/install-dev-bundle.sh deploy/install-main-dev-auto.sh
+          bash -n tools/backup_g04_dev.sh tools/rollback_g04_canary.sh
+          python3 -m unittest discover -s tools -p 'test_evaluate_g04_canary.py'
+          node tools/check-g04-deploy-boundary.mjs
           python3 -m py_compile deploy/main-dev-auto-pull.py
           python3 -m unittest discover -s tools -p 'test_main_dev_auto.py'
           python3 -m unittest discover -s tools -p 'test_g02_live_install.py'

@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-04 — příprava bezpečného DEV canary
+- Přidána neinstalovaná systemd šablona G-04 canary na odděleném loopback portu, chráněný env vzor, automatické PASS/FAIL vyhodnocení 30minutového běhu a nedestruktivní rollback na G-03.
+- Přidán read-only `pg_dump -Fc` helper s pevným cílem `airradar_v2_dev`; skutečný dump byl uložen mimo DB LXC a obnoven pouze v izolaci. Provozní RPO/RTO, volné místo a CPU/RAM DB LXC zůstávají NEOVĚŘENO.
+- Statická brána potvrzuje, že merge/main auto-deploy neobsahuje `--g04-dev-history` a G-03 unit zůstává `--g03-live-api`. G-04/J09 zůstává `IN_PROGRESS`, canary nebyl spuštěn.
+
 ### G-04 — provozní audit a izolovaná výkonnostní brána (23. 10. 2026)
 - Na auditním SHA `4659d63822d842a69fb0e141b9dcf1c5480e381e` ověřena skutečná DEV DB `airradar_v2_dev`: PostgreSQL 17.10, `pg_stat_ssl.ssl=false`, role a omezená práva bez změny serveru.
 - V samostatném lokálním PostgreSQL clusteru PASS výpadek/reconnect writeru, JSON/RAM/G-03 API při nedostupné DB, `pg_dump -Fc`/`pg_restore` a replay 5000 cílů.
