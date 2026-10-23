@@ -69,8 +69,9 @@ Podle [ADR 0010](../adr/0010-g04-postradatelna-historie-bez-zaloh.md) se pro his
 
 Canary se smí spustit až po samostatném GO, při osobním dohledu správce a pouze s `AIRRADAR_V2_HISTORY_TRACE=1` v chráněném lokálním prostředí. Unit používá samostatný artefakt v `/opt/airradar-v2/canary/releases/<ověřený SHA>/`, nikdy `/opt/airradar-v2/current`, má `MemoryMax=2G`, `RuntimeMaxSec=1875` a `Restart=no`. Prvních 1 800 s je minimální důkazní běh; zbývajících 75 s pokrývá uzavření posledního 30s bucketu (nejpozději bucket + 35 s) a vyprázdnění fronty. Evaluator i tak vyžaduje minimálně 1 800 s skutečných časových důkazů a poslední `pending=0`/`inflight=0`. Výchozí akceptační limit je **nejvýše 1 % kandidátních historických vzorků** ztracených součtem `dropped_capacity`, `dropped_stale` a `dropped_writer`; jmenovatel je poslední Rust `eligible`, protože drop counter je jeho podmnožina. Předchozí hodnoty 18,1 % a 59,0 % z 2×/4× testu tento limit nesplňují.
 
-Evaluator vyžaduje v každém diagnostickém snapshotu všechny countery, `connection=up`
-a `observed_at`; musí existovat nejméně čtyři časově seřazené snapshoty pokrývající
+Evaluator vyžaduje v každém diagnostickém snapshotu všechny countery a `observed_at`;
+počáteční `connection=Unknown` smí být pouze **před prvním úspěšným SQL zápisem**,
+poté musí být `connection=Up` nepřetržitě až do konce; `Down` znamená FAIL. musí existovat nejméně čtyři časově seřazené snapshoty pokrývající
 nejméně 1 800 sekund a kumulativní countery nesmějí klesat. JSON metrics
 musí mít skutečné `started_at`/`finished_at` s rozdílem nejméně 1 800 sekund, nikoli
 jen ručně nastavené `duration_seconds`. PASS dále vyžaduje vyvážení
