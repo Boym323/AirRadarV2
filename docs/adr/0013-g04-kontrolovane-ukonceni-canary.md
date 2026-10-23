@@ -1,6 +1,6 @@
 # ADR 0013 — G-04: časově omezené řízené ukončení SQL writeru
 
-**Datum:** 23. 10. 2026. **Stav:** implementováno v PR #21, **živá přejímka nové implementace dosud neprovedena**. Platí jen pro opt-in `--g04-dev-history`.
+**Datum:** 23. 10. 2026. **Stav:** implementováno v PR #21, **živý DEV canary writeru a graceful drainu úspěšně proveden (J09 TESTED); úplná provozní G-04 akceptace čeká na DB host/SSE metriky**. Platí jen pro opt-in `--g04-dev-history`.
 
 ## Důvod
 
@@ -13,6 +13,10 @@ První živý BEAST/CPR canary úspěšně uložil 1 489 ze 1 502 kandidátů ve
 3. Drain smí trvat maximálně 60 s; dokončení writer tasku maximálně další 3 s. `pending=0` a `inflight=0`, potvrzený návrat workeru i závěrečný diagnostický snapshot jsou podmínkou úspěšného návratu procesu (`exit 0`).
 4. `RuntimeMaxSec=1875` zůstává **vnější ochranný limit** systemd. Pokud se drain nepodaří, neprohlašovat PASS. Při nouzovém `systemctl stop` zůstává prioritou rychlé zastavení G-04 i za cenu ztráty postradatelných posledních V2 vzorků; nesmí blokovat ochranu sdíleného PostgreSQL.
 5. Žádný nový proces, časovač, DB monitoring/SSH účet, index, migrace nebo zásah do G-03/V1/PP Studio. Starý release ponechat beze změny; novou binárku instalovat do samostatného připnutého adresáře a až po kontrolách opakovat ručně dozorovaný DEV canary.
+
+## Živý technický důkaz a zbývající provozní brána
+
+V reálném DEV BEAST/CPR canary 23. 10. 2026 byl potvrzen běh 1817,498 s, `eligible=1312`, `committed=1312`, `pending=0`, `inflight=0`, 61/61 SQL dávek, `sql_timeouts=0` a závěrečné `drained=true writer_finished=true`; systemd `Result=success` a databáze narostla z 1490 na 2802 řádků. **Technická část rozhodnutí tedy PASS.** Dosud nejsou doloženy průběžné 5min DB host metriky ani závěrečný G-03 SSE; nelze proto tvrdit celkový G-04 ACCEPTED.
 
 ## Regresní a provozní brána
 
