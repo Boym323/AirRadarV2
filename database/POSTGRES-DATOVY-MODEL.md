@@ -1,7 +1,7 @@
 # PostgreSQL V2 — deduplikovaný úsporný datový model a zálohy
 
 **Revize:** 22. 10. 2026 — RAM-first optimalizace; **nahrazuje původní pevné 15s vzorkování**.  
-**Stav:** schválený **návrh G-04**, nikoli vytvořená databáze, spuštěné SQLx migrace nebo benchmark.  
+**Stav:** schválený model G-04; DEV schema/tabulka byly auditně ověřeny a izolovaný benchmark/restore proběhl, nikoli však proti sdílenému LXC.
 **Primární KEEP:** J09, podpůrně S06/S09 a O07; lokální Rust RAM zůstává živou autoritou J05/J11.
 
 **Nejdříve přečíst:** [RAM cache, deduplikace a podmínky zápisu](../docs/technical/RAM-CACHE-A-DEDUP-ZAPISU.md). Všechny níže uvedené časové a kapacitní limity se mohou upravit po reálném měření; bez dalších produktových funkcí.

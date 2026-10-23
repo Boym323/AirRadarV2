@@ -3,7 +3,7 @@
 **Aktuální schválený rozsah:** 45 funkcí uvedených v [aktivní matici](../../contracts/feature-matrix.json).  
 **Projektový jazyk:** čeština `cs-CZ` v dokumentaci a výchozím UI, volitelně anglický překlad webu.  
 **Nový repozitář:** https://github.com/Boym323/AirRadarV2, referenční V1: https://github.com/Boym323/AirRadar.  
-**Stav 23. 10. 2026:** G-00, G-01 10/10, G-02 11/11 a **G-03 10/10 HOTOVO**; **DEV G-03 HTTP/SSE + automatický `main → LXC` deployment ACCEPTED** (Actions [#39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759), nasazené `29ee2ee7`). G-04 ROZPRACOVÁNO pouze v izolovaných SQL migracích; skutečná V2 DB a produkční G-13 zůstávají NEOVĚŘENO.
+**Stav 23. 10. 2026:** G-00, G-01 10/10, G-02 11/11 a **G-03 10/10 HOTOVO**; **DEV G-03 HTTP/SSE + automatický `main → LXC` deployment ACCEPTED** (Actions [#39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759), nasazené `29ee2ee7`). G-04 je ROZPRACOVÁNO: skutečný DEV audit a izolované provozní testy jsou doložené, ale J09/produkční G-13 zůstávají NEOVĚŘENO.
 
 ## 1. Cíl
 

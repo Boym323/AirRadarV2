@@ -4,6 +4,12 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-04 — provozní audit a izolovaná výkonnostní brána (23. 10. 2026)
+- Na auditním SHA `4659d63822d842a69fb0e141b9dcf1c5480e381e` ověřena skutečná DEV DB `airradar_v2_dev`: PostgreSQL 17.10, `pg_stat_ssl.ssl=false`, role a omezená práva bez změny serveru.
+- V samostatném lokálním PostgreSQL clusteru PASS výpadek/reconnect writeru, JSON/RAM/G-03 API při nedostupné DB, `pg_dump -Fc`/`pg_restore` a replay 5000 cílů.
+- Izolovaný dávkový benchmark 1×/2×/4× doložil wall, p95/p99, WAL, `pg_stat_io`, client CPU/RSS a dávky 128. Nejde o měření sdíleného DB LXC.
+- G-04/J09 zůstává `IN_PROGRESS`: chybí serverové CPU, 30denní retenční profil, srovnání 15/30/60 s a SQLx-writer benchmark. Writer nebyl aktivován v běžícím DEV.
+
 ### G-04 — stávající PostgreSQL pravidla beze změn
 - Vlastník odmítl konfigurovat nové `hostnossl` ani měnit `pg_hba.conf` či síťová pravidla. Ověření používá pouze existující autorizaci; při odmítnutí zůstane G-04.02 BLOKOVÁNO bez automatických serverových změn. Aktualizováno ADR 0009, runbook, kroky a technické kontrakty.
 
