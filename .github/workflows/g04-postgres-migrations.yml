@@ -12,6 +12,8 @@ on:
       - 'tools/test_g04_migrations.sh'
       - '.github/workflows/g04-postgres-migrations.yml'
       - 'apps/engine/src/history_store.rs'
+      - 'apps/engine/Cargo.toml'
+      - 'Cargo.lock'
       - 'apps/engine/src/history.rs'
       - 'apps/engine/src/ingest/state.rs'
       - 'tools/test_g04_backup_restore.sh'

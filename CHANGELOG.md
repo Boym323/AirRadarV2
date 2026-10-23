@@ -4,6 +4,10 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-04 — přihlášení k PostgreSQL jménem a heslem
+- SQLx DEV připojení přijímá samostatné proměnné HOST/PORT/USER/PASSWORD a cestu k CA certifikátu, bez hesla ve spojovacím URL; vyžaduje TLS `verify-full` a samostatnou databázi `airradar_v2_dev`. Přidán negativní test chybějících údajů a hesel se speciálními znaky. Skutečná DB se nemění.
+
+
 ### G-04 — izolovaný SQLx historický modul, rozpracované PR #21
 - Nový Rust RAM-first sampler a volitelný `--g04-dev-history`; omezený SQLx pool, 2048 coalescing, dávka 128, potvrzené SQL watermarks, 30s buckety, čtení historie v časovém okně bez dalších tabulek.
 - Oddělená PostgreSQL CI kontrola a nový retenční/backup runbook. Na stávajícím sdíleném DB LXC nebylo nic spuštěno; G-04.01–.03/.10/.12 zůstávají blokované provozními důkazy a fyzickým DEV měřením.

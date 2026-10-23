@@ -48,3 +48,7 @@ Původní regresní test topologie předpokládal přesně tři workflow; čtvrt
 
 ### Testovací brána
 Výchozí SQL migrace na PostgreSQL 18 prošla [CI #39856030008](https://github.com/Boym323/AirRadarV2/actions/runs/39856030008). Nové Rust/SQLx, retence a zálohování musí projít novým CI na finálním SHA; do té doby jsou TESTY NEOVĚŘENO. Měřená úspora SSD ani latence na DEV LXC dosud nejsou k dispozici. Žádný produkční ani DEV DB LXC nebyl změněn.
+
+## Upřesnění způsobu autentizace (23. 10. 2026)
+
+Pro G-04 bylo potvrzeno připojení pomocí uživatelského jména a hesla. Kód v PR #21 proto přijímá oddělené proměnné `AIRRADAR_V2_DEV_DB_HOST`, `_PORT`, `_USER`, `_PASSWORD` a cestu k důvěryhodné CA. Nevyžaduje URL s heslem, databáze zůstává pevně `airradar_v2_dev` a používá `sslmode=verify-full`. Jde o změnu konfigurace, nikoliv o vytvoření či přihlášení na skutečné DB LXC. Veřejné API, V1 a produkční databáze beze změny. Regresní test zahrnuje i heslo se znaky `:@ /?#%` a odmítnutí prázdných údajů.

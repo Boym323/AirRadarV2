@@ -5,17 +5,50 @@ use sqlx::{
     PgPool, Postgres, QueryBuilder, Row,
     postgres::{PgConnectOptions, PgPoolOptions, PgSslMode},
 };
-use std::{str::FromStr, time::Duration};
+use std::time::Duration;
 
-/// Aplikační databáze musí být vyhrazena V2 DEV a ověřena důvěryhodnou CA.
-/// SSL se vynucuje i tehdy, když je URL chybně nakonfigurovaná.
-pub fn dev_pool_from_env() -> Result<PgPool, Box<dyn std::error::Error>> {
-    let url = std::env::var("AIRRADAR_V2_DEV_DATABASE_URL")?;
-    let ca = std::env::var("AIRRADAR_V2_DEV_CA_CERT")?;
-    let options = PgConnectOptions::from_str(&url)?
+/// Přihlašovací údaje jsou samostatné systémové proměnné.
+/// URL s heslem se nepoužívá: heslo proto nemusí být URL-escaped.
+fn dev_options(
+    host: &str,
+    port: u16,
+    username: &str,
+    password: &str,
+    ca: &str,
+) -> Result<PgConnectOptions, &'static str> {
+    if host.is_empty()
+        || host.trim() != host
+        || host.chars().any(char::is_whitespace)
+        || host.contains("://")
+        || host.contains('/')
+        || port == 0
+        || username.trim().is_empty()
+        || password.is_empty()
+        || ca.trim().is_empty()
+    {
+        return Err("G-04: neplatná konfigurace host/port/uživatel/heslo/CA");
+    }
+    Ok(PgConnectOptions::new()
+        .host(host)
+        .port(port)
+        .username(username)
+        .password(password)
         .database("airradar_v2_dev")
         .ssl_mode(PgSslMode::VerifyFull)
-        .ssl_root_cert(ca);
+        .ssl_root_cert(ca))
+}
+
+/// Pouze explicitní G-04 DEV runtime, ověření certifikátu serveru zůstává povinné.
+/// Samotné jméno a heslo nezaručuje šifrování přenosu.
+pub fn dev_pool_from_env() -> Result<PgPool, Box<dyn std::error::Error>> {
+    let host = std::env::var("AIRRADAR_V2_DEV_DB_HOST")?;
+    let port: u16 = std::env::var("AIRRADAR_V2_DEV_DB_PORT")
+        .unwrap_or_else(|_| "5432".to_owned())
+        .parse()?;
+    let username = std::env::var("AIRRADAR_V2_DEV_DB_USER")?;
+    let password = std::env::var("AIRRADAR_V2_DEV_DB_PASSWORD")?;
+    let ca = std::env::var("AIRRADAR_V2_DEV_CA_CERT")?;
+    let options = dev_options(&host, port, &username, &password, &ca)?;
     Ok(PgPoolOptions::new()
         .max_connections(2)
         .min_connections(0)
@@ -129,6 +162,25 @@ mod tests {
             on_ground: None,
         };
     }
+    #[test]
+    fn g04_username_password_and_tls_config_validate_without_network() {
+        // Hesla mohou obsahovat znaky, které by vyžadovaly URL escapování.
+        let options = dev_options(
+            "postgres-dev.example.test",
+            5432,
+            "airradar_v2_dev_app",
+            "a:@ /?#%v2",
+            "/etc/airradar-v2/pg-ca.pem",
+        );
+        assert!(options.is_ok());
+        assert!(dev_options("", 5432, "user", "pass", "ca.pem").is_err());
+        assert!(dev_options("host", 0, "user", "pass", "ca.pem").is_err());
+        assert!(dev_options("host", 5432, "", "pass", "ca.pem").is_err());
+        assert!(dev_options("host", 5432, "user", "", "ca.pem").is_err());
+        assert!(dev_options("host", 5432, "user", "pass", "").is_err());
+        assert!(dev_options("postgres://host", 5432, "user", "pass", "ca.pem").is_err());
+    }
+
     #[tokio::test]
     async fn g04_postgres_batch_dedup_and_bounded_history() {
         let Ok(url) = std::env::var("AIRRADAR_G04_CI_DATABASE_URL") else {

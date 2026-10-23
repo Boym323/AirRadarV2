@@ -28,11 +28,16 @@ Schéma z `database/migrations/20261022210900_g04_initial.up.sql` má jediný pr
 `--g04-dev-history` zapne DEV historický writer a G-03 HTTP/SSE. Bez tohoto přepínače se SQL pool nevytváří. Konfigurační tajemství jsou výhradně v root-owned systémové konfiguraci, nikoli v Gitu, klientském Vite nebo v logu:
 
 ```text
-AIRRADAR_V2_DEV_DATABASE_URL=postgres://<runtime-role>:<secret>@<db-host>:5432/airradar_v2_dev
+AIRRADAR_V2_DEV_DB_HOST=postgres-dev.priklad.internal
+AIRRADAR_V2_DEV_DB_PORT=5432
+AIRRADAR_V2_DEV_DB_USER=airradar_v2_dev_app
+AIRRADAR_V2_DEV_DB_PASSWORD=<vložit pouze do chráněného lokálního env souboru>
 AIRRADAR_V2_DEV_CA_CERT=/etc/airradar-v2/pg-ca.pem
 ```
 
-Engine přepisuje jméno databáze na `airradar_v2_dev` a TLS na `verify-full`, pool má max. 2 spojení, krátký timeout. Nejprve otestovat pouze v izolovaném DEV prostředí; výpadek SQL nesmí ovlivnit příjem a SSE. Ověřit `pg_stat_ssl` na spojení runtime role, nezapisovat reálné adresy či hesla do reportu.
+Jméno a heslo jsou samostatné hodnoty (není potřeba URL escapování ani `DATABASE_URL`). V produkčním repozitáři nesmějí být skutečné údaje. Použít správně zabezpečený systemd `EnvironmentFile` (s přístupem jen pro oprávněný účet), případně systemd credentials; nikdy nezadávat tajemství do argumentů procesu, veřejných logů nebo do chatu. Přihlášení na PostgreSQL serveru vyžaduje `SCRAM-SHA-256` přes konkrétní `hostssl` pravidlo v `pg_hba.conf`. Heslo autentizuje, zatímco TLS ověřuje a šifruje transport.
+
+Engine používá pevně databázi `airradar_v2_dev`, TLS `verify-full` a CA certifikát serveru. Pool má max. 2 spojení a krátký timeout. Nejprve otestovat pouze v izolovaném DEV prostředí; výpadek SQL nesmí ovlivnit příjem a SSE. Ověřit `pg_stat_ssl` na spojení runtime role, nezapisovat reálné adresy či hesla do reportu.
 
 ## 4. Retence, indexy a obnova
 
