@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-04 — opakovaný 30min DEV canary: historický writer a graceful drain PASS
+- Na novém immutable G-04 releasu z implementačního SHA `e186c54f8304c3e437f6ed9a54c6bd31722dde7c` (binární SHA-256 `7b7cbf291141bdfbfa4e3a4e8ea7c8914d687cbf1824089721afdcd43e5f5d1e`) správce doložil skutečný 1817,498s DEV canary: `eligible=1312`, `committed=1312`, `pending=0`, `inflight=0`, `coalesced=15239`, 61/61 SQL dávek bez chyby, nulové dropy/SQL timeouty, `connection=Up`.
+- Autonomní drain dokončil s `drained=true writer_finished=true`, `Result=success`, `ExecMainStatus=0`, `ActiveState=inactive`, bez systemd timeoutu. Read-only DB readback se změnil z 1490 na 2802 řádků (+1312), po běhu 326 identit; G-04 CPU time 6,085s, peak 3,8MB. **J09 označeno funkčně TESTED.**
+- Předtestová DB baseline přes Proxmox Console prokázala 3,1GiB volného disku, WAL 59MiB a 796MiB dostupné RAM; **časovaná 5min DB host evidence a závěrečné G-03/SSE důkazy nejsou dosud doloženy**. Kompletní provozní `G-04 ACCEPTED` proto stále čeká na tyto důkazy a plný evaluator. PR #21 draft, žádný merge ani produktový release.
+
 ### G-04 — řízené vypuštění SQL writeru po 30 minutách (ADR 0013)
 - Nová opt-in G-04 implementace po 1 802 s vypne jen vlastní příjem, nejvýše 60 s čeká na uzavření 30s bucketů a potvrzení SQL ack, nejvýše 3 s na konec writeru; vypíše finální diagnostiku a při úspěchu ukončí proces s návratovým kódem 0. `systemd RuntimeMaxSec=1875`, nouzový rychlý STOP, G-03 a PostgreSQL zůstávají beze změn.
 - Doplněny Rust testy drainu (PASS ack, FAIL ack, nedoručený ack) a izolovaná PostgreSQL/SQLx regrese se skutečným závěrečným drainem. Nová systemd šablona odkazuje na zdrojový commit `e186c54f8304c3e437f6ed9a54c6bd31722dde7c` v odděleném immutable release. Binární SHA nové verze dosud neověřeno na DEV.
