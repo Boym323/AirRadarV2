@@ -1,7 +1,7 @@
 # G-04 — výsledek auditu a průběžná přejímka PostgreSQL historie
 
 **Aktualizace:** 23. 10. 2026. **Etapa:** ROZPRACOVÁNO. **Primární KEEP:** J09 (`IN_PROGRESS`).
-**Větev/PR:** `codex/g04-history-20261023`, draft PR #21. **Implementační SHA:** `fc0b2b5ad14ea9f6b7eced90b0b2179bbd6091dc`. **Předchozí benchmark binárky:** `36afdda5e752cc320496f44672a94e9434eea9eb`. **Měřicí harnessy/report:** `ebc20307c8962593c3895908f4b54e2f63aeaa8a` / `4e1ff8b7396f78377ce3f429c5fe663e8fd1df67`.
+**Větev/PR:** `codex/g04-history-20261023`, draft PR #21. **Implementační SHA:** `0fb135ee6e910e355034719be187ff6a13bd3e6e`. **Předchozí benchmark binárky:** `36afdda5e752cc320496f44672a94e9434eea9eb`. **Měřicí harnessy/report:** `ebc20307c8962593c3895908f4b54e2f63aeaa8a` / `4e1ff8b7396f78377ce3f429c5fe663e8fd1df67`.
 
 ## Audit G-04.01–G-04.12
 
@@ -51,7 +51,7 @@ CPU jsou součet Linux `/proc/<pid>/stat` user+system ticků procesu; nejsou to 
 
 ### Časově rozložený replay a férovost
 
-Harness `tools/benchmark_g04_writer_long.sh` na SHA `fc0b2b5ad14ea9f6b7eced90b0b2179bbd6091dc` poslal 16 atomických readsb snapshotů po 10 s, celkem 64 letadel. Každý snapshot měl nové časové pozorování a pohyb; po doběhnutí byly v izolované PostgreSQL ověřeny `rows=64`, `aircraft=64`, `min_rows_per_aircraft=3`, `max_rows_per_aircraft=3`, `avg_rows_per_aircraft=3,00`. Žádné letadlo nebylo zvýhodněno ani ztraceno; běh nepřekročil pending limit 2048.
+Harness `tools/benchmark_g04_writer_long.sh` na SHA `0fb135ee6e910e355034719be187ff6a13bd3e6e` poslal 16 atomických readsb snapshotů po 10 s, celkem 64 letadel. Každý snapshot měl nové časové pozorování a pohyb; po doběhnutí byly v izolované PostgreSQL ověřeny `rows=64`, `aircraft=64`, `min_rows_per_aircraft=3`, `max_rows_per_aircraft=3`, `avg_rows_per_aircraft=3,00`. Žádné letadlo nebylo zvýhodněno ani ztraceno; běh nepřekročil pending limit 2048.
 
 ### Interní diagnostika
 
