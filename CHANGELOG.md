@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-03 — oprava SSE heartbeat a odolnosti DEV deploymentu
+- Opraven heartbeat SSE: samostatný 15s ticker se po každé deltě neresetuje, takže aktivní stream nezůstane bez keepalive při živém 1Hz příjmu.
+- Nginx DEV dostává no-buffer hlavičky a systemd retry po DHCP boot race; rollback nepoužívá destruktivní `restart` transakci během shutdownu LXC.
+- Přidány diagnostické návratové kódy pro obsazený deployment lock a kontrola Nginx před přepnutím releasu. Změny se týkají G-03.06/.08 a G-13 bridge; V1, DB a receiver zůstávají nedotčené.
+
 ### G-03 — obnoven automatický main → V2 DEV deployment
 - Release workflow po PASS CI opět publikuje SHA256 prerelease a spouští již registrovaný runner. Stage-aware root instalátor automaticky přepne `--g03-live-api` i immutable release a provede kompletní systemd+binary rollback při chybě. Source čte již schválený read-only G-02 BEAST (privátní LAN TCP 30005). Jednorázový root helper připravuje prostředí bez restartu; samotné automatické vydávání už nevyžaduje ruční schválení každého commitu.
 

@@ -73,7 +73,7 @@ cat > /etc/systemd/system/airradarv2-engine.service <<'SERVICE'
 Description=AirRadar V2 DEV — Rust G-00/G-01 API
 After=network-online.target
 Wants=network-online.target
-ConditionPathIsExecutable=/opt/airradar-v2/current/airradarv2-engine
+ConditionPathExists=/opt/airradar-v2/current/airradarv2-engine
 
 [Service]
 Type=simple
@@ -94,6 +94,10 @@ StandardError=journal
 [Install]
 WantedBy=multi-user.target
 SERVICE
+
+install -d -o root -g root -m 0755 /etc/systemd/system/nginx.service.d
+install -o root -g root -m 0644 deploy/systemd/nginx-airradarv2.conf \
+  /etc/systemd/system/nginx.service.d/airradarv2.conf
 
 cat > /etc/nginx/sites-available/airradarv2-dev <<'NGINX'
 # DEV: pouze privátní IPv4; žádné naslouchání na globální IPv6.
@@ -116,6 +120,9 @@ server {
         proxy_set_header Connection "";
         proxy_buffering off;
         proxy_cache off;
+        proxy_set_header X-Accel-Buffering no;
+        add_header X-Accel-Buffering no always;
+        add_header Cache-Control "no-cache, no-transform" always;
         proxy_read_timeout 3600s;
     }
     location /api/ {

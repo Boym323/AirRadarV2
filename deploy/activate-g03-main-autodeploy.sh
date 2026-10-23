@@ -23,6 +23,7 @@ for p in deploy/install-dev-bundle.sh deploy/runner-deploy.sh deploy/archive_val
   test $(( 8#$permissions & 0022 )) -eq 0
 done
 grep -qF G03_STAGE_GATE_V2 deploy/install-dev-bundle.sh
+test -f deploy/systemd/nginx-airradarv2.conf
 bash -n deploy/install-dev-bundle.sh deploy/runner-deploy.sh
 python3 - <<'PY'
 from pathlib import Path
@@ -57,6 +58,10 @@ install -o root -g root -m 0644 deploy/archive_validation.py /usr/local/libexec/
 install -o root -g root -m 0755 deploy/verify-g03-runtime.py /usr/local/libexec/airradarv2-verify-g03-runtime.py
 install -o root -g root -m 0755 deploy/install-dev-bundle.sh /usr/local/libexec/airradarv2-main-deploy-install.sh
 install -o root -g root -m 0755 deploy/runner-deploy.sh /usr/local/libexec/airradarv2-runner-deploy.sh
+install -d -o root -g root -m 0755 /etc/systemd/system/nginx.service.d
+install -o root -g root -m 0644 deploy/systemd/nginx-airradarv2.conf \
+  /etc/systemd/system/nginx.service.d/airradarv2.conf
+systemctl daemon-reload
 grep -qF G03_STAGE_GATE_V2 /usr/local/libexec/airradarv2-main-deploy-install.sh
 echo "PASS: root-owned G-03 installer připraven, další main commit se automaticky nasadí."
 echo "Aktuální engine/systemd/nginx zůstávají beze změny až do GitHub release."

@@ -76,7 +76,9 @@ def json_get(url: str) -> dict:
 
 def first_stream_snapshot(url: str, require_accel: bool, require_heartbeat: bool = False) -> dict:
     request = urllib.request.Request(url, headers={"Accept": "text/event-stream"})
-    with urllib.request.urlopen(request, timeout=20 if require_heartbeat else 7) as response:
+    # 15s is the contract heartbeat interval; allow a full interval plus
+    # scheduling/proxy jitter so a busy DEV LXC is not called broken at 20s.
+    with urllib.request.urlopen(request, timeout=40 if require_heartbeat else 7) as response:
         if response.status != 200:
             raise ValueError(f"{url}: SSE HTTP {response.status}")
         if not response.headers.get("Content-Type", "").startswith("text/event-stream"):

@@ -28,11 +28,12 @@ test -f "$bundle.sha256"
 
 exec 9>/run/lock/airradarv2-main-deploy.lock
 if ! flock -n 9; then
+  echo "Deployment lock je obsazený jiným nasazením nebo G-02; opakovatelný konflikt (75)." >&2
   exit 75
 fi
 for service in airradarv2-g02-auto.service airradarv2-g02-live-auto.service; do
   if systemctl is-active --quiet "$service"; then
-    echo "$service právě běží; deployment bude opakován" >&2
+    echo "$service právě běží; deployment bude opakován (75), nikoli vydáván za chybu G-02" >&2
     exit 75
   fi
 done

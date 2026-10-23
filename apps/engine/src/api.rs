@@ -376,6 +376,7 @@ struct SseCursor {
     offset: usize,
     seq: u64,
     closing: bool,
+    heartbeat: time::Interval,
     // The watchdog releases the permit even if the HTTP server never polls
     // a blocked stream again. The stream ends at the next available poll.
     lease: Arc<ClientLease>,
@@ -463,6 +464,13 @@ async fn events(State(state): State<ApiState>, query: RawQuery) -> Response {
         seq: start.snapshot.seq,
         closing: false,
         lease: ClientLease::new(permit, SLOW_CLIENT_DEADLINE, SLOW_CLIENT_CHECK_INTERVAL),
+        // The ticker is part of the cursor, so frequent deltas cannot
+        // recreate/reset the 15s heartbeat timer. This is the key SSE
+        // liveness guarantee through Nginx.
+        heartbeat: time::interval_at(
+            Instant::now() + Duration::from_secs(15),
+            Duration::from_secs(15),
+        ),
     };
     let chunks = stream::unfold(cursor, |mut cursor| async move {
         // Called only when the downstream HTTP body requests more bytes.
@@ -510,7 +518,7 @@ async fn events(State(state): State<ApiState>, query: RawQuery) -> Response {
                         cursor.closing = true;
                     }
                 }
-                () = tokio::time::sleep(Duration::from_secs(15)) => {
+                _ = cursor.heartbeat.tick() => {
                     cursor.payload = Some(Bytes::from_static(HEARTBEAT));
                     cursor.offset = 0;
                 }

@@ -1,6 +1,16 @@
 # G-03 — výsledkový report Rust HTTP API a SSE
 
-**Datum:** 22. 10. 2026. **Stav:** **G-03 10/10 TESTED v izolované CI**; DEV LXC a nasazení **dosud NEPŘEVZATO**. **Vývoj izolován ve větvi**, bez nasazení a bez změny produkční V1 či G-02.11 live-soak.
+**Datum:** 23. 10. 2026. **Stav:** **G-03 10/10 TESTED v izolované CI; provozní přejímka NEOVĚŘENO do dokončení nového main CI/deploy běhu**. V1, DB a produkční receiver zůstaly nedotčené.
+
+## Incident 23. 10. 2026 — kořenová příčina a oprava
+
+Journal prokázal dvě oddělené příčiny:
+
+- V 07:00 se G-03 release `03be43a4a5793ebf73fad7ff5243f5148f4f3a3e` skutečně přepnul a nastartoval jako `--g03-live-api`. V 07:07 proběhlo vypnutí/restart LXC; runner obdržel standardní `Ctrl-C`, nikoli samovolné ukončení deploymentem. Rollback v téže shutdown transakci narazil na systemd chybu `restart is destructive`.
+- Po bootu DHCP přidělilo `192.168.1.126` až po startu Nginx. Jednorázový bind na konkrétní adresu proto selhal a Nginx zůstal inactive. Druhý Actions pokus tak skončil před G-03 healthcheckem zavádějícím exit 3.
+- Při živém 1Hz streamu se heartbeat timer vytvářel znovu po každé deltě. Heartbeat se tedy nikdy nedostal na řadu; verifier s 20s limitem mohl skončit timeoutem/předčasným EOF. To je skutečná příčina SSE chyby, nikoli G-02.
+
+Oprava patří ke krokům **G-03.06/G-03.08**, konzumenty jsou Rust HTTP/SSE, DEV Nginx a root-owned deployment bridge. Přidán je persistentní ticker, Nginx no-buffer konfigurace, retry po DHCP a rollback bez destruktivního restartu. Kontrolovaný ruční cutover existujícího immutable releasu na DEV proběhl a vrátil `stage=G-03`, `status=live`; finální důkaz musí pocházet z nového pushu do `main`.
 
 ## První implementační celek — G-03.01 až G-03.06 (CI PASS, dílčí přejímka)
 

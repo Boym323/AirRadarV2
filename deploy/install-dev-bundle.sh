@@ -19,7 +19,14 @@ if [[ "$AUTO" == 1 ]]; then
     exit 1
   }
   systemctl is-active --quiet airradarv2-engine.service
-  systemctl is-active --quiet nginx.service
+  if ! systemctl is-active --quiet nginx.service; then
+    echo "Nginx není aktivní; pokouším se jej spustit před nasazením." >&2
+    systemctl start nginx.service || {
+      systemctl status nginx.service --no-pager -l >&2 || true
+      echo "ERROR: Nginx nelze spustit; release se nepřepíná." >&2
+      exit 75
+    }
+  fi
   [[ "$(systemctl show -p User --value airradarv2-engine.service)" == airradarv2 ]] || exit 1
   [[ "$(systemctl show -p FragmentPath --value airradarv2-engine.service)" == "/etc/systemd/system/airradarv2-engine.service" ]] || exit 1
   grep -qF 'ExecStart=/opt/airradar-v2/current/airradarv2-engine' /etc/systemd/system/airradarv2-engine.service
@@ -101,8 +108,18 @@ rollback() {
       systemctl daemon-reload || true
     fi
     if [ "$activated" -eq 1 ] && [ -n "$old" ] && [ -d "$old" ]; then
-      systemctl restart airradarv2-engine || true
-      if nginx -t; then systemctl reload nginx || true; fi
+      # During an LXC/systemd shutdown a restart transaction is rejected as
+      # destructive. Do not hide the original failure or kill the runner;
+      # boot will start the restored symlink. In a running system use a
+      # sequential stop/start so no conflicting transaction is constructed.
+      system_state="$(systemctl is-system-running 2>/dev/null || true)"
+      if [[ "$system_state" != stopping && "$system_state" != stopping-to-reload ]]; then
+        systemctl stop airradarv2-engine.service || true
+        systemctl start airradarv2-engine.service || true
+        if nginx -t; then systemctl reload nginx || systemctl start nginx || true; fi
+      else
+        echo "INFO: systemd je ve stavu $system_state; rollback pointer/mode obnoven, restart odkládám na boot." >&2
+      fi
     fi
   fi
   if [ -d "$work" ]; then rm -rf -- "$work"; fi
