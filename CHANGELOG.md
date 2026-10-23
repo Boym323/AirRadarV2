@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-04 — izolovaný SQLx historický modul, rozpracované PR #21
+- Nový Rust RAM-first sampler a volitelný `--g04-dev-history`; omezený SQLx pool, 2048 coalescing, dávka 128, potvrzené SQL watermarks, 30s buckety, čtení historie v časovém okně bez dalších tabulek.
+- Oddělená PostgreSQL CI kontrola a nový retenční/backup runbook. Na stávajícím sdíleném DB LXC nebylo nic spuštěno; G-04.01–.03/.10/.12 zůstávají blokované provozními důkazy a fyzickým DEV měřením.
+
+
 ### 23. 10. 2026 — oprava kolize automatických statistik s DEV releasem
 - Při [hlavním deploymentu #39909065853](https://github.com/Boym323/AirRadarV2/actions/runs/39909065853) se po zelené CI a publish změnil `main` jen bot commitem statistik `6162c00c`; runner odmítl starší HEAD. Opraveno sdíleným concurrency lockem a přísnou výjimkou jen pro ověřené lineární bot commity, které mění výhradně README/metriky. Bez obecného oslabení immutable SHA nebo zásahu do V1/DB; nová CI/deploy přejímka musí ověřit nový commit.
 

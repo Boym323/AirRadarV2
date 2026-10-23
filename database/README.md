@@ -21,3 +21,8 @@ Bezpečné připojení a role: [POSTGRES-LXC.md](POSTGRES-LXC.md). Skutečný DB
 **Návrh před G-04:** [SQL tabulky, indexy, denní UTC partitions, sampling, retence a zálohy](POSTGRES-DATOVY-MODEL.md). **Ověření bezpečnosti LXC:** [TLS/firewall/role/backup](../docs/runbooks/POSTGRES-LXC-SECURITY-BACKUP.md). Žádné SQL zatím nebylo aplikováno.
 
 **Optimalizace CPU a SSD:** [RAM-first deduplikace a adaptivní historie](../docs/technical/RAM-CACHE-A-DEDUP-ZAPISU.md), [ADR 0007](../docs/adr/0007-ram-first-deduplikace-a-usporny-zapis.md). Obě dokumentace nahrazují starý plán fixního 15s INSERT. `node tools/check-eco-sampling.mjs` ověřuje pouze deterministický matematický model, ne skutečnou PostgreSQL zátěž.
+
+
+## G-04 implementace (PR #21)
+
+SQLx runtime a RAM sampler jsou izolovaně implementované. Jednorázová retence: [g04_retention_once.sql](maintenance/g04_retention_once.sql). Bezpečný [postup G-04](../docs/runbooks/G-04-POSTGRES-DEV-PRIJEMKA.md) vyžaduje schválenou samostatnou DEV databázi, TLS a test restore. Tento repozitář nenastavuje databázové LXC automaticky.
