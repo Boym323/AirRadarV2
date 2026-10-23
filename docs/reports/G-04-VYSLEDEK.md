@@ -52,3 +52,9 @@ Výchozí SQL migrace na PostgreSQL 18 prošla [CI #39856030008](https://github.
 ## Upřesnění způsobu autentizace (23. 10. 2026)
 
 Pro G-04 bylo potvrzeno připojení pomocí uživatelského jména a hesla. Kód v PR #21 proto přijímá oddělené proměnné `AIRRADAR_V2_DEV_DB_HOST`, `_PORT`, `_USER`, `_PASSWORD` a cestu k důvěryhodné CA. Nevyžaduje URL s heslem, databáze zůstává pevně `airradar_v2_dev` a používá `sslmode=verify-full`. Jde o změnu konfigurace, nikoliv o vytvoření či přihlášení na skutečné DB LXC. Veřejné API, V1 a produkční databáze beze změny. Regresní test zahrnuje i heslo se znaky `:@ /?#%` a odmítnutí prázdných údajů.
+
+## G-04.02 — změna bezpečnostního režimu na LAN bez TLS (23. 10. 2026)
+
+Vlastník výslovně zvolil připojení PostgreSQL v důvěryhodné privátní LAN **bez TLS** a přihlášení jménem a heslem. [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md) nahrazuje pro G-04 starší výchozí požadavek na `verify-full`. Implementace SQLx v izolovaném PR #21 nastavuje `PgSslMode::Disable`, používá oddělené HOST/PORT/USER/PASSWORD, nepotřebuje CA certifikát. Přejímka musí potvrdit `pg_stat_ssl.ssl=false`, `hostnossl` + SCRAM-SHA-256, konkrétní povolenou IP /32 a odmítnutí chybného hesla či jiné DB. **SCRAM nešifruje SQL ani letová data**; přijatá výjimka je platná jen pro důvěryhodnou izolovanou síť. Na skutečném sdíleném DB LXC nebylo nic upraveno.
+
+Kontrola fyzické sítě, PostgreSQL rolí, firewallu, záloh a zátěže na cílovém LXC zůstává NEOVĚŘENO. CI test přímého SQLx spojení ověřuje `pg_stat_ssl.ssl=false` pouze na jednorázovém lokálním PostgreSQL 18 v GitHub Actions, nikoliv na skutečné DB.

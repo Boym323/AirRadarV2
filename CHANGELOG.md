@@ -4,6 +4,10 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-04.02 — výslovně zvolená důvěryhodná LAN bez TLS (ADR 0009)
+- SQLx používá `PgSslMode::Disable`, přihlašovací jméno a heslo z chráněných proměnných, bez CA souboru. Rozhodnutí je omezené na izolovanou V2 DEV LAN; `hostnossl` + SCRAM-SHA-256, firewall /32 a oddělená DB zůstávají povinné. CI obsahuje kontrolu `pg_stat_ssl.ssl=false`. Skutečný databázový server a V1 se nemění.
+
+
 ### G-04 — přihlášení k PostgreSQL jménem a heslem
 - SQLx DEV připojení přijímá samostatné proměnné HOST/PORT/USER/PASSWORD a cestu k CA certifikátu, bez hesla ve spojovacím URL; vyžaduje TLS `verify-full` a samostatnou databázi `airradar_v2_dev`. Přidán negativní test chybějících údajů a hesel se speciálními znaky. Skutečná DB se nemění.
 
