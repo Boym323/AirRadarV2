@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { RadarMap, type MapStyle } from "./radar/RadarMap";
 import { useRadarStream } from "./radar/use-radar-stream";
 import type { Aircraft } from "./radar/aircraft-store";
@@ -18,6 +18,14 @@ export default function App() {
   const [follow, setFollow] = useState(false);
   const [style, setStyle] = useState<MapStyle>("liberty");
   const selected = frame.aircraft.find(a => a.id === selectedId) ?? null;
+  // Nezachovávat výběr zaniklého cíle a při jeho případném návratu
+  // automaticky neskákat na jiný/stale objekt se stejnou identitou.
+  useEffect(() => {
+    if (status === "live" && selectedId && frame.epoch && !selected) {
+      setSelectedId(null);
+      setFollow(false);
+    }
+  }, [frame.epoch, selected, selectedId, status]);
   const shown = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("cs-CZ");
     return frame.aircraft.filter(a =>
