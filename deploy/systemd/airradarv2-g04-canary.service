@@ -6,18 +6,18 @@ Wants=network-online.target
 StartLimitIntervalSec=300
 StartLimitBurst=3
 # Canary artefact is immutable and SHA-bound; it is never the G-03 current release.
-# G-04/ADR 0012 fixed BEAST/CPR history commit 232d928; old fe0ac66 must not be started.
-ConditionPathExists=/opt/airradar-v2/canary/releases/232d92840a0b053feba3ee13868d8b28be8ed821/airradarv2-engine
+# G-04/ADR 0013: includes bounded graceful SQL drain; old fe0ac66/232d928 not for final canary.
+ConditionPathExists=/opt/airradar-v2/canary/releases/e186c54f8304c3e437f6ed9a54c6bd31722dde7c/airradarv2-engine
 
 [Service]
 Type=simple
 User=airradarv2
 Group=airradarv2
-WorkingDirectory=/opt/airradar-v2/canary/releases/232d92840a0b053feba3ee13868d8b28be8ed821
+WorkingDirectory=/opt/airradar-v2/canary/releases/e186c54f8304c3e437f6ed9a54c6bd31722dde7c
 EnvironmentFile=/etc/airradar-v2/g04-canary.env
 Environment=AIRRADAR_V2_BIND=127.0.0.1:4114
 Environment=AIRRADAR_V2_HISTORY_TRACE=1
-ExecStart=/opt/airradar-v2/canary/releases/232d92840a0b053feba3ee13868d8b28be8ed821/airradarv2-engine --g04-dev-history
+ExecStart=/opt/airradar-v2/canary/releases/e186c54f8304c3e437f6ed9a54c6bd31722dde7c/airradarv2-engine --g04-dev-history
 # ADR 0011: ručně dozorovaný canary bez automatického SSH/DB monitoru.
 # Disk/WAL/CPU/RAM databázového LXC nemají automatickou stop ochranu; nutný osobní dohled.
 # Jednorázový, tvrdě omezený běh. Selhání nesmí restartovat canary ani G-03.
