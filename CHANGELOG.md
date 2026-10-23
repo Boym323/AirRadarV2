@@ -4,6 +4,10 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-04 — ADR 0010: postradatelná historie V2 bez povinných záloh
+- Vlastník výslovně přijal možnost ztráty celé historické databáze V2; denní dump, PITR a provozní RPO/RTO nejsou přejímací bránou. Izolovaný pg_dump/pg_restore zůstává technickým důkazem G-04.11, backup timer se nezavádí. Zůstává povinné sledovat volné místo/WAL/CPU/RAM sdíleného LXC a bezpečný canary/rollback. Zálohování PP Studio, AirRadar V1 a ostatních databází se nemění.
+
+
 ### G-04 — příprava bezpečného DEV canary
 - Přidána neinstalovaná systemd šablona G-04 canary na odděleném loopback portu, chráněný env vzor, automatické PASS/FAIL vyhodnocení 30minutového běhu a nedestruktivní rollback na G-03.
 - Přidán read-only `pg_dump -Fc` helper s pevným cílem `airradar_v2_dev`; skutečný dump byl uložen mimo DB LXC a obnoven pouze v izolaci. Provozní RPO/RTO, volné místo a CPU/RAM DB LXC zůstávají NEOVĚŘENO.

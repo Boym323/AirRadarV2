@@ -92,11 +92,11 @@ Při `AIRRADAR_V2_HISTORY_TRACE=1` Rust periodicky (15 s) loguje pouze číseln�
 
 Stejná deterministická 10min trasa obsahovala 60s obrat a stoupání; jde o reprodukovatelný kvalitativní replay skriptu `ebc20307c8962593c3895908f4b54e2f63aeaa8a`, ne o skutečný RF záznam. Agresivnější 60s profil proto nebyl plošně povolen.
 
-## Backup a RPO/RTO
+## Backup — výjimka pro postradatelnou historii V2
 
-Read-only audit skutečné DEV DB zjistil `archive_mode=off` a `archive_command=(disabled)`. Runtime účet nemá přístup ke cluster filesystemu ani k externí backup politice; existence denních dumpů, WAL/PITR a retenčních kopií tedy zůstává **NEZNÁMÁ**, nikoli PASS. Dříve naměřené dump/restore časy jsou pouze test izolovaného malého datasetu a nesmí se vydávat za provozní RPO/RTO.
+Vlastník schválil [ADR 0010](../adr/0010-g04-postradatelna-historie-bez-zaloh.md): stará historie letadel AirRadar V2 je postradatelná. Denní zálohy, PITR a provozní RPO/RTO nejsou vyžadovány; při havárii může zmizet celá historie. Dřívější izolované pg_dump/pg_restore důkazy G-04.11 zůstávají platné, nejde však o provozní backup politiku. Zálohy ostatních databází a sdílený PostgreSQL nejsou dotčeny.
 
-Přípravný read-only dump `pg_dump -Fc` z 23. 10. 2026 byl uložen mimo DB LXC do lokálního chráněného artefaktu (mode 0600, adresář 0700), velikost 4 165 B, SHA-256 `8419d06ab60736b47f6d54e0d7571e8d4beaf0c4e07d8d8d8d5e632bf37d51c8`. `pg_restore --list` prošel. Obnova proběhla pouze do nezávislé izolované databáze; to dokládá obnovitelnost tohoto snapshotu, nikoli denní plán, dostupnost kopií ani provozní RPO/RTO. Připravený `tools/backup_g04_dev.sh` vyžaduje chráněný `PGPASSFILE`, pevně kontroluje databázi `airradar_v2_dev` a nemění serverovou konfiguraci. Denní timer smí být zaveden až po schválení umístění, šifrování, retence 14 denních + 8 týdenních kopií a nezávislého měsíčního restore.
+Přípravný read-only dump `pg_dump -Fc` z 23. 10. 2026 byl uložen mimo DB LXC do lokálního chráněného artefaktu (mode 0600, adresář 0700), velikost 4 165 B, SHA-256 `8419d06ab60736b47f6d54e0d7571e8d4beaf0c4e07d8d8d8d5e632bf37d51c8`. `pg_restore --list` prošel. Obnova proběhla pouze do nezávislé izolované databáze; to dokládá obnovitelnost tohoto snapshotu, nikoli denní plán, dostupnost kopií ani provozní RPO/RTO. Připravený `tools/backup_g04_dev.sh` vyžaduje chráněný `PGPASSFILE`, pevně kontroluje databázi `airradar_v2_dev` a nemění serverovou konfiguraci. Pro historii V2 se žádný pravidelný backup timer nezavádí (ADR 0010).
 
 Z runtime SQL účtu nebylo možné bezpečně zjistit volné místo filesystému DB LXC, CPU/RAM hostitele ani WAL disk. Tyto tři hodnoty jsou provozní blokace pro canary; nesmí se nahrazovat velikostí databáze 7 558 kB.
 
@@ -114,18 +114,18 @@ Předpokladem 30minutového běhu je samostatný schválený readsb/BEAST vstup 
 
 PR obsahuje `history.rs` (RAM sampler), `history_store.rs` (SQLx pool, batch INSERT, query a omezený retry), napojení do jediného ingest actoru, retenční SQL a izolované CI/restore testy. G-02 RAM/readsb/BEAST a G-03 HTTP/SSE zůstávají opt-in a databáze není aktivní v běžném režimu.
 
-Destruktivní `.down.sql` migrace je nyní fail-closed; rollback historie se provádí pouze `pg_dump`/`pg_restore` do nové izolované databáze. `up.sql` je idempotentní vůči existující tabulce, ale před ostrým spuštěním musí migrační účet ověřit kompatibilitu sloupců a omezení.
+Destruktivní `.down.sql` migrace je fail-closed; rollback canary pouze zastaví opt-in writer a ponechá G-03 v provozu. Při ztrátě V2 DB lze po schválení DBA obnovit jen prázdné schéma; stará historie může být neobnovitelná (ADR 0010). `up.sql` je idempotentní vůči existující tabulce, ale před ostrým spuštěním musí migrační účet ověřit kompatibilitu sloupců a omezení.
 
 ## Neuzavřené brány
 
-Stále chybí ověřená cluster backup politika sdíleného LXC, provozní RPO/RTO, skutečný RF replay pro sampling a měření serverového CPU. Ztráty 18,1 % při 2× a 59,0 % při 4× jsou mimo navrženou canary toleranci; writer proto nesmí být aktivován bez časově omezeného scénáře s limitem ztrát. G-04 není HOTOVO a J09 není TESTED/ACCEPTED.
+**Zálohy postradatelné V2 historie nejsou blokací** dle ADR 0010. Chybí read-only důkaz volného místa/WAL/CPU/RAM sdíleného DB LXC, schválený budoucí migrační postup, bezpečný samostatný feed a skutečný 30minutový canary. RF replay před canary zůstává neověřen. Ztráty 18,1 % při 2× a 59,0 % při 4× jsou mimo navrženou canary toleranci; writer proto nesmí být aktivován bez časově omezeného scénáře s limitem ztrát. G-04 není HOTOVO a J09 není TESTED/ACCEPTED.
 
 ## Brána prvního DEV canary — zatím NO-GO
 
 Před samostatným GO musí být doloženo:
 
 1. schválený vlastník schématu/tabulky nebo potvrzený migrační postup pro objekty vlastněné `postgres`;
-2. potvrzené externí zálohy, RPO/RTO a postup obnovy; aktuální `archive_mode=off` samo o sobě není záloha;
+2. potvrzené přijetí úplné ztráty historie V2 dle ADR 0010; provozní backup/RPO/RTO se nepožadují. Namísto nich doložit volnou kapacitu sdílené DB (disk, WAL, CPU/RAM);
 3. canary dataset s minimálně 100 letadly a časovým replayem, `dropped_capacity + dropped_stale + dropped_writer <= 1 %` všech kandidátních historických vzorků;
 4. žádné `sql_timeouts`, `connection=down` nebo růst `pending/inflight` na konci canary;
 5. CPU/RAM aplikace, SQL latency p95/p99, WAL a SSE heartbeat bez regresního překročení schválených limitů;
@@ -135,7 +135,7 @@ Aktuální 2× a 4× ztráty tento limit nesplňují. Doporučení je **NO-GO**,
 
 ### Bezpečný postup další aktivace
 
-1. Správce potvrdí migrátor, backup/RPO/RTO a izolaci databáze bez změny V1, `pg_hba.conf` nebo firewallu.
+1. Správce potvrdí postup budoucích migrací a bezpečnou kapacitu sdíleného DB LXC. Pro historii V2 nejsou vyžadovány zálohy/RPO/RTO (ADR 0010). V1, `pg_hba.conf` a firewall se nemění.
 2. Na nové/ověřené DEV DB proběhne pouze kompatibilitní migrace a negativní test práv.
 3. V izolaci se změří restart/timeout/reconnect, restore a benchmarky; živý příjem/SSE musí pokračovat při SQL degradaci.
 4. Teprve po písemném schválení se spustí `--g04-dev-history`; návrat je zastavení tohoto opt-in procesu a návrat na `--g03-live-api`.
