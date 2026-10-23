@@ -102,12 +102,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let config = ingest::supervisor::Config::from_env()?;
         let pool = history_store::dev_pool_from_env()?;
         let (feed, publisher) = api::new();
-        let bind = std::env::var("AIRRADAR_V2_BIND")
-            .unwrap_or_else(|_| "127.0.0.1:4102".to_owned());
+        let bind =
+            std::env::var("AIRRADAR_V2_BIND").unwrap_or_else(|_| "127.0.0.1:4102".to_owned());
         let listener = tokio::net::TcpListener::bind(bind).await?;
         tokio::spawn(async move {
-            if let Err(error) =
-                ingest::supervisor::run_with_publisher_and_history(config, Some(publisher), Some(pool)).await
+            if let Err(error) = ingest::supervisor::run_with_publisher_and_history(
+                config,
+                Some(publisher),
+                Some(pool),
+            )
+            .await
             {
                 eprintln!("G-04 ingest task ended: {error}");
             }

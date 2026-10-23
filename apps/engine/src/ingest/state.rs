@@ -1,7 +1,7 @@
 //! G-02.06/07/09: jediný vlastník kanonického AircraftState, žádné SQL.
 use crate::contract::{FlightData, Observation, Position, PublicAircraft, merge};
-use std::collections::BTreeMap;
 use crate::history::HistorySampler;
+use std::collections::BTreeMap;
 
 pub const MAX_AIRCRAFT: usize = 5000;
 pub const TRACK_TTL_SECONDS: f64 = 60.0;

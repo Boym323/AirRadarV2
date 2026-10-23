@@ -97,8 +97,14 @@ pub async fn read_history(
                 latitude: r.try_get("latitude").map_err(|_| "latitude")?,
                 longitude: r.try_get("longitude").map_err(|_| "longitude")?,
                 altitude_ft: r.try_get("altitude_ft").map_err(|_| "altitude")?,
-                ground_speed_kt: r.try_get::<Option<f32>, _>("ground_speed_kt").map_err(|_| "speed")?.map(f64::from),
-                track_deg: r.try_get::<Option<f32>, _>("track_deg").map_err(|_| "track")?.map(f64::from),
+                ground_speed_kt: r
+                    .try_get::<Option<f32>, _>("ground_speed_kt")
+                    .map_err(|_| "speed")?
+                    .map(f64::from),
+                track_deg: r
+                    .try_get::<Option<f32>, _>("track_deg")
+                    .map_err(|_| "track")?
+                    .map(f64::from),
                 squawk: r.try_get("squawk").map_err(|_| "squawk")?,
                 on_ground: r.try_get("on_ground").map_err(|_| "ground")?,
             })
@@ -112,9 +118,16 @@ mod tests {
     #[test]
     fn empty_batch_is_never_a_transaction() {
         let _ = Sample {
-            bucket_at: 0, aircraft_key: "icao:abcdef".to_string(), position_at: 0.0,
-            latitude: 0.0, longitude: 0.0, altitude_ft: None,
-            ground_speed_kt: None, track_deg: None, squawk: None, on_ground: None,
+            bucket_at: 0,
+            aircraft_key: "icao:abcdef".to_string(),
+            position_at: 0.0,
+            latitude: 0.0,
+            longitude: 0.0,
+            altitude_ft: None,
+            ground_speed_kt: None,
+            track_deg: None,
+            squawk: None,
+            on_ground: None,
         };
     }
     #[tokio::test]
@@ -128,20 +141,43 @@ mod tests {
             bucket_at: 1792670400,
             aircraft_key: "icao:fed123".into(),
             position_at: 1792670405.0,
-            latitude: 49.2, longitude: 17.3,
-            altitude_ft: Some(10000), ground_speed_kt: Some(200.0),
-            track_deg: Some(89.0), squawk: Some("7000".into()),
+            latitude: 49.2,
+            longitude: 17.3,
+            altitude_ft: Some(10000),
+            ground_speed_kt: Some(200.0),
+            track_deg: Some(89.0),
+            squawk: Some("7000".into()),
             on_ground: Some(false),
         };
-        assert_eq!(insert_batch(&pool, std::slice::from_ref(&sample)).await.unwrap(), 1);
-        assert_eq!(insert_batch(&pool, std::slice::from_ref(&sample)).await.unwrap(), 0);
+        assert_eq!(
+            insert_batch(&pool, std::slice::from_ref(&sample))
+                .await
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            insert_batch(&pool, std::slice::from_ref(&sample))
+                .await
+                .unwrap(),
+            0
+        );
         let list = read_history(&pool, &sample.aircraft_key, 1792670400.0, 1792670430.0, 10)
-            .await.unwrap();
+            .await
+            .unwrap();
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].latitude, sample.latitude);
         assert_eq!(list[0].aircraft_key, sample.aircraft_key);
-        assert!(read_history(&pool, &sample.aircraft_key, 1792670430.0, 1792670450.0, 10).await.unwrap().is_empty());
-        assert!(read_history(&pool, &sample.aircraft_key, 1792670400.0, 1792670430.0, 0).await.is_err());
+        assert!(
+            read_history(&pool, &sample.aircraft_key, 1792670430.0, 1792670450.0, 10)
+                .await
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            read_history(&pool, &sample.aircraft_key, 1792670400.0, 1792670430.0, 0)
+                .await
+                .is_err()
+        );
         pool.close().await;
     }
 }
