@@ -2,6 +2,44 @@
 
 **Aktualizace:** 23. 10. 2026. **Etapa:** ROZPRACOVÁNO. **Primární KEEP:** J09 (`IN_PROGRESS`).
 
+## Aktuální kontrola po přerušeném SSH pokusu — NO-GO
+
+Kontrola proběhla 23. 10. 2026 přímo na `lo-dev-airradarv2` v 17:54 SELČ,
+bez restartu nebo změny služby. `airradarv2-g04-canary.service` je
+`loaded/static/inactive/dead`, `MainPID=0`, `Result=success` a na `127.0.0.1:4114`
+není listener. V journald není žádný start, stop ani chyba procesu G-04; jsou tam
+pouze historická upozornění systemd při reloadu. G-03 zůstává `active/running`, PID
+`8924`, s `--g03-live-api`; health vrátil `status=live`, `stage=G-03`,
+`live_ingest=true`, `database_connected=false`. Krátké read-only čtení SSE vrátilo
+živý `snapshot`. Nginx je `active`.
+
+Přerušený SSH příkaz nelze z journald zpětně identifikovat jako jediný přesný řádek,
+protože interaktivní shellový výstup se do služby nezapisuje. Reprodukovatelná
+non-zero větev je test `test -w /var/lib/airradar-v2/g04-canary` pod uživatelem
+`airradarv2`: vrací `1` (`Permission denied`). Při `set -euo pipefail` to ukončí
+relaci. Nejde však o chybu G-04: adresář je `root:airradarv2`, `0750`, a zdrojový
+G-04 do něj nezapisuje; zapisuje pouze do PostgreSQL a diagnostikuje přes journald.
+Oprávnění proto nebyla změněna.
+
+Připravená binárka odpovídá požadovanému SHA-256
+`1dd11387635eeb16040b69f33e09a6108d1fecf2491dde56699cc9b5971ba21b`; release je
+mimo `/opt/airradar-v2/current`, `root:root`, `0755`. Env soubor existuje jako
+`root:root`, `0600`, bez výpisu hodnot. Unit zachovává port 4114, `CPUQuota=50%`,
+`MemoryMax=2G`, `RuntimeMaxSec=1875` a `Restart=no`.
+
+Read-only SQL audit přes existující runtime přístup byl úspěšný: PostgreSQL 17.10,
+`airradar_v2_dev`, role `airradar_v2_dev_app`, `pg_stat_ssl.ssl=false`, databáze
+`7558 kB`, `airradar_v2.flight_samples` má 1 řádek, 4 aktivní připojení,
+`wal_bytes=163397425457`, `archive_mode=off`, `fsync=on`,
+`full_page_writes=on`, `synchronous_commit=on`, `max_wal_size=1 GB`.
+`pg_isready` i TCP spojení na `192.168.1.55:5432` prošly.
+
+Chybí však aktuální read-only měření DB LXC: volné místo datového a WAL filesystemu,
+load/CPU, dostupná RAM a možnost ručního dohledu člověka po celých 30 minutách.
+V chráněném env není schválený monitorovací SSH cíl a podle zadání nesmí být vytvořen
+nový účet ani klíč. Canary proto nebyl spuštěn. Výsledek tohoto preflightu je
+**NO-GO**, nikoli PASS ani FAIL běžícího canary.
+
 ## Aktuální rozhodnutí — ADR 0011: ručně dozorovaný canary (23. 10. 2026)
 
 Vlastník zvolil **jednorázový ručně dozorovaný DEV canary bez automatického monitoringu DB LXC** a bez vytváření monitorovacího SSH účtu. Podle [ADR 0011](../adr/0011-g04-rucne-hlidany-canary.md) se v systemd G-04 jednotce **spouští přímo SHA-pinned Rust binárka**, ne `monitor_g04_canary.sh`. `CPUQuota=50%`, `MemoryMax=2G`, `RuntimeMaxSec=1875` a `Restart=no` zůstávají. Historicky připravený forced-command SSH monitor je pro tento test pouze **neaktivní podklad**, není součástí provozní brány.

@@ -8,7 +8,7 @@
 | G-01 | [Kontrakty a deterministické fixture](../ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) | **HOTOVO — 10/10, CI PASS** |
 | G-02 | [Lokální ADS-B ingest a RAM](../ukoly/G-02-LOKALNI-INGEST.md) | **HOTOVO — 11/11 TESTED, reálný 60min BEAST PASS; živé HTTP/SSE nyní zajišťuje G-03** |
 | G-03 | [Verzované HTTP API a SSE](../ukoly/G-03-API-A-SSE.md) | **HOTOVO — 10/10 TESTED, DEV ACCEPTED; automatický deployment #39906245759 PASS na `29ee2ee75fea`** |
-| G-04 | [Úsporná historie](../ukoly/G-04-POSTGRESQL-HISTORIE.md) | **ROZPRACOVÁNO — ADR 0011: jednorázový, osobně dozorovaný DEV canary bez automatického DB monitoringu nebo SSH účtu. Opt-in SHA-pinned binárka/CPUQuota/MemoryMax/RuntimeMaxSec zachovány; nový preflight, ruční baseline sdílené DB LXC a výslovné GO před spuštěním. G-03/V1/ostatní DB nedotčeny; pravidelné zálohy historie V2 nejsou povinné (ADR 0010). Canary dosud nespouštěn.** |
+| G-04 | [Úsporná historie](../ukoly/G-04-POSTGRESQL-HISTORIE.md) | **ROZPRACOVÁNO — aktuální preflight NO-GO: G-04 `inactive/dead`, G-03/API/SSE aktivní, binárka SHA ověřena, SQL audit `airradar_v2_dev` PASS. Chybí aktuální disk/WAL filesystem, CPU/RAM DB LXC a prokazatelný lidský dohled po celých 30 minutách; bez nového SSH účtu/klíče a bez změn práv. Canary nespouštěn, J09 není ACCEPTED.** |
 | G-05 | [Živá mapa a základní ovládání](../ukoly/G-05-ZIVA-MAPA.md) | NEZAHÁJENO |
 | G-06 | [Letiště a NAVAID/FIX](../ukoly/G-06-LETISTE-NAVAID.md) | NEZAHÁJENO |
 | G-07 | [Vybraná meteorologie](../ukoly/G-07-VYBRANE-POCASI.md) | NEZAHÁJENO |

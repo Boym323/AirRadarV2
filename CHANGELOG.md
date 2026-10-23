@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-04 — skutečný DEV preflight po přerušeném SSH pokusu: NO-GO
+- Ověřeno přímo na `lo-dev-airradarv2`: G-04 zůstává `inactive/dead` bez listeneru na 4114; G-03/API/SSE a Nginx jsou aktivní. Nebyl proveden restart ani zásah do `current`, G-03, V1 nebo jiné DB.
+- Potvrzena binárka SHA-256 `1dd11387635eeb16040b69f33e09a6108d1fecf2491dde56699cc9b5971ba21b`, env `root:root 0600`, SQL audit existující DB bez TLS, 1 historický řádek, 4 připojení a `wal_bytes=163397425457`.
+- Reprodukované selhání testu zapisovatelnosti (`airradarv2` nemá zápis do `root:airradarv2 0750`); změna práv nebyla provedena, protože G-04 do adresáře nezapisuje. Aktuální fyzické metriky DB LXC a zajištěný nepřetržitý lidský dohled chybí, proto canary nebyl spuštěn a G-04/J09 zůstává `IN_PROGRESS`.
+
 ### G-04 — ADR 0011: ruční dohled místo automatického SSH DB monitoringu
 - Vlastník zvolil pouze jednorázový osobně dozorovaný DEV canary; unit spouští přímo SHA-pinned binárku, bez `monitor_g04_canary.sh` a bez nového SSH účtu. Zachovány CPUQuota 50 %, MemoryMax 2 GiB, RuntimeMaxSec 1875 s, Restart=no, port 4114 a nedestruktivní rollback. DB disk/WAL/CPU/RAM a zdraví G-03/PP Studio se během testu kontrolují osobně nejpozději každých 5 minut. Riziko neautomatického zastavení při naplnění disku je vědomě přijaté jen pro tento dozorovaný DEV test. G-04 nespouštěna.
 
