@@ -71,7 +71,7 @@ Canary se smí spustit až po samostatném GO, při osobním dohledu správce a 
 
 Evaluator vyžaduje v každém diagnostickém snapshotu všechny countery a `observed_at`;
 počáteční `connection=Unknown` smí být pouze **před prvním úspěšným SQL zápisem**,
-poté musí být `connection=Up` nepřetržitě až do konce; `Down` znamená FAIL. musí existovat nejméně čtyři časově seřazené snapshoty pokrývající
+poté musí být `connection=Up` nepřetržitě až do konce; `Down` znamená FAIL. Musí existovat nejméně čtyři časově seřazené snapshoty pokrývající
 nejméně 1 800 sekund a kumulativní countery nesmějí klesat. JSON metrics
 musí mít skutečné `started_at`/`finished_at` s rozdílem nejméně 1 800 sekund, nikoli
 jen ručně nastavené `duration_seconds`. PASS dále vyžaduje vyvážení
@@ -101,6 +101,47 @@ Vlastník schválil přípravu prvního **ručně hlídaného** DEV testu bez au
 - Ruční STOP: `systemctl stop airradarv2-g04-canary.service` **pouze na DEV aplikačním LXC**. Následně ověř `systemctl is-active airradarv2-engine.service` a `curl -fsS --max-time 5 http://127.0.0.1:4101/api/v1/health`. **Nikdy nerestartuj G-03 ani DB server.**
 - Na konci sbírej skutečné diagnostické snapshoty G-04, pozitivní readback nových vzorků z V2 DB, zdravé G-03 SSE a ruční host metriky s časem/původem. Stávající `tools/evaluate_g04_canary.py` vyhodnocuje důkazy **až po testu**: `eligible`, `committed`, drop counters, `pending/inflight=0`, `connection=up`, nulové SQL timeouty, ztráty nejvýše 1 % a alespoň 1800 s. Bez důkazů nesmí výsledek dostat PASS.
 - Při úvodní pětiminutové kontrole lze běh ukončit dříve; v takovém případě jde o **částečný smoke**, nikoli dokončený 30minutový canary, a G-04/J09 zůstávají IN_PROGRESS.
+
+### Re-test po opravě drainu (ADR 0013) — přesné provozní důkazy
+
+Nový release musí být sestaven výhradně z implementačního SHA `e186c54f8304c3e437f6ed9a54c6bd31722dde7c`; jde o **jinou binárku než 232d928**. Binární SHA-256 se smí zapsat až po skutečném sestavení a kontrole. Opravená `deploy/systemd/airradarv2-g04-canary.service` je připnuta na nový adresář, nikoli na `current`. **Tento commit neprovádí instalaci ani test na DEV LXC.** Před opakovaným GO ověř `systemctl show -p ExecStart -p ActiveState`, vlastní hash binárky, G-03 `active`, volný port 4114, aktuální DB baseline a osobní dohled správce.
+
+Po `1802` sekundách aktivního ingestu proces sám zastaví **jen svůj** BEAST/JSON příjem, vyčká do 60 sekund na uzavření bucketů a SQL potvrzení, nejvýše další 3 sekundy na dokončení SQL tasku a zapíše `G-04 shutdown drained=true writer_finished=true` + poslední `G-04 history ... pending=0 inflight=0`. Po úspěchu skončí `Result=success`, nikoli `timeout`; vnější pojistka systemd `RuntimeMaxSec=1875` zůstává. Nouzový `systemctl stop` je rychlý rollback a **není** přejímacím scénářem graceful drain.
+
+**Ruční DB LXC snapshot** — jako root na `lo-infra-db-postgres01` spusť před startem, po startu a pak ručně nejvýše každých pět minut. Před každým výstupem zkontroluj správné `PGDATA`. Příkazy jsou read-only, neinstalují agenta ani časovač:
+
+```bash
+PGDATA=$(runuser -u postgres -- psql -XAtq -d postgres -c 'SHOW data_directory')
+test -d "$PGDATA/pg_wal" || exit 1
+{
+  date -Is
+  df -h "$PGDATA"
+  du -sh "$PGDATA/pg_wal"
+  free -h
+  vmstat 1 5
+  runuser -u postgres -- psql -XAtq -d airradar_v2_dev -c \
+    'SELECT count(*),count(DISTINCT aircraft_key),max(position_at) FROM airradar_v2.flight_samples;'
+} | tee -a /root/g04-db-host-evidence.log
+```
+
+`pg_stat_wal.wal_bytes` je **kumulativní počítadlo celého clusteru**, nikoli velikost WAL na disku ani metrika jediné V2 databáze. Doplň skutečná měření CPU/RAM/volného místa a potvrď, že G-03, V1 a PP Studio neměly regresi. Při volném místě pod 2 GiB nebo degradaci okamžitě STOP pouze G-04. Nikdy z neexistujících dat nevyvozuj nulový dopad.
+
+**G-03 SSE důkaz** na aplikačním DEV LXC před začátkem a na konci (pouze kontrola existujícího G-03 portu 4101):
+
+```bash
+date -Is
+timeout 50s curl -fsSN --max-time 50 \
+  http://127.0.0.1:4101/api/v1/stream \
+  > /root/g04-g03-sse-check.log || true
+grep -c '^: heartbeat' /root/g04-g03-sse-check.log || true
+curl -fsS --max-time 5 http://127.0.0.1:4101/api/v1/health
+```
+
+Při opakování uchovej oba SSE soubory odděleně, aby se první důkaz nepřepsal. Přejímka vyžaduje nejméně dva **skutečné** heartbeat eventy a dostupnost API po celou dobu.
+
+**Po doběhnutí** ulož kompletní journal přes `journalctl -u airradarv2-g04-canary.service --since '<skutečný začátek>' --no-pager -o cat`, výsledek `systemctl show -p Result -p ExecMainStatus -p ActiveState` a závěrečný SQL `COUNT(*)` / `MAX(position_at)`; dolož počet **nově** vložených řádků proti předstartovnímu stavu. Soubor `metrics.json` pro `python3 tools/evaluate_g04_canary.py --diagnostics ... --metrics ...` musí obsahovat skutečné `started_at`, `finished_at`, kladný počet nových řádků a podložené hodnoty `db_readback_verified`, `g03_sse_healthy`, `g03_sse_heartbeat_count`, `cpu_ram_recorded`, `wal_recorded`, `db_free_space_recorded`. Není dovoleno nastavovat hodnoty `true` jen proto, aby evaluator prošel.
+
+**Stav:** funkční prvotní writer prokázán, graceful shutdown nové binárky zatím ověřen jen v izolovaných testech. Bez dalšího živého dozorovaného testu a výše uvedených DB/SSE důkazů neuzavírat G-04/J09 jako ACCEPTED.
 
 **Nezbytné před startem:** ověřit nainstalovanou unit a odpovídající SHA binárky, práva env, běžící G-03, read-only databázové připojení a dostupnost správce s možností okamžitého STOP. Nevyžaduj SSH forced-command účet ani automatický DB monitoring. Trvalý bezobslužný provoz historie není tímto schválen.
 
