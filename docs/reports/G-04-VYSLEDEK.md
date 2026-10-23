@@ -1,7 +1,15 @@
 # G-04 — průběžný výsledek: izolovaný začátek PostgreSQL historie
 
-**Datum:** 22. 10. 2026. **Etapa:** ROZPRACOVÁNO. **Primární ID:** J09 (IN_PROGRESS, bez přejímky).  
+**Výchozí záznam:** 22. 10. 2026. **Aktualizace:** 23. 10. 2026. **Etapa:** ROZPRACOVÁNO. **Primární ID:** J09 (IN_PROGRESS, bez přejímky).  
 **Výchozí main:** `01786e27dbc25ec66f80f9e4a14170c89e6ffd23`. **Ověřený SHA:** `141cdc8de03c4929d697011596e9b7f149aea073`. **Izolovaná migrace:** [CI #39856030008](https://github.com/Boym323/AirRadarV2/actions/runs/39856030008) **PASS**.
+
+## Aktuální G-04.02 — bez změn existujících pravidel PostgreSQL
+
+Vlastník odmítl přidat speciální pravidlo `hostnossl` nebo měnit `pg_hba.conf` či firewall. Klient nadále používá `PgSslMode::Disable` a uživatelské jméno/heslo. Pro přístup se nejdříve read-only ověří stávající pravidla a konektivita z V2 LXC: existující pravidlo typu `host` může nešifrované TCP spojení pokrývat. Pokud server spojení nepovoluje, G-04.02 zůstává BLOKOVÁNO a nic se samo neotevírá ani neupravuje. Viz [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md).
+
+**Skutečný sdílený PostgreSQL LXC nebyl kontaktován ani změněn.**
+
+## Historické záznamy (starší bezpečnostní návrhy níže nejsou aktuální)
 
 ## Rozsah prvního commitu
 
@@ -21,7 +29,7 @@
 
 ### Bezpečnostní omezení
 
-Workflow používá efemérní databázi a testovací přihlašovací údaje. `PGSSLMODE=disable` platí **pouze uvnitř CI kontejneru**, nikoli jako možnost nasazení. Pro oddělené existující PostgreSQL LXC zůstávají povinné `sslmode=verify-full`, SCRAM, oddělené role, pravidla `hostssl`, zálohy mimo LXC a správní schválení.
+Workflow používá efemérní databázi a testovací přihlašovací údaje. `PGSSLMODE=disable` platí **pouze uvnitř CI kontejneru**, nikoli jako možnost nasazení. Toto byl původní, později nahrazený návrh. Aktuální G-04 používá LAN bez TLS a bez změn `pg_hba.conf`; role a zálohy musí projít samostatnou přejímkou.
 
 ## Zjištění při přejímce společné CI
 
@@ -55,6 +63,6 @@ Pro G-04 bylo potvrzeno připojení pomocí uživatelského jména a hesla. Kód
 
 ## G-04.02 — změna bezpečnostního režimu na LAN bez TLS (23. 10. 2026)
 
-Vlastník výslovně zvolil připojení PostgreSQL v důvěryhodné privátní LAN **bez TLS** a přihlášení jménem a heslem. [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md) nahrazuje pro G-04 starší výchozí požadavek na `verify-full`. Implementace SQLx v izolovaném PR #21 nastavuje `PgSslMode::Disable`, používá oddělené HOST/PORT/USER/PASSWORD, nepotřebuje CA certifikát. Přejímka musí potvrdit `pg_stat_ssl.ssl=false`, `hostnossl` + SCRAM-SHA-256, konkrétní povolenou IP /32 a odmítnutí chybného hesla či jiné DB. **SCRAM nešifruje SQL ani letová data**; přijatá výjimka je platná jen pro důvěryhodnou izolovanou síť. Na skutečném sdíleném DB LXC nebylo nic upraveno.
+Vlastník výslovně zvolil připojení PostgreSQL v důvěryhodné privátní LAN **bez TLS** a přihlášení jménem a heslem. [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md) nahrazuje pro G-04 starší výchozí požadavek na `verify-full`. Implementace SQLx v izolovaném PR #21 nastavuje `PgSslMode::Disable`, používá oddělené HOST/PORT/USER/PASSWORD, nepotřebuje CA certifikát. Původní návrh počítal s novým `hostnossl`, který vlastník následně odmítl. Aktuální přejímka ověřuje existující přístup, `pg_stat_ssl.ssl=false` a odmítnutí chybného hesla bez změn serveru. **SCRAM nešifruje SQL ani letová data**; přijatá výjimka je platná jen pro důvěryhodnou izolovanou síť. Na skutečném sdíleném DB LXC nebylo nic upraveno.
 
 Kontrola fyzické sítě, PostgreSQL rolí, firewallu, záloh a zátěže na cílovém LXC zůstává NEOVĚŘENO. CI test přímého SQLx spojení ověřuje `pg_stat_ssl.ssl=false` pouze na jednorázovém lokálním PostgreSQL 18 v GitHub Actions, nikoliv na skutečné DB.
