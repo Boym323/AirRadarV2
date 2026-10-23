@@ -4,6 +4,10 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-04 — skutečný BEAST/CPR 31min DEV canary, dílčí PASS
+- Ve skutečném BEAST-only DEV provozu vznikaly reálné SQL historické vzorky (snímek tabulky doložen vlastníkem); poslední diagnostika `eligible=1502`, `committed=1489`, `coalesced=17754`, 63/63 úspěšných SQL dávek, 0 SQL timeoutů, 0 zaznamenaných `dropped_*`, `connection=Up`. G-03 po testu `active`.
+- Systemd dosažením `RuntimeMaxSec=1875` ukončil canary výsledkem `timeout` (nikoli SQL timeout). V poslední diagnostice zůstalo `pending=13` (0,87 % kandidátů), bez potvrzeného závěrečného flush; G-04 nemá prokazatelný graceful drain. CPU canary 6,499 s, RSS peak 3,8 MB. Bez kompletního DB host readback/metrik a plné evaluace neoznačovat G-04/J09 `ACCEPTED`. Detaily v `docs/reports/G-04-VYSLEDEK.md`.
+
 ### G-04 — opravená BEAST/CPR binárka musí být odděleně nasazena
 - Šablona ručně dozorovaného canary nyní ukazuje na SHA-pinned release `232d92840a0b053feba3ee13868d8b28be8ed821` (binární SHA-256 `fdb9e3e3c96372637e770d03f22fca1e0b947b1ab614a2ca65f413cab46b774a`). Deployment boundary test výslovně odmítá původní nefunkční `fe0ac66` cestu. V GitHubu není žádný důkaz, že byl nový release fyzicky instalován na DEV; nový live canary proto musí počkat na samostatnou kontrolu a lidský dohled.
 
