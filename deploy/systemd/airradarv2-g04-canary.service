@@ -22,7 +22,8 @@ ExecStart=/opt/airradar-v2/canary/releases/e186c54f8304c3e437f6ed9a54c6bd31722dd
 # Disk/WAL/CPU/RAM databázového LXC nemají automatickou stop ochranu; nutný osobní dohled.
 # Jednorázový, tvrdě omezený běh. Selhání nesmí restartovat canary ani G-03.
 Restart=no
-# 1800 s důkaz + 35 s (30s bucket + 5s close delay) + 40s rezerva na drain.
+# Rust vypne pouze G-04 příjem po 1802 s, drain max 60 s, SQL close max 3 s.
+# RuntimeMaxSec=1875 je nouzová pojistka, nikoliv běžný způsob dokončení.
 RuntimeMaxSec=1875
 TimeoutStartSec=30
 TimeoutStopSec=15
