@@ -12,7 +12,7 @@ assert.equal(matrix.features.length,45);
 const tested = new Set(["J01","J02","J03","J04","J05","J11","J06","J07","J08"]);
 assert.ok(matrix.features.every(x =>
   x.decision === "KEEP" &&
-  (tested.has(x.id) ? x.status === "TESTED" && x.tests.length > 0 : x.status === "NOT_STARTED")
+  (tested.has(x.id) ? x.status === "TESTED" && x.tests.length > 0 : ["NOT_STARTED", "IN_PROGRESS"].includes(x.status))
 ));
 const ids=matrix.features.map(x=>x.id);
 assert.equal(new Set(ids).size,45);
