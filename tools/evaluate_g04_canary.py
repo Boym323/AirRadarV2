@@ -90,6 +90,13 @@ def evaluate(snapshots, metrics):
         all(previous[key] <= current[key] for key in cumulative)
         for previous, current in zip(snapshots, snapshots[1:]))
     last = snapshots[-1]
+    # Před prvním skutečným SQL pokusem je Unknown legitimní; později
+    # už spojení musí zůstat Up. Down ani návrat do Unknown se nepřijímá.
+    states = [item.get("connection") for item in snapshots]
+    first_up = next((i for i, state in enumerate(states) if state == "up"), None)
+    connection_healthy = (first_up is not None and
+                          all(state == "unknown" for state in states[:first_up]) and
+                          all(state == "up" for state in states[first_up:]))
     drops = sum(last.get(key, 0) for key in
                 ("dropped_capacity", "dropped_stale", "dropped_writer"))
     eligible = last.get("eligible", 0)
@@ -117,7 +124,7 @@ def evaluate(snapshots, metrics):
         "pending_bound": max(pending) <= 2048,
         "drained": last.get("pending") == 0 and last.get("inflight") == 0,
         "counter_balance": final_balance,
-        "connection_up": all(item.get("connection") == "up" for item in snapshots),
+        "connection_up": connection_healthy,
         "sql_timeouts_zero": all(item.get("sql_timeouts") == 0 for item in snapshots),
         "candidate_loss_le_1_percent": loss <= 1.0,
         "no_persistent_queue_growth": len(pending) >= 4 and not trailing_growth,
