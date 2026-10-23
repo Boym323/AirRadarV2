@@ -1,5 +1,7 @@
 # G-01 — akceptační matice všech 45 funkcí
 
+> **Historická výchozí akceptační matice z G-01.** Zápisy `Plán — neověřeno` u J06/J07/J08 jsou původní plán, nikoli dnešní stav. Tyto funkce jsou po G-03 `TESTED`, etapa G-03 je `HOTOVO / DEV ACCEPTED` ([run #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759)). Autoritativní aktuální hodnoty jsou v [aktivní matici](MATICE-FUNKCI.md); širší produktová přejímka G-11 zůstává oddělená.
+
 **Stav:** pouze scénáře budoucích etap. Převzetí G-01 **neznamená** implementaci následujících funkcí. Jediný zdroj pravdy o skutečném statusu: [feature-matrix.json](../../contracts/feature-matrix.json); tato tabulka eviduje požadované testy pro G-02 až G-10. Vlastnictví: [moduly](MODULY-A-ROZSAH.md).
 
 | ID | Modul | Vlastní etapa | Budoucí PASS/FAIL scénář | Implementace |
