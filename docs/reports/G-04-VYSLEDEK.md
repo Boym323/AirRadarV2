@@ -2,6 +2,26 @@
 
 **Aktualizace:** 23. 10. 2026. **Etapa:** ROZPRACOVÁNO. **Primární KEEP:** J09 (`IN_PROGRESS`).
 
+## Oprava PR #21 — BEAST-only historie (23. 10. 2026)
+
+Příčina původního canary `eligible=0` byla potvrzena v kódu: `beast_arrival()`
+značil čas jako `server_arrival`, zatímco `eligible_for_sql()` připouštěl jen
+`derived_readsb` a `receiver_utc`. Oprava v [ADR 0012](../adr/0012-g04-cpr-poloha-pro-historii.md)
+rozlišuje validní CPR rekonstrukci (`positionOrigin=adsb_cpr`) od libovolné
+serverové pozice. Čas zůstává pravdivě `server_arrival`; nepřidává se žádný
+zdroj, služba, tabulka ani zásah do PostgreSQL konfigurace.
+
+Implementace zachovává RAM-first sampler, 30s bucket, deduplikaci, bounded
+fronty 2048/128, omezený retry a SQLx writer. Přidána je regrese skutečných
+DF17 even/odd rámců BEAST-only → jediný RAM stav → sampler → SQLx → izolovaný
+PostgreSQL readback a kontroly neplatného CPR, staré polohy, duplicit,
+nesprávných časů a JSON+BEAST slučování.
+
+Lokální důkaz pracovního SHA před commitem: `cargo test --locked --workspace`,
+57/57 PASS. Izolovaný PostgreSQL běh stejné regrese je povinný v G-04 CI;
+sdílená DEV DB ani původní canary nebyly spuštěny. Nový binární SHA-256 a CI
+výsledek se doplní po sestavení/pushi přesného commitu.
+
 ## Aktuální kontrola po přerušeném SSH pokusu — NO-GO
 
 Kontrola proběhla 23. 10. 2026 přímo na `lo-dev-airradarv2` v 17:54 SELČ,

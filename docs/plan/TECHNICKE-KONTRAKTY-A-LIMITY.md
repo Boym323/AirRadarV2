@@ -1,6 +1,6 @@
 # AirRadar V2 — závazné technické kontrakty a limity
 
-**Aktualizováno 23. 10. 2026.** G-03 HTTP/SSE a Chromium jsou TESTED v CI, **DEV runtime ACCEPTED** s přímým i Nginx streamem, snapshot/delta/15s heartbeat a reconnectem ([main deployment #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759), SHA `29ee2ee7`). Reálné OS TCP/kernel buffer/RSS parametry a úmyslný rollback nové LIVE verze zůstávají nezměřeny. Návrh G-04+ je nadále oddělený; G-04 má pouze izolovanou SQL migraci, skutečné DB LXC se touto etapou neměnilo. Schválených funkcí zůstává 45.
+**Aktualizováno 23. 10. 2026.** G-03 HTTP/SSE a Chromium jsou TESTED v CI, **DEV runtime ACCEPTED** s přímým i Nginx streamem, snapshot/delta/15s heartbeat a reconnectem ([main deployment #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759), SHA `29ee2ee7`). Reálné OS TCP/kernel buffer/RSS parametry a úmyslný rollback nové LIVE verze zůstávají nezměřeny. Pro G-04 platí [ADR 0012](../adr/0012-g04-cpr-poloha-pro-historii.md): validní BEAST/CPR poloha může být historicky způsobilá s pravdivým `server_arrival`, nikoli libovolná serverová poloha. Návrh G-04+ je nadále oddělený; skutečné DB LXC se touto opravou neměnilo. Schválených funkcí zůstává 45.
 
 | Oblast | Startovací rozhodnutí | Detailní české zadání | Etapa |
 |---|---|---|---|

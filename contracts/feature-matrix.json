@@ -106,7 +106,7 @@
       "tests": [
         "PR #21 CI #39930292509: Rust, Vite a dokumentace PASS",
         "PR #21 izolované PostgreSQL CI #39930292506 PASS",
-        "Lokální Rust fmt/test/clippy na pracovním SHA: 51 testů PASS",
+        "Lokální Rust fmt/test/clippy na pracovním SHA: 57 testů PASS",
         "DEV SQLx dedup/read test proti airradar_v2_dev: PASS 23. 10. 2026",
         "Izolovaný PostgreSQL výpadek/reconnect, 5000 cílů a pg_dump/pg_restore: PASS, SHA 4659d63822d842a69fb0e141b9dcf1c5480e381e",
     "Izolovaný 1×/2×/4× SQL dávkový benchmark: PASS, SHA 4659d63822d842a69fb0e141b9dcf1c5480e381e",
@@ -114,9 +114,10 @@
     "Skutečný Rust/SQLx writer 1×/2×/4× s bounded ztrátou, WAL, RSS, CPU a SSE: PASS, binární SHA 36afdda5e752cc320496f44672a94e9434eea9eb, harness SHA ebc20307c8962593c3895908f4b54e2f63aeaa8a",
     "Srovnání stejné rekonstruované trasy 15/30/60/adaptive: PASS, SHA ebc20307c8962593c3895908f4b54e2f63aeaa8a",
     "Rust readsb replay 64 letadel / 16 snapshotů / 10 s, min=max=3 vzorky na letadlo: PASS, SHA 0daeb2f755bff81ce518a0415942a7e6b82579b0",
-    "Příprava canary: neinstalovaný systemd unit, evaluator/rollback a kontrola hranice main→G-03: PASS, SHA 232f01277b2710e064ed8469a724e6cb60954739"
+    "Příprava canary: neinstalovaný systemd unit, evaluator/rollback a kontrola hranice main→G-03: PASS, SHA 232f01277b2710e064ed8469a724e6cb60954739",
+    "BEAST-only validní CPR → RAM → adaptivní sampler → SQLx → izolovaný PostgreSQL readback: Rust regrese PASS; izolovaný SQL běh doloží CI aktuálního SHA"
       ],
-  "notes": "G-04 SQLx+RAM-first, 30s bucket, bounded 2048/128, retry/backoff, izolovaný reconnect, retence, skutečný SQLx-writer replay, férový časový Rust readsb replay a interní diagnostika jsou doložené v izolaci. Zálohy a RPO/RTO postradatelné V2 historie nejsou požadovány (ADR 0010); skutečný RF replay a provozní kapacita/CPU/RAM/WAL sdíleného LXC zůstávají NEOVĚŘENO; ztráty 18,1 %/59,0 % při 2×/4× nesplňují canary bránu, proto J09 není TESTED/ACCEPTED."
+  "notes": "G-04 SQLx+RAM-first, 30s bucket, bounded 2048/128, retry/backoff, izolovaný reconnect, retence, skutečný SQLx-writer replay a nová BEAST/CPR regrese jsou doložené v izolaci. Zálohy a RPO/RTO postradatelné V2 historie nejsou požadovány (ADR 0010); skutečný RF replay a provozní kapacita/CPU/RAM/WAL sdíleného LXC zůstávají NEOVĚŘENO; ztráty 18,1 %/59,0 % při 2×/4× nesplňují canary bránu, proto J09 není TESTED/ACCEPTED."
     },
     {
       "id": "J11",

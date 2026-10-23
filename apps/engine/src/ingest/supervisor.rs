@@ -785,6 +785,7 @@ pub fn benchmark() -> Result<(), &'static str> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::history_store::{insert_batch, read_history};
     #[test]
     fn replay_single_authority() {
         let state = replay().unwrap();
@@ -847,6 +848,72 @@ mod tests {
         assert_eq!(dropped.load(Ordering::Relaxed), 5000);
         assert!(rx.try_recv().is_ok());
         assert!(rx.try_recv().is_err());
+    }
+
+    #[tokio::test]
+    async fn g04_beast_only_cpr_ram_sampler_sqlx_postgres_regression() {
+        let Ok(url) = std::env::var("AIRRADAR_G04_CI_DATABASE_URL") else {
+            // Skutečný PostgreSQL důkaz běží pouze v izolovaném G-04 workflow.
+            return;
+        };
+        let pool = sqlx::PgPool::connect(&url)
+            .await
+            .expect("isolated PostgreSQL");
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../contracts/fixtures/beast/cases.json"
+        ))
+        .unwrap();
+        let base: f64 = 1_792_800_000.0;
+        sqlx::query(
+            "DELETE FROM airradar_v2.flight_samples WHERE aircraft_key = 'icao:abc123' AND bucket_at = to_timestamp($1)",
+        )
+        .bind(base.floor() / 30.0 * 30.0)
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        // Dva skutečné DF17 CPR rámce, bez JSON kotvy a bez syntetické pozice.
+        let mut state = RadarState::default();
+        state.history = Some(Default::default());
+        let mut cpr = CprCache::default();
+        let mut sources = SourceArbiter::default();
+        for (index, case) in fixture["valid"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .take(2)
+            .enumerate()
+        {
+            let frame = crate::contract::hex_decode(case["modeS"].as_str().unwrap()).unwrap();
+            let at = base + index as f64;
+            let decoded = decode_df17(&frame, at).unwrap();
+            consume(
+                Ingress::Beast { decoded, at },
+                &mut state,
+                &mut cpr,
+                &mut sources,
+            );
+        }
+        let history = state.history.as_mut().unwrap();
+        assert_eq!(history.counters.eligible, 1);
+        let batch = history.next_batch(base + 36.0);
+        assert_eq!(batch.len(), 1);
+        assert_eq!(batch[0].aircraft_key, "icao:abc123");
+        assert_eq!(insert_batch(&pool, &batch).await.unwrap(), 1);
+        history.finish_batch(true, base + 36.0);
+        let rows = read_history(&pool, "icao:abc123", base - 1.0, base + 30.0, 10)
+            .await
+            .unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].aircraft_key, "icao:abc123");
+        sqlx::query(
+            "DELETE FROM airradar_v2.flight_samples WHERE aircraft_key = 'icao:abc123' AND bucket_at = to_timestamp($1)",
+        )
+        .bind(base.floor() / 30.0 * 30.0)
+        .execute(&pool)
+        .await
+        .unwrap();
+        pool.close().await;
     }
 
     #[test]

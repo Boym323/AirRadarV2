@@ -42,6 +42,15 @@ impl Sample {
         {
             return None;
         }
+        // U BEAST/CPR je čas pouze příjem serverem. Tato větev musí být
+        // přesně synchronní s rámcem; starý nebo libovolně dodaný
+        // server_arrival vzorek není historický důkaz.
+        if o.time_basis == "server_arrival"
+            && ((at - o.received_at_utc).abs() > 0.001
+                || (o.message_at_utc - o.received_at_utc).abs() > 0.001)
+        {
+            return None;
+        }
         let suffix = o
             .aircraft_key
             .strip_prefix("icao:")
