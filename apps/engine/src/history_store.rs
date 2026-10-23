@@ -7,6 +7,9 @@ use sqlx::{
 };
 use std::time::Duration;
 
+const MAX_WRITE_ATTEMPTS: usize = 3;
+const RETRY_DELAYS: [Duration; 2] = [Duration::from_millis(100), Duration::from_millis(250)];
+
 /// Přihlašovací údaje jsou samostatné systémové proměnné.
 /// URL s heslem se nepoužívá: heslo proto nemusí být URL-escaped.
 fn dev_options(
@@ -82,6 +85,25 @@ pub async fn insert_batch(pool: &PgPool, batch: &[Sample]) -> Result<u64, &'stat
         Ok(Ok(result)) => Ok(result.rows_affected()),
         _ => Err("historický SQL zápis selhal nebo vypršel timeout"),
     }
+}
+
+/// Omezený retry pouze uvnitř persistence tasku. Ingest, RAM a SSE na něm
+/// nečekají a po posledním neúspěchu se inflight dávka zahodí přes ACK=false.
+/// Idempotentní PK/ON CONFLICT chrání i případ, kdy timeout nastal až po COMMITu.
+pub async fn insert_batch_with_retry(pool: &PgPool, batch: &[Sample]) -> Result<u64, &'static str> {
+    let mut last_error = "historický SQL zápis selhal nebo vypršel timeout";
+    for attempt in 0..MAX_WRITE_ATTEMPTS {
+        match insert_batch(pool, batch).await {
+            Ok(rows) => return Ok(rows),
+            Err(error) => {
+                last_error = error;
+                if let Some(delay) = RETRY_DELAYS.get(attempt) {
+                    tokio::time::sleep(*delay).await;
+                }
+            }
+        }
+    }
+    Err(last_error)
 }
 
 /// Historické čtení je explicitní a časově ohraničené; živá mapa používá RAM.

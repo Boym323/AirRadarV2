@@ -209,7 +209,7 @@ pub async fn run_with_publisher_and_history(
         state.history = Some(Default::default());
         tokio::spawn(async move {
             while let Some(batch) = history_rx.recv().await {
-                let ok = crate::history_store::insert_batch(&pool, &batch)
+                let ok = crate::history_store::insert_batch_with_retry(&pool, &batch)
                     .await
                     .is_ok();
                 if history_ack_tx.send(ok).await.is_err() {

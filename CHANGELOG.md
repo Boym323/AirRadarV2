@@ -5,15 +5,15 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 ## [Nepublikováno]
 
 ### G-04 — stávající PostgreSQL pravidla beze změn
-- Vlastník odmítl konfigurovat nové `hostnossl` ani měnit `pg_hba.conf` či síťová pravidla. Nejprve se ověří existující autorizace read-only připojením; existující `host` může povolit i spojení bez TLS. Při odmítnutí zůstane G-04.02 BLOKOVÁNO bez automatických serverových změn. Aktualizováno ADR 0009, runbook, kroky a technické kontrakty.
+- Vlastník odmítl konfigurovat nové `hostnossl` ani měnit `pg_hba.conf` či síťová pravidla. Ověření používá pouze existující autorizaci; při odmítnutí zůstane G-04.02 BLOKOVÁNO bez automatických serverových změn. Aktualizováno ADR 0009, runbook, kroky a technické kontrakty.
 
 
 ### G-04.02 — výslovně zvolená důvěryhodná LAN bez TLS (ADR 0009)
-- SQLx používá `PgSslMode::Disable`, přihlašovací jméno a heslo z chráněných proměnných, bez CA souboru. Rozhodnutí je omezené na izolovanou V2 DEV LAN; `hostnossl` + SCRAM-SHA-256, firewall /32 a oddělená DB zůstávají povinné. CI obsahuje kontrolu `pg_stat_ssl.ssl=false`. Skutečný databázový server a V1 se nemění.
+- SQLx používá `PgSslMode::Disable`, přihlašovací jméno a heslo z chráněných proměnných, bez CA souboru. Rozhodnutí je omezené na izolovanou V2 DEV LAN a existující serverová pravidla. CI i read-only DEV ověření kontrolují `pg_stat_ssl.ssl=false`. Skutečný databázový server a V1 se nemění.
 
 
 ### G-04 — přihlášení k PostgreSQL jménem a heslem
-- SQLx DEV připojení přijímá samostatné proměnné HOST/PORT/USER/PASSWORD a cestu k CA certifikátu, bez hesla ve spojovacím URL; vyžaduje TLS `verify-full` a samostatnou databázi `airradar_v2_dev`. Přidán negativní test chybějících údajů a hesel se speciálními znaky. Skutečná DB se nemění.
+- SQLx DEV připojení přijímá samostatné proměnné HOST/PORT/USER/PASSWORD, bez hesla ve spojovacím URL, a používá samostatnou databázi `airradar_v2_dev`. Přidán negativní test chybějících údajů a hesel se speciálními znaky. Skutečná DB se nemění.
 
 
 ### G-04 — izolovaný SQLx historický modul, rozpracované PR #21

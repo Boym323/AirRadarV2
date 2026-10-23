@@ -3,7 +3,7 @@
 CREATE SCHEMA IF NOT EXISTS airradar_v2;
 REVOKE ALL ON SCHEMA airradar_v2 FROM PUBLIC;
 
-CREATE TABLE airradar_v2.flight_samples (
+CREATE TABLE IF NOT EXISTS airradar_v2.flight_samples (
     bucket_at timestamptz NOT NULL,
     aircraft_key varchar(14) NOT NULL
         CONSTRAINT flight_samples_aircraft_key_ck

@@ -1,68 +1,51 @@
-# G-04 — průběžný výsledek: izolovaný začátek PostgreSQL historie
+# G-04 — výsledek auditu a průběžná přejímka PostgreSQL historie
 
-**Výchozí záznam:** 22. 10. 2026. **Aktualizace:** 23. 10. 2026. **Etapa:** ROZPRACOVÁNO. **Primární ID:** J09 (IN_PROGRESS, bez přejímky).  
-**Výchozí main:** `01786e27dbc25ec66f80f9e4a14170c89e6ffd23`. **Ověřený SHA:** `141cdc8de03c4929d697011596e9b7f149aea073`. **Izolovaná migrace:** [CI #39856030008](https://github.com/Boym323/AirRadarV2/actions/runs/39856030008) **PASS**.
+**Aktualizace:** 23. 10. 2026. **Etapa:** ROZPRACOVÁNO. **Primární KEEP:** J09 (`IN_PROGRESS`).
+**Větev/PR:** `codex/g04-history-20261023`, draft PR #21. **Ověřený pracovní SHA:** `eb8751e2adc856c813a3f7bcf3a1045f859ff44f`.
 
-## Aktuální G-04.02 — bez změn existujících pravidel PostgreSQL
+## Audit G-04.01–G-04.12
 
-Vlastník odmítl přidat speciální pravidlo `hostnossl` nebo měnit `pg_hba.conf` či firewall. Klient nadále používá `PgSslMode::Disable` a uživatelské jméno/heslo. Pro přístup se nejdříve read-only ověří stávající pravidla a konektivita z V2 LXC: existující pravidlo typu `host` může nešifrované TCP spojení pokrývat. Pokud server spojení nepovoluje, G-04.02 zůstává BLOKOVÁNO a nic se samo neotevírá ani neupravuje. Viz [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md).
-
-**Skutečný sdílený PostgreSQL LXC nebyl kontaktován ani změněn.**
-
-## Historické záznamy (starší bezpečnostní návrhy níže nejsou aktuální)
-
-## Rozsah prvního commitu
-
-- **G-04.04 (příprava):** skutečné soubory reverzibilní SQLx migrace v `database/migrations/`. Jedna tabulka `airradar_v2.flight_samples`, pouze PK `(bucket_at, aircraft_key)`, validace identit, souřadnic, 30s UTC bucketu, telemetrie a typů. Bez partitioning, BRIN, nadbytečných indexů a `dimension_daily`.
-- **G-04.04 (testovací infrastruktura):** izolovaný PostgreSQL 18 kontejner v GitHub Actions (**PASS pro SQL migraci**), SQL test integrity a oprávnění, duplikátů, oddělení ICAO/non-ICAO a vratnosti up/down/up. CI test není ověření sdíleného DB LXC.
-- Role, schéma, síť, TLS, DB writer ani retence se na cílovém LXC **neměnily**. V2 a V1 DB zůstávají nedotčené.
-
-## Důkazy a otevřené brány
-
-| Krok | Stav | Co ještě chybí |
+| Krok | Stav | Důkaz / zbývá |
 |---|---|---|
-| G-04.01–.03 | BLOKOVÁNO / NEOVĚŘENO | Read-only audit reálného DB LXC, schválení nových rolí a DB, TLS verify-full a přístupové testy |
-| G-04.04 | SQL migrace + izolovaný CI PASS | Pozdější kontrolovaná migrace do samostatné DEV DB, práva a TLS na cílovém LXC |
-| G-04.05–.12 | NEZAHÁJENO | SQLx pool, RAM-first sampler, ohraničený writer, dotazy, retence, chaos, restore, měření |
+| G-04.01 | ČÁSTEČNĚ | Read-only připojení k `airradar_v2_dev` je dostupné z aplikačního hostitele; verze, kapacita a backup politika sdíleného LXC nejsou doložené. |
+| G-04.02 | TESTED pro DEV | Připojení přes `PgSslMode::Disable`, `pg_stat_ssl.ssl=false`, bez změny `pg_hba.conf`/firewallu; důvěryhodnost LAN je provozní riziko. |
+| G-04.03 | ČÁSTEČNĚ | `current_database()`, `current_user`, existence tabulky a omezená práva ověřeny; migrátor a izolace ostatních databází nejsou ověřeny. |
+| G-04.04 | TESTED v CI/DEV kompatibilitě | Jedna tabulka, 30s bucket, PK deduplikace, opakované `up` a odmítnutý destruktivní `down`; migrace na skutečné DB nebyla spuštěna. |
+| G-04.05 | TESTED v kódu | SQLx pool max. 2, acquire 2 s, SQL timeout 5 s, opt-in `--g04-dev-history`; reconnect/chaos provozní test chybí. |
+| G-04.06 | TESTED v unit testech | RAM-first sampler, 30/60/120/180/600 s pravidla, 30s bucket a validace polohy. |
+| G-04.07 | TESTED v unit testech/kódu | Pending + inflight nejvýše 2048, dávka nejvýše 128, coalescing, ACK po COMMIT, retry 3 pokusy s backoffem; reálný výpadek DB chybí. |
+| G-04.08 | TESTED v SQLx testu | Časové čtení jedné identity, limit 1000, bez query v živé RAM/SSE cestě. |
+| G-04.09 | ČÁSTEČNĚ | Retenční SQL je omezené na `airradar_v2_dev` a 1000 řádků; 30denní provozní retenční měření a index/partition benchmark chybí. |
+| G-04.10 | NEOVĚŘENO | Chybí řízený timeout/výpadek/obnovení DB s důkazem kontinuity G-02/G-03. |
+| G-04.11 | TESTED pouze izolovaně | CI restore test existuje; obnova skutečného DEV dumpu do nezávislé testovací DB nebyla provedena. |
+| G-04.12 | NEOVĚŘENO | Chybí reprodukovatelné 1×/2×/4× p95/p99, RAM/CPU, WAL/I/O měření se SHA a metodikou. |
 
-**Důležité:** Migrační `.down.sql` destruktivně smaže data pouze explicitně určené tabulky; nepoužívat jej v databázi s reálnou historií bez zálohy. Test up/down/up je povolen pouze na jednorázovém CI cíli.
+## Skutečné DEV ověření
 
-### Bezpečnostní omezení
+Read-only/transaction test z aplikačního hostitele (`192.168.1.126 → 192.168.1.55:5432`) dne 23. 10. 2026:
 
-Workflow používá efemérní databázi a testovací přihlašovací údaje. `PGSSLMODE=disable` platí **pouze uvnitř CI kontejneru**, nikoli jako možnost nasazení. Toto byl původní, později nahrazený návrh. Aktuální G-04 používá LAN bez TLS a bez změn `pg_hba.conf`; role a zálohy musí projít samostatnou přejímkou.
+- `current_database() = airradar_v2_dev`, `current_user = airradar_v2_dev_app`, `pg_stat_ssl.ssl = false`;
+- `airradar_v2.flight_samples` existuje;
+- runtime má `USAGE` schématu a `SELECT, INSERT`, ale nemá `CREATE, UPDATE, DELETE, TRUNCATE`;
+- SQLx integrační test deduplikace a čtení prošel proti této DB; zápis byl idempotentní přes PK `(bucket_at, aircraft_key)`;
+- transakční zápis/čtení vzorku proběhl a byl vrácen `ROLLBACK`, takže test nezanechal fixture;
+- špatné heslo a DDL runtime účtem byly odmítnuty.
 
-## Zjištění při přejímce společné CI
+Heslo ani interní tajemství nejsou součástí reportu, Git historie ani CI logu. Migrace, role ani nastavení sdíleného DB LXC nebyly tímto testem měněny.
 
-Původní regresní test topologie předpokládal přesně tři workflow; čtvrté izolované DB CI proto v běhu #39856029962 vyvolalo FAIL dokumentačního jobu, přestože databázový test prošel. Regrese nyní povoluje čtvrté workflow pouze s explicitním testem, že jde o GitHub-hosted DB-only proces bez deploy/release příkazů. Společná CI opraveného commitu vyžaduje ověření.
+## Co je implementováno
 
-## Neprovedeno
+PR obsahuje `history.rs` (RAM sampler), `history_store.rs` (SQLx pool, batch INSERT, query a omezený retry), napojení do jediného ingest actoru, retenční SQL a izolované CI/restore testy. G-02 RAM/readsb/BEAST a G-03 HTTP/SSE zůstávají opt-in a databáze není aktivní v běžném režimu.
 
-Žádné měření reálných IOPS/WAL, žádný SQLx pool, živý zápis ani rollback na skutečném serveru. J09 nesmí dostat TESTED/ACCEPTED z pouhého schématu. Není doložena provozní přejímka G-03 do DEV, proto ani tento commit nesmí spustit automatický cutover nebo produkční deploy.
+Destruktivní `.down.sql` migrace je nyní fail-closed; rollback historie se provádí pouze `pg_dump`/`pg_restore` do nové izolované databáze. `up.sql` je idempotentní vůči existující tabulce, ale před ostrým spuštěním musí migrační účet ověřit kompatibilitu sloupců a omezení.
 
-## Následující krok
+## Neuzavřené brány
 
-**G-04.01–.03**: read-only audit samostatného DB LXC a schválení isolation/TLS/role; paralelně **G-04.06** čistý sampler s replay regresí bez SQL přístupu. Potom teprve SQLx pool a bounded DB writer.
+Neexistuje důkaz restartu/výpadku DB, skutečného `pg_dump`/`pg_restore` z DEV, retence po 30 dnech ani 1×/2×/4× benchmarku. Proto **G-04 není HOTOVO a J09 není TESTED/ACCEPTED**. PR #21 nesmí aktivovat writer v DEV bez samostatného GO, návratu na běžný G-03 režim a ověřeného restore.
 
-## Pokračování G-04 v izolovaném PR #21 (23. 10. 2026)
+### Bezpečný postup další aktivace
 
-**Větev:** `codex/g04-history-20261023`, [PR #21](https://github.com/Boym323/AirRadarV2/pull/21). Kód v PR není provozní přejímka ani release. Přesné konečné SHA a CI doplnit po testech.
-
-- **G-04.05**: SQLx PostgreSQL pool (max. 2 připojení) s explicitním `--g04-dev-history`, povinným TLS `verify-full` a samostatnou DEV DB. Žádné automatické DB připojení v běžném G-03.
-- **G-04.06**: Rust RAM-first sampler nad úspěšně sloučenou čerstvou polohou, odlišuje BEAST/JSON identitu, drží 30s bucket, prahy 30/60/120/180/600 s a odmítá zastaralé či nedůvěryhodné body. Unit testy samplingu/duplicit/manévrů/země.
-- **G-04.07**: bounded pending map (2048), maximálně 128 v transakci, 5s uzavírací delay, expirace nejpozději 30s od konce bucketu, jedno inflight batch a omezené SQL timeouty. Potvrzené watermarks až po úspěšném SQL; výpadek DB znamená čítač ztrát, ne neomezený backfill.
-- **G-04.08**: časově omezené SQLx čtení jedné identity s maximálně 1000 výsledky; nevytváří se další tabulka ani veřejný endpoint, který by duplikoval RAM.
-- **G-04.09/.11**: ručně spouštěná retenční SQL (30 dní, max 1000 řádků, guard DB name), samostatný plán obnovení a izolovaný CI restore test.
-- **G-04.01–.03/.10/.12**: skutečné DBA/TLS/backup údaje, síťový výpadek, výkon/replay a obnova na reálném DB LXC **NEOVĚŘENO**. Není dovoleno označit G-04/J09 za HOTOVO/ACCEPTED.
-
-### Testovací brána
-Výchozí SQL migrace na PostgreSQL 18 prošla [CI #39856030008](https://github.com/Boym323/AirRadarV2/actions/runs/39856030008). Nové Rust/SQLx, retence a zálohování musí projít novým CI na finálním SHA; do té doby jsou TESTY NEOVĚŘENO. Měřená úspora SSD ani latence na DEV LXC dosud nejsou k dispozici. Žádný produkční ani DEV DB LXC nebyl změněn.
-
-## Upřesnění způsobu autentizace (23. 10. 2026)
-
-Pro G-04 bylo potvrzeno připojení pomocí uživatelského jména a hesla. Kód v PR #21 proto přijímá oddělené proměnné `AIRRADAR_V2_DEV_DB_HOST`, `_PORT`, `_USER`, `_PASSWORD` a cestu k důvěryhodné CA. Nevyžaduje URL s heslem, databáze zůstává pevně `airradar_v2_dev` a používá `sslmode=verify-full`. Jde o změnu konfigurace, nikoliv o vytvoření či přihlášení na skutečné DB LXC. Veřejné API, V1 a produkční databáze beze změny. Regresní test zahrnuje i heslo se znaky `:@ /?#%` a odmítnutí prázdných údajů.
-
-## G-04.02 — změna bezpečnostního režimu na LAN bez TLS (23. 10. 2026)
-
-Vlastník výslovně zvolil připojení PostgreSQL v důvěryhodné privátní LAN **bez TLS** a přihlášení jménem a heslem. [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md) nahrazuje pro G-04 starší výchozí požadavek na `verify-full`. Implementace SQLx v izolovaném PR #21 nastavuje `PgSslMode::Disable`, používá oddělené HOST/PORT/USER/PASSWORD, nepotřebuje CA certifikát. Původní návrh počítal s novým `hostnossl`, který vlastník následně odmítl. Aktuální přejímka ověřuje existující přístup, `pg_stat_ssl.ssl=false` a odmítnutí chybného hesla bez změn serveru. **SCRAM nešifruje SQL ani letová data**; přijatá výjimka je platná jen pro důvěryhodnou izolovanou síť. Na skutečném sdíleném DB LXC nebylo nic upraveno.
-
-Kontrola fyzické sítě, PostgreSQL rolí, firewallu, záloh a zátěže na cílovém LXC zůstává NEOVĚŘENO. CI test přímého SQLx spojení ověřuje `pg_stat_ssl.ssl=false` pouze na jednorázovém lokálním PostgreSQL 18 v GitHub Actions, nikoliv na skutečné DB.
+1. Správce potvrdí migrátor, backup/RPO/RTO a izolaci databáze bez změny V1, `pg_hba.conf` nebo firewallu.
+2. Na nové/ověřené DEV DB proběhne pouze kompatibilitní migrace a negativní test práv.
+3. V izolaci se změří restart/timeout/reconnect, restore a benchmarky; živý příjem/SSE musí pokračovat při SQL degradaci.
+4. Teprve po písemném schválení se spustí `--g04-dev-history`; návrat je zastavení tohoto opt-in procesu a návrat na `--g03-live-api`.

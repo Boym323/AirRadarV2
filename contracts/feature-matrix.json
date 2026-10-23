@@ -103,8 +103,13 @@
       "name": "Ukládání vzorkované historie do PostgreSQL",
       "decision": "KEEP",
       "status": "IN_PROGRESS",
-      "tests": [],
-      "notes": "G-04 SQLx+RAM-first v PR #21, izolovaný PostgreSQL CI; reálné DB LXC/TLS/restore/benchmark a provozní přejímka NEOVĚŘENO."
+      "tests": [
+        "PR #21 CI #39930292509: Rust, Vite a dokumentace PASS",
+        "PR #21 izolované PostgreSQL CI #39930292506 PASS",
+        "Lokální Rust fmt/test/clippy na pracovním SHA: 51 testů PASS",
+        "DEV SQLx dedup/read test proti airradar_v2_dev: PASS 23. 10. 2026"
+      ],
+      "notes": "G-04 SQLx+RAM-first, 30s bucket, bounded 2048/128 a omezený retry jsou implementované. Reálný výpadek/obnova DB, nezávislý DEV pg_restore a 1×/2×/4× benchmark zůstávají NEOVĚŘENO; proto J09 není TESTED/ACCEPTED."
     },
     {
       "id": "J11",

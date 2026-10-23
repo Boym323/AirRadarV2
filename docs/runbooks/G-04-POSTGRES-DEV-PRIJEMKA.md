@@ -21,7 +21,7 @@ Pokud spojení uspěje, ověřit `pg_stat_ssl.ssl=false`, skutečný účet/DB a
 
 Název testovací DB je `airradar_v2_dev`, role pro migrace a runtime musí být odlišné, bez `SUPERUSER`/`CREATEDB`/`CREATEROLE` a runtime bez `CREATE`, `UPDATE`, `DELETE` a `TRUNCATE`. DDL spustit výlučně pod migrační rolí po záloze. Spuštění neprovádí GitHub Actions proti DB LXC.
 
-Schéma z `database/migrations/20261022210900_g04_initial.up.sql` má jediný primární index a žádné partitions. Migrační `.down.sql` **maže data** a nesmí sloužit jako běžný rollback historie.
+Schéma z `database/migrations/20261022210900_g04_initial.up.sql` má jediný primární index a žádné partitions. Migrační `.down.sql` je záměrně **zakázaná operace**; rollback historie se provádí pouze obnovou do nové izolované databáze z `pg_dump`.
 
 ## 3. Připojení Rustu je výhradně opt-in
 

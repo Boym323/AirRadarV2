@@ -1,6 +1,6 @@
 # G-04 — PostgreSQL historie a bezpečná izolace DB LXC
 
-**Stav:** NEZAHÁJENO (podrobné zadání; nejde o implementaci).  
+**Stav:** ROZPRACOVÁNO (implementace G-04.04–.09 v PR #21; provozní přejímka není dokončena).
 **Odpovědnost:** M03 — Rust/SQLx/PostgreSQL.  
 **Závislosti:** G-02 a G-03, samostatný DEV přístup k existujícímu PostgreSQL LXC schválený správcem.  
 **Primární KEEP ID:** `J09`.  

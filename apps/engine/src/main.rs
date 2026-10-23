@@ -96,7 +96,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
         return Ok(());
     }
-    // G-04: pouze explicitní DEV režim, ověřená TLS CA a samostatná V2 DB.
+    // G-04: pouze explicitní DEV režim a samostatná V2 DB v důvěryhodné LAN.
     // Běžný G-03 DEV proces nemá spojení s PostgreSQL.
     if std::env::args().any(|arg| arg == "--g04-dev-history") {
         let config = ingest::supervisor::Config::from_env()?;
