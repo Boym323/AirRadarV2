@@ -132,7 +132,7 @@ To je **matematika počtu vzorků**, ne měřené zmenšení WAL, skutečných d
 - [ ] Správnost PK při restartu/retry a \`ON CONFLICT DO NOTHING\`, nedvojí započtení potvrzeného sample.
 - [ ] Porovnání nepartitionované vs denně partitionované tabulky a PK-only vs s přidaným indexem.
 - [ ] CPU/RSS Rust, SQL transakce/s, \`pg_stat_user_tables\`, \`pg_total_relation_size\`, \`EXPLAIN/BUFFERS\`, WAL a I/O (jen izolovaně; \`pg_stat_wal\` agreguje *celý cluster*).
-- [ ] Reálně otestovaný restore, práva/TLS a nulový dopad restartu PostgreSQL na živé RAM/SSE.
+- [ ] Reálně otestovaný restore, práva/firewall/SCRAM a nulový dopad restartu PostgreSQL na živé RAM/SSE.
 
 Žádné označení \`ACCEPTED\` G-04/J09 nevzniká schválením tohoto dokumentu.
 

@@ -29,7 +29,7 @@ Základní produkt tvoří: příjem readsb/BEAST, korektní identita a stav let
 
 ## 4. Výkon a databáze
 
-- Nové izolované V2 úložiště začne prázdné, stará historická data se nepřenášejí. **G-04 použije PostgreSQL na existujícím odděleném DB LXC a musí prokázat bezpečné role, TLS, indexy, retenci a obnovu**; bez přímého uživatele dat nevytvářet tabulku, index ani pozadí worker.
+- Nové izolované V2 úložiště začne prázdné, stará historická data se nepřenášejí. **G-04 použije PostgreSQL na existujícím odděleném DB LXC a musí prokázat bezpečné role, izolovanou LAN bez TLS dle [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md), indexy, retenci a obnovu**; bez přímého uživatele dat nevytvářet tabulku, index ani pozadí worker.
 - SQLx migrace, bezpečná oprávnění, bounded zápisová fronta, vzorkování a dávkování, retence podle skutečných aktivních konzumentů.
 - Ověřovat `EXPLAIN (ANALYZE, BUFFERS)`, latence P95/P99, CPU/RSS, WAL a velikost dat; nepředstírat porovnání bez baseline.
 - Výpadek DB, meteorologického zdroje nebo UI klienta nesmí pozastavit vlastní příjem.
