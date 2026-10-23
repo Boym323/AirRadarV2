@@ -154,10 +154,6 @@ pub async fn insert_batch(pool: &PgPool, batch: &[Sample]) -> Result<u64, WriteE
 /// Omezený retry pouze uvnitř persistence tasku. Ingest, RAM a SSE na něm
 /// nečekají a po posledním neúspěchu se inflight dávka zahodí přes ACK=false.
 /// Idempotentní PK/ON CONFLICT chrání i případ, kdy timeout nastal až po COMMITu.
-pub async fn insert_batch_with_retry(pool: &PgPool, batch: &[Sample]) -> Result<u64, WriteError> {
-    insert_batch_with_retry_observed(pool, batch, None).await
-}
-
 pub async fn insert_batch_with_retry_observed(
     pool: &PgPool,
     batch: &[Sample],
