@@ -113,7 +113,7 @@
     "Izolovaná retence 2501 řádků v dávkách 1000/1000/501: PASS, SHA ebc20307c8962593c3895908f4b54e2f63aeaa8a",
     "Skutečný Rust/SQLx writer 1×/2×/4× s bounded ztrátou, WAL, RSS, CPU a SSE: PASS, binární SHA 36afdda5e752cc320496f44672a94e9434eea9eb, harness SHA ebc20307c8962593c3895908f4b54e2f63aeaa8a",
     "Srovnání stejné rekonstruované trasy 15/30/60/adaptive: PASS, SHA ebc20307c8962593c3895908f4b54e2f63aeaa8a",
-    "Rust readsb replay 64 letadel / 16 snapshotů / 10 s, min=max=3 vzorky na letadlo: PASS, SHA 0fb135ee6e910e355034719be187ff6a13bd3e6e"
+    "Rust readsb replay 64 letadel / 16 snapshotů / 10 s, min=max=3 vzorky na letadlo: PASS, SHA 0daeb2f755bff81ce518a0415942a7e6b82579b0"
       ],
   "notes": "G-04 SQLx+RAM-first, 30s bucket, bounded 2048/128, retry/backoff, izolovaný reconnect, retence, skutečný SQLx-writer replay, férový časový Rust readsb replay a interní diagnostika jsou doložené v izolaci. Provozní backup/RPO/RTO sdíleného LXC, skutečný RF replay a serverové CPU zůstávají NEOVĚŘENO; ztráty 18,1 %/59,0 % při 2×/4× nesplňují canary bránu, proto J09 není TESTED/ACCEPTED."
     },

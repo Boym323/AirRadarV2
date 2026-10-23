@@ -16,7 +16,7 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 - Audit sdílené DEV DB zjistil `archive_mode=off` a vypnutý `archive_command`; skutečná backup politika a provozní RPO/RTO nejsou z runtime účtu známé. G-04/J09 zůstává `IN_PROGRESS`.
 
 ### G-04 — diagnostika a časově rozložený replay
-- Implementační SHA `0fb135ee6e910e355034719be187ff6a13bd3e6e` přidává interní 15s diagnostiku pending/inflight/commit/drop/timeout/connection bez tajných údajů a Rust regresní replay 64 letadel.
+- Implementační SHA `0daeb2f755bff81ce518a0415942a7e6b82579b0` přidává interní 15s diagnostiku pending/inflight/commit/drop/timeout/connection bez tajných údajů a Rust regresní replay 64 letadel.
 - Časově rozložený replay 16 snapshotů po 10 s zachoval 3 vzorky na každé ze 64 identit. Bounded benchmark ale vykázal ztráty 18,1 % při 2× a 59,0 % při 4×; první DEV canary proto zůstává NO-GO.
 
 ### G-04 — stávající PostgreSQL pravidla beze změn
