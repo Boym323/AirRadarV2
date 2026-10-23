@@ -268,7 +268,7 @@ mod tests {
         let template = parse_replay(
             include_bytes!("../../../../contracts/fixtures/readsb/initial.json"),
             "rx-primary",
-            1_800.0,
+            1_792_627_200.0,
         )
         .unwrap()
         .into_iter()
