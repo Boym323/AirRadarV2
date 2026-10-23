@@ -4,6 +4,87 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-04 — etapa uzavřena v DEV (J09 ACCEPTED, 23. 10. 2026)
+- Vlastník přijal skutečný 1817,498s DEV canary: `eligible=committed=1312`, 61/61 SQL dávek, 0 dropů/SQL timeoutů, `pending=inflight=0`, `drained=true writer_finished=true`, systemd `Result=success`/`ExecMainStatus=0`/`ActiveState=inactive`, PostgreSQL 1490 → 2802 (+1312). Rust/Web/docs a izolované PostgreSQL CI PASS.
+- **DEV ACCEPTED s výslovnou evidenční výjimkou:** doložena vstupní DB baseline, chybí průběžné 5min host disk/WAL/CPU/RAM záznamy a závěrečný G-03 SSE. To není dodatečně vydáváno za naměřené hodnoty ani za PASS úplného evaluatoru. Vlastník na tomto podkladě uzavřel DEV G-04 a nepožaduje další SQL soak; omezení evidence se nepřenáší na produkční akceptaci.
+- J09 stav `ACCEPTED`, G-04 `DEV ACCEPTED`. PR #21 zatím bez merge, trvalé spouštění G-04, DB konfigurace, G-03, AirRadar V1 a PP Studio beze změny. Starší níže uvedené stavy `IN_PROGRESS` patří k historickým etapám testování.
+
+### G-04 — opakovaný 30min DEV canary: historický writer a graceful drain PASS
+- Na novém immutable G-04 releasu z implementačního SHA `e186c54f8304c3e437f6ed9a54c6bd31722dde7c` (binární SHA-256 `7b7cbf291141bdfbfa4e3a4e8ea7c8914d687cbf1824089721afdcd43e5f5d1e`) správce doložil skutečný 1817,498s DEV canary: `eligible=1312`, `committed=1312`, `pending=0`, `inflight=0`, `coalesced=15239`, 61/61 SQL dávek bez chyby, nulové dropy/SQL timeouty, `connection=Up`.
+- Autonomní drain dokončil s `drained=true writer_finished=true`, `Result=success`, `ExecMainStatus=0`, `ActiveState=inactive`, bez systemd timeoutu. Read-only DB readback se změnil z 1490 na 2802 řádků (+1312), po běhu 326 identit; G-04 CPU time 6,085s, peak 3,8MB. **J09 označeno funkčně TESTED.**
+- Předtestová DB baseline přes Proxmox Console prokázala 3,1GiB volného disku, WAL 59MiB a 796MiB dostupné RAM; **časovaná 5min DB host evidence a závěrečné G-03/SSE důkazy nejsou dosud doloženy**. Kompletní provozní `G-04 ACCEPTED` proto stále čeká na tyto důkazy a plný evaluator. PR #21 draft, žádný merge ani produktový release.
+
+### G-04 — řízené vypuštění SQL writeru po 30 minutách (ADR 0013)
+- Nová opt-in G-04 implementace po 1 802 s vypne jen vlastní příjem, nejvýše 60 s čeká na uzavření 30s bucketů a potvrzení SQL ack, nejvýše 3 s na konec writeru; vypíše finální diagnostiku a při úspěchu ukončí proces s návratovým kódem 0. `systemd RuntimeMaxSec=1875`, nouzový rychlý STOP, G-03 a PostgreSQL zůstávají beze změn.
+- Doplněny Rust testy drainu (PASS ack, FAIL ack, nedoručený ack) a izolovaná PostgreSQL/SQLx regrese se skutečným závěrečným drainem. Nová systemd šablona odkazuje na zdrojový commit `e186c54f8304c3e437f6ed9a54c6bd31722dde7c` v odděleném immutable release. Binární SHA nové verze dosud neověřeno na DEV.
+- Aktualizovaný read-only postup pro ruční DB host snapshots, G-03 SSE heartbeat, nové SQL řádky a PASS/FAIL evaluator. Fyzické DEV nasazení a opakovaný canary **neprovedeny**, G-04/J09 zůstává IN_PROGRESS.
+
+### G-04 — skutečný BEAST/CPR 31min DEV canary, dílčí PASS
+- Ve skutečném BEAST-only DEV provozu vznikaly reálné SQL historické vzorky (snímek tabulky doložen vlastníkem); poslední diagnostika `eligible=1502`, `committed=1489`, `coalesced=17754`, 63/63 úspěšných SQL dávek, 0 SQL timeoutů, 0 zaznamenaných `dropped_*`, `connection=Up`. G-03 po testu `active`.
+- Systemd dosažením `RuntimeMaxSec=1875` ukončil canary výsledkem `timeout` (nikoli SQL timeout). V poslední diagnostice zůstalo `pending=13` (0,87 % kandidátů), bez potvrzeného závěrečného flush; G-04 nemá prokazatelný graceful drain. CPU canary 6,499 s, RSS peak 3,8 MB. Bez kompletního DB host readback/metrik a plné evaluace neoznačovat G-04/J09 `ACCEPTED`. Detaily v `docs/reports/G-04-VYSLEDEK.md`.
+
+### G-04 — opravená BEAST/CPR binárka musí být odděleně nasazena
+- Šablona ručně dozorovaného canary nyní ukazuje na SHA-pinned release `232d92840a0b053feba3ee13868d8b28be8ed821` (binární SHA-256 `fdb9e3e3c96372637e770d03f22fca1e0b947b1ab614a2ca65f413cab46b774a`). Deployment boundary test výslovně odmítá původní nefunkční `fe0ac66` cestu. V GitHubu není žádný důkaz, že byl nový release fyzicky instalován na DEV; nový live canary proto musí počkat na samostatnou kontrolu a lidský dohled.
+
+### G-04 — oprava BEAST-only ukládání historie v PR #21
+- Opravena skutečná příčina `eligible=0`: validní polohy rekonstruované z DF17/CPR jsou označeny `positionOrigin=adsb_cpr`, ale čas zůstává pravdivě `timeBasis=server_arrival`; obecné serverové pozice zůstávají odmítnuté.
+- Zachovány jsou `rx-primary`, `beast_tcp`, shodný čerstvý čas, CRC/CPR a fyzikální plausibilita, jediný RAM stav, adaptivní sampler, bounded fronty a SQLx writer. Přidána regrese BEAST-only → RAM → sampler → SQLx → izolovaný PostgreSQL.
+- Lokální Rust testy: 57/57 PASS; izolované PostgreSQL CI `39984664523` a hlavní CI `39984664522` PASS. Release binární SHA-256 pro commit `232d92840a0b053feba3ee13868d8b28be8ed821`: `fdb9e3e3c96372637e770d03f22fca1e0b947b1ab614a2ca65f413cab46b774a`.
+- Canary nebyl spuštěn; G-03, G-03 LXC, V1, PP Studio a sdílená PostgreSQL konfigurace nebyly měněny. Viz ADR 0012 a průběžný report G-04.
+
+### G-04 — skutečný DEV preflight po přerušeném SSH pokusu: NO-GO
+- Ověřeno přímo na `lo-dev-airradarv2`: G-04 zůstává `inactive/dead` bez listeneru na 4114; G-03/API/SSE a Nginx jsou aktivní. Nebyl proveden restart ani zásah do `current`, G-03, V1 nebo jiné DB.
+- Potvrzena binárka SHA-256 `1dd11387635eeb16040b69f33e09a6108d1fecf2491dde56699cc9b5971ba21b`, env `root:root 0600`, SQL audit existující DB bez TLS, 1 historický řádek, 4 připojení a `wal_bytes=163397425457`.
+- Reprodukované selhání testu zapisovatelnosti (`airradarv2` nemá zápis do `root:airradarv2 0750`); změna práv nebyla provedena, protože G-04 do adresáře nezapisuje. Aktuální fyzické metriky DB LXC a zajištěný nepřetržitý lidský dohled chybí, proto canary nebyl spuštěn a G-04/J09 zůstává `IN_PROGRESS`.
+
+### G-04 — ADR 0011: ruční dohled místo automatického SSH DB monitoringu
+- Vlastník zvolil pouze jednorázový osobně dozorovaný DEV canary; unit spouští přímo SHA-pinned binárku, bez `monitor_g04_canary.sh` a bez nového SSH účtu. Zachovány CPUQuota 50 %, MemoryMax 2 GiB, RuntimeMaxSec 1875 s, Restart=no, port 4114 a nedestruktivní rollback. DB disk/WAL/CPU/RAM a zdraví G-03/PP Studio se během testu kontrolují osobně nejpozději každých 5 minut. Riziko neautomatického zastavení při naplnění disku je vědomě přijaté jen pro tento dozorovaný DEV test. G-04 nespouštěna.
+
+### G-04 — DEV preflight canary 23. 10. 2026: NO-GO
+- Na DEV LXC byl z přesného SHA `fe0ac66fdebea25d21a2d211cd74cab922dd7d05` sestaven a mimo `current` atomicky nainstalován x86-64 artefakt SHA-256 `1dd11387635eeb16040b69f33e09a6108d1fecf2491dde56699cc9b5971ba21b`; G-04 unit je `static/inactive`, nikdy nespouštěná.
+- Doplněn funkčně testovaný fail-closed monitor pro read-only SQL/DB-LXC metriky, disk pod 2 GiB, WAL, CPU/RAM, SQL timeouty, stáří diagnostiky a degradaci G-03. Monitor nepoužívá `pg_ls_waldir()` ani `df --output`; připraven je forced-command helper a schvalovací postup pro samostatný neprivilegovaný SSH účet, který na DB LXC nebyl vytvořen. Kapacita proto zůstává NEOVĚŘENA a preflight NO-GO. Canary nebyl spuštěn; G-04/J09 zůstává `IN_PROGRESS`.
+
+### G-04 — ADR 0010: postradatelná historie V2 bez povinných záloh
+- Vlastník výslovně přijal možnost ztráty celé historické databáze V2; denní dump, PITR a provozní RPO/RTO nejsou přejímací bránou. Izolovaný pg_dump/pg_restore zůstává technickým důkazem G-04.11, backup timer se nezavádí. Zůstává povinné sledovat volné místo/WAL/CPU/RAM sdíleného LXC a bezpečný canary/rollback. Zálohování PP Studio, AirRadar V1 a ostatních databází se nemění.
+
+
+### G-04 — příprava bezpečného DEV canary
+- Přidána neinstalovaná systemd šablona G-04 canary na odděleném loopback portu, chráněný env vzor, automatické PASS/FAIL vyhodnocení 30minutového běhu a nedestruktivní rollback na G-03.
+- Přidán read-only `pg_dump -Fc` helper s pevným cílem `airradar_v2_dev`; skutečný dump byl uložen mimo DB LXC a obnoven pouze v izolaci. Provozní RPO/RTO, volné místo a CPU/RAM DB LXC zůstávají NEOVĚŘENO.
+- Statická brána potvrzuje, že merge/main auto-deploy neobsahuje `--g04-dev-history` a G-03 unit zůstává `--g03-live-api`. G-04/J09 zůstává `IN_PROGRESS`, canary nebyl spuštěn.
+
+### G-04 — provozní audit a izolovaná výkonnostní brána (23. 10. 2026)
+- Na auditním SHA `4659d63822d842a69fb0e141b9dcf1c5480e381e` ověřena skutečná DEV DB `airradar_v2_dev`: PostgreSQL 17.10, `pg_stat_ssl.ssl=false`, role a omezená práva bez změny serveru.
+- V samostatném lokálním PostgreSQL clusteru PASS výpadek/reconnect writeru, JSON/RAM/G-03 API při nedostupné DB, `pg_dump -Fc`/`pg_restore` a replay 5000 cílů.
+- Izolovaný dávkový benchmark 1×/2×/4× doložil wall, p95/p99, WAL, `pg_stat_io`, client CPU/RSS a dávky 128. Nejde o měření sdíleného DB LXC.
+- G-04/J09 zůstává `IN_PROGRESS`: chybí serverové CPU, 30denní retenční profil, srovnání 15/30/60 s a SQLx-writer benchmark. Writer nebyl aktivován v běžícím DEV.
+
+### G-04 — izolovaný writer, retence a sampling replay
+- Na testovacím kódu `36afdda5e752cc320496f44672a94e9434eea9eb` proběhl Rust→RAM→bounded→SQLx→PostgreSQL replay 1×/2×/4×; limit 2048 způsobil 0/452/2952 řízených ztrát, živé SSE zůstalo dostupné.
+- Izolovaná retence odstranila 2501 starých řádků dávkami 1000/1000/501 a zachovala nový řádek i jediný PK index. Srovnání stejné rekonstruované trasy 15/30/60/adaptive doložilo prostorovou chybu a počet řádků.
+- Audit sdílené DEV DB zjistil `archive_mode=off` a vypnutý `archive_command`; skutečná backup politika a provozní RPO/RTO nejsou z runtime účtu známé. G-04/J09 zůstává `IN_PROGRESS`.
+
+### G-04 — diagnostika a časově rozložený replay
+- Implementační SHA `0daeb2f755bff81ce518a0415942a7e6b82579b0` přidává interní 15s diagnostiku pending/inflight/commit/drop/timeout/connection bez tajných údajů a Rust regresní replay 64 letadel.
+- Časově rozložený replay 16 snapshotů po 10 s zachoval 3 vzorky na každé ze 64 identit. Bounded benchmark ale vykázal ztráty 18,1 % při 2× a 59,0 % při 4×; první DEV canary proto zůstává NO-GO.
+
+### G-04 — stávající PostgreSQL pravidla beze změn
+- Vlastník odmítl konfigurovat nové `hostnossl` ani měnit `pg_hba.conf` či síťová pravidla. Ověření používá pouze existující autorizaci; při odmítnutí zůstane G-04.02 BLOKOVÁNO bez automatických serverových změn. Aktualizováno ADR 0009, runbook, kroky a technické kontrakty.
+
+
+### G-04.02 — výslovně zvolená důvěryhodná LAN bez TLS (ADR 0009)
+- SQLx používá `PgSslMode::Disable`, přihlašovací jméno a heslo z chráněných proměnných, bez CA souboru. Rozhodnutí je omezené na izolovanou V2 DEV LAN a existující serverová pravidla. CI i read-only DEV ověření kontrolují `pg_stat_ssl.ssl=false`. Skutečný databázový server a V1 se nemění.
+
+
+### G-04 — přihlášení k PostgreSQL jménem a heslem
+- SQLx DEV připojení přijímá samostatné proměnné HOST/PORT/USER/PASSWORD, bez hesla ve spojovacím URL, a používá samostatnou databázi `airradar_v2_dev`. Přidán negativní test chybějících údajů a hesel se speciálními znaky. Skutečná DB se nemění.
+
+
+### G-04 — izolovaný SQLx historický modul, rozpracované PR #21
+- Nový Rust RAM-first sampler a volitelný `--g04-dev-history`; omezený SQLx pool, 2048 coalescing, dávka 128, potvrzené SQL watermarks, 30s buckety, čtení historie v časovém okně bez dalších tabulek.
+- Oddělená PostgreSQL CI kontrola a nový retenční/backup runbook. Na stávajícím sdíleném DB LXC nebylo nic spuštěno; G-04.01–.03/.10/.12 zůstávají blokované provozními důkazy a fyzickým DEV měřením.
+
+
 ### 23. 10. 2026 — oprava kolize automatických statistik s DEV releasem
 - Při [hlavním deploymentu #39909065853](https://github.com/Boym323/AirRadarV2/actions/runs/39909065853) se po zelené CI a publish změnil `main` jen bot commitem statistik `6162c00c`; runner odmítl starší HEAD. Opraveno sdíleným concurrency lockem a přísnou výjimkou jen pro ověřené lineární bot commity, které mění výhradně README/metriky. Bez obecného oslabení immutable SHA nebo zásahu do V1/DB; nová CI/deploy přejímka musí ověřit nový commit.
 
@@ -288,3 +369,12 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 ## Pravidlo zápisu
 
 Každá skutečná implementační změna vyžaduje položku v části Nepublikováno, český etapový report a zdrojové důkazy. Historická označení verzí vzniknou teprve po skutečném vydání. Tento soubor není náhradou za automatizované testy.
+# 2026-10-23
+
+- G-04/PR #21: opraven P1 canary evaluator (povinné spojení, časová řada fronty,
+  jmenovatel ztrát podle Rust `eligible`, skutečný 30min interval, DB readback a
+  G-03 SSE); přidány negativní regresní testy.
+- G-04 canary unit je připnutý k samostatnému SHA-bound artefaktu s `MemoryMax=2G`,
+  `RuntimeMaxSec=1875` (1800 s důkaz + uzavření bucketu/drain) a bez automatického
+  restartu. G-03/4101 zůstává nedotčené.
+- Přidán read-only SQL audit DB/WAL a návrh externích záloh s RPO 24 h/RTO 2 h.

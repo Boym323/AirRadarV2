@@ -279,7 +279,14 @@ pub fn observation(decoded: Decoded, position: Option<Position>, received_at: f6
             "unknown"
         }
         .into(),
-        position_origin: "adsb".into(),
+        // CPR dekódování je skutečná ADS-B poloha, ale její čas je pouze
+        // okamžik přijetí na serveru; nikdy ji nepřeznačujeme na receiver UTC.
+        position_origin: if position.is_some() {
+            "adsb_cpr"
+        } else {
+            "adsb"
+        }
+        .into(),
         position_at_utc: position.as_ref().map(|_| received_at),
         position,
         callsign: decoded.callsign,
@@ -357,6 +364,34 @@ mod tests {
                 .observe_with_reference("icao:abc123", cpr, Some(&reference))
                 .is_some()
         );
+    }
+
+    #[test]
+    fn reconstructed_cpr_observation_preserves_server_arrival_basis() {
+        let decoded = decode_df17(
+            &hex_decode(
+                serde_json::from_str::<serde_json::Value>(include_str!(
+                    "../../../../contracts/fixtures/beast/cases.json"
+                ))
+                .unwrap()["valid"][0]["modeS"]
+                    .as_str()
+                    .unwrap(),
+            )
+            .unwrap(),
+            100.0,
+        )
+        .unwrap();
+        let obs = observation(
+            decoded,
+            Some(Position {
+                lat: 49.9,
+                lon: 15.3,
+            }),
+            100.0,
+        );
+        assert_eq!(obs.time_basis, "server_arrival");
+        assert_eq!(obs.position_origin, "adsb_cpr");
+        assert!(crate::contract::eligible_for_sql(&obs));
     }
     #[test]
     fn subtype_19_velocity_and_bad_crc() {

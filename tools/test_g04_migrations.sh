@@ -16,6 +16,12 @@ reject() {
     exit 1
   fi
 }
+reject_file() {
+  if psql -X -q -v ON_ERROR_STOP=1 -f "$1" >/dev/null 2>&1; then
+    echo "FAIL: databáze přijala nepřípustný migrační rollback" >&2
+    exit 1
+  fi
+}
 echo "G-04.04: migrace nahoru"
 psql -X -q -v ON_ERROR_STOP=1 -f "$migration.up.sql"
 [[ "$(sql "SELECT to_regclass('airradar_v2.flight_samples') IS NOT NULL")" == "t" ]]
@@ -62,10 +68,11 @@ psql -X -q -v ON_ERROR_STOP=1 -c "EXPLAIN (ANALYZE, BUFFERS)
    AND bucket_at < '2026-10-22 12:01:00+00'
  ORDER BY bucket_at"
 
-# Vratnost ověřena na prázdném CI cíli, ne na existující databázi.
-echo "G-04.04: migrace dolů, poté znovu nahoru"
-psql -X -q -v ON_ERROR_STOP=1 -f "$migration.down.sql"
-[[ "$(sql "SELECT to_regclass('airradar_v2.flight_samples') IS NULL")" == "t" ]]
+# Destruktivní rollback je zakázaný i v CI; ověříme, že je odmítnut.
+echo "G-04.04: destruktivní rollback musí být odmítnut"
+reject_file "$migration.down.sql"
+# Opakované spuštění up migrace je bezpečné a existující data zůstávají.
 psql -X -q -v ON_ERROR_STOP=1 -f "$migration.up.sql"
 [[ "$(sql "SELECT to_regclass('airradar_v2.flight_samples') IS NOT NULL")" == "t" ]]
-echo "PASS: G-04.04 integrita, 30s bucket, dedup, práva a migrace up/down/up"
+[[ "$(sql "SELECT count(*) FROM airradar_v2.flight_samples")" == "2" ]]
+echo "PASS: G-04.04 integrita, 30s bucket, dedup, práva, opakované up a bezpečný rollback"

@@ -1,7 +1,7 @@
 # Výsledná technologická rozhodnutí — AirRadar V2
 
 **Posouzení:** 21. 10. 2026.  
-**Stav:** rešerše dokončena; **Vite + React bylo následně skutečně nasazeno do G-00 skeletonu a PostgreSQL definitivně zvolena**. Výkonové benchmarky zůstávají neprovedeny; technologie se nesmějí prohlásit za kvantitativně nejrychlejší bez benchmarku.  
+**Stav:** rešerše dokončena; **Vite + React bylo následně skutečně nasazeno do G-00 skeletonu a PostgreSQL definitivně zvolena**. G-04 má izolované SQLx/writer/sampling benchmarky, ale společný technologický benchmark B01–B07 a serverové měření sdíleného LXC zůstávají neprovedené; technologie se nesmějí prohlásit za kvantitativně nejrychlejší bez odpovídajícího měření.
 **45 aktivních funkcí** neměníme; neobnovujeme žádné odložené moduly.
 
 ## Rozhodovací tabulka
@@ -29,7 +29,7 @@ readsb JSON / BEAST → Rust/Tokio/Axum (RAM, REST, SSE)
                         └──→ SQLx → PostgreSQL (existující separátní DB LXC)
 ~~~
 
-**G-00 web byl migrován a testován v CI.** PostgreSQL je volba vlastníka, nikoli výkonové tvrzení o SQLite. Samostatnou V2 DB, role, TLS a obnovu je potřeba ověřit při G-04; na existujícím databázovém LXC jsme neprováděli žádné zásahy.
+**G-00 web byl migrován a testován v CI.** PostgreSQL je volba vlastníka, nikoli výkonové tvrzení o SQLite. Samostatnou V2 DB, role, existující síťovou autorizaci pro heslové přihlášení v LAN bez TLS a obnovu je potřeba ověřit při G-04 (ADR 0009, bez změn `pg_hba.conf`); na existujícím databázovém LXC jsme neprováděli žádné zásahy.
 
 Historické alternativy zůstávají jako [výzkumná evidence](TECHNOLOGICKY-PRUZKUM.md), ale již nejsou aktivními implementačními variantami.
 
@@ -45,7 +45,7 @@ Historické alternativy zůstávají jako [výzkumná evidence](TECHNOLOGICKY-PR
 
 1. Potvrdit referenční JSON/BEAST fixture a očekávanou paritu.
 2. G-00 Vite web je migrován; MapLibre, PWA a SSE integrační chování testovat v příslušných etapách, nikoliv vytvářet další Next.js implementaci.
-3. Navrhnout PostgreSQL schéma pro aktivní dotazy a změřit na izolované DEV DB zápisy, indexy, síť/TLS a obnovu.
+3. Navrhnout PostgreSQL schéma pro aktivní dotazy a změřit na izolované DEV DB zápisy, indexy, existující síťový přístup, heslovou autentizaci bez TLS dle ADR 0009 a obnovu (bez změn pravidel PostgreSQL).
 4. V G-04 bezpečně připravit novou databázi/role V2 a reportovat skutečné naměřené limity PostgreSQL.
 5. Před produkcí provést B01–B07 měření na izolovaném V2 prostředí.
 

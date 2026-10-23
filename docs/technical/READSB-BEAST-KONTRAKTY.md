@@ -51,6 +51,10 @@ Uvnitř každého rámce je výskyt \`0x1a\` zakódován jako \`0x1a 0x1a\`. TCP
 
 **Mode-S CRC24/parita:** implementovat dle DF a příslušného způsobu parity (u některých zpráv se XORuje adresa / překrývá parita), nikoli zásadou \`syndrome==0\` na **všech** rámcích. Mode A/C nesprávně neinterpretovat jako ADS-B s ICAO. CPR poloha vyžaduje validní even/odd páry a pravidla času/latitude; nikdy nevydat nekorektní souřadnice jako skutečné. K jednotlivým DF/CPR vytvořit golden fixture a negativní rámce.
 
+### Čas a historická způsobilost rekonstruované CPR polohy
+
+BEAST-only globální nebo důvěryhodně lokální CPR poloha se v interní observaci označuje `positionOrigin=adsb_cpr` a `timeBasis=server_arrival`. Tím se zachovává skutečnost, že BEAST MLAT čítač nebyl prokázán jako UTC; poloha je časově přiřazena okamžiku, kdy Rust přijal a validně rekonstruoval rámec. `eligible_for_sql()` smí takovou observaci pustit do G-04 pouze při `receiverId=rx-primary`, `transport=beast_tcp`, shodě `positionAtUtc`, `messageAtUtc` a `receivedAtUtc` a po validaci CPR/CRC, čerstvosti a fyzikální plausibility. Obecná pozice s `server_arrival` (např. `beast_arrival()` nebo ručně dodaná souřadnice) zůstává z historie vyloučena. JSON a BEAST téhož přijímače nadále slučuje jediný RAM stav.
+
 ## 3. Normalizovaná interní událost (návrh, nikoli už existující API)
 
 ~~~text

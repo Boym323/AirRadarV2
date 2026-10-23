@@ -11,6 +11,16 @@ on:
       - 'database/migrations/**'
       - 'tools/test_g04_migrations.sh'
       - '.github/workflows/g04-postgres-migrations.yml'
+      - 'apps/engine/src/history_store.rs'
+      - 'apps/engine/Cargo.toml'
+      - 'Cargo.lock'
+      - 'apps/engine/src/history.rs'
+      - 'apps/engine/src/ingest/state.rs'
+      - 'apps/engine/src/contract.rs'
+      - 'apps/engine/src/ingest/mode_s.rs'
+      - 'apps/engine/src/ingest/supervisor.rs'
+      - 'tools/test_g04_backup_restore.sh'
+      - 'database/maintenance/**'
   workflow_dispatch:
 
 permissions:
@@ -38,7 +48,7 @@ jobs:
       PGDATABASE: airradar_v2_dev
       PGUSER: postgres
       PGPASSWORD: ci-temporary-not-a-real-secret
-      # Pouze izolovaný lokální kontejner bez TLS. Skutečný DB LXC musí verify-full.
+      # Pouze izolovaný lokální kontejner bez TLS; odpovídá ADR 0009 pro důvěryhodnou LAN.
       PGSSLMODE: disable
     steps:
       - uses: actions/checkout@v4
@@ -48,3 +58,14 @@ jobs:
           sudo apt-get install -y -qq postgresql-client
       - name: Ověřit migraci, integritu a oddělení práv
         run: bash tools/test_g04_migrations.sh
+      - uses: dtolnay/rust-toolchain@stable
+      - name: SQLx integrační test J09 ve stejném izolovaném PostgreSQL
+        env:
+          AIRRADAR_G04_CI_DATABASE_URL: postgres://postgres:ci-temporary-not-a-real-secret@127.0.0.1:5432/airradar_v2_dev?sslmode=disable
+        run: |
+          cargo test --locked -p airradarv2-engine g04_postgres_batch_dedup_and_bounded_history
+          cargo test --locked -p airradarv2-engine g04_beast_only_cpr_ram_sampler_sqlx_postgres_regression
+          cargo test --locked -p airradarv2-engine g04_explicit_lan_connection_has_no_tls_in_ci
+      - name: Skutečný izolovaný pg_dump/pg_restore a jednorázová retence
+        run: bash tools/test_g04_backup_restore.sh
+

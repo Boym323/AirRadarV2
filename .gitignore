@@ -12,3 +12,4 @@ coverage/
 # Python test bytecode
 __pycache__/
 *.py[cod]
+.artifacts/

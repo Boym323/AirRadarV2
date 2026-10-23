@@ -1,6 +1,6 @@
 # G-04 — PostgreSQL historie a bezpečná izolace DB LXC
 
-**Stav:** NEZAHÁJENO (podrobné zadání; nejde o implementaci).  
+**Stav:** ROZPRACOVÁNO (implementace G-04.04–.09 v PR #21; provozní přejímka není dokončena).
 **Odpovědnost:** M03 — Rust/SQLx/PostgreSQL.  
 **Závislosti:** G-02 a G-03, samostatný DEV přístup k existujícímu PostgreSQL LXC schválený správcem.  
 **Primární KEEP ID:** `J09`.  
@@ -15,12 +15,12 @@ Samostatně otestovaný modul odpovídající uvedeným schváleným ID; zbyteč
 Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu**; pokud má krok vlastní závislost, nejdříve ověř jeho předchozí části. Zaškrtávej jen s odkazy na implementaci a reálné testy, nikdy pouze za napsání tohoto plánu.
 
 - [ ] **G-04.01 — Prověřit existující DB LXC**  
-  **Implementace:** Read-only ověř verzi, kapacitu a zálohy PostgreSQL. Plán výhradně nové V2 DB, DEV a omezených rolí předlož správci; nic neměň bez oprávnění.  
+  **Implementace:** Read-only ověř verzi a kapacitu PostgreSQL. Zálohy postradatelné historie V2 nejsou dle [ADR 0010](../adr/0010-g04-postradatelna-historie-bez-zaloh.md) povinné; jiné databáze se nemění. Plán výhradně nové V2 DB, DEV a omezených rolí předlož správci; nic neměň bez oprávnění.  
   **Ověření:** Evidence schváleného názvu nové DB, přístupového modelu a potvrzené izolace od jiných aplikací.
 
-- [ ] **G-04.02 — Síť a TLS**  
-  **Implementace:** Nastav pouze s oprávněním konkrétní firewall allowlist, pg_hba, SCRAM a ověření identity serveru sslmode=verify-full; nezapisuj credentials do GitHubu.  
-  **Ověření:** Read-only handshake prokáže správnou V2 identitu a šifrování, jiná DB zůstává nedostupná.
+- [ ] **G-04.02 — Důvěryhodná LAN a autentizace SCRAM**  
+  **Implementace:** Dle volby vlastníka použij privátní LAN bez TLS (`sslmode=disable`) a existující pravidla PostgreSQL/host firewallu. **Nevytvářej nové `hostnossl`, neupravuj `pg_hba.conf` ani firewall.** Zjisti read-only, zda stávající `host` pravidlo a autentizace heslem dovolují spojení. Jinak krok BLOKOVÁNO. Viz [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md).  
+  **Ověření:** Read-only spojení prokáže správnou V2 DB/roli a `pg_stat_ssl.ssl=false`, chybné heslo bude odmítnuto; přístupový rozsah se auditně zjistí a bez změn vyhodnotí. Není-li spojení možné, není G-04.02 přijato. Provoz není šifrován.
 
 - [ ] **G-04.03 — DEV databáze a role**  
   **Implementace:** Pověřený správce vytvoří samostatnou DEV DB, migrační a runtime roli s nejnižšími nutnými právy, bez SUPERUSER/CREATEDB/CREATEROLE.  
@@ -54,9 +54,9 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Implementace:** Otestuj restart DB LXC, timeout, dočasný packet loss a zotavení, bez destruktivního zásahu do produkční instance.  
   **Ověření:** RAM a SSE zůstávají aktivní, SQLx metrics ukážou degradaci a návrat.
 
-- [ ] **G-04.11 — Záloha a skutečné obnovení**  
-  **Implementace:** Připrav pro V2 oddělené pg_dump/restore či schválené fyzické zálohy, obnovu ověř v DEV a bez přístupu do cizích databází.  
-  **Ověření:** Zkouška obnovení prokáže integritu záznamů a dokumentované RPO/RTO.
+- [ ] **G-04.11 — Izolovaný export a zkouška obnovitelnosti**  
+  **Implementace:** Technický pg_dump/pg_restore test G-04.11 již proběhl izolovaně. Opakované provozní zálohování V2 historie, PITR a RPO/RTO nejsou požadovány (ADR 0010); při havárii je akceptována i úplná ztráta staré historie.  
+  **Ověření:** Zachovat důkaz izolovaného testu G-04.11. Provozní GO neblokovat chybějícími zálohami V2; nadále chránit sdílený DB LXC, ověřit kapacitu a bezpečný návrat na G-03.
 
 - [ ] **G-04.12 — Výkonnost PostgreSQL**  
   **Implementace:** Změř 1×/2×/4× zápis, batch size, pool, WAL, IOPS, síťovou latenci a p95/p99 SQL dotazů na identickém datasetu.  
@@ -78,7 +78,7 @@ Všechny kroky mají skutečné odkazy na důkazy a všechny této etapě primá
 ## Návrhové technické specifikace (22. 10. 2026)
 
 - [SQLx schéma, indexy, retence a testy záloh](../../database/POSTGRES-DATOVY-MODEL.md)
-- [TLS, firewall, role a bezpečná obnova](../runbooks/POSTGRES-LXC-SECURITY-BACKUP.md)
+- [LAN, firewall, SCRAM, role a bezpečná obnova](../runbooks/POSTGRES-LXC-SECURITY-BACKUP.md)
 
 Výchozí číselné limity jsou **neověřené konfigurace pro první test**, nikoli PASS. Všechny checkboxy a stav KEEP zachovat, dokud nevznikne reálný kód, fixture a testovací důkazy.
 

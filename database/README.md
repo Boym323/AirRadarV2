@@ -1,6 +1,6 @@
 # Databáze AirRadar V2 — návrh a první SQLx migrace
 
-**Stav G-04.04:** SQLx migrační soubory jsou připravené v [migrations](migrations/), jejich izolovaný PostgreSQL 18 [CI test #39856030008](https://github.com/Boym323/AirRadarV2/actions/runs/39856030008) je PASS. Provozní databáze ani DEV DB na existujícím LXC nebyla vytvořena a migrace tam nebyla spuštěna.
+**Stav G-04:** SQLx migrační soubory jsou připravené v [migrations](migrations/), izolované PostgreSQL CI je PASS. DEV DB `airradar_v2_dev` na existujícím LXC je read-only auditně dostupná a schema/tabulka odpovídá migraci; migrace nebyla tímto agentem proti sdílenému LXC spuštěna.
 
 V G-04 vznikne vlastní PostgreSQL `airradar_v2` **v již existujícím samostatném databázovém LXC** s odděleným účtem a SQLx migracemi. Nová databáze začne **bez historických letů z V1**. Nikdy ji nenastavuj na produkční `DATABASE_URL` původního AirRadaru.
 
@@ -18,6 +18,15 @@ Podrobné požadavky: [hlavní zadání](../docs/plan/ZADANI-AIRRADAR-V2.md) a e
 
 Bezpečné připojení a role: [POSTGRES-LXC.md](POSTGRES-LXC.md). Skutečný DB LXC nebyl touto změnou upraven.
 
-**Návrh před G-04:** [SQL tabulky, indexy, denní UTC partitions, sampling, retence a zálohy](POSTGRES-DATOVY-MODEL.md). **Ověření bezpečnosti LXC:** [TLS/firewall/role/backup](../docs/runbooks/POSTGRES-LXC-SECURITY-BACKUP.md). Žádné SQL zatím nebylo aplikováno.
+**Návrh a audit:** [SQL tabulky, indexy, sampling, retence a zálohy](POSTGRES-DATOVY-MODEL.md). **Ověření bezpečnosti LXC:** [LAN/firewall/role/backup](../docs/runbooks/POSTGRES-LXC-SECURITY-BACKUP.md). Žádné DDL SQL nebylo tímto agentem aplikováno na sdílený LXC.
 
 **Optimalizace CPU a SSD:** [RAM-first deduplikace a adaptivní historie](../docs/technical/RAM-CACHE-A-DEDUP-ZAPISU.md), [ADR 0007](../docs/adr/0007-ram-first-deduplikace-a-usporny-zapis.md). Obě dokumentace nahrazují starý plán fixního 15s INSERT. `node tools/check-eco-sampling.mjs` ověřuje pouze deterministický matematický model, ne skutečnou PostgreSQL zátěž.
+
+
+## G-04 implementace (PR #21)
+
+SQLx runtime a RAM sampler jsou izolovaně implementované. Jednorázová retence: [g04_retention_once.sql](maintenance/g04_retention_once.sql). Bezpečný [postup G-04](../docs/runbooks/G-04-POSTGRES-DEV-PRIJEMKA.md) vyžaduje samostatnou DEV databázi a bezpečnou kapacitu sdíleného LXC; izolovaný export/restore G-04.11 již proběhl. Pravidelné zálohy historie V2 nejsou požadovány ([ADR 0010](../docs/adr/0010-g04-postradatelna-historie-bez-zaloh.md)). Tento repozitář nenastavuje databázové LXC automaticky.
+
+**Připojení G-04 v LAN:** podle [ADR 0009](../docs/adr/0009-g04-postgresql-lan-bez-tls.md) používá SQLx `sslmode=disable` a přihlášení jménem a heslem z chráněné konfigurace. Použijí se výhradně existující pravidla PostgreSQL a firewallu; nové `hostnossl` se nepřidává. Nešifrovaný přenos je vědomou výjimkou pouze pro důvěryhodnou místní síť.
+
+**Přístup bez změny `pg_hba.conf`:** G-04 použije pouze stávající PostgreSQL pravidla a privátní spojení v LAN. Pravidlo `host` může pokrývat i TCP bez TLS; nové `hostnossl` není vyžadováno ani vytvářeno. Pokud přihlášení neprojde, nesmí jej kód obejít ani měnit pravidla; viz [ADR 0009](../docs/adr/0009-g04-postgresql-lan-bez-tls.md).

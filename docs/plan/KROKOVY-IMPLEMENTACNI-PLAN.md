@@ -3,7 +3,7 @@
 **Datum:** 22. 10. 2026 · **Aktuální branch:** `main`  
 **Rozsah:** přesně **45 aktivních produktových funkcí** v 9 logických modulech, bez automatického rozšiřování.  
 **Technologie:** Rust/Tokio/Axum, Vite/React/TypeScript/MapLibre, PostgreSQL/SQLx na již provozovaném samostatném DB LXC.  
-**Stav k 23. 10. 2026:** G-00, G-01 10/10, G-02 11/11 a **G-03 10/10 HOTOVO; G-03 DEV ACCEPTED** ([automatický deploy #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759), `29ee2ee7`). **G-04 ROZPRACOVÁNO** (izolovaná PostgreSQL migrace/CI; skutečná DB LXC zatím nepřipojena); G-05 až G-13 produktově/produkčně NEZAHÁJENO. Instrukce a závislosti níže platí dál, historické příklady nejsou stavem dnešního runtime.
+**Stav k 23. 10. 2026:** G-00, G-01 10/10, G-02 11/11 a **G-03 10/10 HOTOVO; G-03 DEV ACCEPTED** ([automatický deploy #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759), `29ee2ee7`). **G-04 HOTOVO — DEV ACCEPTED** (J09 ACCEPTED, 1817,498s BEAST/CPR canary 1312/1312 SQL vzorků, bezpečný drain, +1312 DB řádků; bez produktového deploye; intervalové DB host metriky nejsou doloženy a byly pro DEV uzavření prominuty); G-05 až G-13 produktově/produkčně NEZAHÁJENO. Instrukce a závislosti níže platí dál, historické příklady nejsou stavem dnešního runtime.
 
 ## Implementační seznam
 

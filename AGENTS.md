@@ -17,7 +17,7 @@
 - Živá letadla mají jediného vlastníka — Rust RAM; web přijímá pouze verzovaná HTTP/SSE DTO. Fronty a retry jsou ohraničené.
 - Radar přijímá místní readsb/BEAST. Web nikdy nepotřebuje volit zdroj dat.
 - DB, počasí ani notifikační doručení nesmějí blokovat živý příjem. Ve vývojových/replay/shadow testech nikdy neposílej reálné upozornění.
-- Ochrana soukromí veřejných DTO, bezpečná práce s tajemstvími, přístupová ochrana mutací, zálohy a rollback jsou povinné i bez zvláštní produktové funkce.
+- Ochrana soukromí veřejných DTO, bezpečná práce s tajemstvími, přístupová ochrana mutací a bezpečný rollback jsou povinné i bez zvláštní produktové funkce. Zálohy se řídí hodnotou dat: **výhradně postradatelná historie AirRadar V2 G-04 má výjimku [ADR 0010](docs/adr/0010-g04-postradatelna-historie-bez-zaloh.md)**. Zálohování PP Studio, V1 a dalších databází se nemění.
 - CI nyní provádí Rust fmt/Clippy/test, **Vite/React** lint/typecheck/test/build a `node tools/check-docs.mjs`. CI používá čisté npm ci, Vite build a kontrolu statického webu. Další kontrakt/E2E/load testy zaváděj podle etapy.
 - Nevyžaduj ani nevymýšlej hesla a interní adresy; nevytvářej produkční deploy bez výslovného schválení.
 
@@ -27,7 +27,9 @@ Všechna čísla skutečného výkonu uváděj s metodikou a přesným SHA. Stav
 
 ## Technické kontrakty
 
-Při každé práci na G-01 až G-11 zkontroluj [závazný rozcestník](docs/plan/TECHNICKE-KONTRAKTY-A-LIMITY.md) a příslušnou z šesti technických specifikací. Výchozí sampling, retenci, SSE limity, MapLibre render a PostgreSQL TLS/backup neměň bez konkrétního měření a českého ADR. Tyto návrhové hodnoty ještě nejsou naměřené ani implementované.
+Při každé práci na G-01 až G-11 zkontroluj [závazný rozcestník](docs/plan/TECHNICKE-KONTRAKTY-A-LIMITY.md) a příslušnou z šesti technických specifikací. Výchozí sampling, retenci, SSE limity, MapLibre render a PostgreSQL bezpečnostní režim/backup neměň bez konkrétního měření a českého ADR. Pro G-04 se uplatní výslovná výjimka [ADR 0009](docs/adr/0009-g04-postgresql-lan-bez-tls.md): důvěryhodná LAN bez TLS a heslové ověření podle stávajícího přístupu serveru, **bez nového `hostnossl` a bez úprav `pg_hba.conf`/firewallu**. Pokud existující autorizace spojení neumožní, G-04 je BLOKOVÁNO. Tyto návrhové hodnoty ještě nejsou naměřené ani implementované.
+
+Pro první G-04 DEV canary platí [ADR 0011](docs/adr/0011-g04-rucne-hlidany-canary.md): jednorázový, osobně dozorovaný test bez DB monitorovacího SSH účtu a bez automatického hlídání DB LXC. Toto není GO ke spuštění ani souhlas s trvalým provozem; G-03, V1 a ostatní DB zůstávají chráněné.
 
 ## Úspornost provozu jako závazné pravidlo
 

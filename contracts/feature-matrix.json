@@ -20,7 +20,7 @@
       "name": "Příjem lokálních letadel přes readsb JSON · základ systému",
       "decision": "KEEP",
       "status": "TESTED",
-      "tests": [
+    "tests": [
         "G-02 JSON fixture+temp-file a společný replay, CI #39769323592"
       ],
       "notes": "Readsb JSON parser otestován přes fixture a temp-file; 60min LIVE byl jen BEAST, nikoliv přepnutí na živý JSON."
@@ -102,9 +102,24 @@
       "id": "J09",
       "name": "Ukládání vzorkované historie do PostgreSQL",
       "decision": "KEEP",
-      "status": "NOT_STARTED",
-      "tests": [],
-      "notes": ""
+      "status": "ACCEPTED",
+      "tests": [
+        "PR #21 CI #39930292509: Rust, Vite a dokumentace PASS",
+        "PR #21 izolované PostgreSQL CI #39930292506 PASS",
+        "Lokální Rust fmt/test/clippy na pracovním SHA: 57 testů PASS",
+        "DEV SQLx dedup/read test proti airradar_v2_dev: PASS 23. 10. 2026",
+        "Izolovaný PostgreSQL výpadek/reconnect, 5000 cílů a pg_dump/pg_restore: PASS, SHA 4659d63822d842a69fb0e141b9dcf1c5480e381e",
+    "Izolovaný 1×/2×/4× SQL dávkový benchmark: PASS, SHA 4659d63822d842a69fb0e141b9dcf1c5480e381e",
+    "Izolovaná retence 2501 řádků v dávkách 1000/1000/501: PASS, SHA ebc20307c8962593c3895908f4b54e2f63aeaa8a",
+    "Skutečný Rust/SQLx writer 1×/2×/4× s bounded ztrátou, WAL, RSS, CPU a SSE: PASS, binární SHA 36afdda5e752cc320496f44672a94e9434eea9eb, harness SHA ebc20307c8962593c3895908f4b54e2f63aeaa8a",
+    "Srovnání stejné rekonstruované trasy 15/30/60/adaptive: PASS, SHA ebc20307c8962593c3895908f4b54e2f63aeaa8a",
+    "Rust readsb replay 64 letadel / 16 snapshotů / 10 s, min=max=3 vzorky na letadlo: PASS, SHA 0daeb2f755bff81ce518a0415942a7e6b82579b0",
+    "Příprava canary: neinstalovaný systemd unit, evaluator/rollback a kontrola hranice main→G-03: PASS, SHA 232f01277b2710e064ed8469a724e6cb60954739",
+    "BEAST-only validní CPR → RAM → adaptivní sampler → SQLx → izolovaný PostgreSQL readback: izolované CI #39999749071 PASS",
+    "DEV canary 23. 10. 2026: 1817,498 s, 1312/1312 historických vzorků potvrzeno, 61/61 SQL dávek, 0 ztrát/timeoutů, pending/inflight=0; skutečný DB readback 1490 → 2802; systemd exit 0, graceful drain; binary SHA-256 7b7cbf291141bdfbfa4e3a4e8ea7c8914d687cbf1824089721afdcd43e5f5d1e",
+    "ADR 0013 shutdown regression + 60 Rust testů PASS; hlavní CI #39999749209 PASS"
+      ],
+  "notes": "J09 DEV ACCEPTED / G-04 UZAVŘENA na základě reálného 1817,498s BEAST/CPR → RAM → SQLx → PostgreSQL canary: 1312/1312 ACK, 61/61 batchů, 0 SQL timeoutů, 0 dropů, final pending/inflight=0, databáze 1490→2802 (+1312), bezpečný graceful drain, exit 0. Izolované CI a 60 Rust testů PASS. Správce převzal DEV výsledek bez dalšího opakovaného canary a uzavřel etapu s výslovně zaznamenaným omezením: chybí časová řada 5min DB host metrik a post-run G-03 SSE, proto se netvrdí plný výkonový audit sdílené DB ani produkční připravenost. Zálohy postradatelné V2 historie nejsou povinné dle ADR 0010. Trvalý writer ani nasazení na produkci tím nejsou schváleny."
     },
     {
       "id": "J11",

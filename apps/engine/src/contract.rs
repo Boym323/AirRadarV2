@@ -224,10 +224,26 @@ pub fn beast_arrival(hex: &str, timestamp: f64, position: Position) -> Option<Ob
 }
 
 pub fn eligible_for_sql(o: &Observation) -> bool {
-    o.position.is_some()
+    let trusted_readsb_or_receiver =
+        matches!(o.time_basis.as_str(), "derived_readsb" | "receiver_utc")
+            && o.position_origin == "adsb";
+    // BEAST neposkytuje UTC. CPR poloha je přesto skutečná ADS-B poloha,
+    // pokud vznikla validním DF17 even/odd nebo bezpečným lokálním CPR
+    // dekódováním. Čas zůstává pravdivě server_arrival; obecná poloha
+    // označená server_arrival se nikdy do historie nepustí.
+    let reconstructed_beast = o.transport == "beast_tcp"
+        && o.time_basis == "server_arrival"
+        && o.position_origin == "adsb_cpr"
+        && o.position_at_utc.is_some_and(|at| {
+            at.is_finite()
+                && o.received_at_utc.is_finite()
+                && (at - o.received_at_utc).abs() <= 0.001
+                && (o.message_at_utc - o.received_at_utc).abs() <= 0.001
+        });
+    o.receiver_id == "rx-primary"
+        && o.position.is_some()
         && o.position_at_utc.is_some()
-        && o.position_origin == "adsb"
-        && matches!(o.time_basis.as_str(), "derived_readsb" | "receiver_utc")
+        && (trusted_readsb_or_receiver || reconstructed_beast)
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -512,7 +528,7 @@ mod tests {
     }
 
     #[test]
-    fn beast_without_utc_is_not_sql_history() {
+    fn arbitrary_beast_arrival_is_not_sql_history() {
         let obs = beast_arrival(
             "ABC123",
             1792627205.0,
@@ -524,6 +540,27 @@ mod tests {
         .unwrap();
         assert_eq!(obs.time_basis, "server_arrival");
         assert_eq!(obs.aircraft_key, "icao:abc123");
+        assert!(!eligible_for_sql(&obs));
+    }
+
+    #[test]
+    fn reconstructed_beast_cpr_keeps_arrival_time_and_is_sql_eligible() {
+        let mut obs = beast_arrival(
+            "ABC123",
+            1792627205.0,
+            Position {
+                lat: 49.9,
+                lon: 15.3,
+            },
+        )
+        .unwrap();
+        obs.position_origin = "adsb_cpr".into();
+        assert_eq!(obs.time_basis, "server_arrival");
+        assert!(eligible_for_sql(&obs));
+        obs.position_at_utc = Some(1792627105.0);
+        assert!(!eligible_for_sql(&obs));
+        obs.position_at_utc = Some(1792627205.0);
+        obs.transport = "readsb_json".into();
         assert!(!eligible_for_sql(&obs));
     }
 

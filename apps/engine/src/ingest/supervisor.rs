@@ -7,6 +7,11 @@ use super::{
     state::RadarState,
 };
 use crate::contract::Observation;
+use crate::{
+    history::{HistorySampler, Sample},
+    history_store::WriterDiagnostics,
+};
+use std::future::Future;
 use std::{
     path::{Path, PathBuf},
     sync::{
@@ -19,7 +24,7 @@ use tokio::{
     io::AsyncReadExt,
     net::TcpStream,
     sync::mpsc,
-    time::{self, timeout},
+    time::{self, Instant, timeout},
 };
 
 #[derive(Debug, Clone)]
@@ -167,42 +172,121 @@ pub async fn run(config: Config) -> Result<(), Box<dyn std::error::Error>> {
 /// G-03: jediný task RAM stavu; max. 1x za sekundu publikuje veřejný snapshot.
 pub async fn run_with_publisher(
     config: Config,
-    mut publisher: Option<crate::api::Publisher>,
+    publisher: Option<crate::api::Publisher>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    run_with_publisher_and_history(config, publisher, None).await
+}
+
+/// G-04 explicitní opt-in. Jediná SQL task nikdy nečeká v ingest actoru.
+pub async fn run_with_publisher_and_history(
+    config: Config,
+    publisher: Option<crate::api::Publisher>,
+    history_pool: Option<sqlx::PgPool>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    run_with_publisher_and_history_until(
+        config,
+        publisher,
+        history_pool,
+        std::future::pending::<()>(),
+    )
+    .await
+}
+
+/// Jen opt-in G-04 dostává jednorázový signál pro řízený drain.
+/// Bez tohoto signálu zůstává chování živého G-03 beze změny.
+pub async fn run_with_publisher_and_history_until<F: Future<Output = ()>>(
+    config: Config,
+    mut publisher: Option<crate::api::Publisher>,
+    history_pool: Option<sqlx::PgPool>,
+    shutdown: F,
+) -> Result<(), Box<dyn std::error::Error>> {
+    tokio::pin!(shutdown);
     if config.receiver_id != "rx-primary" {
         return Err("invalid receiver ID".into());
     }
     let (tx, mut rx) = mpsc::channel::<Ingress>(2048);
     let drops = Arc::new(AtomicU64::new(0));
     let json_pending = Arc::new(AtomicBool::new(false));
+    let mut source_tasks = Vec::new();
     if let Some(path) = config.json_path {
         let sender = tx.clone();
         let dropped = Arc::clone(&drops);
         let pending = Arc::clone(&json_pending);
-        tokio::spawn(async move {
+        source_tasks.push(tokio::spawn(async move {
             poll_json(&path, sender, dropped, pending).await;
-        });
+        }));
     }
     if let Some(address) = config.beast_addr {
         let sender = tx.clone();
         let dropped = Arc::clone(&drops);
-        tokio::spawn(async move {
+        source_tasks.push(tokio::spawn(async move {
             poll_beast(&address, sender, dropped).await;
-        });
+        }));
     }
     drop(tx);
     let mut state = RadarState::default();
+    let mut history_enabled = history_pool.is_some();
+    let writer_diagnostics = Arc::new(WriterDiagnostics::default());
+    let mut next_history_trace = 0.0;
+    let (history_tx, mut history_rx) = mpsc::channel::<Vec<Sample>>(1);
+    let (history_ack_tx, mut history_ack_rx) = mpsc::channel::<bool>(1);
+    let mut writer_task = None;
+    if let Some(pool) = history_pool {
+        state.history = Some(Default::default());
+        let diagnostics = Arc::clone(&writer_diagnostics);
+        writer_task = Some(tokio::spawn(async move {
+            while let Some(batch) = history_rx.recv().await {
+                let result = crate::history_store::insert_batch_with_retry_observed(
+                    &pool,
+                    &batch,
+                    Some(&diagnostics),
+                )
+                .await;
+                let ok = result.is_ok();
+                if !ok && std::env::var_os("AIRRADAR_V2_HISTORY_TRACE").is_some() {
+                    eprintln!("G-04 history SQL batch failed: {result:?}");
+                }
+                if history_ack_tx.send(ok).await.is_err() {
+                    break;
+                }
+            }
+            pool.close().await;
+        }));
+    } else {
+        drop(history_rx);
+        drop(history_ack_tx);
+    }
     let mut cpr = CprCache::default();
     let mut sources = SourceArbiter::default();
     let mut tick = time::interval(Duration::from_secs(1));
     loop {
         tokio::select! {
+            _ = &mut shutdown => break,
+            ack=history_ack_rx.recv(), if history_enabled => {
+                if let Some(committed) = ack {
+                    if let Some(history) = &mut state.history {
+                        history.finish_batch(committed, wall_seconds());
+                    }
+                } else {
+                    history_enabled = false;
+                }
+            },
             item=rx.recv()=>{
                 match item {Some(event)=>{consume(event, &mut state, &mut cpr, &mut sources);},None=>break}
             },
             _=tick.tick()=>{
                 let now = wall_seconds();
                 state.cleanup(now);
+                if let Some(history) = state.history.as_mut() {
+                    if history_enabled {
+                        let batch = history.next_batch(now);
+                        if !batch.is_empty() && history_tx.try_send(batch).is_err() {
+                            history.finish_batch(false, now);
+                        }
+                    } else {
+                        history.expire(now);
+                    }
+                }
                 if let Some(publish) = publisher.as_mut() {
                     if let Err(error) = publish.publish(state.snapshot(now), now) {
                         eprintln!("G-03 publish rejected: {error}");
@@ -215,11 +299,121 @@ pub async fn run_with_publisher(
                         state.counters.conflicts,state.counters.capacity_drops,
                         drops.load(Ordering::Relaxed),sources.active(wall_seconds()));
                 }
+                if std::env::var_os("AIRRADAR_V2_HISTORY_TRACE").is_some()
+                    && now >= next_history_trace
+                {
+                    next_history_trace = now + 15.0;
+                    if let Some(history) = &state.history {
+                        log_history_trace(history, &writer_diagnostics, now);
+                    }
+                }
             }
         }
     }
+
+    // Odpojíme pouze lokální G-04 producenty. U G-03 se tato větev
+    // bez explicitního shutdown future nikdy nespustí.
+    for task in source_tasks {
+        task.abort();
+    }
+    rx.close();
+    drop(rx);
+
+    let drained = if let Some(history) = &mut state.history {
+        // 30s UTC bucket + 5s close-delay a bounded SQL potvrzení.
+        // 60s limit ponechává rezervu pod systemd RuntimeMaxSec=1875.
+        drain_history_until(
+            history,
+            &history_tx,
+            &mut history_ack_rx,
+            Instant::now() + Duration::from_secs(60),
+            wall_seconds,
+        )
+        .await
+    } else {
+        true
+    };
+    drop(history_tx);
+    let writer_finished = if let Some(writer) = writer_task {
+        matches!(
+            time::timeout(Duration::from_secs(3), writer).await,
+            Ok(Ok(()))
+        )
+    } else {
+        true
+    };
+    if let Some(history) = &state.history {
+        log_history_trace(history, &writer_diagnostics, wall_seconds());
+    }
+    eprintln!("G-04 shutdown drained={drained} writer_finished={writer_finished}");
+    if !drained || !writer_finished {
+        return Err("G-04 shutdown: poslední SQL fronta nebyla potvrzeně vyprázdněna".into());
+    }
     Ok(())
 }
+
+/// Žádné nové pozice při drainu: jen uzavřené UTC buckety,
+/// potvrzené dávky a pevně omezený čas; bez SQL zápisu naslepo.
+async fn drain_history_until<F: Fn() -> f64>(
+    history: &mut HistorySampler,
+    tx: &mpsc::Sender<Vec<Sample>>,
+    ack: &mut mpsc::Receiver<bool>,
+    deadline: Instant,
+    now: F,
+) -> bool {
+    loop {
+        if Instant::now() >= deadline {
+            return false;
+        }
+        let state = history.diagnostics();
+        if state.pending == 0 && state.inflight == 0 {
+            return true;
+        }
+        if state.inflight > 0 {
+            match time::timeout_at(deadline, ack.recv()).await {
+                Ok(Some(success)) => {
+                    history.finish_batch(success, now());
+                    if !success {
+                        return false;
+                    }
+                }
+                _ => return false,
+            }
+            continue;
+        }
+        let batch = history.next_batch(now());
+        if batch.is_empty() {
+            time::sleep(Duration::from_millis(200)).await;
+            continue;
+        }
+        if !matches!(time::timeout_at(deadline, tx.send(batch)).await, Ok(Ok(()))) {
+            history.finish_batch(false, now());
+            return false;
+        }
+    }
+}
+
+fn log_history_trace(history: &HistorySampler, writer: &WriterDiagnostics, now: f64) {
+    let memory = history.diagnostics();
+    eprintln!(
+        "G-04 history observed_at={} pending={} inflight={} eligible={} coalesced={} committed={} dropped_capacity={} dropped_stale={} dropped_writer={} sql_attempts={} committed_batches={} failed_batches={} sql_timeouts={} connection={:?}",
+        now,
+        memory.pending,
+        memory.inflight,
+        memory.eligible,
+        memory.coalesced,
+        memory.committed,
+        memory.dropped_capacity,
+        memory.dropped_stale,
+        memory.dropped_writer,
+        writer.sql_attempts.load(Ordering::Relaxed),
+        writer.committed_batches.load(Ordering::Relaxed),
+        writer.failed_batches.load(Ordering::Relaxed),
+        writer.sql_timeouts.load(Ordering::Relaxed),
+        writer.connection_state(),
+    );
+}
+
 fn enqueue(sender: &mpsc::Sender<Ingress>, dropped: &AtomicU64, event: Ingress) {
     if sender.try_send(event).is_err() {
         dropped.fetch_add(1, Ordering::Relaxed);
@@ -701,6 +895,7 @@ pub fn benchmark() -> Result<(), &'static str> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::history_store::{insert_batch, read_history};
     #[test]
     fn replay_single_authority() {
         let state = replay().unwrap();
@@ -763,6 +958,196 @@ mod tests {
         assert_eq!(dropped.load(Ordering::Relaxed), 5000);
         assert!(rx.try_recv().is_ok());
         assert!(rx.try_recv().is_err());
+    }
+
+    #[tokio::test]
+    async fn g04_beast_only_cpr_ram_sampler_sqlx_postgres_regression() {
+        let Ok(url) = std::env::var("AIRRADAR_G04_CI_DATABASE_URL") else {
+            // Skutečný PostgreSQL důkaz běží pouze v izolovaném G-04 workflow.
+            return;
+        };
+        let pool = sqlx::PgPool::connect(&url)
+            .await
+            .expect("isolated PostgreSQL");
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../contracts/fixtures/beast/cases.json"
+        ))
+        .unwrap();
+        let base: f64 = 1_792_800_000.0;
+        sqlx::query(
+            "DELETE FROM airradar_v2.flight_samples WHERE aircraft_key = 'icao:abc123' AND bucket_at = to_timestamp($1)",
+        )
+        .bind(base.floor() / 30.0 * 30.0)
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        // Dva skutečné DF17 CPR rámce, bez JSON kotvy a bez syntetické pozice.
+        let mut state = RadarState::default();
+        state.history = Some(Default::default());
+        let mut cpr = CprCache::default();
+        let mut sources = SourceArbiter::default();
+        for (index, case) in fixture["valid"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .take(2)
+            .enumerate()
+        {
+            let frame = crate::contract::hex_decode(case["modeS"].as_str().unwrap()).unwrap();
+            let at = base + index as f64;
+            let decoded = decode_df17(&frame, at).unwrap();
+            consume(
+                Ingress::Beast { decoded, at },
+                &mut state,
+                &mut cpr,
+                &mut sources,
+            );
+        }
+        let history = state.history.as_mut().unwrap();
+        assert_eq!(history.counters.eligible, 1);
+        // Stejný závěrečný drain jako v DEV canary, tentokrát s reálným SQLx.
+        let (tx, mut rx) = mpsc::channel::<Vec<Sample>>(1);
+        let (ack_tx, mut ack_rx) = mpsc::channel::<bool>(1);
+        let write_pool = pool.clone();
+        let writer = tokio::spawn(async move {
+            while let Some(batch) = rx.recv().await {
+                let ok = insert_batch(&write_pool, &batch).await.is_ok();
+                if ack_tx.send(ok).await.is_err() {
+                    break;
+                }
+            }
+        });
+        let drained = drain_history_until(
+            history,
+            &tx,
+            &mut ack_rx,
+            Instant::now() + Duration::from_secs(3),
+            || base + 36.0,
+        )
+        .await;
+        drop(tx);
+        writer.await.unwrap();
+        assert!(drained);
+        assert_eq!(history.counters.committed, 1);
+        assert_eq!(history.pending_len(), 0);
+        let rows = read_history(&pool, "icao:abc123", base - 1.0, base + 30.0, 10)
+            .await
+            .unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].aircraft_key, "icao:abc123");
+        sqlx::query(
+            "DELETE FROM airradar_v2.flight_samples WHERE aircraft_key = 'icao:abc123' AND bucket_at = to_timestamp($1)",
+        )
+        .bind(base.floor() / 30.0 * 30.0)
+        .execute(&pool)
+        .await
+        .unwrap();
+        pool.close().await;
+    }
+
+    #[tokio::test]
+    async fn g04_shutdown_flushes_pending_and_waits_for_ack() {
+        let mut history = HistorySampler::default();
+        let mut sample = crate::contract::beast_arrival(
+            "abc123",
+            1800.0,
+            crate::contract::Position {
+                lat: 49.0,
+                lon: 17.0,
+            },
+        )
+        .unwrap();
+        sample.position_origin = "adsb_cpr".to_owned();
+        assert!(history.observe(&sample));
+        let (tx, mut rx) = mpsc::channel::<Vec<Sample>>(1);
+        let (ack_tx, mut ack_rx) = mpsc::channel::<bool>(1);
+        let writer = tokio::spawn(async move {
+            let batch = rx.recv().await.unwrap();
+            assert_eq!(batch.len(), 1);
+            assert_eq!(batch[0].aircraft_key, "icao:abc123");
+            ack_tx.send(true).await.unwrap();
+        });
+        let drained = drain_history_until(
+            &mut history,
+            &tx,
+            &mut ack_rx,
+            Instant::now() + Duration::from_secs(1),
+            || 1836.0,
+        )
+        .await;
+        assert!(drained);
+        assert_eq!(history.counters.committed, 1);
+        assert_eq!(history.pending_len(), 0);
+        writer.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn g04_shutdown_rejects_failed_sql_ack() {
+        let mut history = HistorySampler::default();
+        let mut sample = crate::contract::beast_arrival(
+            "abc123",
+            1800.0,
+            crate::contract::Position {
+                lat: 49.0,
+                lon: 17.0,
+            },
+        )
+        .unwrap();
+        sample.position_origin = "adsb_cpr".to_owned();
+        assert!(history.observe(&sample));
+        let (tx, mut rx) = mpsc::channel::<Vec<Sample>>(1);
+        let (ack_tx, mut ack_rx) = mpsc::channel::<bool>(1);
+        let writer = tokio::spawn(async move {
+            let _batch = rx.recv().await.unwrap();
+            ack_tx.send(false).await.unwrap();
+        });
+        assert!(
+            !drain_history_until(
+                &mut history,
+                &tx,
+                &mut ack_rx,
+                Instant::now() + Duration::from_secs(1),
+                || 1836.0,
+            )
+            .await
+        );
+        assert_eq!(history.counters.dropped_writer, 1);
+        writer.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn g04_shutdown_is_bounded_without_sql_ack() {
+        let mut history = HistorySampler::default();
+        let mut sample = crate::contract::beast_arrival(
+            "abc123",
+            1800.0,
+            crate::contract::Position {
+                lat: 49.0,
+                lon: 17.0,
+            },
+        )
+        .unwrap();
+        sample.position_origin = "adsb_cpr".to_owned();
+        assert!(history.observe(&sample));
+        let (tx, mut rx) = mpsc::channel::<Vec<Sample>>(1);
+        let (_ack_tx, mut ack_rx) = mpsc::channel::<bool>(1);
+        let held_writer = tokio::spawn(async move {
+            let _ = rx.recv().await;
+            time::sleep(Duration::from_secs(1)).await;
+        });
+        assert!(
+            !drain_history_until(
+                &mut history,
+                &tx,
+                &mut ack_rx,
+                Instant::now() + Duration::from_millis(30),
+                || 1836.0,
+            )
+            .await
+        );
+        assert_eq!(history.diagnostics().inflight, 1);
+        held_writer.abort();
     }
 
     #[test]

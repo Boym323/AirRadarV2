@@ -6,6 +6,9 @@ mod contract;
 
 mod api;
 #[allow(dead_code)]
+mod history;
+mod history_store;
+#[allow(dead_code)]
 mod ingest;
 
 use std::{convert::Infallible, net::SocketAddr, time::Duration};
@@ -92,6 +95,68 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             state.counters.conflicts
         );
         return Ok(());
+    }
+    // G-04: pouze explicitní DEV režim a samostatná V2 DB v důvěryhodné LAN.
+    // Běžný G-03 DEV proces nemá spojení s PostgreSQL.
+    if std::env::args().any(|arg| arg == "--g04-dev-history") {
+        let config = ingest::supervisor::Config::from_env()?;
+        let pool = history_store::dev_pool_from_env()?;
+        let (feed, publisher) = api::new();
+        let bind =
+            std::env::var("AIRRADAR_V2_BIND").unwrap_or_else(|_| "127.0.0.1:4102".to_owned());
+        let listener = tokio::net::TcpListener::bind(bind).await?;
+        let (stop_tx, stop_rx) = tokio::sync::oneshot::channel::<()>();
+        let mut ingest_task = tokio::spawn(async move {
+            match ingest::supervisor::run_with_publisher_and_history_until(
+                config,
+                Some(publisher),
+                Some(pool),
+                async move {
+                    let _ = stop_rx.await;
+                },
+            )
+            .await
+            {
+                Ok(()) => true,
+                Err(error) => {
+                    eprintln!("G-04 ingest/drain failed: {error}");
+                    false
+                }
+            }
+        });
+        let mut api_task =
+            tokio::spawn(async move { axum::serve(listener, api::router(feed)).await });
+        // Zastavit přijímání až po minimálně 1800s důkazním běhu.
+        // +2s ochrana přesnosti počátečního diagnostického timestampu;
+        // 60s drain + 3s SQL close musí skončit PŘED systemd 1875s.
+        tokio::select! {
+            _ = tokio::time::sleep(Duration::from_secs(1802)) => {
+                eprintln!("G-04 canary: completed live window, initiating bounded SQL drain");
+                let _ = stop_tx.send(());
+            }
+            actor = &mut ingest_task => {
+                api_task.abort();
+                eprintln!("G-04 ingest ended before timed shutdown: {actor:?}");
+                return Err("G-04 ingest skončil před plánovaným drainem".into());
+            }
+            api = &mut api_task => {
+                ingest_task.abort();
+                eprintln!("G-04 HTTP server ended before timed shutdown: {api:?}");
+                return Err("G-04 API skončilo před plánovaným drainem".into());
+            }
+        }
+        let drained = tokio::time::timeout(Duration::from_secs(65), &mut ingest_task).await;
+        api_task.abort();
+        match drained {
+            Ok(Ok(true)) => {
+                eprintln!("G-04 canary: successful bounded shutdown");
+                return Ok(());
+            }
+            other => {
+                eprintln!("G-04 canary: shutdown incomplete: {other:?}");
+                return Err("G-04 drain nebyl potvrzen v časovém limitu".into());
+            }
+        }
     }
     // G-03: opt-in HTTP/SSE nad *stejnou* G-02 RAM mapou. Není automaticky
     // nasazeno do DEV, nemění G-00 service ani probíhající G-02 LIVE test.
