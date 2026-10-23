@@ -68,8 +68,7 @@ pub async fn read_history(
     if !from_epoch.is_finite()
         || !until_epoch.is_finite()
         || from_epoch >= until_epoch
-        || limit < 1
-        || limit > 1000
+        || !(1..=1000).contains(&limit)
         || aircraft_key.len() > 14
     {
         return Err("invalid history query");
