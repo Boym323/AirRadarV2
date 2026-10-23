@@ -81,6 +81,18 @@ pub struct HistoryCounters {
     pub batches: u64,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct HistoryMemoryDiagnostics {
+    pub pending: usize,
+    pub inflight: usize,
+    pub eligible: u64,
+    pub coalesced: u64,
+    pub committed: u64,
+    pub dropped_capacity: u64,
+    pub dropped_stale: u64,
+    pub dropped_writer: u64,
+}
+
 #[derive(Default)]
 pub struct HistorySampler {
     // Všechny mapy mají pevný limit; watermarks se odstraňují při stárnutí.
@@ -254,6 +266,19 @@ impl HistorySampler {
     pub fn pending_len(&self) -> usize {
         self.pending.len() + self.in_flight.len()
     }
+
+    pub fn diagnostics(&self) -> HistoryMemoryDiagnostics {
+        HistoryMemoryDiagnostics {
+            pending: self.pending.len(),
+            inflight: self.in_flight.len(),
+            eligible: self.counters.eligible,
+            coalesced: self.counters.coalesced,
+            committed: self.counters.committed,
+            dropped_capacity: self.counters.dropped_capacity,
+            dropped_stale: self.counters.dropped_stale,
+            dropped_writer: self.counters.dropped_writer,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -363,5 +388,41 @@ mod tests {
         let corrupted = observation(1800.0, f64::NAN);
         assert!(!s.observe(&corrupted));
         assert_eq!(s.pending_len(), 1);
+    }
+
+    #[test]
+    fn representative_readsb_replay_is_fair_across_aircraft() {
+        let mut sampler = HistorySampler::default();
+        let aircraft = 64usize;
+        let first_time = 1_800.0;
+        for index in 0..aircraft {
+            let mut first = observation(first_time, 17.0 + index as f64 * 0.0001);
+            first.aircraft_key = format!("icao:{index:06x}");
+            assert!(sampler.observe(&first));
+        }
+        assert_eq!(sampler.next_batch(1_836.0).len(), aircraft);
+        sampler.finish_batch(true, 1_836.0);
+
+        for step in 1..=10 {
+            let position_at = first_time + step as f64 * 60.0;
+            for index in 0..aircraft {
+                let mut next = observation(
+                    position_at,
+                    17.0 + index as f64 * 0.0001 + step as f64 * 0.03,
+                );
+                next.aircraft_key = format!("icao:{index:06x}");
+                assert!(sampler.observe(&next));
+            }
+            assert_eq!(sampler.next_batch(position_at + 36.0).len(), aircraft);
+            sampler.finish_batch(true, position_at + 36.0);
+        }
+
+        let diagnostics = sampler.diagnostics();
+        assert_eq!(diagnostics.pending, 0);
+        assert_eq!(diagnostics.inflight, 0);
+        assert_eq!(diagnostics.committed, (aircraft * 11) as u64);
+        assert_eq!(diagnostics.dropped_capacity, 0);
+        assert_eq!(diagnostics.dropped_stale, 0);
+        assert_eq!(diagnostics.dropped_writer, 0);
     }
 }

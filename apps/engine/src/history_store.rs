@@ -5,10 +5,73 @@ use sqlx::{
     PgPool, Postgres, QueryBuilder, Row,
     postgres::{PgConnectOptions, PgPoolOptions, PgSslMode},
 };
-use std::time::Duration;
+use std::{
+    sync::atomic::{AtomicBool, AtomicU64, Ordering},
+    time::Duration,
+};
 
 const MAX_WRITE_ATTEMPTS: usize = 3;
 const RETRY_DELAYS: [Duration; 2] = [Duration::from_millis(100), Duration::from_millis(250)];
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WriteError {
+    InvalidBatch,
+    Timeout,
+    Query,
+}
+
+#[derive(Debug, Default)]
+pub struct WriterDiagnostics {
+    pub sql_attempts: AtomicU64,
+    pub committed_batches: AtomicU64,
+    pub failed_batches: AtomicU64,
+    pub sql_timeouts: AtomicU64,
+    connection_up: AtomicBool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConnectionState {
+    Unknown,
+    Up,
+    Down,
+}
+
+impl WriterDiagnostics {
+    fn attempt(&self) {
+        self.sql_attempts.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn result(&self, result: Result<u64, WriteError>) -> Result<u64, WriteError> {
+        match result {
+            Ok(rows) => {
+                self.committed_batches.fetch_add(1, Ordering::Relaxed);
+                self.connection_up.store(true, Ordering::Relaxed);
+                Ok(rows)
+            }
+            Err(error) => {
+                self.failed_batches.fetch_add(1, Ordering::Relaxed);
+                self.connection_up.store(false, Ordering::Relaxed);
+                Err(error)
+            }
+        }
+    }
+
+    fn error(&self, error: WriteError) {
+        if error == WriteError::Timeout {
+            self.sql_timeouts.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    pub fn connection_state(&self) -> ConnectionState {
+        if self.sql_attempts.load(Ordering::Relaxed) == 0 {
+            ConnectionState::Unknown
+        } else if self.connection_up.load(Ordering::Relaxed) {
+            ConnectionState::Up
+        } else {
+            ConnectionState::Down
+        }
+    }
+}
 
 /// Přihlašovací údaje jsou samostatné systémové proměnné.
 /// URL s heslem se nepoužívá: heslo proto nemusí být URL-escaped.
@@ -58,9 +121,9 @@ pub fn dev_pool_from_env() -> Result<PgPool, Box<dyn std::error::Error>> {
 
 /// Jeden vícerow INSERT v implicitní PostgreSQL transakci.
 /// Konflikt UTC bucketu je idempotentní; žádný SELECT před INSERT ani UPDATE.
-pub async fn insert_batch(pool: &PgPool, batch: &[Sample]) -> Result<u64, &'static str> {
+pub async fn insert_batch(pool: &PgPool, batch: &[Sample]) -> Result<u64, WriteError> {
     if batch.is_empty() || batch.len() > 128 {
-        return Err("invalid batch size");
+        return Err(WriteError::InvalidBatch);
     }
     let mut query = QueryBuilder::<Postgres>::new(
         "INSERT INTO airradar_v2.flight_samples          (bucket_at, aircraft_key, position_at, latitude, longitude, altitude_ft,           ground_speed_kt, track_deg, squawk, on_ground)          SELECT to_timestamp(v.bucket_epoch), v.aircraft_key, to_timestamp(v.position_epoch),                 v.latitude, v.longitude, v.altitude_ft, v.ground_speed_kt::real,                 v.track_deg::real, v.squawk, v.on_ground FROM (",
@@ -83,27 +146,51 @@ pub async fn insert_batch(pool: &PgPool, batch: &[Sample]) -> Result<u64, &'stat
     let statement = query.build();
     match tokio::time::timeout(Duration::from_secs(5), statement.execute(pool)).await {
         Ok(Ok(result)) => Ok(result.rows_affected()),
-        _ => Err("historický SQL zápis selhal nebo vypršel timeout"),
+        Ok(Err(_)) => Err(WriteError::Query),
+        Err(_) => Err(WriteError::Timeout),
     }
 }
 
 /// Omezený retry pouze uvnitř persistence tasku. Ingest, RAM a SSE na něm
 /// nečekají a po posledním neúspěchu se inflight dávka zahodí přes ACK=false.
 /// Idempotentní PK/ON CONFLICT chrání i případ, kdy timeout nastal až po COMMITu.
-pub async fn insert_batch_with_retry(pool: &PgPool, batch: &[Sample]) -> Result<u64, &'static str> {
-    let mut last_error = "historický SQL zápis selhal nebo vypršel timeout";
+pub async fn insert_batch_with_retry(pool: &PgPool, batch: &[Sample]) -> Result<u64, WriteError> {
+    insert_batch_with_retry_observed(pool, batch, None).await
+}
+
+pub async fn insert_batch_with_retry_observed(
+    pool: &PgPool,
+    batch: &[Sample],
+    diagnostics: Option<&WriterDiagnostics>,
+) -> Result<u64, WriteError> {
+    let mut last_error = WriteError::Query;
     for attempt in 0..MAX_WRITE_ATTEMPTS {
+        if let Some(diagnostics) = diagnostics {
+            diagnostics.attempt();
+        }
         match insert_batch(pool, batch).await {
-            Ok(rows) => return Ok(rows),
+            Ok(rows) => {
+                if let Some(diagnostics) = diagnostics {
+                    return diagnostics.result(Ok(rows));
+                }
+                return Ok(rows);
+            }
             Err(error) => {
                 last_error = error;
+                if let Some(diagnostics) = diagnostics {
+                    diagnostics.error(error);
+                }
                 if let Some(delay) = RETRY_DELAYS.get(attempt) {
                     tokio::time::sleep(*delay).await;
                 }
             }
         }
     }
-    Err(last_error)
+    if let Some(diagnostics) = diagnostics {
+        diagnostics.result(Err(last_error))
+    } else {
+        Err(last_error)
+    }
 }
 
 /// Historické čtení je explicitní a časově ohraničené; živá mapa používá RAM.
@@ -195,6 +282,23 @@ mod tests {
         assert!(dev_options("host", 5432, "", "pass").is_err());
         assert!(dev_options("host", 5432, "user", "").is_err());
         assert!(dev_options("postgres://host", 5432, "user", "pass").is_err());
+    }
+
+    #[test]
+    fn writer_diagnostics_are_bounded_and_secret_free() {
+        let diagnostics = WriterDiagnostics::default();
+        assert_eq!(diagnostics.connection_state(), ConnectionState::Unknown);
+        diagnostics.attempt();
+        diagnostics.error(WriteError::Timeout);
+        assert_eq!(diagnostics.sql_timeouts.load(Ordering::Relaxed), 1);
+        assert!(diagnostics.result(Err(WriteError::Timeout)).is_err());
+        assert_eq!(diagnostics.connection_state(), ConnectionState::Down);
+        diagnostics.attempt();
+        assert_eq!(diagnostics.result(Ok(7)).unwrap(), 7);
+        assert_eq!(diagnostics.connection_state(), ConnectionState::Up);
+        assert_eq!(diagnostics.sql_attempts.load(Ordering::Relaxed), 2);
+        assert_eq!(diagnostics.committed_batches.load(Ordering::Relaxed), 1);
+        assert_eq!(diagnostics.failed_batches.load(Ordering::Relaxed), 1);
     }
 
     #[tokio::test]

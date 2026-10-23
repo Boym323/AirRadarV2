@@ -262,6 +262,67 @@ mod tests {
             49.901
         );
     }
+
+    #[test]
+    fn g04_readsb_replay_sampling_is_fair_across_tracks() {
+        let template = parse_replay(
+            include_bytes!("../../../../contracts/fixtures/readsb/initial.json"),
+            "rx-primary",
+            1_800.0,
+        )
+        .unwrap()
+        .into_iter()
+        .find(|item| item.aircraft_key == "icao:abc123")
+        .unwrap();
+        let mut state = RadarState {
+            history: Some(Default::default()),
+            ..Default::default()
+        };
+        let aircraft = 64usize;
+        let mut first = Vec::with_capacity(aircraft);
+        for index in 0..aircraft {
+            let mut item = template.clone();
+            item.aircraft_key = format!("icao:{index:06x}");
+            item.position = Some(Position {
+                lat: 49.0,
+                lon: 17.0 + index as f64 * 0.0001,
+            });
+            item.received_at_utc = 1_800.0;
+            item.message_at_utc = 1_800.0;
+            item.position_at_utc = Some(1_800.0);
+            first.push(item);
+        }
+        state.batch(&first);
+        let initial = state.history.as_mut().unwrap().next_batch(1_836.0);
+        assert_eq!(initial.len(), aircraft);
+        state.history.as_mut().unwrap().finish_batch(true, 1_836.0);
+
+        for step in 1..=10 {
+            let at = 1_800.0 + step as f64 * 60.0;
+            let mut replay = first.clone();
+            for item in &mut replay {
+                item.received_at_utc = at;
+                item.message_at_utc = at;
+                item.position_at_utc = Some(at);
+                item.position.as_mut().unwrap().lon += step as f64 * 0.03;
+            }
+            state.batch(&replay);
+            let batch = state.history.as_mut().unwrap().next_batch(at + 36.0);
+            assert_eq!(batch.len(), aircraft);
+            state
+                .history
+                .as_mut()
+                .unwrap()
+                .finish_batch(true, at + 36.0);
+        }
+
+        let diagnostics = state.history.as_ref().unwrap().diagnostics();
+        assert_eq!(diagnostics.committed, (aircraft * 11) as u64);
+        assert_eq!(diagnostics.dropped_capacity, 0);
+        assert_eq!(diagnostics.dropped_stale, 0);
+        assert_eq!(diagnostics.dropped_writer, 0);
+        assert_eq!(state.tracks.len(), aircraft);
+    }
     #[test]
     fn implausible_position_does_not_mutate_metadata() {
         let first = parse_replay(

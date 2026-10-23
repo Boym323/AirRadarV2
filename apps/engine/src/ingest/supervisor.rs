@@ -7,7 +7,7 @@ use super::{
     state::RadarState,
 };
 use crate::contract::Observation;
-use crate::history::Sample;
+use crate::{history::Sample, history_store::WriterDiagnostics};
 use std::{
     path::{Path, PathBuf},
     sync::{
@@ -203,15 +203,25 @@ pub async fn run_with_publisher_and_history(
     drop(tx);
     let mut state = RadarState::default();
     let mut history_enabled = history_pool.is_some();
+    let writer_diagnostics = Arc::new(WriterDiagnostics::default());
+    let mut next_history_trace = 0.0;
     let (history_tx, mut history_rx) = mpsc::channel::<Vec<Sample>>(1);
     let (history_ack_tx, mut history_ack_rx) = mpsc::channel::<bool>(1);
     if let Some(pool) = history_pool {
         state.history = Some(Default::default());
+        let diagnostics = Arc::clone(&writer_diagnostics);
         tokio::spawn(async move {
             while let Some(batch) = history_rx.recv().await {
-                let ok = crate::history_store::insert_batch_with_retry(&pool, &batch)
-                    .await
-                    .is_ok();
+                let result = crate::history_store::insert_batch_with_retry_observed(
+                    &pool,
+                    &batch,
+                    Some(&diagnostics),
+                )
+                .await;
+                let ok = result.is_ok();
+                if !ok && std::env::var_os("AIRRADAR_V2_HISTORY_TRACE").is_some() {
+                    eprintln!("G-04 history SQL batch failed: {result:?}");
+                }
                 if history_ack_tx.send(ok).await.is_err() {
                     break;
                 }
@@ -263,6 +273,30 @@ pub async fn run_with_publisher_and_history(
                         state.tracks.len(),state.counters.updated,state.counters.duplicates,
                         state.counters.conflicts,state.counters.capacity_drops,
                         drops.load(Ordering::Relaxed),sources.active(wall_seconds()));
+                }
+                if std::env::var_os("AIRRADAR_V2_HISTORY_TRACE").is_some()
+                    && now >= next_history_trace
+                {
+                    next_history_trace = now + 15.0;
+                    if let Some(history) = &state.history {
+                        let memory = history.diagnostics();
+                        eprintln!(
+                            "G-04 history pending={} inflight={} eligible={} coalesced={} committed={} dropped_capacity={} dropped_stale={} dropped_writer={} sql_attempts={} committed_batches={} failed_batches={} sql_timeouts={} connection={:?}",
+                            memory.pending,
+                            memory.inflight,
+                            memory.eligible,
+                            memory.coalesced,
+                            memory.committed,
+                            memory.dropped_capacity,
+                            memory.dropped_stale,
+                            memory.dropped_writer,
+                            writer_diagnostics.sql_attempts.load(Ordering::Relaxed),
+                            writer_diagnostics.committed_batches.load(Ordering::Relaxed),
+                            writer_diagnostics.failed_batches.load(Ordering::Relaxed),
+                            writer_diagnostics.sql_timeouts.load(Ordering::Relaxed),
+                            writer_diagnostics.connection_state(),
+                        );
+                    }
                 }
             }
         }
