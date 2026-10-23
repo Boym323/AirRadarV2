@@ -4,7 +4,8 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
-### G-05 — zahájena implementace živé MapLibre mapy (PR #22)
+### G-05 — první ověřená MapLibre mapa (PR #22)
+- CI #40024971130 PASS: Chromium MapLibre canvas a izolovaný SSE snapshot/delta fixture bez real ADS-B/DB/external tiles, bez remountu; interakční výběr, smazání a změna stylu. R01 a R06 `TESTED` na základě prohlížečové přejímky, G-05.01/.02/.05/.06 mají jednotkové a browser důkazy.
 - Na samostatné větvi Vite/React klient MapLibre GL JS 6.15.0 s připnutým npm lockfile, Vite workerem a OpenFreeMap podkladem Liberty/Fiord. Jeden GeoJSON source, čitelné symboly, známý track/heading, mapová stopa, follow a klikací výběr.
 - G-03 SSE adapter s atomickým snapshot/delta, verzovaným epoch/seq resync, bounded 5000 cílů a 1Hz UI publikací; jediný stav sdílený mapou a seznamem. Jednotkové testy identity, smazání, reconnect, validace a retence 64 bodů/20 minut.
 - G-05 stále IN_PROGRESS; G-05.10 letiště po G-06, E2E/MapLibre GPU výkonnost G-05.11 neověřena. Bez zásahu do G-03, DB a AirRadar V1 či automatického DEV deploye.
