@@ -45,7 +45,7 @@ jobs:
       PGDATABASE: airradar_v2_dev
       PGUSER: postgres
       PGPASSWORD: ci-temporary-not-a-real-secret
-      # Pouze izolovaný lokální kontejner bez TLS. Skutečný DB LXC musí verify-full.
+      # Pouze izolovaný lokální kontejner bez TLS; odpovídá ADR 0009 pro důvěryhodnou LAN.
       PGSSLMODE: disable
     steps:
       - uses: actions/checkout@v4

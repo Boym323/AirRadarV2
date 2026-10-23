@@ -20,7 +20,7 @@
       "name": "Příjem lokálních letadel přes readsb JSON · základ systému",
       "decision": "KEEP",
       "status": "TESTED",
-      "tests": [
+    "tests": [
         "G-02 JSON fixture+temp-file a společný replay, CI #39769323592"
       ],
       "notes": "Readsb JSON parser otestován přes fixture a temp-file; 60min LIVE byl jen BEAST, nikoliv přepnutí na živý JSON."
@@ -109,9 +109,12 @@
         "Lokální Rust fmt/test/clippy na pracovním SHA: 51 testů PASS",
         "DEV SQLx dedup/read test proti airradar_v2_dev: PASS 23. 10. 2026",
         "Izolovaný PostgreSQL výpadek/reconnect, 5000 cílů a pg_dump/pg_restore: PASS, SHA 4659d63822d842a69fb0e141b9dcf1c5480e381e",
-        "Izolovaný 1×/2×/4× SQL dávkový benchmark: PASS, SHA 4659d63822d842a69fb0e141b9dcf1c5480e381e"
+    "Izolovaný 1×/2×/4× SQL dávkový benchmark: PASS, SHA 4659d63822d842a69fb0e141b9dcf1c5480e381e",
+    "Izolovaná retence 2501 řádků v dávkách 1000/1000/501: PASS",
+    "Skutečný Rust/SQLx writer 1×/2×/4× s bounded ztrátou, WAL, RSS, CPU a SSE: PASS",
+    "Srovnání stejné rekonstruované trasy 15/30/60/adaptive: PASS"
       ],
-      "notes": "G-04 SQLx+RAM-first, 30s bucket, bounded 2048/128, retry/backoff, izolovaný reconnect, restore a dávkový benchmark jsou doložené. Serverové CPU, retenční profil a SQLx-writer srovnání zůstávají NEOVĚŘENO; proto J09 není TESTED/ACCEPTED."
+  "notes": "G-04 SQLx+RAM-first, 30s bucket, bounded 2048/128, retry/backoff, izolovaný reconnect, retence, skutečný SQLx-writer replay a sampling replay jsou doložené v izolaci. Provozní backup/RPO/RTO sdíleného LXC, skutečný RF replay a serverové CPU zůstávají NEOVĚŘENO; proto J09 není TESTED/ACCEPTED."
     },
     {
       "id": "J11",

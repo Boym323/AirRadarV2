@@ -1,6 +1,6 @@
 # ADR 0009 — PostgreSQL V2 v důvěryhodné LAN bez TLS
 
-**Rozhodnuto vlastníkem:** 23. 10. 2026. **Stav:** schválená cílová konfigurace G-04, provozně NEOVĚŘENO.  
+**Rozhodnuto vlastníkem:** 23. 10. 2026. **Stav:** schválená cílová konfigurace G-04; read-only konektivita a omezená práva DEV ověřeny, provozní přejímka databáze není uzavřena.
 **Rozsah:** pouze G-04 / J09 a samostatná databáze `airradar_v2_dev`.
 
 ## Kontext

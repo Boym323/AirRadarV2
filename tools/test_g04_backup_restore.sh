@@ -31,12 +31,31 @@ if psql -X -v ON_ERROR_STOP=1 -q -d airradar_v2_restore_ci \
 fi
 psql -X -v ON_ERROR_STOP=1 -q -d postgres -c "DROP DATABASE airradar_v2_restore_ci WITH (FORCE)"
 
-# Jednorázový CI retenční test: starý bod pryč, dnešní bod zachován.
-psql -X -v ON_ERROR_STOP=1 -q -c "INSERT INTO airradar_v2.flight_samples
-(bucket_at,aircraft_key,position_at,latitude,longitude)
-VALUES ('2026-01-01 00:00:00+00','icao:123abc','2026-01-01 00:00:05+00',49.3,17.3)"
-psql -X -v ON_ERROR_STOP=1 -q -f database/maintenance/g04_retention_once.sql
-old="$(psql -X -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM airradar_v2.flight_samples WHERE aircraft_key='icao:123abc'")"
-new="$(psql -X -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM airradar_v2.flight_samples WHERE aircraft_key='icao:789abc'")"
-[[ "$old" = 0 && "$new" = 1 ]]
-echo "G-04.09/.11 CI PASS: restore=$original řádků, starý vzorek odstraněn, aktuální zachován"
+# Jednorázový CI retenční test: 2 501 starých řádků se čistí po dávkách
+# nejvýše 1 000, nový řádek zůstane a PK index zůstane použitelný.
+psql -X -v ON_ERROR_STOP=1 -q <<'SQL'
+INSERT INTO airradar_v2.flight_samples
+  (bucket_at, aircraft_key, position_at, latitude, longitude)
+SELECT date_bin('30 seconds', timestamptz '2026-01-01 00:00:00+00' + i * interval '30 seconds', timestamptz '1970-01-01 00:00:00+00'),
+       'icao:' || lpad(to_hex(i), 6, '0'),
+       timestamptz '2026-01-01 00:00:05+00' + i * interval '30 seconds',
+       49.3, 17.3
+FROM generate_series(1, 2501) AS g(i);
+INSERT INTO airradar_v2.flight_samples
+  (bucket_at, aircraft_key, position_at, latitude, longitude)
+VALUES ('2099-01-01 00:00:00+00','icao:123abc','2099-01-01 00:00:05+00',49.3,17.3);
+SQL
+before_rows="$(psql -X -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM airradar_v2.flight_samples WHERE bucket_at < now() - interval '30 days'")"
+[[ "$before_rows" = 2501 ]]
+for expected in 1501 501 0; do
+  psql -X -v ON_ERROR_STOP=1 -q -f database/maintenance/g04_retention_once.sql
+  remaining="$(psql -X -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM airradar_v2.flight_samples WHERE bucket_at < now() - interval '30 days'")"
+  [[ "$remaining" = "$expected" ]]
+done
+old="$(psql -X -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM airradar_v2.flight_samples WHERE aircraft_key LIKE 'icao:00000%'")"
+new="$(psql -X -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM airradar_v2.flight_samples WHERE aircraft_key='icao:123abc'")"
+index_count="$(psql -X -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM pg_indexes WHERE schemaname='airradar_v2' AND tablename='flight_samples'")"
+relation_bytes="$(psql -X -v ON_ERROR_STOP=1 -Atc "SELECT pg_total_relation_size('airradar_v2.flight_samples')")"
+database_bytes="$(psql -X -v ON_ERROR_STOP=1 -Atc "SELECT pg_database_size(current_database())")"
+[[ "$old" = 0 && "$new" = 1 && "$index_count" = 1 && "$relation_bytes" -gt 0 && "$database_bytes" -gt 0 ]]
+echo "G-04.09/.11 CI PASS: restore=$original řádků, retenční dávky=1000/1000/501, staré=$old, nové=$new, indexy=$index_count, relation_bytes=$relation_bytes, database_bytes=$database_bytes"

@@ -1,6 +1,6 @@
 # ADR 0007 — RAM-first deduplikace a adaptivní úsporný zápis
 
-**Datum:** 22. 10. 2026. **Stav:** rozhodnutí pro implementaci J05/J09/J11, bez aktuálního reálného měření a bez spuštěné SQLx migrace. Nahrazuje pevný 15s zápis a napevno přidané sekundární indexy v původním návrhu G-04.
+**Datum:** 22. 10. 2026. **Stav:** rozhodnutí pro implementaci J05/J09/J11; SQLx writer, izolovaná retence a replay jsou nyní změřené, sdílená DEV retence a serverové CPU nikoli. Nahrazuje pevný 15s zápis a napevno přidané sekundární indexy v původním návrhu G-04.
 
 ## Problém
 
@@ -18,4 +18,4 @@ Původní PK \`(bucket_at,aircraft_key)\` zajistil SQL unikátnost **jen v jedno
 
 ## Důkazy a zodpovědnost
 
-[Úplná policy, RAM struktury, SQL writer a měřicí kritéria](../technical/RAM-CACHE-A-DEDUP-ZAPISU.md) a [revidovaný datový model](../../database/POSTGRES-DATOVY-MODEL.md). Jde o **návrh**, nikoli dokončený G-04 nebo zjištěných −75 % fyzických zápisů. Návrh se skutečně přijme až po replay, EXPLAIN, měření SQL/WAL/SSD a schválené izolované DEV migraci.
+[Úplná policy, RAM struktury, SQL writer a měřicí kritéria](../technical/RAM-CACHE-A-DEDUP-ZAPISU.md) a [revidovaný datový model](../../database/POSTGRES-DATOVY-MODEL.md). Izolovaný replay, SQL/WAL/SSD a retence mají důkaz v reportu G-04; nejde o dokončenou provozní přejímku ani o tvrzení −75 % fyzických zápisů ve sdíleném LXC.

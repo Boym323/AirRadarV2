@@ -1,6 +1,6 @@
 # Propojení aplikačního LXC s existujícím PostgreSQL LXC
 
-**Stav:** postup G-04 bez změn síťových a autentizačních pravidel databázového serveru, nikoli provedená konfigurace. Uživatel potvrdil, že PostgreSQL existuje v odděleném LXC; **verze serveru, síťová izolace, firewall, zálohy ani skutečná konektivita nejsou ověřené**. Vlastník zvolil 23. 10. 2026 pro V2 důvěryhodnou LAN bez TLS, viz [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md).
+**Stav:** postup G-04 bez změn síťových a autentizačních pravidel databázového serveru, nikoli provedená konfigurace. Read-only audit DEV 23. 10. 2026 prokázal PostgreSQL 17.10, konektivitu a omezená runtime práva; **síťová izolace, firewall, externí zálohy a provozní RPO/RTO nejsou z runtime účtu ověřitelné**. Vlastník zvolil 23. 10. 2026 pro V2 důvěryhodnou LAN bez TLS, viz [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md).
 
 ## 1. Topologie a oddělení práv
 

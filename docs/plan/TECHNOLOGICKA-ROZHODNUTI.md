@@ -1,7 +1,7 @@
 # Výsledná technologická rozhodnutí — AirRadar V2
 
 **Posouzení:** 21. 10. 2026.  
-**Stav:** rešerše dokončena; **Vite + React bylo následně skutečně nasazeno do G-00 skeletonu a PostgreSQL definitivně zvolena**. Výkonové benchmarky zůstávají neprovedeny; technologie se nesmějí prohlásit za kvantitativně nejrychlejší bez benchmarku.  
+**Stav:** rešerše dokončena; **Vite + React bylo následně skutečně nasazeno do G-00 skeletonu a PostgreSQL definitivně zvolena**. G-04 má izolované SQLx/writer/sampling benchmarky, ale společný technologický benchmark B01–B07 a serverové měření sdíleného LXC zůstávají neprovedené; technologie se nesmějí prohlásit za kvantitativně nejrychlejší bez odpovídajícího měření.
 **45 aktivních funkcí** neměníme; neobnovujeme žádné odložené moduly.
 
 ## Rozhodovací tabulka
