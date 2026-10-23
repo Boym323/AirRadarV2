@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-05 — zahájena implementace živé MapLibre mapy (PR #22)
+- Na samostatné větvi Vite/React klient MapLibre GL JS 6.15.0 s připnutým npm lockfile, Vite workerem a OpenFreeMap podkladem Liberty/Fiord. Jeden GeoJSON source, čitelné symboly, známý track/heading, mapová stopa, follow a klikací výběr.
+- G-03 SSE adapter s atomickým snapshot/delta, verzovaným epoch/seq resync, bounded 5000 cílů a 1Hz UI publikací; jediný stav sdílený mapou a seznamem. Jednotkové testy identity, smazání, reconnect, validace a retence 64 bodů/20 minut.
+- G-05 stále IN_PROGRESS; G-05.10 letiště po G-06, E2E/MapLibre GPU výkonnost G-05.11 neověřena. Bez zásahu do G-03, DB a AirRadar V1 či automatického DEV deploye.
+
 ### G-04 — etapa uzavřena v DEV (J09 ACCEPTED, 23. 10. 2026)
 - Vlastník přijal skutečný 1817,498s DEV canary: `eligible=committed=1312`, 61/61 SQL dávek, 0 dropů/SQL timeoutů, `pending=inflight=0`, `drained=true writer_finished=true`, systemd `Result=success`/`ExecMainStatus=0`/`ActiveState=inactive`, PostgreSQL 1490 → 2802 (+1312). Rust/Web/docs a izolované PostgreSQL CI PASS.
 - **DEV ACCEPTED s výslovnou evidenční výjimkou:** doložena vstupní DB baseline, chybí průběžné 5min host disk/WAL/CPU/RAM záznamy a závěrečný G-03 SSE. To není dodatečně vydáváno za naměřené hodnoty ani za PASS úplného evaluatoru. Vlastník na tomto podkladě uzavřel DEV G-04 a nepožaduje další SQL soak; omezení evidence se nepřenáší na produkční akceptaci.
