@@ -1,7 +1,7 @@
 # G-04 — výsledek auditu a průběžná přejímka PostgreSQL historie
 
 **Aktualizace:** 23. 10. 2026. **Etapa:** ROZPRACOVÁNO. **Primární KEEP:** J09 (`IN_PROGRESS`).
-**Větev/PR:** `codex/g04-history-20261023`, draft PR #21. **Ověřený pracovní SHA:** `eb8751e2adc856c813a3f7bcf3a1045f859ff44f`.
+**Větev/PR:** `codex/g04-history-20261023`, draft PR #21. **Ověřený implementační SHA:** `e691159e600f80519c3e3e60d5bd51f41d458e59`.
 
 ## Audit G-04.01–G-04.12
 
