@@ -29,6 +29,8 @@ Všechna čísla skutečného výkonu uváděj s metodikou a přesným SHA. Stav
 
 Při každé práci na G-01 až G-11 zkontroluj [závazný rozcestník](docs/plan/TECHNICKE-KONTRAKTY-A-LIMITY.md) a příslušnou z šesti technických specifikací. Výchozí sampling, retenci, SSE limity, MapLibre render a PostgreSQL bezpečnostní režim/backup neměň bez konkrétního měření a českého ADR. Pro G-04 se uplatní výslovná výjimka [ADR 0009](docs/adr/0009-g04-postgresql-lan-bez-tls.md): důvěryhodná LAN bez TLS a heslové ověření podle stávajícího přístupu serveru, **bez nového `hostnossl` a bez úprav `pg_hba.conf`/firewallu**. Pokud existující autorizace spojení neumožní, G-04 je BLOKOVÁNO. Tyto návrhové hodnoty ještě nejsou naměřené ani implementované.
 
+Pro první G-04 DEV canary platí [ADR 0011](docs/adr/0011-g04-rucne-hlidany-canary.md): jednorázový, osobně dozorovaný test bez DB monitorovacího SSH účtu a bez automatického hlídání DB LXC. Toto není GO ke spuštění ani souhlas s trvalým provozem; G-03, V1 a ostatní DB zůstávají chráněné.
+
 ## Úspornost provozu jako závazné pravidlo
 
 Před G-01/G-02/G-04/G-09 přečti [RAM-first deduplikaci a adaptivní sampler](docs/technical/RAM-CACHE-A-DEDUP-ZAPISU.md), [revidovaný DB model](database/POSTGRES-DATOVY-MODEL.md) a [ADR 0007](docs/adr/0007-ram-first-deduplikace-a-usporny-zapis.md). Neimplementuj pevný 15s INSERT, per-aircraft SQL query, nekonečné SQL fronty, cache server navíc ani druhý SQL index/partition bez měření. Testovací model `node tools/check-eco-sampling.mjs` není důkaz reálných IOPS; uživatelskou kvalitu historie a bezpečnou obnovu musí doložit G-04.
