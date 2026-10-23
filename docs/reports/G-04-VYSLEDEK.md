@@ -1,8 +1,10 @@
-# G-04 — výsledek auditu a průběžná přejímka PostgreSQL historie
+# G-04 — závěrečný výsledek a přejímka PostgreSQL historie (DEV ACCEPTED)
 
-**Aktualizace:** 23. 10. 2026. **Etapa:** ROZPRACOVÁNO. **Primární KEEP:** J09 (`IN_PROGRESS`).
+**Aktualizace:** 23. 10. 2026. **Etapa:** HOTOVO — **DEV ACCEPTED**. **Primární KEEP:** J09 (`ACCEPTED`). **Rozsah:** bezpečně dozorovaný vývojový provoz a funkce historie; nikoli trvalý automatický writer ani produkční release.
 
-## Závěrečný opakovaný DEV canary — technický PASS (23. 10. 2026)
+**Rozhodnutí vlastníka o DEV akceptaci:** závěrečný reálný canary a SQL readback splnily funkční i shutdown kritéria. Průběžné 5min záznamy DB hostitele a post-run SSE nejsou k dispozici; tuto dokumentační mezeru vlastník vědomě nepovažuje za další blocker pro DEV uzavření. Nedeklarujeme tím ověření nezdokumentovaných host metrik, nepřítomnost dopadů na jiné DB ani plný provozní či produkční výkonový audit. Další 30min SQL canary není pro tuto DEV akceptaci nutný. Následující starší NO-GO a IN_PROGRESS výpisky jsou historický záznam průběhu opravy, ne aktuální stav.
+
+## Závěrečný opakovaný DEV canary — DEV ACCEPTED (23. 10. 2026)
 
 **Doložený výsledek skutečné služby po opravě ADR 0013: PASS pro G-04/J09 historický writer i korektní automatické ukončení.** Vlastník dodal výstup systemd, posledních 20 řádků journalu a přímo z PostgreSQL výsledný počet řádků. Samostatná G-04 binárka postavená z `e186c54f8304c3e437f6ed9a54c6bd31722dde7c` byla před testem ověřena SHA-256 `7b7cbf291141bdfbfa4e3a4e8ea7c8914d687cbf1824089721afdcd43e5f5d1e`; žádná změna hlavního G-03 release není doložena.
 
@@ -14,9 +16,9 @@
 - **DB host baseline PŘED během (Proxmox LXC konzole):** ověřeno `PGDATA=/var/lib/postgresql/17/main`, volné místo **3,1 GiB** (63 % obsazeno), velikost `pg_wal` **59 MiB**, dostupná RAM **796 MiB**, přibližně 65–92 % idle CPU v pěti `vmstat` vzorcích. To **nedokazuje** stav disku, WAL, CPU a RAM v průběhu a po skončení testu.
 - **G-03 SSE:** před opakovaným canary doloženy 3 heartbeat události; v předložených výstupech dosud chybí závěrečný SSE důkaz.
 
-**Přejímací hranice:** J09 funkčně `TESTED`, ale kompletní provozní G-04 `ACCEPTED` dosud **NEOVĚŘENO**, dokud nebudou předložena skutečná 5min provozní DB host měření / záznam osobního dohledu, závěrečná kontrola G-03 SSE a kompletní vstupy pro `tools/evaluate_g04_canary.py`. Žádná z chybějících boolean metrik se nesmí nastavovat `true` bez důkazu. Případná absence časovaných záznamů z tohoto testu znamená neprokázané operační kritérium, nikoli chybu v historickém writeru.
+**Závěr DEV přejímky:** reálné zápisy 1 312/1 312, readback +1 312, bezpečné ukončení a izolované CI dokazují J09. Stav `J09=ACCEPTED`, `G-04=DEV ACCEPTED`. Požadavek časovaných 5min DB host metrik a koncového SSE byl pro uzavření této **jednorázové DEV etapy rozhodnutím vlastníka prominut jako evidence-only výjimka**, nikoli splněn. Evaluator s neúplnými daty **nemůže obdržet PASS** a nesmí být doplněn smyšlenými true hodnotami. Tato výjimka se **nevztahuje na produkční/release schválení G-13**.
 
-Starší níže uvedený 31min canary, který skončil `timeout` a `pending=13`, je historický podklad **před** opravou; není aktuálním výsledkem. PR #21 zůstává draft bez merge do `main`. Tento report nepovoluje automatické trvalé spuštění SQL writeru ani produktový deploy.
+Starší níže uvedený 31min canary, který skončil `timeout` a `pending=13`, je historický podklad **před** opravou; není aktuálním výsledkem. PR #21 zůstává nesloučený do `main`. Tento report nepovoluje automatické trvalé spuštění SQL writeru ani produktový deploy.
 
 ## Historie opravy graceful drain po prvním canary (ADR 0013)
 
