@@ -1,6 +1,7 @@
 //! G-02.06/07/09: jediný vlastník kanonického AircraftState, žádné SQL.
 use crate::contract::{FlightData, Observation, Position, PublicAircraft, merge};
 use std::collections::BTreeMap;
+use crate::history::HistorySampler;
 
 pub const MAX_AIRCRAFT: usize = 5000;
 pub const TRACK_TTL_SECONDS: f64 = 60.0;
@@ -21,6 +22,7 @@ pub struct RadarState {
     /// Interní kvalita časové základny poslední polohy (jen RAM).
     position_quality: BTreeMap<String, u8>,
     pub counters: Counters,
+    pub history: Option<HistorySampler>,
 }
 impl RadarState {
     pub fn apply(&mut self, observation: &Observation) -> &'static str {
@@ -74,6 +76,9 @@ impl RadarState {
                 self.counters.updated += 1;
                 self.position_quality
                     .insert(observation.aircraft_key.clone(), incoming_quality);
+                if let Some(history) = &mut self.history {
+                    history.observe(&incoming);
+                }
             }
             "duplicate_or_old" => self.counters.duplicates += 1,
             "conflict" => self.counters.conflicts += 1,

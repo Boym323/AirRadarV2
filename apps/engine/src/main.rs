@@ -7,6 +7,7 @@ mod contract;
 mod api;
 #[allow(dead_code)]
 mod history;
+mod history_store;
 #[allow(dead_code)]
 mod ingest;
 
@@ -93,6 +94,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             state.counters.duplicates,
             state.counters.conflicts
         );
+        return Ok(());
+    }
+    // G-04: pouze explicitní DEV režim, ověřená TLS CA a samostatná V2 DB.
+    // Běžný G-03 DEV proces nemá spojení s PostgreSQL.
+    if std::env::args().any(|arg| arg == "--g04-dev-history") {
+        let config = ingest::supervisor::Config::from_env()?;
+        let pool = history_store::dev_pool_from_env()?;
+        let (feed, publisher) = api::new();
+        let bind = std::env::var("AIRRADAR_V2_BIND")
+            .unwrap_or_else(|_| "127.0.0.1:4102".to_owned());
+        let listener = tokio::net::TcpListener::bind(bind).await?;
+        tokio::spawn(async move {
+            if let Err(error) =
+                ingest::supervisor::run_with_publisher_and_history(config, Some(publisher), Some(pool)).await
+            {
+                eprintln!("G-04 ingest task ended: {error}");
+            }
+        });
+        axum::serve(listener, api::router(feed))
+            .with_graceful_shutdown(async {
+                let _ = tokio::signal::ctrl_c().await;
+            })
+            .await?;
         return Ok(());
     }
     // G-03: opt-in HTTP/SSE nad *stejnou* G-02 RAM mapou. Není automaticky

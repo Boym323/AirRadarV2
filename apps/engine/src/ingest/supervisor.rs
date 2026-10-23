@@ -7,6 +7,7 @@ use super::{
     state::RadarState,
 };
 use crate::contract::Observation;
+use crate::history::Sample;
 use std::{
     path::{Path, PathBuf},
     sync::{
@@ -167,7 +168,16 @@ pub async fn run(config: Config) -> Result<(), Box<dyn std::error::Error>> {
 /// G-03: jediný task RAM stavu; max. 1x za sekundu publikuje veřejný snapshot.
 pub async fn run_with_publisher(
     config: Config,
+    publisher: Option<crate::api::Publisher>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    run_with_publisher_and_history(config, publisher, None).await
+}
+
+/// G-04 explicitní opt-in. Jediná SQL task nikdy nečeká v ingest actoru.
+pub async fn run_with_publisher_and_history(
+    config: Config,
     mut publisher: Option<crate::api::Publisher>,
+    history_pool: Option<sqlx::PgPool>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if config.receiver_id != "rx-primary" {
         return Err("invalid receiver ID".into());
@@ -192,17 +202,54 @@ pub async fn run_with_publisher(
     }
     drop(tx);
     let mut state = RadarState::default();
+    let mut history_enabled = history_pool.is_some();
+    let (history_tx, mut history_rx) = mpsc::channel::<Vec<Sample>>(1);
+    let (history_ack_tx, mut history_ack_rx) = mpsc::channel::<bool>(1);
+    if let Some(pool) = history_pool {
+        state.history = Some(Default::default());
+        tokio::spawn(async move {
+            while let Some(batch) = history_rx.recv().await {
+                let ok = crate::history_store::insert_batch(&pool, &batch).await.is_ok();
+                if history_ack_tx.send(ok).await.is_err() {
+                    break;
+                }
+            }
+            pool.close().await;
+        });
+    } else {
+        drop(history_rx);
+        drop(history_ack_tx);
+    }
     let mut cpr = CprCache::default();
     let mut sources = SourceArbiter::default();
     let mut tick = time::interval(Duration::from_secs(1));
     loop {
         tokio::select! {
+            ack=history_ack_rx.recv(), if history_enabled => {
+                if let Some(committed) = ack {
+                    if let Some(history) = &mut state.history {
+                        history.finish_batch(committed, wall_seconds());
+                    }
+                } else {
+                    history_enabled = false;
+                }
+            },
             item=rx.recv()=>{
                 match item {Some(event)=>{consume(event, &mut state, &mut cpr, &mut sources);},None=>break}
             },
             _=tick.tick()=>{
                 let now = wall_seconds();
                 state.cleanup(now);
+                if let Some(history) = state.history.as_mut() {
+                    if history_enabled {
+                        let batch = history.next_batch(now);
+                        if !batch.is_empty() && history_tx.try_send(batch).is_err() {
+                            history.finish_batch(false, now);
+                        }
+                    } else {
+                        history.expire(now);
+                    }
+                }
                 if let Some(publish) = publisher.as_mut() {
                     if let Err(error) = publish.publish(state.snapshot(now), now) {
                         eprintln!("G-03 publish rejected: {error}");

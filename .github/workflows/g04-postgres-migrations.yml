@@ -11,6 +11,7 @@ on:
       - 'database/migrations/**'
       - 'tools/test_g04_migrations.sh'
       - '.github/workflows/g04-postgres-migrations.yml'
+      - 'apps/engine/src/history_store.rs'
   workflow_dispatch:
 
 permissions:
@@ -48,3 +49,35 @@ jobs:
           sudo apt-get install -y -qq postgresql-client
       - name: Ověřit migraci, integritu a oddělení práv
         run: bash tools/test_g04_migrations.sh
+      - uses: dtolnay/rust-toolchain@stable
+      - name: SQLx integrační test J09 ve stejném izolovaném PostgreSQL
+        env:
+          AIRRADAR_G04_CI_DATABASE_URL: postgres://postgres:ci-temporary-not-a-real-secret@127.0.0.1:5432/airradar_v2_dev?sslmode=disable
+        run: cargo test --locked -p airradarv2-engine g04_postgres_batch_dedup_and_bounded_history
+
+  # Dočasný jednorázový job pro generování a rustfmt v izolované PR větvi.
+  # Bez přístupu k DB LXC, bez release; ověřuje přesné jméno stejno-repozitářové PR větve.
+  g04-lockfile-bootstrap:
+    if: ${{ github.event_name == 'pull_request' && github.head_ref == 'codex/g04-history-20261023' && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/g04-history-20261023
+          persist-credentials: true
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: Jednorázově sjednotit Cargo.lock a Rust styl v PR
+        run: |
+          cargo generate-lockfile
+          cargo fmt --all
+          git add Cargo.lock apps/engine/src
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore(G-04): reproducible SQLx lockfile a rustfmt"
+            git push origin HEAD:refs/heads/codex/g04-history-20261023
+          fi
