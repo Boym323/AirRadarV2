@@ -4,6 +4,9 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-04 — ADR 0011: ruční dohled místo automatického SSH DB monitoringu
+- Vlastník zvolil pouze jednorázový osobně dozorovaný DEV canary; unit spouští přímo SHA-pinned binárku, bez `monitor_g04_canary.sh` a bez nového SSH účtu. Zachovány CPUQuota 50 %, MemoryMax 2 GiB, RuntimeMaxSec 1875 s, Restart=no, port 4114 a nedestruktivní rollback. DB disk/WAL/CPU/RAM a zdraví G-03/PP Studio se během testu kontrolují osobně nejpozději každých 5 minut. Riziko neautomatického zastavení při naplnění disku je vědomě přijaté jen pro tento dozorovaný DEV test. G-04 nespouštěna.
+
 ### G-04 — DEV preflight canary 23. 10. 2026: NO-GO
 - Na DEV LXC byl z přesného SHA `fe0ac66fdebea25d21a2d211cd74cab922dd7d05` sestaven a mimo `current` atomicky nainstalován x86-64 artefakt SHA-256 `1dd11387635eeb16040b69f33e09a6108d1fecf2491dde56699cc9b5971ba21b`; G-04 unit je `static/inactive`, nikdy nespouštěná.
 - Doplněn funkčně testovaný fail-closed monitor pro read-only SQL/DB-LXC metriky, disk pod 2 GiB, WAL, CPU/RAM, SQL timeouty, stáří diagnostiky a degradaci G-03. Monitor nepoužívá `pg_ls_waldir()` ani `df --output`; připraven je forced-command helper a schvalovací postup pro samostatný neprivilegovaný SSH účet, který na DB LXC nebyl vytvořen. Kapacita proto zůstává NEOVĚŘENA a preflight NO-GO. Canary nebyl spuštěn; G-04/J09 zůstává `IN_PROGRESS`.
