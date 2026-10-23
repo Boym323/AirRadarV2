@@ -102,9 +102,9 @@
       "id": "J09",
       "name": "Ukládání vzorkované historie do PostgreSQL",
       "decision": "KEEP",
-      "status": "NOT_STARTED",
+      "status": "IN_PROGRESS",
       "tests": [],
-      "notes": ""
+      "notes": "G-04 SQLx+RAM-first v PR #21, izolovaný PostgreSQL CI; reálné DB LXC/TLS/restore/benchmark a provozní přejímka NEOVĚŘENO."
     },
     {
       "id": "J11",

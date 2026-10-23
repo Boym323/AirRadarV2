@@ -1,6 +1,6 @@
 # G-04 — průběžný výsledek: izolovaný začátek PostgreSQL historie
 
-**Datum:** 22. 10. 2026. **Etapa:** ROZPRACOVÁNO. **Primární ID:** J09 (zatím NOT_STARTED).  
+**Datum:** 22. 10. 2026. **Etapa:** ROZPRACOVÁNO. **Primární ID:** J09 (IN_PROGRESS, bez přejímky).  
 **Výchozí main:** `01786e27dbc25ec66f80f9e4a14170c89e6ffd23`. **Ověřený SHA:** `141cdc8de03c4929d697011596e9b7f149aea073`. **Izolovaná migrace:** [CI #39856030008](https://github.com/Boym323/AirRadarV2/actions/runs/39856030008) **PASS**.
 
 ## Rozsah prvního commitu
