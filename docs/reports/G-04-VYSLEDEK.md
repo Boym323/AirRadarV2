@@ -2,7 +2,17 @@
 
 **Aktualizace:** 23. 10. 2026. **Etapa:** ROZPRACOVÁNO. **Primární KEEP:** J09 (`IN_PROGRESS`).
 
-## Oprava P1 přípravy canary (tento commit)
+## Aktuální rozhodnutí — ADR 0011: ručně dozorovaný canary (23. 10. 2026)
+
+Vlastník zvolil **jednorázový ručně dozorovaný DEV canary bez automatického monitoringu DB LXC** a bez vytváření monitorovacího SSH účtu. Podle [ADR 0011](../adr/0011-g04-rucne-hlidany-canary.md) se v systemd G-04 jednotce **spouští přímo SHA-pinned Rust binárka**, ne `monitor_g04_canary.sh`. `CPUQuota=50%`, `MemoryMax=2G`, `RuntimeMaxSec=1875` a `Restart=no` zůstávají. Historicky připravený forced-command SSH monitor je pro tento test pouze **neaktivní podklad**, není součástí provozní brány.
+
+**Přijaté riziko:** sdílené PostgreSQL LXC (dříve 1 vCPU, 1 GiB RAM, cca 3,1 GiB disk free) **nebude automaticky hlídané**. Správce musí být přítomen, ručně ověřit baseline, dohlížet nejpozději po 5 minutách a při DB free pod 2 GiB / SQL chybách / dlouhém přetížení / degradaci G-03 či PP Studio / nemožnosti dohledu **okamžitě zastavit jen G-04**. Samotné procesní limity aplikace nechrání sdílenou DB před zaplněním. Stávající evaluator je následnou přejímkou a musí mít skutečné ruční důkazy host metrics, SSE a DB readback.
+
+**Není schválen start ani trvalé zapnutí.** Nyní je nutná CI na aktuálním PR HEAD, ověření skutečné nainstalované jednotky na DEV (mohla zůstat starší monitorovaná verze), lokální secure-env a přítomnosti správce. PR #21 není mergován; G-04/J09 zůstávají IN_PROGRESS. Předchozí NO-GO z důvodu chybějícího SSH monitorovacího účtu bylo pro tento jednorázový test **nahrazeno**, nikoli potichu označeno jako PASS.
+
+## Historické opravy P1 (dřívější záznam)
+
+
 
 Evaluator nyní vyžaduje úplné monotónní countery včetně `connection`, časové snapshoty
 v nejméně čtyřech bodech po dobu nejméně 1 800 s, skutečný interval `started_at`/`finished_at`, vyvážení Rust
