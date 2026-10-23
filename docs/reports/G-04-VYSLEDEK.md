@@ -6,6 +6,16 @@
 
 Opravená implementace je v commitu `232d92840a0b053feba3ee13868d8b28be8ed821`, ověřená binární SHA-256 `fdb9e3e3c96372637e770d03f22fca1e0b947b1ab614a2ca65f413cab46b774a`. Šablona canary unit nyní odkazuje na samostatný `/opt/airradar-v2/canary/releases/232d92840a0b053feba3ee13868d8b28be8ed821/airradarv2-engine`; statická kontrola blokuje původní implementační SHA `fe0ac66...`. **Nahrání nové binárky a instalace nové jednotky na skutečný DEV LXC nejsou tímto PR commitem prokázány.** Žádný další live canary zatím nebyl doložen. Před dalším startem ověřit skutečné SHA binárky, service `ExecStart`, `inactive`, G-03 a DB baseline + přítomnost lidského dohledu. PR se neslučuje a další canary se bez provozních podmínek nespouští.
 
+## Skutečný 31minutový DEV canary — výsledky z 23. 10. 2026
+
+**Dílčí PASS pro živý BEAST/CPR → RAM-first sampler → SQLx → PostgreSQL**, nikoli závěrečný G-04/J09 ACCEPTED. Vlastník dodal snímek reálných řádků v `airradar_v2.flight_samples` a posledních 12 diagnostických snapshotů + systémové ukončení služby. Celý journal `/root/g04-canary-final.log` a kompletní read-only metriky DB hostitele v repozitáři **nejsou doloženy**.
+
+Poslední snapshot: `eligible=1502`, `committed=1489`, `pending=13`, `inflight=0`, `coalesced=17754`; `dropped_capacity=0`, `dropped_stale=0`, `dropped_writer=0`, `sql_attempts=63`, `committed_batches=63`, `failed_batches=0`, `sql_timeouts=0`, `connection=Up`. G-03 po ukončení canary `active`. Systemd nahlásil `Service reached runtime time limit. Stopping.` / `Failed with result 'timeout'` — timeout odpovídá explicitnímu limitu `RuntimeMaxSec=1875`, nikoli SQL timeoutu. Naměřený CPU time G-04: **6,499 s**, peak paměti **3,8 MB**. Jde o aplikační proces, nikoli CPU/RAM PostgreSQL LXC.
+
+**Otevřený problém uzavření:** posledních `13/1502` kandidátů (přibližně **0,87 %**) bylo před zastavením procesu stále v RAM `pending`. Nula v `dropped_*` zde není důkaz nulových ztrát po procesu; nelze potvrdit poslední flush ani skutečný konečný počet SQL řádků bez dalšího readbacku. Stávající G-04 runtime při systemd časovém limitu neposkytuje potvrzený graceful drain/finální diagnostiku a přejímací evaluator vyžaduje `pending=0` a `inflight=0`. Před plným PASS doplnit kontrolovaný stop příjmu, dojetí posledních 30s bucketů a vyprázdnění writeru, s ohraničeným timeoutem a regresními testy; nelze jej nahradit ručním přepsáním metrik. Rovněž chybí kompletní SSE heartbeat/DB host evidence a vyhodnocení evaluatoru na celém journald logu.
+
+**Závěr:** BEAST-only historický writer prokazatelně funguje (63/63 úspěšných SQL dávek), ale etapa **G-04/J09 zůstává IN_PROGRESS**, PR #21 stále draft a bez merge do `main`. G-03, V1, PP Studio a sdílený PostgreSQL nebyly cíleně změněny; jejich výkonové dopady zatím nejsou kompletně doložené.
+
 ## Oprava PR #21 — BEAST-only historie (23. 10. 2026)
 
 Příčina původního canary `eligible=0` byla potvrzena v kódu: `beast_arrival()`
