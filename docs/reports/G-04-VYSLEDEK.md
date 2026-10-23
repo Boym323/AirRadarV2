@@ -2,6 +2,22 @@
 
 **Aktualizace:** 23. 10. 2026. **Etapa:** HOTOVO — **DEV ACCEPTED**. **Primární KEEP:** J09 (`ACCEPTED`). **Rozsah:** bezpečně dozorovaný vývojový provoz a funkce historie; nikoli trvalý automatický writer ani produkční release.
 
+## Oprava navazujícího DEV autodeploye
+
+Po přijetí J09 byla odstraněna nesrovnalost mezi stavem `main` a runtime LXC:
+release nyní nese `web/runtime-stage.txt` z verzovaného `deploy/runtime-stage` a
+root-owned instalátor podle něj aktivuje `--g04-live-history`. Post-deploy brána
+už nevyžaduje vždy `database_connected=false`; vyžaduje shodu stage, živého
+ingestu, DB příznaku a přímého/proxovaného SSE. Jednorázový
+`--g04-dev-history` canary zůstává oddělený. Změna je popsána v [ADR 0014](../adr/0014-g04-trvaly-dev-runtime-a-stage-aware-autodeploy.md).
+
+Konzumenti: G-04/J09, Rust engine, immutable DEV release, root-owned installer,
+runner a GitHub Actions. Důkazy: Rust health test (`G-04` + DB), 61 Rust testů,
+workflow/stage boundary regresní testy, shell/Python syntaxe, `check-docs` a
+matice 45 funkcí PASS. Skutečný nový release se po merge ověří přesným SHA a
+lokálním healthcheckem; tento pracovní checkout sám produkční ani DEV runtime
+nepřepíná.
+
 **Rozhodnutí vlastníka o DEV akceptaci:** závěrečný reálný canary a SQL readback splnily funkční i shutdown kritéria. Průběžné 5min záznamy DB hostitele a post-run SSE nejsou k dispozici; tuto dokumentační mezeru vlastník vědomě nepovažuje za další blocker pro DEV uzavření. Nedeklarujeme tím ověření nezdokumentovaných host metrik, nepřítomnost dopadů na jiné DB ani plný provozní či produkční výkonový audit. Další 30min SQL canary není pro tuto DEV akceptaci nutný. Následující starší NO-GO a IN_PROGRESS výpisky jsou historický záznam průběhu opravy, ne aktuální stav.
 
 ## Závěrečný opakovaný DEV canary — DEV ACCEPTED (23. 10. 2026)

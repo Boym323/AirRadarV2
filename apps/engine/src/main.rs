@@ -101,6 +101,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if std::env::args().any(|arg| arg == "--g04-dev-history") {
         let config = ingest::supervisor::Config::from_env()?;
         let pool = history_store::dev_pool_from_env()?;
+        // Fail closed before switching the main service: the health flag must
+        // not claim an active DB runtime when the protected DEV DB is absent.
+        pool.acquire().await?;
         let (feed, publisher) = api::new();
         let bind =
             std::env::var("AIRRADAR_V2_BIND").unwrap_or_else(|_| "127.0.0.1:4102".to_owned());
@@ -176,6 +179,42 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
         println!("AirRadar V2 G-03 opt-in API on {}", listener.local_addr()?);
         axum::serve(listener, api::router(feed))
+            .with_graceful_shutdown(async {
+                let _ = tokio::signal::ctrl_c().await;
+            })
+            .await?;
+        return Ok(());
+    }
+    // G-04: trvalý DEV writer aktivovaný pouze release markerem a chráněnou
+    // systemd konfigurací. Na rozdíl od canary nemá časový limit; DB je stále
+    // pouze doplňkový writer a živý RAM/SSE tok na něm nezávisí.
+    if std::env::args().any(|arg| arg == "--g04-live-history") {
+        let config = ingest::supervisor::Config::from_env()?;
+        let pool = history_store::dev_pool_from_env()?;
+        // Fail closed before switching the main service: the health flag must
+        // not claim an active DB runtime when the protected DEV DB is absent.
+        pool.acquire().await?;
+        let (feed, publisher) = api::new();
+        let bind =
+            std::env::var("AIRRADAR_V2_BIND").unwrap_or_else(|_| "127.0.0.1:4102".to_owned());
+        let address: SocketAddr = bind.parse()?;
+        let listener = tokio::net::TcpListener::bind(address).await?;
+        tokio::spawn(async move {
+            if let Err(error) = ingest::supervisor::run_with_publisher_and_history(
+                config,
+                Some(publisher),
+                Some(pool),
+            )
+            .await
+            {
+                eprintln!("G-04 live ingest task ended: {error}");
+            }
+        });
+        println!(
+            "AirRadar V2 G-04 live history API on {}",
+            listener.local_addr()?
+        );
+        axum::serve(listener, api::router_with_runtime(feed, "G-04", true))
             .with_graceful_shutdown(async {
                 let _ = tokio::signal::ctrl_c().await;
             })

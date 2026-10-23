@@ -1,6 +1,11 @@
 # DEV main auto-deploy — aktuálně funkční (23. 10. 2026)
 
-**G-03 DEV ACCEPTED:** [Actions #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759), referenční nasazený SHA `29ee2ee75feab9279123b77d50895d648c5419d7`, API `--g03-live-api`, SSE snapshot/delta/heartbeat a read-only BEAST. Další commity v main jsou po zelených testech automaticky vydávány a nasazovány přes jediný stávající runner; G-04 SQL CI je izolovaný a nezasahuje do reálné DB. Jednorázová aktivace G-03 už proběhla, při každém nasazení ji nespouštět. G-13 produktový release není schválen.
+**Stage-aware DEV nasazení:** každý zelený commit `main` se vydá jako immutable
+SHA release a runner podle `web/runtime-stage.txt` aktivuje odpovídající
+runtime. Aktuální G-04/J09 používá `--g04-live-history`, G-03 HTTP/SSE a
+read-only BEAST; `--g04-dev-history` zůstává pouze jednorázový canary.
+Post-deploy ověření vyžaduje skutečný stage a příznak DB. Produkční G-13 release
+není tímto schválen.
 
 Zdokumentovaný incident G-13 je v [runbooku](../docs/runbooks/DEV-MAIN-AUTODEPLOY.md).
 `archive_validation.py` je referenční bezpečná validace release archivu. Při

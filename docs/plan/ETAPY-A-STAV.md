@@ -8,7 +8,7 @@
 | G-01 | [Kontrakty a deterministické fixture](../ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) | **HOTOVO — 10/10, CI PASS** |
 | G-02 | [Lokální ADS-B ingest a RAM](../ukoly/G-02-LOKALNI-INGEST.md) | **HOTOVO — 11/11 TESTED, reálný 60min BEAST PASS; živé HTTP/SSE nyní zajišťuje G-03** |
 | G-03 | [Verzované HTTP API a SSE](../ukoly/G-03-API-A-SSE.md) | **HOTOVO — 10/10 TESTED, DEV ACCEPTED; automatický deployment #39906245759 PASS na `29ee2ee75fea`** |
-| G-04 | [Úsporná historie](../ukoly/G-04-POSTGRESQL-HISTORIE.md) | **HOTOVO — DEV ACCEPTED, J09 ACCEPTED (23. 10. 2026).** Skutečný BEAST/CPR 1817,498s canary: `eligible=committed=1312`, 61/61 SQL batchů, `pending=inflight=0`, bez chyb, dropů a timeoutů; DB 1490 → 2802 (+1312), `drained=true writer_finished=true`, systemd exit 0. CI Rust/Web/docs/PostgreSQL PASS. Provozní evidence: baseline DB host doložena, průběžné 5min host měření a post-run G-03 SSE nebyly předloženy — **přijatá výjimka pro DEV, nikoli tvrzení o celém výkonovém auditu nebo souhlas s produkčním nasazením**. PR #21 bez merge do main. |
+| G-04 | [Úsporná historie](../ukoly/G-04-POSTGRESQL-HISTORIE.md) | **HOTOVO — DEV ACCEPTED, J09 ACCEPTED (23. 10. 2026).** Stage-aware `main → CI → immutable release → runner → LXC` nyní po přijetí G-04 aktivuje trvalý DEV `--g04-live-history`; canary zůstává oddělený. Funkce, DB writer a healthcheck jsou vázané na G-04 marker, rollback a chráněné prostředí. Produkční G-13 se tím neschvaluje. |
 | G-05 | [Živá mapa a základní ovládání](../ukoly/G-05-ZIVA-MAPA.md) | NEZAHÁJENO |
 | G-06 | [Letiště a NAVAID/FIX](../ukoly/G-06-LETISTE-NAVAID.md) | NEZAHÁJENO |
 | G-07 | [Vybraná meteorologie](../ukoly/G-07-VYBRANE-POCASI.md) | NEZAHÁJENO |

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Jednorázové povolení root-owned G-03 DEV installeru pro automatický main→LXC.
+# Jednorázové povolení stage-aware root-owned DEV installeru pro main→LXC.
 # Neregistruje runner znovu, nemění běžící service, V1, DB ani receiver.
 set -Eeuo pipefail
 (( EUID == 0 )) || { echo "G-03: spusť uvnitř DEV LXC jako root." >&2; exit 2; }
@@ -16,18 +16,18 @@ test "$(git rev-parse HEAD)" = "$(git rev-parse refs/remotes/origin/main)" || {
   exit 1
 }
 test -z "$(git status --porcelain)" || { echo "G-03: checkout má lokální změny." >&2; exit 1; }
-for p in deploy/install-dev-bundle.sh deploy/runner-deploy.sh deploy/archive_validation.py deploy/verify-g03-runtime.py; do
+for p in deploy/install-dev-bundle.sh deploy/runner-deploy.sh deploy/archive_validation.py deploy/verify-g03-runtime.py deploy/verify-airradarv2-runtime.py; do
   test -f "$p"
   test "$(stat -c '%u' "$p")" = 0
   permissions="$(stat -c '%a' "$p")"
   test $(( 8#$permissions & 0022 )) -eq 0
 done
-grep -qF G03_STAGE_GATE_V2 deploy/install-dev-bundle.sh
+grep -qF G04_STAGE_GATE_V3 deploy/install-dev-bundle.sh
 test -f deploy/systemd/nginx-airradarv2.conf
 bash -n deploy/install-dev-bundle.sh deploy/runner-deploy.sh
 python3 - <<'PY'
 from pathlib import Path
-for p in ("deploy/archive_validation.py", "deploy/verify-g03-runtime.py"):
+for p in ("deploy/archive_validation.py", "deploy/verify-g03-runtime.py", "deploy/verify-airradarv2-runtime.py"):
     compile(Path(p).read_bytes(), p, "exec")
 PY
 test -x /opt/airradar-v2/current/airradarv2-engine
@@ -56,12 +56,13 @@ visudo -cf /etc/sudoers.d/airradarv2-runner
 test -d /var/lib/airradarv2-runner/incoming
 install -o root -g root -m 0644 deploy/archive_validation.py /usr/local/libexec/archive_validation.py
 install -o root -g root -m 0755 deploy/verify-g03-runtime.py /usr/local/libexec/airradarv2-verify-g03-runtime.py
+install -o root -g root -m 0755 deploy/verify-airradarv2-runtime.py /usr/local/libexec/verify-airradarv2-runtime.py
 install -o root -g root -m 0755 deploy/install-dev-bundle.sh /usr/local/libexec/airradarv2-main-deploy-install.sh
 install -o root -g root -m 0755 deploy/runner-deploy.sh /usr/local/libexec/airradarv2-runner-deploy.sh
 install -d -o root -g root -m 0755 /etc/systemd/system/nginx.service.d
 install -o root -g root -m 0644 deploy/systemd/nginx-airradarv2.conf \
   /etc/systemd/system/nginx.service.d/airradarv2.conf
 systemctl daemon-reload
-grep -qF G03_STAGE_GATE_V2 /usr/local/libexec/airradarv2-main-deploy-install.sh
-echo "PASS: root-owned G-03 installer připraven, další main commit se automaticky nasadí."
+grep -qF G04_STAGE_GATE_V3 /usr/local/libexec/airradarv2-main-deploy-install.sh
+echo "PASS: stage-aware root-owned installer připraven, další main commit se automaticky nasadí."
 echo "Aktuální engine/systemd/nginx zůstávají beze změny až do GitHub release."
