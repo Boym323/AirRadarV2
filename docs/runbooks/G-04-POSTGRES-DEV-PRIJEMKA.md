@@ -1,6 +1,6 @@
 # G-04 — postup bezpečné instalace PostgreSQL historie do DEV
 
-**Stav:** připravený runbook; neověřen na existujícím sdíleném DB LXC. **Týká se pouze AirRadar V2.** Před operacemi musí správce potvrdit oddělení V2 od databází V1 a dalších aplikací. Neprovádí se žádná automatická instalace ani migrace po merge do `main`.
+**Stav:** připravený runbook; read-only audit DEV je doložen, canary není schválen. **Týká se pouze AirRadar V2.** Před operacemi musí správce potvrdit oddělení V2 od databází V1 a dalších aplikací. Neprovádí se žádná automatická instalace ani migrace po merge do `main`.
 
 ## 1. Čistě read-only kontrola G-04.01–.02
 
@@ -50,5 +50,16 @@ Denní `pg_dump -Fc` pouze V2 DB má být šifrovaně uložen mimo DB LXC; návr
 - samostatný DB test na nové DEV DB: migrace až po schválení, kontrola `pg_stat_ssl.ssl=false`, odmítnutí špatného hesla, kontrola skutečného síťového dosahu, negativní DDL test a zotavení SQLx bez výpadku G-03;
 - reálný identický replay pro 15s/30s/60s profily, indexy a partitions, SQL p95/p99, RAM/CPU, WAL/IOPS a sémantická kvalita historie;
 - skutečně obnovená záloha v nezávislém DEV cíli, potvrzený rollback a písemný GO.
+
+## 6. Kontrolní seznam prvního časově omezeného canary
+
+Canary se smí spustit až po samostatném GO a pouze s `AIRRADAR_V2_HISTORY_TRACE=1` v chráněném lokálním prostředí. Výchozí akceptační limit je **nejvýše 1 % kandidátních historických vzorků** ztracených součtem `dropped_capacity`, `dropped_stale` a `dropped_writer`; při překročení se canary zastaví. Hodnoty 18,1 % a 59,0 % z předchozího 2×/4× testu tento limit nesplňují.
+
+- [ ] Správce písemně potvrdil DB ownera `airradar_v2_dev_migrator`, skutečné vlastníky schématu/tabulky (`postgres`) a postup DDL/migrací bez změny ownerů.
+- [ ] Správce doložil externí `pg_dump`/PITR, umístění kopií, retenci, RPO/RTO a nezávislý restore; `archive_mode=off` se nepovažuje za zálohu.
+- [ ] Před startem je uložen baseline G-03: proces, SHA, BEAST/RAM/SSE, CPU/RSS, DB row count a rollback příkaz.
+- [ ] Canary běží pouze časově omezeně, s monitoringem `pending`, `inflight`, `committed`, všech drop counters, SQL timeoutů a `connection=up`.
+- [ ] Na konci platí `pending=0`, `inflight=0`, `connection=up`, žádné SQL timeouty a ztráta nejvýše 1 %; jinak NO-GO.
+- [ ] Rollback znamená pouze zastavení opt-in writeru, návrat na `--g03-live-api`, kontrolu BEAST/RAM/SSE a nedestruktivní ponechání DB dat.
 
 **Zákaz:** změnit V1, starou historii, DB nastavení jiných služeb či automaticky přesměrovat aplikaci na SQL.

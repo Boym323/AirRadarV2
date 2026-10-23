@@ -1,7 +1,7 @@
 # G-04 — výsledek auditu a průběžná přejímka PostgreSQL historie
 
 **Aktualizace:** 23. 10. 2026. **Etapa:** ROZPRACOVÁNO. **Primární KEEP:** J09 (`IN_PROGRESS`).
-**Větev/PR:** `codex/g04-history-20261023`, draft PR #21. **Implementační SHA:** `36afdda5e752cc320496f44672a94e9434eea9eb`. **Měřicí harnessy/report:** `ebc20307c8962593c3895908f4b54e2f63aeaa8a`.
+**Větev/PR:** `codex/g04-history-20261023`, draft PR #21. **Implementační SHA:** `fc0b2b5ad14ea9f6b7eced90b0b2179bbd6091dc`. **Předchozí benchmark binárky:** `36afdda5e752cc320496f44672a94e9434eea9eb`. **Měřicí harnessy/report:** `ebc20307c8962593c3895908f4b54e2f63aeaa8a` / `4e1ff8b7396f78377ce3f429c5fe663e8fd1df67`.
 
 ## Audit G-04.01–G-04.12
 
@@ -11,9 +11,9 @@
 | G-04.02 | TESTED pro DEV | Připojení přes `PgSslMode::Disable`, `pg_stat_ssl.ssl=false`, bez změny `pg_hba.conf`/firewallu; důvěryhodnost LAN je provozní riziko. |
 | G-04.03 | TESTED pro přístup | DB owner `airradar_v2_dev_migrator`, schema/table owner `postgres`; obě aplikační role jsou bez SUPERUSER/CREATEDB/CREATEROLE, runtime má pouze USAGE + SELECT/INSERT. Vlastnictví `postgres` neblokuje runtime, ale další DDL musí provést migrátor nebo vlastník s explicitním právem; vlastníci nebyli měněni. |
 | G-04.04 | TESTED v CI/DEV kompatibilitě | Jedna tabulka, 30s bucket, PK deduplikace, opakované `up` a odmítnutý destruktivní `down`; migrace na skutečné DB nebyla spuštěna. |
-| G-04.05 | TESTED v kódu | SQLx pool max. 2, acquire 2 s, SQL timeout 5 s, opt-in `--g04-dev-history`; reconnect/chaos provozní test chybí. |
+| G-04.05 | TESTED v kódu | SQLx pool max. 2, acquire 2 s, SQL timeout 5 s, opt-in `--g04-dev-history`; interní diagnostika stavu připojení a timeoutů je opt-in přes `AIRRADAR_V2_HISTORY_TRACE`. |
 | G-04.06 | TESTED v unit/replay testech | RAM-first sampler, 30/60/120/180/600 s pravidla, 30s bucket, validace polohy a stejná rekonstruovaná trasa pro srovnání 15/30/60 s; skutečný RF replay nebyl k dispozici. |
-| G-04.07 | TESTED v unit testech/kódu | Pending + inflight nejvýše 2048, dávka nejvýše 128, coalescing, ACK po COMMIT, retry 3 pokusy s backoffem; reálný výpadek DB chybí. |
+| G-04.07 | TESTED v unit testech/kódu | Pending + inflight nejvýše 2048, dávka nejvýše 128, coalescing, ACK po COMMIT, retry 3 pokusy s backoffem; interní snapshot obsahuje pending/inflight/commit/drop counters. |
 | G-04.08 | TESTED v SQLx testu | Časové čtení jedné identity, limit 1000, bez query v živé RAM/SSE cestě. |
 | G-04.09 | TESTED izolovaně | 2 501 starých řádků v izolované DB se odstranilo dávkami 1 000/1 000/501, nový řádek zůstal, PK index zůstal jediným indexem; 360 448 B relation / 8 099 507 B DB. Sdílená DEV retence nebyla spuštěna. |
 | G-04.10 | TESTED izolovaně | Lokální PostgreSQL na `127.0.0.1:55432` byl zastaven/spuštěn; JSON/RAM/G-03 SSE zůstaly živé a po obnově se zapsal nový vzorek. Sdílený LXC nebyl dotčen. |
@@ -48,6 +48,14 @@ Lokální PostgreSQL 17.11 na `127.0.0.1:55432` byl inicializován jako samostat
 | 4× | 5 000 | 2 048 | 2 952 | 40 407 ms | 16 | 215 | 48 120 KiB | 537 155 B | 2 013 589 |
 
 CPU jsou součet Linux `/proc/<pid>/stat` user+system ticků procesu; nejsou to procenta serveru. SSE bytes jsou současný lokální stream klienta, nikoli plný browser benchmark. Výsledky potvrzují neblokující živý stream a ohraničenou ztrátu při saturaci, nikoli bezeztrátové uložení všech 5 000 vstupů.
+
+### Časově rozložený replay a férovost
+
+Harness `tools/benchmark_g04_writer_long.sh` na SHA `fc0b2b5ad14ea9f6b7eced90b0b2179bbd6091dc` poslal 16 atomických readsb snapshotů po 10 s, celkem 64 letadel. Každý snapshot měl nové časové pozorování a pohyb; po doběhnutí byly v izolované PostgreSQL ověřeny `rows=64`, `aircraft=64`, `min_rows_per_aircraft=3`, `max_rows_per_aircraft=3`, `avg_rows_per_aircraft=3,00`. Žádné letadlo nebylo zvýhodněno ani ztraceno; běh nepřekročil pending limit 2048.
+
+### Interní diagnostika
+
+Při `AIRRADAR_V2_HISTORY_TRACE=1` Rust periodicky (15 s) loguje pouze číselný snapshot bez hosta, uživatele a hesla: `pending`, `inflight`, `eligible`, `coalesced`, `committed`, `dropped_capacity`, `dropped_stale`, `dropped_writer`, `sql_attempts`, `committed_batches`, `failed_batches`, `sql_timeouts` a stav `unknown/up/down`. SQL timeout je rozlišen od obecné chyby dotazu; po třech pokusech se inflight dávka zahodí přes `ACK=false`.
 - **Backup/restore skutečné DEV DB:** read-only `pg_dump -Fc` databáze `airradar_v2_dev` (pouze schéma `airradar_v2`) vytvořil 4 165 B za 0,09 s; SHA-256 dumpu `8419d06ab60736b47f6d54e0d7571e8d4beaf0c4e07d8d8d8d5e632bf37d51c`. Dump byl obnoven pouze do nezávislé lokální databáze `airradar_v2_restore_ci`: `pg_restore` 0,03 s, schema `airradar_v2.flight_samples`, 1 řádek, 8 constraintů, 1 PK index, bez chyb. RPO tohoto snapshotu je 0 řádků a naměřené RTO 0,03 s; obojí platí pouze pro tento malý dataset, nikoli jako provozní SLA. Předchozí lokální syntetický dump měl 3 850 B/0,124 s/0,060 s.
 - **Benchmark metodika:** PostgreSQL 17.11, stejný SQL model, jeden klient, dávky 128 řádků, PK-only, `fsync=on`, lokální loopback, před každým během `TRUNCATE` a reset WAL statistik. Výsledky:
 
@@ -80,7 +88,20 @@ Destruktivní `.down.sql` migrace je nyní fail-closed; rollback historie se pro
 
 ## Neuzavřené brány
 
-Stále chybí ověřená cluster backup politika sdíleného LXC, provozní RPO/RTO, skutečný RF replay pro sampling a měření serverového CPU. Proto **G-04 není HOTOVO a J09 není TESTED/ACCEPTED**. PR #21 nesmí aktivovat writer v DEV bez samostatného GO, návratu na běžný G-03 režim a ověřeného restore.
+Stále chybí ověřená cluster backup politika sdíleného LXC, provozní RPO/RTO, skutečný RF replay pro sampling a měření serverového CPU. Ztráty 18,1 % při 2× a 59,0 % při 4× jsou mimo navrženou canary toleranci; writer proto nesmí být aktivován bez časově omezeného scénáře s limitem ztrát. G-04 není HOTOVO a J09 není TESTED/ACCEPTED.
+
+## Brána prvního DEV canary — zatím NO-GO
+
+Před samostatným GO musí být doloženo:
+
+1. schválený vlastník schématu/tabulky nebo potvrzený migrační postup pro objekty vlastněné `postgres`;
+2. potvrzené externí zálohy, RPO/RTO a postup obnovy; aktuální `archive_mode=off` samo o sobě není záloha;
+3. canary dataset s minimálně 100 letadly a časovým replayem, `dropped_capacity + dropped_stale + dropped_writer <= 1 %` všech kandidátních historických vzorků;
+4. žádné `sql_timeouts`, `connection=down` nebo růst `pending/inflight` na konci canary;
+5. CPU/RAM aplikace, SQL latency p95/p99, WAL a SSE heartbeat bez regresního překročení schválených limitů;
+6. připravený rollback: zastavit pouze opt-in writer, vrátit proces na `--g03-live-api`, ověřit BEAST/RAM/SSE a ponechat databázová data nedestruktivně.
+
+Aktuální 2× a 4× ztráty tento limit nesplňují. Doporučení je **NO-GO**, dokud nebude canary záměrně omezen na provozní rychlost s doloženou ztrátou nejvýše 1 % nebo nebude vlastníkem schválena jiná hodnota.
 
 ### Bezpečný postup další aktivace
 

@@ -15,6 +15,10 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 - Izolovaná retence odstranila 2501 starých řádků dávkami 1000/1000/501 a zachovala nový řádek i jediný PK index. Srovnání stejné rekonstruované trasy 15/30/60/adaptive doložilo prostorovou chybu a počet řádků.
 - Audit sdílené DEV DB zjistil `archive_mode=off` a vypnutý `archive_command`; skutečná backup politika a provozní RPO/RTO nejsou z runtime účtu známé. G-04/J09 zůstává `IN_PROGRESS`.
 
+### G-04 — diagnostika a časově rozložený replay
+- Implementační SHA `fc0b2b5ad14ea9f6b7eced90b0b2179bbd6091dc` přidává interní 15s diagnostiku pending/inflight/commit/drop/timeout/connection bez tajných údajů a Rust regresní replay 64 letadel.
+- Časově rozložený replay 16 snapshotů po 10 s zachoval 3 vzorky na každé ze 64 identit. Bounded benchmark ale vykázal ztráty 18,1 % při 2× a 59,0 % při 4×; první DEV canary proto zůstává NO-GO.
+
 ### G-04 — stávající PostgreSQL pravidla beze změn
 - Vlastník odmítl konfigurovat nové `hostnossl` ani měnit `pg_hba.conf` či síťová pravidla. Ověření používá pouze existující autorizaci; při odmítnutí zůstane G-04.02 BLOKOVÁNO bez automatických serverových změn. Aktualizováno ADR 0009, runbook, kroky a technické kontrakty.
 
