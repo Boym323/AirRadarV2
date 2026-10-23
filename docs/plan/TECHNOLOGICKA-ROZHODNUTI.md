@@ -29,7 +29,7 @@ readsb JSON / BEAST → Rust/Tokio/Axum (RAM, REST, SSE)
                         └──→ SQLx → PostgreSQL (existující separátní DB LXC)
 ~~~
 
-**G-00 web byl migrován a testován v CI.** PostgreSQL je volba vlastníka, nikoli výkonové tvrzení o SQLite. Samostatnou V2 DB, role, izolaci LAN a autentizaci SCRAM bez TLS (ADR 0009) a obnovu je potřeba ověřit při G-04; na existujícím databázovém LXC jsme neprováděli žádné zásahy.
+**G-00 web byl migrován a testován v CI.** PostgreSQL je volba vlastníka, nikoli výkonové tvrzení o SQLite. Samostatnou V2 DB, role, existující síťovou autorizaci pro heslové přihlášení v LAN bez TLS a obnovu je potřeba ověřit při G-04 (ADR 0009, bez změn `pg_hba.conf`); na existujícím databázovém LXC jsme neprováděli žádné zásahy.
 
 Historické alternativy zůstávají jako [výzkumná evidence](TECHNOLOGICKY-PRUZKUM.md), ale již nejsou aktivními implementačními variantami.
 
@@ -45,7 +45,7 @@ Historické alternativy zůstávají jako [výzkumná evidence](TECHNOLOGICKY-PR
 
 1. Potvrdit referenční JSON/BEAST fixture a očekávanou paritu.
 2. G-00 Vite web je migrován; MapLibre, PWA a SSE integrační chování testovat v příslušných etapách, nikoliv vytvářet další Next.js implementaci.
-3. Navrhnout PostgreSQL schéma pro aktivní dotazy a změřit na izolované DEV DB zápisy, indexy, síťovou izolaci, SCRAM bez TLS dle ADR 0009 a obnovu.
+3. Navrhnout PostgreSQL schéma pro aktivní dotazy a změřit na izolované DEV DB zápisy, indexy, existující síťový přístup, heslovou autentizaci bez TLS dle ADR 0009 a obnovu (bez změn pravidel PostgreSQL).
 4. V G-04 bezpečně připravit novou databázi/role V2 a reportovat skutečné naměřené limity PostgreSQL.
 5. Před produkcí provést B01–B07 měření na izolovaném V2 prostředí.
 

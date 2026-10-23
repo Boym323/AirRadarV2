@@ -9,7 +9,7 @@
 | SSE | initial snapshot + delta 1 Hz, 15 s heartbeat, 100 klientů, max. 256 KiB pending fronta na klienta, seq/epoch resync | [SSE a paměť](../technical/SSE-PROTOKOL-A-LIMITY.md) | G-01/G-03 |
 | MapLibre | jedna Map instance, GeoJSON source + symbol layers, stabilní ID; `setData` baseline, `updateData` po měření | [Výkon mapy](../technical/MAPLIBRE-VYKON-A-ZATEZ.md) | G-05 |
 | Browser E2E | Microsoft Playwright, izolované fixture, Chromium/Firefox/WebKit/mobil, trace na chyby | [Automatické testy](../technical/PLAYWRIGHT-BROWSEROVE-TESTY.md) | G-01/G-05/G-10/G-11 |
-| Síť obou LXC | samostatné V2 DB/role, hostnossl+SCRAM, izolovaná LAN bez TLS, firewall jen V2 app dle [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md) | [Bezpečnost a obnova](../runbooks/POSTGRES-LXC-SECURITY-BACKUP.md) | G-04/G-11 |
+| Síť obou LXC | samostatná V2 DB/role; izolovaná LAN bez TLS a heslové přihlášení přes existující autorizaci (např. pravidlo `host`), **bez změn `pg_hba.conf` a firewallu** dle [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md) | [Bezpečnost a obnova](../runbooks/POSTGRES-LXC-SECURITY-BACKUP.md) | G-04/G-11 |
 
 ## Výslovné omezení
 
