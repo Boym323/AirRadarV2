@@ -9,7 +9,7 @@ on:
       - 'docs/metrics/**'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 concurrency:
   group: airradarv2-dev-release-${{ github.ref }}
   cancel-in-progress: false
