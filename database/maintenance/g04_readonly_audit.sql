@@ -15,9 +15,6 @@ ORDER BY name;
 SELECT wal_records, wal_fpi, wal_bytes, stats_reset
 FROM pg_stat_wal;
 
--- Může vyžadovat oprávnění dle verze PostgreSQL. Při odmítnutí je výsledek
--- NEOVĚŘENO, nikoli PASS; serverová konfigurace se tímto skriptem nemění.
-SELECT name, size
-FROM pg_ls_waldir()
-ORDER BY name DESC
-LIMIT 1;
+-- Volné místo WAL filesystemu se záměrně měří mimo SQL přes omezený
+-- read-only SSH forced command na DB LXC; privilegovaná serverová funkce
+-- pro výpis souborů není pro runtime účet požadována.

@@ -90,22 +90,24 @@ Canary nebyl spuštěn. G-04/J09 zůstává `ROZPRACOVÁNO` / `IN_PROGRESS`; nic
 
 ## Příprava fail-closed monitoringu — 23. 10. 2026
 
-Do PR byla doplněna implementace `tools/monitor_g04_canary.sh` a její syntaxní/kontraktní test
+Do PR byla doplněna implementace `tools/monitor_g04_canary.sh` a její funkční regresní test
 `tools/test_monitor_g04_canary.sh`. Monitor je součástí stejného SHA-pinned release jako binárka,
 vyžaduje `root:root 0600` env soubor a schválený `AIRRADAR_G04_DB_MONITOR_SSH_TARGET`; bez něj
-končí před spuštěním G-04. SQL dotaz čte pouze WAL metriky, hostitelský dohled přes SSH používá
-jen `loadavg`, `free -b` a `df -Pk`. Limity jsou 2 GiB volného místa, 10 MiB/s růst WAL, 80 %
+končí před spuštěním G-04. SQL dotaz čte pouze `pg_stat_wal.wal_bytes` bez `pg_ls_waldir()`,
+hostitelský dohled přes omezený forced-command SSH helper používá `loadavg`, `free -b` a `df -Pk`. Limity jsou 2 GiB volného místa, 10 MiB/s růst WAL, 80 %
 load/cpu na počet CPU a 90 % použité RAM; limity procesu G-04 jsou `CPUQuota=50%` a `MemoryMax=2G`.
 Hodnoty jsou výchozí provozní brána a musí být před canary potvrzeny skutečným DBA auditním výstupem.
 Monitor byl do release adresáře na DEV nainstalován jako `root:root`, `0755`; SHA-256 zdroje i
-instalované kopie je `efc90cf43bc60a307fe81aa15865ab940db8fcfe96ec4b8443aef5a71d8eb94e`.
+instalované kopie je `89f0e0d134303b86db5fd7ebc43cac27ea0798722f3636ca2c9d2a44a269a0dc`.
 
 Provedené důkazy bez spuštění canary:
 
 - env soubor existuje jako `root:root`, `0600`; neprázdnost hesla byla ověřena bez jeho čtení do výstupu;
+- funkční test prošel PASS scénářem a ověřil fail-closed při SSH výpadku/timeoutu, stale diagnostice,
+  degradaci G-03, nízkém disku, SQL chybě a nebezpečném WAL růstu; child G-04 byl v každém scénáři ukončen;
 - chybějící monitorovací přístup vedl k očekávanému exit `78` před startem child procesu;
 - rollback skript byl spuštěn při neaktivní G-04 a skončil `0`; G-03 zůstal `active`;
-- `bash -n`, monitor kontraktní test a boundary test prošly; žádná změna V1, PP Studio, `pg_hba.conf`, firewallu ani globální PostgreSQL konfigurace nebyla provedena.
+- `bash -n`, funkční monitor test a boundary test prošly; žádná změna V1, PP Studio, `pg_hba.conf`, firewallu ani globální PostgreSQL konfigurace nebyla provedena.
 
 Aktuální stav zůstává **NO-GO**: v chráněném DEV env není schválený SSH cíl/read-only přístup
 k metrikám sdíleného PostgreSQL LXC. Canary nebyl spuštěn. Po doplnění přístupu je nutné znovu

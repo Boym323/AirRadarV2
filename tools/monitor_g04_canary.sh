@@ -11,15 +11,24 @@ free_floor="${AIRRADAR_G04_MIN_FREE_BYTES:-2147483648}"
 max_wal_rate="${AIRRADAR_G04_MAX_WAL_GROWTH_BYTES_PER_SEC:-10485760}"
 max_cpu="${AIRRADAR_G04_MAX_DB_CPU_LOAD_PCT:-80}"
 max_ram="${AIRRADAR_G04_MAX_DB_RAM_USED_PCT:-90}"
-data_path="${AIRRADAR_G04_DB_DATA_PATH:-/var/lib/postgresql}"
-wal_path="${AIRRADAR_G04_DB_WAL_PATH:-$data_path}"
 ssh_target="${AIRRADAR_G04_DB_MONITOR_SSH_TARGET:-}"
 health_url="${AIRRADAR_G04_G03_HEALTH_URL:-http://127.0.0.1:4101/api/v1/health}"
 env_file="${AIRRADAR_G04_ENV_FILE:-/etc/airradar-v2/g04-canary.env}"
+max_diag_age="${AIRRADAR_G04_MAX_DIAGNOSTIC_AGE_SEC:-45}"
+ssh_timeout="${AIRRADAR_G04_SSH_TIMEOUT_SEC:-5}"
+curl_bin="${AIRRADAR_G04_CURL_BIN:-curl}"
+psql_bin="${AIRRADAR_G04_PSQL_BIN:-psql}"
+ssh_bin="${AIRRADAR_G04_SSH_BIN:-ssh}"
+timeout_bin="${AIRRADAR_G04_TIMEOUT_BIN:-timeout}"
 
 [[ "$interval" =~ ^[1-9][0-9]*$ && "$free_floor" =~ ^[0-9]+$ && "$max_wal_rate" =~ ^[0-9]+$ ]] || { echo 'G-04 monitor: neplatný interval/místo/WAL limit' >&2; exit 78; }
-[[ "$max_cpu" =~ ^[0-9]+$ && "$max_ram" =~ ^[0-9]+$ && -n "$ssh_target" ]] || { echo 'G-04 monitor: chybí schválený monitorovací přístup nebo CPU/RAM limit' >&2; exit 78; }
-[[ -f "$env_file" ]] && [[ "$(stat -c '%u:%g:%a' "$env_file" 2>/dev/null)" == "0:0:600" ]] || { echo 'G-04 monitor: EnvironmentFile není root:root 0600 (fail-closed)' >&2; exit 78; }
+[[ "$max_cpu" =~ ^[0-9]+$ && "$max_ram" =~ ^[0-9]+$ && "$max_diag_age" =~ ^[1-9][0-9]*$ && "$ssh_timeout" =~ ^[1-9][0-9]*$ && -n "$ssh_target" ]] || { echo 'G-04 monitor: chybí schválený monitorovací přístup nebo limit' >&2; exit 78; }
+env_stat="$(stat -c '%u:%g:%a' "$env_file" 2>/dev/null || true)"
+if [[ "${AIRRADAR_G04_TEST_MODE:-0}" == 1 ]]; then
+  [[ "$env_stat" =~ ^[0-9]+:[0-9]+:600$ ]] || { echo 'G-04 monitor: testovací EnvironmentFile není 0600' >&2; exit 78; }
+else
+  [[ "$env_stat" == "0:0:600" ]] || { echo 'G-04 monitor: EnvironmentFile není root:root 0600 (fail-closed)' >&2; exit 78; }
+fi
 
 scratch="${TMPDIR:-/tmp}/airradar-g04-monitor.$$"
 mkdir -m 0700 "$scratch"
@@ -38,7 +47,7 @@ fail_closed() {
 }
 
 read_diag() {
-  local line value key
+  local line value key observed_at age
   line="$(grep 'G-04 history' "$diag" | tail -n 1 || true)"
   [[ -n "$line" ]] || return 1
   for key in pending inflight connection sql_timeouts; do
@@ -49,11 +58,15 @@ read_diag() {
       *) [[ "$value" =~ ^[0-9]+$ ]] || return 1 ;;
     esac
   done
+  observed_at="$(sed -n 's/.*observed_at=\([^ ]*\).*/\1/p' <<<"$line")"
+  [[ "$observed_at" =~ ^[0-9]+([.][0-9]+)?$ ]] || return 1
+  age="$(awk -v now="$(date +%s)" -v observed="$observed_at" 'BEGIN { print now - observed }')"
+  awk -v age="$age" -v maximum="$max_diag_age" 'BEGIN { exit !(age >= 0 && age <= maximum) }'
 }
 
 check_g03() {
   local health
-  health="$(curl --silent --show-error --fail --max-time 2 "$health_url")" || return 1
+  health="$($curl_bin --silent --show-error --fail --max-time 2 "$health_url")" || return 1
   [[ "$health" == *'"status":"live"'* && "$health" == *'"stage":"G-03"'* && "$health" == *'"live_ingest":true'* ]]
 }
 
@@ -61,13 +74,15 @@ read_db_metrics() {
   # Pouze SELECT; heslo zůstává v prostředí psql a nikdy se neloguje.
   PGHOST="${AIRRADAR_V2_DEV_DB_HOST:?}" PGPORT="${AIRRADAR_V2_DEV_DB_PORT:-5432}" \
   PGUSER="${AIRRADAR_V2_DEV_DB_USER:?}" PGPASSWORD="${AIRRADAR_V2_DEV_DB_PASSWORD:?}" \
-  psql -X -At -d airradar_v2_dev -v ON_ERROR_STOP=1 -w -c \
-    "SELECT coalesce((SELECT wal_bytes FROM pg_stat_wal),0), coalesce((SELECT sum(size) FROM pg_ls_waldir()),0);" 2>/dev/null
+  PGHOST="${AIRRADAR_V2_DEV_DB_HOST:?}" PGPORT="${AIRRADAR_V2_DEV_DB_PORT:-5432}" \
+  PGUSER="${AIRRADAR_V2_DEV_DB_USER:?}" PGPASSWORD="${AIRRADAR_V2_DEV_DB_PASSWORD:?}" \
+  PGCONNECT_TIMEOUT=2 PGOPTIONS='-c statement_timeout=5000' \
+  "$psql_bin" -X -At -d airradar_v2_dev -v ON_ERROR_STOP=1 -w -c \
+    "SELECT coalesce(wal_bytes,0) FROM pg_stat_wal;" 2>/dev/null
 }
 
 read_host_metrics() {
-  ssh -T -o BatchMode=yes -o ConnectTimeout=3 "$ssh_target" \
-    "awk 'NR==1 {print \"load1=\"\$1}' /proc/loadavg; nproc | awk '{print \"cpus=\"\$1}'; free -b | awk '/^Mem:/ {print \"ram_total=\"\$2; print \"ram_available=\"\$7}'; df -Pk --output=avail '$data_path' '$wal_path' | awk 'NR>1 {print \"free_kib=\"\$1}'" 2>/dev/null
+  "$timeout_bin" --signal=TERM "${ssh_timeout}s" "$ssh_bin" -T -o BatchMode=yes -o ConnectTimeout=3 "$ssh_target" 2>/dev/null
 }
 
 child_pid=""
@@ -81,16 +96,16 @@ while kill -0 "$child_pid" 2>/dev/null; do
   read_diag || fail_closed 'chybí aktuální/úplná G-04 diagnostika'
   check_g03 || fail_closed 'G-03 není live nebo health není dostupný'
   db_metrics="$(read_db_metrics)" || fail_closed 'nedostupné SQL read-only metriky'
-  IFS='|' read -r wal_bytes wal_dir_bytes <<< "$db_metrics"
-  [[ "$wal_bytes" =~ ^[0-9]+$ && "$wal_dir_bytes" =~ ^[0-9]+$ ]] || fail_closed 'neplatná WAL metrika'
+  wal_bytes="$db_metrics"
+  [[ "$wal_bytes" =~ ^[0-9]+$ ]] || fail_closed 'neplatná WAL metrika'
   host_metrics="$(read_host_metrics)" || fail_closed 'nedostupné aktuální metriky DB LXC'
   load1="$(sed -n 's/^load1=//p' <<<"$host_metrics")"; cpus="$(sed -n 's/^cpus=//p' <<<"$host_metrics")"
   ram_total="$(sed -n 's/^ram_total=//p' <<<"$host_metrics")"; ram_available="$(sed -n 's/^ram_available=//p' <<<"$host_metrics")"
-  free_kib="$(sed -n 's/^free_kib=//p' <<<"$host_metrics" | tail -n 1)"
-  [[ "$load1" =~ ^[0-9]+([.][0-9]+)?$ && "$cpus" =~ ^[1-9][0-9]*$ && "$ram_total" =~ ^[1-9][0-9]*$ && "$ram_available" =~ ^[0-9]+$ && "$free_kib" =~ ^[0-9]+$ ]] || fail_closed 'neúplná/nesmyslná metrika DB LXC'
+  free_data_kib="$(sed -n 's/^free_data_kib=//p' <<<"$host_metrics")"; free_wal_kib="$(sed -n 's/^free_wal_kib=//p' <<<"$host_metrics")"
+  [[ "$load1" =~ ^[0-9]+([.][0-9]+)?$ && "$cpus" =~ ^[1-9][0-9]*$ && "$ram_total" =~ ^[1-9][0-9]*$ && "$ram_available" =~ ^[0-9]+$ && "$free_data_kib" =~ ^[0-9]+$ && "$free_wal_kib" =~ ^[0-9]+$ ]] || fail_closed 'neúplná/nesmyslná metrika DB LXC'
   ram_used_pct="$(awk -v t="$ram_total" -v a="$ram_available" 'BEGIN { printf "%d", ((t-a)*100)/t }')"
   cpu_load_pct="$(awk -v l="$load1" -v c="$cpus" 'BEGIN { printf "%d", (l*100)/c }')"
-  (( free_kib * 1024 >= free_floor )) || fail_closed 'volné místo DB LXC pod 2 GiB'
+  (( free_data_kib * 1024 >= free_floor && free_wal_kib * 1024 >= free_floor )) || fail_closed 'volné místo DB LXC pod 2 GiB'
   (( ram_used_pct <= max_ram )) || fail_closed 'RAM DB LXC nad limitem'
   (( cpu_load_pct <= max_cpu )) || fail_closed 'CPU/load DB LXC nad limitem'
   now="$(date +%s)"
@@ -99,7 +114,7 @@ while kill -0 "$child_pid" 2>/dev/null; do
     wal_rate=$(( (wal_bytes - previous_wal) / elapsed )); (( wal_rate <= max_wal_rate )) || fail_closed 'nebezpečný růst WAL'
   fi
   previous_wal="$wal_bytes"; previous_at="$now"
-  echo "G-04 monitor: PASS free_bytes=$((free_kib * 1024)) cpu_load_pct=$cpu_load_pct ram_used_pct=$ram_used_pct wal_bytes=$wal_bytes"
+  echo "G-04 monitor: PASS free_data_bytes=$((free_data_kib * 1024)) free_wal_bytes=$((free_wal_kib * 1024)) cpu_load_pct=$cpu_load_pct ram_used_pct=$ram_used_pct wal_bytes=$wal_bytes"
 done
 child_status=0
 wait "$child_pid" || child_status=$?

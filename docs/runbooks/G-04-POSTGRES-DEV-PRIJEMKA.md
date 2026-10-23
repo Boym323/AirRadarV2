@@ -92,6 +92,34 @@ Připravená jednotka `deploy/systemd/airradarv2-g04-canary.service` není souč
 
 `tools/monitor_g04_canary.sh` je wrapper SHA-pinned release. Každých 15 s provádí pouze `SELECT` přes existující runtime přístup, read-only příkaz přes schválený SSH cíl DB LXC (`AIRRADAR_G04_DB_MONITOR_SSH_TARGET`) a health kontrolu G-03. Sleduje volné místo dat/WAL filesystemu (minimum 2 GiB), kumulativní růst WAL, load/CPU, RAM a G-04 diagnostiku. Při chybě aktuální metriky, SQL timeoutu, `connection != up`, degradaci G-03 nebo překročení limitu ukončí pouze podřízený G-04 proces; G-03 nereštartuje. Unit má navíc `CPUQuota=50%`, `MemoryMax=2G`, `Restart=no`.
 
+Monitor nepoužívá `pg_ls_waldir()`. SQL čte pouze `pg_stat_wal.wal_bytes` s `PGCONNECT_TIMEOUT=2` a `statement_timeout=5 s`; volné místo datového a WAL filesystemu poskytuje [omezený helper](../../deploy/g04-db-monitor-readonly.sh) přes forced-command SSH účet. Helper nepřijímá argumenty a má pevné cesty, které DBA před instalací ověří.
+
 Před instalací jednotky musí být monitorovací skript a binárka společně vloženy do stejného immutable release adresáře a ověřeny proti SHA; chybějící skript je blokován `ConditionPathExists`. Cílový env soubor zůstává `root:root`, `0600`; hodnoty tajemství se nekopírují do reportů. Chybějící SSH cíl nebo jeho výpadek je záměrně NO-GO/fail-closed.
+
+### Přesné příkazy k předložení správci PostgreSQL LXC — nespouštět bez samostatného schválení
+
+Následující příkazy jsou návrh žádosti správci; tento agent je na DB LXC nespouštěl. Zástupné
+hodnoty `<APP_LXC_IP>`, `<DB_LXC>` a `<PUBLIC_KEY>` musí správce nahradit skutečnými hodnotami.
+Neobsahují root SSH, `sudo`, změnu firewallu, `pg_hba.conf` ani konfigurace PostgreSQL.
+
+```sh
+# Na DB LXC jako schválený správce: nejprve ověřit DATA_PATH/WAL_PATH v helperu,
+# poté nainstalovat pouze tento soubor root:root 0755.
+install -o root -g root -m 0755 /tmp/g04-db-monitor-readonly.sh /usr/local/libexec/airradar-g04-db-monitor
+
+# Samostatný systémový účet bez interaktivního shellu a hesla.
+useradd --system --create-home --home-dir /var/lib/airradar-g04-monitor --shell /usr/sbin/nologin airradar-g04-monitor
+passwd --lock airradar-g04-monitor
+install -d -o airradar-g04-monitor -g airradar-g04-monitor -m 0700 /var/lib/airradar-g04-monitor/.ssh
+printf '%s\n' 'command="/usr/local/libexec/airradar-g04-db-monitor",from="<APP_LXC_IP>/32",no-agent-forwarding,no-port-forwarding,no-pty,no-user-rc,no-X11-forwarding <PUBLIC_KEY>' \
+  > /var/lib/airradar-g04-monitor/.ssh/authorized_keys
+chown airradar-g04-monitor:airradar-g04-monitor /var/lib/airradar-g04-monitor/.ssh/authorized_keys
+chmod 0600 /var/lib/airradar-g04-monitor/.ssh/authorized_keys
+```
+
+Po schválení správce se na aplikačním LXC pouze otestuje `ssh -T -o BatchMode=yes -o
+ConnectTimeout=3 airradar-g04-monitor@<DB_LXC>` bez příkazu za cílem; forced command vrátí
+jen `load1`, počet CPU, RAM a volné KiB datového/WAL filesystemu. Selhání helperu, klíče nebo
+spojení zastaví G-04 a G-03 zůstane nedotčené.
 
 **Zákaz:** změnit V1, starou historii, DB nastavení jiných služeb či automaticky přesměrovat aplikaci na SQL.
