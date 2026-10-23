@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Map as LibreMap, NavigationControl, type GeoJSONSource } from "maplibre-gl";
+import { Map as LibreMap, NavigationControl, supported, type GeoJSONSource } from "maplibre-gl";
 import type { FeatureCollection, Point, LineString } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Aircraft, ViewState } from "./aircraft-store";
@@ -142,7 +142,7 @@ export function RadarMap({ frame, selectedId, follow, style, onSelect, onStopFol
   // Jedna instance na mount; SSE state ani selection ji nesmí remountovat.
   useEffect(() => {
     if (!container.current) return;
-    if (!LibreMap.supported()) {
+    if (!supported()) {
       setError("Prohlížeč nepodporuje WebGL. Seznam letadel zůstává dostupný.");
       return;
     }
@@ -151,7 +151,7 @@ export function RadarMap({ frame, selectedId, follow, style, onSelect, onStopFol
       style: STYLES[currentStyle.current],
       center: [17.67, 49.23],
       zoom: 7.7,
-      attributionControl: true,
+      attributionControl: { compact: true },
     });
     map.current = instance;
     instance.addControl(new NavigationControl({ showCompass: true }), "top-right");
