@@ -1,6 +1,6 @@
 # SSE full/delta — frekvence, kontrakt a ohraničená paměť
 
-**Stav k 22. 10. 2026:** G-03 **10/10 TESTED v izolované CI** ([#39848794079](https://github.com/Boym323/AirRadarV2/actions/runs/39848794079)): HTTP/SSE, 5k/100 replay, 90 nečtoucích TCP klientů a reálný Chromium přes Vite/Nginx. **Cílový DEV LXC, OS TCP buffery a atomický rollback zůstávají NEOVĚŘENO; NO-GO merge/release**. Návrhové limity zůstávají nezměněné. Funkce J06/J07/J08, navazuje R01/R06/R08 a diagnostické O08.
+**Stav k 23. 10. 2026:** G-03 **HOTOVO 10/10, TESTED v CI a DEV ACCEPTED** ([automatický deployment #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759), `29ee2ee7`). Přímé i proxované HTTP/SSE bylo ověřeno na skutečném LXC, s 15s heartbeat **i během 1Hz živých delt**, snapshotem/deltou a resynchronizací. Zůstávají otevřená odlišná rizika: limit fyzických OS TCP socket bufferů / dlouhého soak na LXC a úmyslný rollback nového LIVE releasu; žádný produkční G-13 release. V izolované CI zůstává důkaz 5k sparse/100 klientů a 90 nečtoucích TCP klientů. Aktivní ID J06/J07/J08 mají `TESTED`, navazuje R01/R06/R08 a O08.
 
 ## Zvolený protokol
 
@@ -63,14 +63,14 @@ data: {"epoch":"epoch123","seq":18002,"generatedAt":"...Z",
 - [MDN EventSource/SSE](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events) — formát, reconnect, limit HTTP/1.1 a heartbeat.
 - [Axum](https://docs.rs/axum/latest/axum/response/sse/) — server-side SSE.
 
-## P1: bounded SSE a explicitní přetížení (izolované PR #16)
+## Historie P1: bounded SSE a explicitní přetížení (izolované PR #16)
 
 - Jednou připravený sdílený SSE `Bytes` payload, max. 16KiB blok na jeden poll HTTP Body, žádná privátní aplikační fronta na klienta; Tokio `watch` drží jen poslední frame.
 - 256KiB aplikační budget **nezahrnuje OS TCP socket buffer**; skutečný RSS/p95/p99 pro 1/10/100 klientů na DEV stále vyžaduje provozní přejímku.
 - Více než 1MiB serializovaného full snapshotu nebo 5000 veřejných cílů: `health=degraded`, `GET aircraft/stream = 503 CAPACITY_EXCEEDED`, existující stream dostane `event: unavailable` a skončí. Starý validní stav se nikdy neposílá jako nové LIVE údaje.
 - Po obnově pod limit server emituje nový plný snapshot, ne delta proti zahozenému stavu. Vlastní Rust RAM ingest se neodřezává. Testy jsou připraveny pro 5000 úsporných a 5000 plných objektů.
 
-## G-03.07 návrhové provozní hranice a test po 22. 10. 2026
+## G-03.07 provozní hranice — doložená implementace, neúplné OS měření
 
 Bez vlastního TCP writeru nemůže aplikace spolehlivě vynutit uzavření nečteného socketu do pevného času; nová regrese proto testuje **nezávislé uvolnění aplikačního SSE permitu** při 30s nečinnosti. Každý z max. 100 klientů drží jen jednu sdílenou `Bytes` referenci, 16KiB blok na jeden poll, a jeden lehký dozorovací task přes `Weak`. Když hyper kvůli socket backpressure nepolluje Body, watchdog uvolní místo novému klientovi. Pokud klient později obnoví čtení, stream se uzavře. Vnější TCP send buffer a vývoj RSS vyžadují LXC/OS měření, takže parametr 256KiB per-client zatím není tvrzením o celkovém transportu.
 

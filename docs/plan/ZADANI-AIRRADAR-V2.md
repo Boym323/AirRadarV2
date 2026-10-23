@@ -3,13 +3,13 @@
 **Aktuální schválený rozsah:** 45 funkcí uvedených v [aktivní matici](../../contracts/feature-matrix.json).  
 **Projektový jazyk:** čeština `cs-CZ` v dokumentaci a výchozím UI, volitelně anglický překlad webu.  
 **Nový repozitář:** https://github.com/Boym323/AirRadarV2, referenční V1: https://github.com/Boym323/AirRadar.  
-**Stav 22. 10. 2026:** G-00, G-01 10/10 a G-02 11/11 HOTOVO; G-03 má 10/10 implementačních kroků TESTED v izolované CI; DEV runtime/cutover/rollback zůstávají nepřevzaty.
+**Stav 23. 10. 2026:** G-00, G-01 10/10, G-02 11/11 a **G-03 10/10 HOTOVO**; **DEV G-03 HTTP/SSE + automatický `main → LXC` deployment ACCEPTED** (Actions [#39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759), nasazené `29ee2ee7`). G-04 ROZPRACOVÁNO pouze v izolovaných SQL migracích; skutečná V2 DB a produkční G-13 zůstávají NEOVĚŘENO.
 
 ## 1. Cíl
 
-Postavit novou, jednoduchou a výkonnou aplikaci pro **místní letecký radar** z vlastních readsb JSON a BEAST TCP dat. Nejde o mechanický přepis V1. Projekt má vlastní GitHub repozitář, vývojové CI a v budoucnu vlastní LXC i PostgreSQL. V1, její historie, síťová konfigurace a služby zůstávají beze změny.
+Postavit novou, jednoduchou a výkonnou aplikaci pro **místní letecký radar** z vlastních readsb JSON a BEAST TCP dat. Nejde o mechanický přepis V1. Projekt má vlastní GitHub repozitář, CI i funkční samostatné vývojové aplikační LXC; v budoucnu se připojí izolovaná V2 databáze na existujícím DB LXC. V1, její historie, síťová konfigurace a služby zůstávají beze změny.
 
-**Definitivní architektura:** Rust/Tokio/Axum je vlastníkem živého RAM stavu, **Vite + React/TypeScript + MapLibre** je statický web, **PostgreSQL + SQLx** je jediná databázová technologie. PostgreSQL běží v existujícím samostatném DB LXC; nová V2 databáze a schéma vzniknou teprve v G-04. Webový G-00 skeleton už byl převeden z Next.js na Vite. Viz [ADR 0005](../adr/0005-vite-a-postgresql-v2.md) a [runbook DB](../../database/POSTGRES-LXC.md).
+**Definitivní architektura:** Rust/Tokio/Axum je vlastníkem živého RAM stavu, **Vite + React/TypeScript + MapLibre** je statický web, **PostgreSQL + SQLx** je jediná databázová technologie. PostgreSQL běží v existujícím samostatném DB LXC; SQLx migrační soubory jsou nyní izolovaně připravené v G-04, ale skutečná V2 databáze ani schéma na DB LXC zatím nebyly aktivovány. Webový G-00 skeleton už byl převeden z Next.js na Vite. Viz [ADR 0005](../adr/0005-vite-a-postgresql-v2.md) a [runbook DB](../../database/POSTGRES-LXC.md).
 
 **Primární tok:** `readsb JSON nebo BEAST TCP → Rust parser a normalizace → RAM → HTTP/SSE → MapLibre`. Druhý nezávislý ingest ve webu se nesmí vytvořit. `RAM → bounded sampling queue → samostatná PostgreSQL` nikdy nesmí blokovat živý přenos.
 
