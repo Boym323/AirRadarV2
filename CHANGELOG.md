@@ -7,7 +7,8 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 ### G-04 — oprava BEAST-only ukládání historie v PR #21
 - Opravena skutečná příčina `eligible=0`: validní polohy rekonstruované z DF17/CPR jsou označeny `positionOrigin=adsb_cpr`, ale čas zůstává pravdivě `timeBasis=server_arrival`; obecné serverové pozice zůstávají odmítnuté.
 - Zachovány jsou `rx-primary`, `beast_tcp`, shodný čerstvý čas, CRC/CPR a fyzikální plausibilita, jediný RAM stav, adaptivní sampler, bounded fronty a SQLx writer. Přidána regrese BEAST-only → RAM → sampler → SQLx → izolovaný PostgreSQL.
-- Lokální Rust testy: 57/57 PASS. Canary nebyl spuštěn; G-03, G-03 LXC, V1, PP Studio a sdílená PostgreSQL konfigurace nebyly měněny. Viz ADR 0012 a průběžný report G-04.
+- Lokální Rust testy: 57/57 PASS; izolované PostgreSQL CI `39984664523` a hlavní CI `39984664522` PASS. Release binární SHA-256 pro commit `232d92840a0b053feba3ee13868d8b28be8ed821`: `fdb9e3e3c96372637e770d03f22fca1e0b947b1ab614a2ca65f413cab46b774a`.
+- Canary nebyl spuštěn; G-03, G-03 LXC, V1, PP Studio a sdílená PostgreSQL konfigurace nebyly měněny. Viz ADR 0012 a průběžný report G-04.
 
 ### G-04 — skutečný DEV preflight po přerušeném SSH pokusu: NO-GO
 - Ověřeno přímo na `lo-dev-airradarv2`: G-04 zůstává `inactive/dead` bez listeneru na 4114; G-03/API/SSE a Nginx jsou aktivní. Nebyl proveden restart ani zásah do `current`, G-03, V1 nebo jiné DB.

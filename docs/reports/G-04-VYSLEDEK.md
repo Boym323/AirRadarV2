@@ -18,9 +18,11 @@ PostgreSQL readback a kontroly neplatného CPR, staré polohy, duplicit,
 nesprávných časů a JSON+BEAST slučování.
 
 Lokální důkaz pracovního SHA před commitem: `cargo test --locked --workspace`,
-57/57 PASS. Izolovaný PostgreSQL běh stejné regrese je povinný v G-04 CI;
-sdílená DEV DB ani původní canary nebyly spuštěny. Nový binární SHA-256 a CI
-výsledek se doplní po sestavení/pushi přesného commitu.
+57/57 PASS. Izolovaný PostgreSQL běh stejné regrese prošel v G-04 CI
+`39984664523`; hlavní CI `39984664522` prošlo. Release build z commitu
+`232d92840a0b053feba3ee13868d8b28be8ed821` má binární SHA-256
+`fdb9e3e3c96372637e770d03f22fca1e0b947b1ab614a2ca65f413cab46b774a`.
+Sdílená DEV DB ani původní canary nebyly spuštěny.
 
 ## Aktuální kontrola po přerušeném SSH pokusu — NO-GO
 
