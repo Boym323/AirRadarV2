@@ -31,15 +31,26 @@ impl Sample {
         }
         let p = o.position.as_ref()?;
         let at = o.position_at_utc?;
-        if !at.is_finite() || at <= 0.0 || at > o.received_at_utc + 2.0
-            || o.received_at_utc - at > 15.0 || !p.lat.is_finite() || !p.lon.is_finite()
-            || !(-90.0..=90.0).contains(&p.lat) || !(-180.0..=180.0).contains(&p.lon)
+        if !at.is_finite()
+            || at <= 0.0
+            || at > o.received_at_utc + 2.0
+            || o.received_at_utc - at > 15.0
+            || !p.lat.is_finite()
+            || !p.lon.is_finite()
+            || !(-90.0..=90.0).contains(&p.lat)
+            || !(-180.0..=180.0).contains(&p.lon)
         {
             return None;
         }
-        let suffix = o.aircraft_key.strip_prefix("icao:")
+        let suffix = o
+            .aircraft_key
+            .strip_prefix("icao:")
             .or_else(|| o.aircraft_key.strip_prefix("nonicao:"))?;
-        if suffix.len() != 6 || !suffix.bytes().all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c)) {
+        if suffix.len() != 6
+            || !suffix
+                .bytes()
+                .all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c))
+        {
             return None;
         }
         let bucket_at = (at / BUCKET_SECONDS as f64).floor() as i64 * BUCKET_SECONDS;
@@ -110,9 +121,8 @@ fn worth_sampling(last: &Sample, next: &Sample) -> bool {
     if last.on_ground == Some(true) && next.on_ground == Some(true) {
         return (dt >= 120.0 && distance >= 100.0) || dt >= 600.0;
     }
-    let transition = last.on_ground.is_some()
-        && next.on_ground.is_some()
-        && last.on_ground != next.on_ground;
+    let transition =
+        last.on_ground.is_some() && next.on_ground.is_some() && last.on_ground != next.on_ground;
     if dt >= 30.0 && (transition || heading >= 30.0 || altitude >= 1500) {
         return true;
     }
@@ -137,8 +147,14 @@ impl HistorySampler {
             self.counters.skipped += 1;
             return false;
         }
-        if self.in_flight.iter().any(|s| s.bucket_at == sample.bucket_at && s.aircraft_key == sample.aircraft_key)
-            || self.confirmed.get(&sample.aircraft_key).is_some_and(|s| s.bucket_at == sample.bucket_at)
+        if self
+            .in_flight
+            .iter()
+            .any(|s| s.bucket_at == sample.bucket_at && s.aircraft_key == sample.aircraft_key)
+            || self
+                .confirmed
+                .get(&sample.aircraft_key)
+                .is_some_and(|s| s.bucket_at == sample.bucket_at)
         {
             self.counters.skipped += 1;
             return false;
@@ -171,8 +187,12 @@ impl HistorySampler {
         if !self.in_flight.is_empty() || !now.is_finite() {
             return Vec::new();
         }
-        let keys: Vec<_> = self.pending.iter()
-            .filter(|((bucket, _), _)| (*bucket as f64 + BUCKET_SECONDS as f64 + CLOSE_DELAY) <= now)
+        let keys: Vec<_> = self
+            .pending
+            .iter()
+            .filter(|((bucket, _), _)| {
+                (*bucket as f64 + BUCKET_SECONDS as f64 + CLOSE_DELAY) <= now
+            })
             .take(MAX_BATCH)
             .map(|(k, _)| k.clone())
             .collect();
@@ -220,7 +240,9 @@ impl HistorySampler {
             self.confirmed.retain(|_, s| s.position_at > now - 900.0);
         }
         while self.confirmed.len() > MAX_TRACK_WATERMARKS {
-            let oldest = self.confirmed.iter()
+            let oldest = self
+                .confirmed
+                .iter()
                 .min_by(|a, b| a.1.position_at.total_cmp(&b.1.position_at))
                 .map(|(key, _)| key.clone());
             if let Some(key) = oldest {
@@ -240,14 +262,23 @@ mod tests {
     use crate::contract::{FlightData, Position};
     fn observation(t: f64, lon: f64) -> Observation {
         Observation {
-            receiver_id: "rx-primary".into(), transport: "readsb_json".into(),
-            aircraft_key: "icao:abcdef".into(), received_at_utc: t,
-            message_at_utc: t, time_basis: "derived_readsb".into(),
-            position_origin: "adsb".into(), position_at_utc: Some(t),
-            position: Some(Position { lat: 49.0, lon }), callsign: None,
-            squawk: Some("7000".into()), telemetry: FlightData {
-                altitude_baro_ft: Some(10000), ground_speed_kt: Some(200.0),
-                track_degrees: Some(90.0), on_ground: Some(false), ..Default::default()
+            receiver_id: "rx-primary".into(),
+            transport: "readsb_json".into(),
+            aircraft_key: "icao:abcdef".into(),
+            received_at_utc: t,
+            message_at_utc: t,
+            time_basis: "derived_readsb".into(),
+            position_origin: "adsb".into(),
+            position_at_utc: Some(t),
+            position: Some(Position { lat: 49.0, lon }),
+            callsign: None,
+            squawk: Some("7000".into()),
+            telemetry: FlightData {
+                altitude_baro_ft: Some(10000),
+                ground_speed_kt: Some(200.0),
+                track_degrees: Some(90.0),
+                on_ground: Some(false),
+                ..Default::default()
             },
         }
     }
