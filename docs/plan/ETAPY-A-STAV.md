@@ -8,7 +8,7 @@
 | G-01 | [Kontrakty a deterministické fixture](../ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) | **HOTOVO — 10/10, CI PASS** |
 | G-02 | [Lokální ADS-B ingest a RAM](../ukoly/G-02-LOKALNI-INGEST.md) | **HOTOVO — 11/11 TESTED, reálný 60min BEAST PASS; živé HTTP/SSE nyní zajišťuje G-03** |
 | G-03 | [Verzované HTTP API a SSE](../ukoly/G-03-API-A-SSE.md) | **HOTOVO — 10/10 TESTED, DEV ACCEPTED; automatický deployment #39906245759 PASS na `29ee2ee75fea`** |
-| G-04 | [Úsporná historie](../ukoly/G-04-POSTGRESQL-HISTORIE.md) | **ROZPRACOVÁNO — 23. 10. 2026 proběhl 31min živý DEV canary: skutečné BEAST/CPR → Rust → SQLx → PostgreSQL, poslední snapshot `eligible=1502`, `committed=1489`, 63/63 SQL dávek, 0 SQL chyb a timeoutů, G-03 active. Systemd limit `1875s` ukončil proces, ale zůstalo `pending=13` (možná neuložených 0,87 %); chybí graceful drain a úplné DB host/SSE důkazy. Funkční writer PASS, finální G-04/J09 ACCEPTED dosud NE. PR #21 draft; `main` beze změny.** |
+| G-04 | [Úsporná historie](../ukoly/G-04-POSTGRESQL-HISTORIE.md) | **ROZPRACOVÁNO — první 31min DEV canary prokázal 63/63 SQL dávek bez chyb, ale skončil s `pending=13` a systemd timeoutem. Dle ADR 0013 je v PR #21 nyní implementován bounded graceful drain a regresní SQLx test; **NOVÝ DEV canary zatím nebyl proveden**. Chybí nové sestavení/připnutí binárky na DEV, kompletní host DB/WAL/CPU/RAM a SSE důkazy a závěrečný evaluator PASS. J09 zatím není ACCEPTED, G-03/V1/PP Studio a `main` beze změny.** |
 | G-05 | [Živá mapa a základní ovládání](../ukoly/G-05-ZIVA-MAPA.md) | NEZAHÁJENO |
 | G-06 | [Letiště a NAVAID/FIX](../ukoly/G-06-LETISTE-NAVAID.md) | NEZAHÁJENO |
 | G-07 | [Vybraná meteorologie](../ukoly/G-07-VYBRANE-POCASI.md) | NEZAHÁJENO |
