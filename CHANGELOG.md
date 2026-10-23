@@ -4,6 +4,16 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### 23. 10. 2026 — G-03 uzavřena: HOTOVO 10/10, DEV ACCEPTED
+- **Referenční přijatý runtime:** `29ee2ee75feab9279123b77d50895d648c5419d7`. [Main deployment #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759) **6/6 PASS**, včetně self-hosted runneru a post-deploy ověření HTTP/SSE. Předchozí opravy a nasazení [#39905085484](https://github.com/Boym323/AirRadarV2/actions/runs/39905085484) a [#39905632012](https://github.com/Boym323/AirRadarV2/actions/runs/39905632012) také SUCCESS.
+- Ve skutečném DEV provozu doložen `stage=G-03`, `status=live`, read-only BEAST, snapshot/delta, prioritní ~15s heartbeat a reconnect. G-02 testovací služby inactive, V1/DB nezměněny.
+- **Omezení:** úmyslný rollback aktuálního živého G-03 releasu ani fyzický OS TCP socket buffer/RSS limit nebyly nově měřeny. `J06/J07/J08` zůstávají `TESTED`; produkční G-11/G-13 bez schválení. Dokumenty aktualizovány bez přepisování historických CI incidentů.
+
+---
+
+**Starší položky níže jsou historický průběh vývoje.** Záznamy s tehdejším `NO-GO`, `PR draft` nebo `NEOVĚŘENO` nepopisují dnešní stav G-03.
+
+
 ### G-03 — oprava SSE heartbeat a odolnosti DEV deploymentu
 - Opraven heartbeat SSE: samostatný 15s ticker se po každé deltě neresetuje, takže aktivní stream nezůstane bez keepalive při živém 1Hz příjmu.
 - Nginx DEV dostává no-buffer hlavičky a systemd retry po DHCP boot race; rollback nepoužívá destruktivní `restart` transakci během shutdownu LXC.

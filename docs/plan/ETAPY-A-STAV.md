@@ -1,13 +1,13 @@
 # Plán etap a aktuální stav AirRadar V2
 
-**Aktualizováno 22. 10. 2026.** Tento plán řeší **pouze 45 aktuálně vybraných funkcí**, bez vedlejších a nepoužívaných modulů. Výchozí jazyk: čeština. Zápis „NEZAHÁJENO“ není nedostatečný test — práce ještě nezačala.
+**Aktualizováno 23. 10. 2026.** Tento plán řeší **pouze 45 aktuálně vybraných funkcí**, bez vedlejších a nepoužívaných modulů. Výchozí jazyk: čeština. Zápis „NEZAHÁJENO“ není nedostatečný test — práce ještě nezačala.
 
 | Etapa | Výstup a zadání | Stav |
 |---|---|---|
 | G-00 | Samostatný základ Rust + Vite/React | **HOTOVO — pouze scaffold** |
 | G-01 | [Kontrakty a deterministické fixture](../ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) | **HOTOVO — 10/10, CI PASS** |
-| G-02 | [Lokální ADS-B ingest a RAM](../ukoly/G-02-LOKALNI-INGEST.md) | **HOTOVO — 11/11 TESTED, reálný 60min BEAST PASS; G-02 HTTP/SSE zatím nenasazeno** |
-| G-03 | [Verzované HTTP API a SSE](../ukoly/G-03-API-A-SSE.md) | **10/10 TESTED v CI; DEV ACCEPTED na `749ffb942407f7c7cd88f3d983a72841664f52ee`, automatický deploy PASS** |
+| G-02 | [Lokální ADS-B ingest a RAM](../ukoly/G-02-LOKALNI-INGEST.md) | **HOTOVO — 11/11 TESTED, reálný 60min BEAST PASS; živé HTTP/SSE nyní zajišťuje G-03** |
+| G-03 | [Verzované HTTP API a SSE](../ukoly/G-03-API-A-SSE.md) | **HOTOVO — 10/10 TESTED, DEV ACCEPTED; automatický deployment #39906245759 PASS na `29ee2ee75fea`** |
 | G-04 | [Úsporná historie](../ukoly/G-04-POSTGRESQL-HISTORIE.md) | **ROZPRACOVÁNO — G-04.04 SQLx migrace + izolovaný CI test připraven; skutečný DB LXC, TLS, writer a restore NEOVĚŘENO** |
 | G-05 | [Živá mapa a základní ovládání](../ukoly/G-05-ZIVA-MAPA.md) | NEZAHÁJENO |
 | G-06 | [Letiště a NAVAID/FIX](../ukoly/G-06-LETISTE-NAVAID.md) | NEZAHÁJENO |
@@ -17,7 +17,11 @@
 | G-10 | [Webová platforma](../ukoly/G-10-PWA-LOKALIZACE.md) | NEZAHÁJENO |
 | G-11 | [Akceptace všech aktivních funkcí](../ukoly/G-11-ZAVERECNE-TESTOVANI.md) | NEZAHÁJENO |
 | G-12 | [Oddělený shadow provoz](../ukoly/G-12-ODDELENY-SHADOW.md) | NEZAHÁJENO |
-| G-13 | [Schválené nasazení a rollback](../ukoly/G-13-BEZPECNY-RELEASE.md) | PRODUKČNÍ ETAPA NEZAHÁJENA — samostatný DEV auto-deploy připraven, neaktivován |
+| G-13 | [Schválené nasazení a rollback](../ukoly/G-13-BEZPECNY-RELEASE.md) | **PRODUKČNÍ ETAPA NEZAHÁJENA** — oddělený DEV auto-deploy je již aktivní a ověřený; není to G-13 release |
+
+**Aktuální doklad G-03 (23. 10. 2026):** `main` `29ee2ee75feab9279123b77d50895d648c5419d7`, [GitHub Actions #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759) `SUCCESS` včetně runner deploymentu a post-deploy LXC kontroly. DEV rust `--g03-live-api`, Nginx, read-only BEAST, snapshot/delta/15s heartbeat a reconnect byly doloženy správou LXC. Starší stavy níže jsou **chronologická historie**, nikoliv aktuální červené brány. 9/45 KEEP funkcí `TESTED`; `J06/J07/J08` zůstávají `TESTED`, nikoli produktově `ACCEPTED`. Výjimkou z úplného provozního ověření je úmyslný rollback nové živé verze a OS TCP buffer/RSS měření — ty netvrdíme jako PASS.
+
+## Historické záznamy a podklady (stav v době jednotlivých dat)
 
 ## Technologická údržba G-00 (bez změny funkčního rozsahu)
 

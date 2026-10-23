@@ -2,7 +2,7 @@
 
 Nová generace leteckého radaru, budovaná **od nuly**. Tento repozitář je zcela oddělený od [AirRadar V1](https://github.com/Boym323/AirRadar). Původní aplikace, produkční LXC a databáze se nemění.
 
-**Stav 22. 10. 2026:** G-00 HOTOVO, G-01 10/10 HOTOVO, G-02 11/11 HOTOVO (60min BEAST PASS); G-03 HTTP/SSE rozpracováno v PR #11, zatím bez živého DEV nasazení.
+**Aktuální stav 23. 10. 2026:** G-00, G-01 (10/10), G-02 (11/11) a **G-03 (10/10) jsou HOTOVO**. G-03 živě běží na izolovaném DEV LXC: HTTP/SSE snapshot/delta/15s heartbeat/reconnect, read-only BEAST a automatický `main → CI → immutable release → runner → LXC` deployment. Poslední provozně ověřená verze před uzavřením: [`29ee2ee7`](https://github.com/Boym323/AirRadarV2/commit/29ee2ee75feab9279123b77d50895d648c5419d7), [GitHub Actions #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759) **6/6 PASS**. **G-04 je ROZPRACOVÁNO** (izolovaná SQL migrace; skutečná V2 DB a writer zatím nejsou aktivovány). Produkční V1 nedotčena.
 
 <!-- AIRRADAR_STATS_START -->
 ## Statistiky vývoje (automaticky aktualizované)
@@ -30,9 +30,11 @@ Měřený commit: [f07fdb35](https://github.com/Boym323/AirRadarV2/commit/f07fdb
 > Jde o vývojové statistiky repozitáře, nikoli o výkon živého radaru. Funkce se počítají jen ze strojové matice s důkazem testu. Úspěšná CI sama o sobě nedokazuje dokončení funkcí.
 <!-- AIRRADAR_STATS_END -->
 
+> **Poznámka k metrikám:** automatický blok výše zachycuje pouze commit uvedený v položce „Měřený commit“ (dosud starší `f07fdb35`). Zobrazené počty dokončených etap/funkcí proto nejsou aktuálním stavem. Autoritativní stav k 23. 10. je **4/14 HOTOVO** a **9/45 funkcí TESTED**, podle [stavu etap](docs/plan/ETAPY-A-STAV.md) a [aktivní matice](docs/plan/MATICE-FUNKCI.md); blok přepočítává samostatné denní workflow.
+
 ## Kontinuální DEV nasazování z main
 
-Registrovaný repo-scoped runner v DEV LXC přebírá pouze SHA-ověřené prerelease
+**Ověřeno na commitu `29ee2ee7`, run #39906245759 (SUCCESS):** registrovaný repo-scoped runner v DEV LXC přebírá pouze SHA-ověřené prerelease
 z úspěšného GitHub CI `main` a kontroluje Rust/web s rollbackem. Post-deploy
 healthcheck probíhá přímo na runneru, bez čekání na veřejný G-02 report. Viz
 [provozní runbook](docs/runbooks/DEV-MAIN-AUTODEPLOY.md). Starý polling timer je
@@ -60,14 +62,14 @@ vypnutý; G-02 zůstává chráněno sdíleným lockem a jeho přejímky jsou od
 ## Aktuální architektura a navržené změny
 
 - **Rust/Tokio/Axum:** readsb JSON a BEAST TCP, vlastní RAM letadel, bezpečné REST API a SSE.
-- **Vite/React/MapLibre:** lehká česká mapa, seznam letadel, popisky, stopa a follow.
+- **Vite/React:** nasazený statický webový základ; **MapLibre, seznam, stopa a follow jsou teprve plán G-05**.
 - **PostgreSQL/SQLx:** samostatná V2 databáze na existujícím odděleném DB LXC; historie V1 se nepřenáší.
 - **Jedno místní pokrytí:** uživatel pracuje vždy s daty místního přijímače, bez přepínače datových zdrojů.
-- **45 schválených funkcí:** šest G-02 funkcí má důkaz `TESTED` (nikoliv `ACCEPTED`); G-03 je rozpracovaná.
+- **45 schválených funkcí:** 9 KEEP funkcí má důkaz `TESTED` (6 v G-02 a `J06/J07/J08` v G-03); etapová DEV přejímka G-03 je `ACCEPTED`, nikoliv plošná produktová akceptace všech 45 funkcí.
 
-**Zvoleno a implementováno:** Vite + React/TypeScript pro webový skeleton. **PostgreSQL/SQLx** na existujícím samostatném DB LXC jako definitivní databáze; V2 DB ani migrace ještě nevznikly. Viz [ADR 0005](docs/adr/0005-vite-a-postgresql-v2.md).
+**Zvoleno a implementováno:** Vite + React/TypeScript pro webový základ a Rust HTTP/SSE nad RAM. **PostgreSQL/SQLx** je cílová technologie; G-04 už obsahuje izolovanou SQL migraci v repozitáři, avšak reálná V2 DB na odděleném LXC ani runtime writer nejsou aktivovány. Viz [ADR 0005](docs/adr/0005-vite-a-postgresql-v2.md).
 
-API nyní vrací zkušební `NOT_IMPLEMENTED`. Nejsou zatím připojena živá ADS-B data, databáze ani veřejný release.
+**DEV engine běží s `--g03-live-api` a skutečným read-only BEAST zdrojem**, vrací `stage=G-03`, `status=live` při aktuálních pozorováních a vysílá SSE. Výchozí samostatné `cargo run` bez tohoto přepínače nadále záměrně spouští historický G-00 bootstrap `NOT_IMPLEMENTED`. Databázový writer G-04 a produkční vydání nejsou aktivní.
 
 ## Lokální vývoj
 
@@ -98,9 +100,9 @@ npm test
 npm run build
 ~~~
 
-Pro vývoj je nyní schváleno **45 aktivních funkcí**. Žádný produkční modul ještě není implementován. Závislosti jsou připnuté v `Cargo.lock` a `apps/web/package-lock.json`. [CI běh 39659205202](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202) ověřil na commitu `99df0456` Rust, Vite a HTTP smoke testy; podrobný [report](docs/reports/G-00-BOOTSTRAP.md). Pozdější změny dokumentace a českého úvodu se ověřují samostatným CI.
+Pro vývoj je schváleno **45 aktivních funkcí**; 9 z nich má důkaz `TESTED`. G-03 je skutečně nasazeno jen v **DEV**, nikoli do produkční V1. Závislosti jsou připnuté v `Cargo.lock` a `apps/web/package-lock.json`. [CI běh 39659205202](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202) ověřil na commitu `99df0456` Rust, Vite a HTTP smoke testy; podrobný [report](docs/reports/G-00-BOOTSTRAP.md). Pozdější změny dokumentace a českého úvodu se ověřují samostatným CI.
 
-**Není nakonfigurováno žádné produkční nasazení.** Samostatný LXC zajistí vlastník projektu; V1 zůstává dostupná pro srovnávání.
+**Není nakonfigurováno žádné produkční nasazení V2.** Izolované DEV LXC je funkční a automaticky aktualizované; V1 se nemění.
 
 ## PostgreSQL a statický provoz
 
@@ -120,22 +122,22 @@ PostgreSQL v existujícím separátním LXC potřebuje vlastní databázi/role a
 
 [**Audit 22. 10. 2026 — uzavřená rozhodnutí a zbývající rizika**](docs/audits/ARCHITEKTONICKY-AUDIT-AIRRADAR-V2-2026-10-22.md) potvrzuje stabilní stack Rust/Vite/PostgreSQL, ale dokumentuje otevřené kontrakty časových značek, integrity pozorování, SSE atomického snapshotu, logbooku, notifikačních oprávnění a skutečné DB infrastruktury. **G-01 lze zahájit; jeho převzetí vyžaduje tři blokující kontraktové testy.** Zelené G-00 CI není potvrzení implementace 45 funkcí.
 
-## Dokončená G-01: datové kontrakty
+## Historie: dokončení G-01 — datové kontrakty
 
 Dne 22. 10. 2026 byla dokončena **G-01**: [report](docs/reports/G-01-VYSLEDEK.md), [CI 39748325104](https://github.com/Boym323/AirRadarV2/actions/runs/39748325104) (Rust, web i nezávislý OpenAPI/JSON Schema validátor PASS). Následuje G-02 ingest. Kontrakty jsou hotové, **živý radar, PostgreSQL připojení ani produkční release nejsou**.
 
-## Samostatný DEV LXC — připravený první ruční deploy
+## Historie: samostatný DEV LXC — první ruční deploy (22. 10. 2026)
 
 Po G-01 je ověřen samostatný Debian 13.7 LXC (1 vCPU, 8 GiB RAM, 20 GiB disk). [První nasazení krok za krokem](docs/runbooks/DEV-LXC-PRVNI-NASAZENI.md) používá **ruční GitHub Actions artefakt**, SHA-256 a oddělený systemd + Nginx na privátní IPv4. **Žádný auto-deploy ani spojení s V1, DB či readsb.**
 
-## Skutečně instalovaný DEV základ
+## Historie: první instalovaný G-00/G-01 DEV základ
 
 Správce dne 22. 10. 2026 doložil první úspěšné **ruční DEV LXC nasazení** commitu `227a8619b590d2c536761ffefc75cd0a5633936c`. Integrita balíčku OK, systemd Rust/Nginx active, health `bootstrap`, API letadel `NOT_IMPLEMENTED`; [přejímací report](docs/reports/DEV-LXC-PRVNI-NASAZENI-2026-10-22.md). Jde výhradně o G-00/G-01 základ, ne živý radar ani produkční release.
 
-## První testovaná implementace G-02
+## Historie: první testovaná implementace G-02
 
 [Průběžný report](docs/reports/G-02-VYSLEDEK.md) a [CI 39762483657](https://github.com/Boym323/AirRadarV2/actions/runs/39762483657): lokální JSON/BEAST, DF17/CPR, RAM a bounded supervisor, offline syntetický replay; **G-02 je ROZPRACOVÁNO**, zbývají metadata, širší dekódování a výkonnostní prověrky. Záměrně **není nasazeno do DEV LXC**, G-00/G-01 verze zůstává funkční.
 
-## Rozšířená G-02 implementace (22. 10. 2026)
+## Historie: rozšířená G-02 implementace (22. 10. 2026)
 
-[CI #39769323592](https://github.com/Boym323/AirRadarV2/actions/runs/39769323592): 26 Rust testů, 3/3 joby PASS. DF17/CPR, letová telemetrie readsb/TC19, jeden RAM stav, JSON+BEAST replay, 5 000 cílů syntetický 1×/2×/4× benchmark. V matici je šest M01 funkcí `TESTED`. **G-02 = 10/11 kroků, zbývá povinná G-02.11 přejímka přímo na DEV LXC.** G-02 stále není nasazena do DEV a veřejný G-00/G-01 web není živý radar. [Report](docs/reports/G-02-VYSLEDEK.md).
+[Historický mezistav — CI #39769323592](https://github.com/Boym323/AirRadarV2/actions/runs/39769323592): 26 Rust testů, 3/3 joby PASS. DF17/CPR, letová telemetrie readsb/TC19, jeden RAM stav, JSON+BEAST replay, 5 000 cílů syntetický 1×/2×/4× benchmark. V matici je šest M01 funkcí `TESTED`. **G-02 = 10/11 kroků, zbývá povinná G-02.11 přejímka přímo na DEV LXC.** G-02 stále není nasazena do DEV a veřejný G-00/G-01 web není živý radar. [Report](docs/reports/G-02-VYSLEDEK.md).
