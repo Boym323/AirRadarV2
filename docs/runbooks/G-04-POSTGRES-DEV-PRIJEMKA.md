@@ -4,7 +4,7 @@
 
 ## 1. Čistě read-only kontrola G-04.01–.02
 
-S přihlašovacím účtem určeným správcem, `PGSSLMODE=verify-full`, důvěryhodnou CA a správným DNS jménem ověřit:
+S přihlašovacím účtem určeným správcem, `PGSSLMODE=disable` a pouze z povolené IP důvěryhodné LAN ověřit:
 
 ```sql
 SELECT current_database(), current_user, version();
@@ -15,7 +15,7 @@ SELECT current_setting('server_version'),
 SELECT pg_size_pretty(pg_database_size(current_database()));
 ```
 
-Kontrola existujícího backup/PITR, volného prostoru, HA a správného `pg_hba_file_rules` patří správci a **nesmí** obsahovat zbytečné výpisy jiných databází. Nevytvářet účet ani DB bez schválení. Ověřit negativní handshake s neplatnou CA/hostname a že V2 runtime role nemůže přistoupit do jiných databází.
+Kontrola backup/PITR, prostoru, HA a `pg_hba_file_rules` patří správci. Ověřit, že `pg_stat_ssl.ssl=false` a že přístup jiných IP/rolí i chybného hesla je odmítnut. Jméno a heslo nešifrují data; vzdálenou či veřejnou síť nepovolovat. Nevytvářet účet ani DB bez schválení.
 
 ## 2. DBA připraví novou izolovanou DB
 
@@ -32,12 +32,11 @@ AIRRADAR_V2_DEV_DB_HOST=postgres-dev.priklad.internal
 AIRRADAR_V2_DEV_DB_PORT=5432
 AIRRADAR_V2_DEV_DB_USER=airradar_v2_dev_app
 AIRRADAR_V2_DEV_DB_PASSWORD=<vložit pouze do chráněného lokálního env souboru>
-AIRRADAR_V2_DEV_CA_CERT=/etc/airradar-v2/pg-ca.pem
 ```
 
-Jméno a heslo jsou samostatné hodnoty (není potřeba URL escapování ani `DATABASE_URL`). V produkčním repozitáři nesmějí být skutečné údaje. Použít správně zabezpečený systemd `EnvironmentFile` (s přístupem jen pro oprávněný účet), případně systemd credentials; nikdy nezadávat tajemství do argumentů procesu, veřejných logů nebo do chatu. Přihlášení na PostgreSQL serveru vyžaduje `SCRAM-SHA-256` přes konkrétní `hostssl` pravidlo v `pg_hba.conf`. Heslo autentizuje, zatímco TLS ověřuje a šifruje transport.
+Jméno a heslo jsou samostatné hodnoty (není potřeba URL escapování ani `DATABASE_URL`). V produkčním repozitáři nesmějí být skutečné údaje. Použít správně zabezpečený systemd `EnvironmentFile` (s přístupem jen pro oprávněný účet), případně systemd credentials; nikdy nezadávat tajemství do argumentů procesu, veřejných logů nebo do chatu. Přihlášení vyžaduje `SCRAM-SHA-256` přes konkrétní `hostnossl` pravidlo pro DB, roli a IP aplikačního LXC `/32`. Heslo autentizuje, ale spojení **není šifrováno**. Jde o výjimku pro izolovanou LAN dle [ADR 0009](../adr/0009-g04-postgresql-lan-bez-tls.md).
 
-Engine používá pevně databázi `airradar_v2_dev`, TLS `verify-full` a CA certifikát serveru. Pool má max. 2 spojení a krátký timeout. Nejprve otestovat pouze v izolovaném DEV prostředí; výpadek SQL nesmí ovlivnit příjem a SSE. Ověřit `pg_stat_ssl` na spojení runtime role, nezapisovat reálné adresy či hesla do reportu.
+Engine používá pevně databázi `airradar_v2_dev`, `sslmode=disable`, bez CA/certifikátu; pool má max. 2 spojení a krátký timeout. Na sdíleném DB serveru **nevypínat TLS globálně**, mohou ho potřebovat jiné aplikace. Nejprve otestovat pouze v izolovaném DEV prostředí; výpadek SQL nesmí ovlivnit příjem a SSE. Ověřit `pg_stat_ssl` na spojení runtime role, nezapisovat reálné adresy či hesla do reportu.
 
 ## 4. Retence, indexy a obnova
 
@@ -47,8 +46,8 @@ Denní `pg_dump -Fc` pouze V2 DB má být šifrovaně uložen mimo DB LXC; návr
 
 ## 5. Důkazní brána před G-04 HOTOVO
 
-- ověřené G-04.01–.03 na reálném DB LXC a explicitně schválená migrační práva;
-- samostatný DB test na nové DEV DB: migrace, negativní TLS/DDL test, odpojení a zotavení SQLx bez výpadku G-03;
+- ověřené G-04.01–.03 na reálném DB LXC v izolované LAN s firewallem/`hostnossl` a schválená migrační práva;
+- samostatný DB test na nové DEV DB: migrace, kontrola `pg_stat_ssl.ssl=false`, odmítnutí špatného hesla a jiné IP, negativní DDL test, zotavení SQLx bez výpadku G-03;
 - reálný identický replay pro 15s/30s/60s profily, indexy a partitions, SQL p95/p99, RAM/CPU, WAL/IOPS a sémantická kvalita historie;
 - skutečně obnovená záloha v nezávislém DEV cíli, potvrzený rollback a písemný GO.
 
