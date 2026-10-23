@@ -21,7 +21,7 @@ Pokud spojení uspěje, ověřit `pg_stat_ssl.ssl=false`, skutečný účet/DB a
 
 Název testovací DB je `airradar_v2_dev`, role pro migrace a runtime musí být odlišné, bez `SUPERUSER`/`CREATEDB`/`CREATEROLE` a runtime bez `CREATE`, `UPDATE`, `DELETE` a `TRUNCATE`. DDL spustit výlučně pod migrační rolí po záloze. Spuštění neprovádí GitHub Actions proti DB LXC.
 
-Schéma z `database/migrations/20261022210900_g04_initial.up.sql` má jediný primární index a žádné partitions. Migrační `.down.sql` je záměrně **zakázaná operace**; rollback historie se provádí pouze obnovou do nové izolované databáze z `pg_dump`.
+Schéma z `database/migrations/20261022210900_g04_initial.up.sql` má jediný primární index a žádné partitions. Migrační `.down.sql` je záměrně **zakázaná operace**; rollback canary znamená jen zastavení writeru bez zásahu do G-03. Při úplné ztrátě V2 DB může historie nenávratně zmizet a nové schéma lze vytvořit ze schválených migrací dle ADR 0010.
 
 ## 3. Připojení Rustu je výhradně opt-in
 
@@ -44,7 +44,7 @@ Výchozí retence detailu je 30 dní. Skript `database/maintenance/g04_retention
 
 **ADR 0010:** historie V2 je postradatelná a vlastník výslovně nevyžaduje denní zálohy, PITR ani provozní RPO/RTO. V případě havárie může nenávratně zmizet celá historie; jiné databáze a jejich zálohování zůstávají nedotčené. Přesto je nutné před canary ověřit volné místo, WAL/CPU/RAM a ochranu sdíleného clusteru.
 
-Připravený `tools/backup_g04_dev.sh` odmítne jinou databázi než `airradar_v2_dev`, vyžaduje `PGPASSFILE` mimo Git a provede pouze `pg_dump -Fc`. Jeho výstup musí být uložen v adresáři 0700, soubor 0600, následně šifrován a kopírován mimo DB LXC. Skript sám nic nemaže ani neobnovuje; restore patří do nově vytvořené izolované testovací databáze. Aktuální dump 23. 10. 2026 má SHA-256 `8419d06ab60736b47f6d54e0d7571e8d4beaf0c4e07d8d8d8d5e632bf37d51c8`; tento důkaz není potvrzením provozního RPO/RTO.
+Připravený `tools/backup_g04_dev.sh` zůstává **volitelná ruční pomůcka**, nikoliv povinný backup timer. Dřívější izolovaná zkouška exportu/obnovy G-04.11 zůstává důkazem testu, ale historie V2 může při havárii nenávratně zmizet (ADR 0010).
 
 ## 5. Důkazní brána před G-04 HOTOVO
 

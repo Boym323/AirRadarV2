@@ -25,7 +25,7 @@ Bezpečné připojení a role: [POSTGRES-LXC.md](POSTGRES-LXC.md). Skutečný DB
 
 ## G-04 implementace (PR #21)
 
-SQLx runtime a RAM sampler jsou izolovaně implementované. Jednorázová retence: [g04_retention_once.sql](maintenance/g04_retention_once.sql). Bezpečný [postup G-04](../docs/runbooks/G-04-POSTGRES-DEV-PRIJEMKA.md) vyžaduje schválenou samostatnou DEV databázi a test restore. Tento repozitář nenastavuje databázové LXC automaticky.
+SQLx runtime a RAM sampler jsou izolovaně implementované. Jednorázová retence: [g04_retention_once.sql](maintenance/g04_retention_once.sql). Bezpečný [postup G-04](../docs/runbooks/G-04-POSTGRES-DEV-PRIJEMKA.md) vyžaduje samostatnou DEV databázi a bezpečnou kapacitu sdíleného LXC; izolovaný export/restore G-04.11 již proběhl. Pravidelné zálohy historie V2 nejsou požadovány ([ADR 0010](../docs/adr/0010-g04-postradatelna-historie-bez-zaloh.md)). Tento repozitář nenastavuje databázové LXC automaticky.
 
 **Připojení G-04 v LAN:** podle [ADR 0009](../docs/adr/0009-g04-postgresql-lan-bez-tls.md) používá SQLx `sslmode=disable` a přihlášení jménem a heslem z chráněné konfigurace. Použijí se výhradně existující pravidla PostgreSQL a firewallu; nové `hostnossl` se nepřidává. Nešifrovaný přenos je vědomou výjimkou pouze pro důvěryhodnou místní síť.
 
