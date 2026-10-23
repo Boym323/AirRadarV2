@@ -494,7 +494,15 @@ async fn events(State(state): State<ApiState>, query: RawQuery) -> Response {
             if cursor.closing {
                 return None;
             }
+            // Heartbeat has priority whenever its deadline is due. With a
+            // busy 1 Hz watch channel a fair/random select can otherwise
+            // starve the keepalive indefinitely.
             tokio::select! {
+                biased;
+                _ = cursor.heartbeat.tick() => {
+                    cursor.payload = Some(Bytes::from_static(HEARTBEAT));
+                    cursor.offset = 0;
+                }
                 changed = cursor.receiver.changed() => {
                     if changed.is_err() {
                         return None;
@@ -517,10 +525,6 @@ async fn events(State(state): State<ApiState>, query: RawQuery) -> Response {
                         // subscribers receive 503 until state is valid again.
                         cursor.closing = true;
                     }
-                }
-                _ = cursor.heartbeat.tick() => {
-                    cursor.payload = Some(Bytes::from_static(HEARTBEAT));
-                    cursor.offset = 0;
                 }
             }
         }
