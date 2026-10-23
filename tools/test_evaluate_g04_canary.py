@@ -43,6 +43,31 @@ class CanaryEvaluation(unittest.TestCase):
         metrics = self.complete_metrics()
         self.assertEqual(evaluate.evaluate(snapshots, metrics)["status"], "PASS")
 
+    def test_accepts_initial_unknown_until_first_sql_commit(self):
+        snapshots = [
+            self.snapshot(0, eligible=0, committed=0, connection="unknown"),
+            self.snapshot(600, connection="up"),
+            self.snapshot(1200, connection="up"),
+            self.snapshot(1800, connection="up"),
+        ]
+        self.assertEqual(evaluate.evaluate(snapshots, self.complete_metrics())["status"], "PASS")
+
+    def test_rejects_unknown_after_first_sql_commit(self):
+        snapshots = [
+            self.snapshot(0, eligible=0, committed=0, connection="unknown"),
+            self.snapshot(600, connection="up"),
+            self.snapshot(1200, connection="unknown"),
+            self.snapshot(1800, connection="up"),
+        ]
+        self.assertFalse(evaluate.evaluate(snapshots, self.complete_metrics())["checks"]["connection_up"])
+
+    def test_rejects_no_sql_commit_during_canary(self):
+        snapshots = [
+            self.snapshot(i * 600, eligible=0, committed=0, connection="unknown")
+            for i in range(4)
+        ]
+        self.assertFalse(evaluate.evaluate(snapshots, self.complete_metrics())["checks"]["connection_up"])
+
     def test_rejects_missing_connection(self):
         snapshot = self.snapshot(0)
         del snapshot["connection"]
