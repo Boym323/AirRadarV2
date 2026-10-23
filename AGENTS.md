@@ -27,7 +27,7 @@ Všechna čísla skutečného výkonu uváděj s metodikou a přesným SHA. Stav
 
 ## Technické kontrakty
 
-Při každé práci na G-01 až G-11 zkontroluj [závazný rozcestník](docs/plan/TECHNICKE-KONTRAKTY-A-LIMITY.md) a příslušnou z šesti technických specifikací. Výchozí sampling, retenci, SSE limity, MapLibre render a PostgreSQL TLS/backup neměň bez konkrétního měření a českého ADR. Tyto návrhové hodnoty ještě nejsou naměřené ani implementované.
+Při každé práci na G-01 až G-11 zkontroluj [závazný rozcestník](docs/plan/TECHNICKE-KONTRAKTY-A-LIMITY.md) a příslušnou z šesti technických specifikací. Výchozí sampling, retenci, SSE limity, MapLibre render a PostgreSQL bezpečnostní režim/backup neměň bez konkrétního měření a českého ADR. Pro G-04 se uplatní výslovná výjimka [ADR 0009](docs/adr/0009-g04-postgresql-lan-bez-tls.md): důvěryhodná LAN bez TLS, SCRAM a omezení /32. Tyto návrhové hodnoty ještě nejsou naměřené ani implementované.
 
 ## Úspornost provozu jako závazné pravidlo
 
