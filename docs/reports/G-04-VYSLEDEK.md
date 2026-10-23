@@ -2,9 +2,17 @@
 
 **Aktualizace:** 23. 10. 2026. **Etapa:** ROZPRACOVÁNO. **Primární KEEP:** J09 (`IN_PROGRESS`).
 
+## Oprava graceful drain po prvním úspěšném canary (ADR 0013)
+
+**Stav: implementováno v PR #21, nikoli dosud akceptováno živým DEV re-testem.** Nový zdrojový implementační SHA `e186c54f8304c3e437f6ed9a54c6bd31722dde7c` obsahuje časově řízené zastavení G-04 příjmu po 1 802 s, do 60 s ohraničené čekání na uzavření bucketů a ack SQL dávek, do 3 s dokončení writeru a závěrečný diagnostický snapshot. Úspěch znamená `pending=0`, `inflight=0`, `G-04 shutdown drained=true writer_finished=true`, bez `systemd Result=timeout`. Nouzové `systemctl stop` zůstává okamžitý ochranný zásah.
+
+Regresní testy v Rust pokrývají úspěšné ack, odmítnuté ack, timeout a izolovaný SQLx/PostgreSQL readback přes stejnou drain funkci. Nová systemd šablona ukazuje na oddělený, zatím **fyzicky neověřený** release `/opt/airradar-v2/canary/releases/e186c54f8304c3e437f6ed9a54c6bd31722dde7c/airradarv2-engine`. Binární SHA-256 nové verze **dosud není známá**; starší SHA-256 `fdb9e3e3...` platí pouze pro předchozí release `232d928`, ne pro tuto opravu.
+
+K provozní akceptaci stále chybí **nový** osobně hlídaný DEV canary, úplný journal, porovnání skutečných nových SQL řádků, průběžné read-only DB host metriky (disk/WAL/CPU/RAM), a doklad G-03 SSE heartbeat. Bez jejich doložení zůstává `G-04/J09 = IN_PROGRESS`. Viz [ADR 0013](../adr/0013-g04-kontrolovane-ukonceni-canary.md) a [runbook](../runbooks/G-04-POSTGRES-DEV-PRIJEMKA.md).
+
 ## Návaznost runtime artefaktu po opravě BEAST/CPR
 
-Opravená implementace je v commitu `232d92840a0b053feba3ee13868d8b28be8ed821`, ověřená binární SHA-256 `fdb9e3e3c96372637e770d03f22fca1e0b947b1ab614a2ca65f413cab46b774a`. Šablona canary unit nyní odkazuje na samostatný `/opt/airradar-v2/canary/releases/232d92840a0b053feba3ee13868d8b28be8ed821/airradarv2-engine`; statická kontrola blokuje původní implementační SHA `fe0ac66...`. **Nahrání nové binárky a instalace nové jednotky na skutečný DEV LXC nejsou tímto PR commitem prokázány.** Žádný další live canary zatím nebyl doložen. Před dalším startem ověřit skutečné SHA binárky, service `ExecStart`, `inactive`, G-03 a DB baseline + přítomnost lidského dohledu. PR se neslučuje a další canary se bez provozních podmínek nespouští.
+Opravená implementace je v commitu `232d92840a0b053feba3ee13868d8b28be8ed821`, ověřená binární SHA-256 `fdb9e3e3c96372637e770d03f22fca1e0b947b1ab614a2ca65f413cab46b774a`. Původní šablona canary unit po opravě BEAST/CPR odkazovala na `/opt/airradar-v2/canary/releases/232d92840a0b053feba3ee13868d8b28be8ed821/airradarv2-engine`; následná oprava drainu a nová aktuální cesta jsou uvedené výše. statická kontrola blokuje původní implementační SHA `fe0ac66...`. **Nahrání nové binárky a instalace nové jednotky na skutečný DEV LXC nejsou tímto PR commitem prokázány.** Žádný další live canary zatím nebyl doložen. Před dalším startem ověřit skutečné SHA binárky, service `ExecStart`, `inactive`, G-03 a DB baseline + přítomnost lidského dohledu. PR se neslučuje a další canary se bez provozních podmínek nespouští.
 
 ## Skutečný 31minutový DEV canary — výsledky z 23. 10. 2026
 
