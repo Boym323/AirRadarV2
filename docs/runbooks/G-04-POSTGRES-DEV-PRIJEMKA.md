@@ -53,17 +53,44 @@ Připravený `tools/backup_g04_dev.sh` odmítne jinou databázi než `airradar_v
 - reálný identický replay pro 15s/30s/60s profily, indexy a partitions, SQL p95/p99, RAM/CPU, WAL/IOPS a sémantická kvalita historie;
 - skutečně obnovená záloha v nezávislém DEV cíli, potvrzený rollback a písemný GO.
 
-## 6. Kontrolní seznam prvního časově omezeného canary
+## 6. Read-only audit hostitele DB a zálohy
 
-Canary se smí spustit až po samostatném GO a pouze s `AIRRADAR_V2_HISTORY_TRACE=1` v chráněném lokálním prostředí. Výchozí akceptační limit je **nejvýše 1 % kandidátních historických vzorků** ztracených součtem `dropped_capacity`, `dropped_stale` a `dropped_writer`; při překročení se canary zastaví. Hodnoty 18,1 % a 59,0 % z předchozího 2×/4× testu tento limit nesplňují.
+Skript `database/maintenance/g04_readonly_audit.sql` ověří pouze aktuální DB, WAL
+počítadla a bezpečné provozní nastavení. Volné místo filesystemu DB LXC, CPU a RAM
+hostitele musí správce doložit samostatným read-only výstupem (`df -P`, `free -b`,
+`nproc`/`/proc/stat`) se SHA artefaktu, časem a identitou DB LXC. SQL účet tyto údaje
+nesmí nahrazovat velikostí databáze. Kapacita WAL musí obsahovat použití, volné místo
+WAL filesystemu a upozornění na `archive_mode=off`; globální WAL ani `pg_hba.conf`
+se nemění.
+
+Pravidelný externí návrh: denní `pg_dump -Fc` pouze databáze V2 mimo DB LXC,
+šifrovaný přenos, 14 denních a 8 týdenních kopií, měsíční obnova do nové izolované
+databáze. Cíl je RPO 24 hodin a RTO 2 hodiny; do přejímky se zapíše skutečný čas
+poslední úspěšné kopie a obnovy. PITR není podmínkou, pokud vlastník písemně schválí
+tento logický režim a doloží jeho RPO/RTO. `tools/backup_g04_dev.sh` zůstává pouze
+read-only dump helper; timer se nezavádí automaticky.
+
+## 7. Kontrolní seznam prvního časově omezeného canary
+
+Canary se smí spustit až po samostatném GO a pouze s `AIRRADAR_V2_HISTORY_TRACE=1` v chráněném lokálním prostředí. Unit používá samostatný artefakt v `/opt/airradar-v2/canary/releases/<ověřený SHA>/`, nikdy `/opt/airradar-v2/current`, má `MemoryMax=2G`, `RuntimeMaxSec=1875` a `Restart=no`. Prvních 1 800 s je minimální důkazní běh; zbývajících 75 s pokrývá uzavření posledního 30s bucketu (nejpozději bucket + 35 s) a vyprázdnění fronty. Evaluator i tak vyžaduje minimálně 1 800 s skutečných časových důkazů a poslední `pending=0`/`inflight=0`. Výchozí akceptační limit je **nejvýše 1 % kandidátních historických vzorků** ztracených součtem `dropped_capacity`, `dropped_stale` a `dropped_writer`; jmenovatel je poslední Rust `eligible`, protože drop counter je jeho podmnožina. Předchozí hodnoty 18,1 % a 59,0 % z 2×/4× testu tento limit nesplňují.
+
+Evaluator vyžaduje v každém diagnostickém snapshotu všechny countery, `connection=up`
+a `observed_at`; musí existovat nejméně čtyři časově seřazené snapshoty pokrývající
+nejméně 1 800 sekund a kumulativní countery nesmějí klesat. JSON metrics
+musí mít skutečné `started_at`/`finished_at` s rozdílem nejméně 1 800 sekund, nikoli
+jen ručně nastavené `duration_seconds`. PASS dále vyžaduje vyvážení
+`committed + drops + pending + inflight = eligible`, skutečný DB readback s kladným
+počtem nových řádků, nejméně dva G-03 SSE heartbeat důkazy, CPU/RAM/WAL a volné místo
+DB LXC. Chybějící hodnota je FAIL.
 
 - [ ] Správce písemně potvrdil DB ownera `airradar_v2_dev_migrator`, skutečné vlastníky schématu/tabulky (`postgres`) a postup DDL/migrací bez změny ownerů.
 - [ ] Správce doložil externí `pg_dump`/PITR, umístění kopií, retenci, RPO/RTO a nezávislý restore; `archive_mode=off` se nepovažuje za zálohu.
 - [ ] Před startem je uložen baseline G-03: proces, SHA, BEAST/RAM/SSE, CPU/RSS, DB row count a rollback příkaz.
+- [ ] Canary má samostatný read-only JSON/BEAST feed; druhé BEAST TCP připojení je povoleno jen po ověření podpory receiveru a nulového dopadu na G-03. Jinak je canary BLOKOVÁNO.
 - [ ] Canary běží pouze časově omezeně, s monitoringem `pending`, `inflight`, `committed`, všech drop counters, SQL timeoutů a `connection=up`.
 - [ ] Na konci platí `pending=0`, `inflight=0`, `connection=up`, žádné SQL timeouty a ztráta nejvýše 1 %; jinak NO-GO.
 - [ ] Rollback znamená pouze zastavení opt-in writeru, návrat na `--g03-live-api`, kontrolu BEAST/RAM/SSE a nedestruktivní ponechání DB dat.
 
-Připravená jednotka `deploy/systemd/airradarv2-g04-canary.service` není součástí běžného G-03 installeru a nesmí být před GO instalována. Port `4114` je pouze interní loopback; G-03 `4101` se nemění. `tools/evaluate_g04_canary.py` je rozhodovací brána (exit 0 = PASS, exit 1 = FAIL) a `tools/rollback_g04_canary.sh` neobsahuje mazání DB dat. Požadované provozní důkazy: DB readback s novými reálnými ICAO, poslední `pending=0`/`inflight=0`, nulové SQL timeouty, `connection=up`, ztráta kandidátů nejvýše 1 %, stabilní G-03 heartbeat a známé host CPU/RAM/WAL.
+Připravená jednotka `deploy/systemd/airradarv2-g04-canary.service` není součástí běžného G-03 installeru a nesmí být před GO instalována. Port `4114` je pouze interní loopback; G-03 `4101` se nemění. `tools/evaluate_g04_canary.py` je rozhodovací brána (exit 0 = PASS, exit 1 = FAIL) a `tools/rollback_g04_canary.sh` neobsahuje mazání DB dat. Požadované provozní důkazy: DB readback s novými reálnými ICAO, poslední `pending=0`/`inflight=0`, nulové SQL timeouty, `connection=up`, ztráta kandidátů nejvýše 1 %, stabilní G-03 heartbeat a známé CPU/RAM/WAL/volné místo DB LXC.
 
 **Zákaz:** změnit V1, starou historii, DB nastavení jiných služeb či automaticky přesměrovat aplikaci na SQL.

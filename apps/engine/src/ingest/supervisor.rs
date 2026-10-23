@@ -281,7 +281,8 @@ pub async fn run_with_publisher_and_history(
                     if let Some(history) = &state.history {
                         let memory = history.diagnostics();
                         eprintln!(
-                            "G-04 history pending={} inflight={} eligible={} coalesced={} committed={} dropped_capacity={} dropped_stale={} dropped_writer={} sql_attempts={} committed_batches={} failed_batches={} sql_timeouts={} connection={:?}",
+                            "G-04 history observed_at={} pending={} inflight={} eligible={} coalesced={} committed={} dropped_capacity={} dropped_stale={} dropped_writer={} sql_attempts={} committed_batches={} failed_batches={} sql_timeouts={} connection={:?}",
+                            now,
                             memory.pending,
                             memory.inflight,
                             memory.eligible,

@@ -325,3 +325,12 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 ## Pravidlo zápisu
 
 Každá skutečná implementační změna vyžaduje položku v části Nepublikováno, český etapový report a zdrojové důkazy. Historická označení verzí vzniknou teprve po skutečném vydání. Tento soubor není náhradou za automatizované testy.
+# 2026-10-23
+
+- G-04/PR #21: opraven P1 canary evaluator (povinné spojení, časová řada fronty,
+  jmenovatel ztrát podle Rust `eligible`, skutečný 30min interval, DB readback a
+  G-03 SSE); přidány negativní regresní testy.
+- G-04 canary unit je připnutý k samostatnému SHA-bound artefaktu s `MemoryMax=2G`,
+  `RuntimeMaxSec=1875` (1800 s důkaz + uzavření bucketu/drain) a bez automatického
+  restartu. G-03/4101 zůstává nedotčené.
+- Přidán read-only SQL audit DB/WAL a návrh externích záloh s RPO 24 h/RTO 2 h.

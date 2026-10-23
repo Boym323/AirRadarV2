@@ -1,6 +1,22 @@
 # G-04 — výsledek auditu a průběžná přejímka PostgreSQL historie
 
 **Aktualizace:** 23. 10. 2026. **Etapa:** ROZPRACOVÁNO. **Primární KEEP:** J09 (`IN_PROGRESS`).
+
+## Oprava P1 přípravy canary (tento commit)
+
+Evaluator nyní vyžaduje úplné monotónní countery včetně `connection`, časové snapshoty
+v nejméně čtyřech bodech po dobu nejméně 1 800 s, skutečný interval `started_at`/`finished_at`, vyvážení Rust
+counterů a readback kladného počtu nových řádků. Ztráta se počítá jako
+`drops / eligible`, nikoli `drops / (eligible + drops)`. Trvalý růst fronty se hledá
+v časové řadě, nikoli pouze porovnáním posledních tří hodnot. Přidány jsou regresní
+testy pro chybějící spojení, rostoucí frontu, DB výpadek, SQL timeout, špatné čítače,
+nesprávný jmenovatel a falešné `duration_seconds`.
+
+Canary unit je SHA-bound mimo `/opt/airradar-v2/current`, má `MemoryMax=2G`,
+`RuntimeMaxSec=1875` (1800 s důkazního běhu + 35 s uzavření 30s bucketu a rezerva
+pro drain) a `Restart=no`; G-03 unit, port 4101 a automatický deployment
+se nemění. Úmyslný běh canary, rollback v LXC a read-only audit DB LXC nebyly tímto
+commitem spuštěny; provozní důkazy proto zůstávají NEOVĚŘENO.
 **Větev/PR:** `codex/g04-history-20261023`, draft PR #21. **Implementační SHA:** `0daeb2f755bff81ce518a0415942a7e6b82579b0`. **Předchozí benchmark binárky:** `36afdda5e752cc320496f44672a94e9434eea9eb`. **Měřicí harnessy/report:** `ebc20307c8962593c3895908f4b54e2f63aeaa8a` / `4e1ff8b7396f78377ce3f429c5fe663e8fd1df67`.
 
 ## Audit G-04.01–G-04.12

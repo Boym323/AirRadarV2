@@ -8,7 +8,7 @@
 | G-01 | [Kontrakty a deterministické fixture](../ukoly/G-01-KONTRAKTY-A-TESTOVACI-DATA.md) | **HOTOVO — 10/10, CI PASS** |
 | G-02 | [Lokální ADS-B ingest a RAM](../ukoly/G-02-LOKALNI-INGEST.md) | **HOTOVO — 11/11 TESTED, reálný 60min BEAST PASS; živé HTTP/SSE nyní zajišťuje G-03** |
 | G-03 | [Verzované HTTP API a SSE](../ukoly/G-03-API-A-SSE.md) | **HOTOVO — 10/10 TESTED, DEV ACCEPTED; automatický deployment #39906245759 PASS na `29ee2ee75fea`** |
-| G-04 | [Úsporná historie](../ukoly/G-04-POSTGRESQL-HISTORIE.md) | **ROZPRACOVÁNO — PR #21, připraven neinstalovaný canary, dump helper, evaluator a rollback; DEV audit/izolovaný reconnect/retence/restore, Rust readsb replay a interní diagnostika PASS; ztráty 18,1 %/59,0 % při 2×/4×, provozní backup/RPO/RTO, volné místo/CPU/RAM DB LXC a RF sampling zůstávají branou NO-GO; žádné změny `pg_hba.conf` ani firewallu** |
+| G-04 | [Úsporná historie](../ukoly/G-04-POSTGRESQL-HISTORIE.md) | **ROZPRACOVÁNO — PR #21, P1 evaluator a izolace canary opraveny; evaluator vyžaduje časové snapshoty, skutečný 30min interval, DB readback a zdravé G-03 SSE; unit je SHA-bound mimo `current`, `RuntimeMaxSec=1875` (1800 s důkaz + uzavření bucketu/drain), `Restart=no`; provozní backup/RPO/RTO, volné místo/CPU/RAM DB LXC, bezpečný samostatný readsb/BEAST feed a vlastní canary/rollback zůstávají NEOVĚŘENO/NO-GO; žádné změny `pg_hba.conf` ani firewallu** |
 | G-05 | [Živá mapa a základní ovládání](../ukoly/G-05-ZIVA-MAPA.md) | NEZAHÁJENO |
 | G-06 | [Letiště a NAVAID/FIX](../ukoly/G-06-LETISTE-NAVAID.md) | NEZAHÁJENO |
 | G-07 | [Vybraná meteorologie](../ukoly/G-07-VYBRANE-POCASI.md) | NEZAHÁJENO |

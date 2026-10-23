@@ -11,6 +11,15 @@ for (const file of files) {
 const g03 = fs.readFileSync(`${root}deploy/install-dev-bundle.sh`, "utf8");
 assert.match(g03, /ExecStart=\/opt\/airradar-v2\/current\/airradarv2-engine --g03-live-api/);
 const canary = fs.readFileSync(`${root}deploy/systemd/airradarv2-g04-canary.service`, "utf8");
+const rollback = fs.readFileSync(`${root}tools/rollback_g04_canary.sh`, "utf8");
 assert.match(canary, /airradarv2-g04-canary\.service/);
 assert.match(canary, /127\.0\.0\.1:4114/);
+assert.match(canary, /Restart=no/);
+assert.match(canary, /RuntimeMaxSec=1875/);
+assert.doesNotMatch(canary, /\/opt\/airradar-v2\/current\/airradarv2-engine/);
+assert.match(canary, /releases\/587624b5dd381b90f61a5765ff13a8218ebc7867\/airradarv2-engine/);
+assert.match(rollback, /systemctl stop airradarv2-g04-canary\.service/);
+assert.match(rollback, /systemctl is-active --quiet airradarv2-engine\.service/);
+assert.doesNotMatch(rollback, /systemctl restart airradarv2-engine\.service/);
+assert.doesNotMatch(rollback, /\b(rm|DROP|pg_restore)\b/);
 console.log("PASS: main auto-deploy nemění G-03 a G-04 je oddělený opt-in unit.");
