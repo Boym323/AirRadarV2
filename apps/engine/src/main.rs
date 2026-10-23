@@ -111,7 +111,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 config,
                 Some(publisher),
                 Some(pool),
-                async move { let _ = stop_rx.await; },
+                async move {
+                    let _ = stop_rx.await;
+                },
             )
             .await
             {
@@ -122,9 +124,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         });
-        let mut api_task = tokio::spawn(async move {
-            axum::serve(listener, api::router(feed)).await
-        });
+        let mut api_task =
+            tokio::spawn(async move { axum::serve(listener, api::router(feed)).await });
         // Zastavit přijímání až po minimálně 1800s důkazním běhu.
         // +2s ochrana přesnosti počátečního diagnostického timestampu;
         // 60s drain + 3s SQL close musí skončit PŘED systemd 1875s.
