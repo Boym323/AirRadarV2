@@ -102,7 +102,7 @@
       "id": "J09",
       "name": "Ukládání vzorkované historie do PostgreSQL",
       "decision": "KEEP",
-      "status": "TESTED",
+      "status": "ACCEPTED",
       "tests": [
         "PR #21 CI #39930292509: Rust, Vite a dokumentace PASS",
         "PR #21 izolované PostgreSQL CI #39930292506 PASS",
@@ -119,7 +119,7 @@
     "DEV canary 23. 10. 2026: 1817,498 s, 1312/1312 historických vzorků potvrzeno, 61/61 SQL dávek, 0 ztrát/timeoutů, pending/inflight=0; skutečný DB readback 1490 → 2802; systemd exit 0, graceful drain; binary SHA-256 7b7cbf291141bdfbfa4e3a4e8ea7c8914d687cbf1824089721afdcd43e5f5d1e",
     "ADR 0013 shutdown regression + 60 Rust testů PASS; hlavní CI #39999749209 PASS"
       ],
-  "notes": "J09 funkčně TESTED reálným 30min DEV BEAST/CPR→RAM→SQLx→PostgreSQL a úspěšným bounded graceful drainem: 1312/1312 ACK, 0 dropů, 61/61 SQL dávek, skutečný přírůstek 1312 DB řádků, 0 SQL timeoutů. Starší 2×/4× syntetické benchmarky vykázaly řízené ztráty 18,1 %/59,0 % a nejsou důkazem produkční 2×/4× kapacity. G-04 jako celek zatím NENÍ provozně ACCEPTED: chybí 5min časované DB host disk/WAL/CPU/RAM metriky, závěrečný G-03 SSE a plný evaluator s opravdovými provozními důkazy. Zálohy postradatelné V2 historie nejsou povinné podle ADR 0010; G-04 zůstává opt-in bez produkčního deploye."
+  "notes": "J09 DEV ACCEPTED / G-04 UZAVŘENA na základě reálného 1817,498s BEAST/CPR → RAM → SQLx → PostgreSQL canary: 1312/1312 ACK, 61/61 batchů, 0 SQL timeoutů, 0 dropů, final pending/inflight=0, databáze 1490→2802 (+1312), bezpečný graceful drain, exit 0. Izolované CI a 60 Rust testů PASS. Správce převzal DEV výsledek bez dalšího opakovaného canary a uzavřel etapu s výslovně zaznamenaným omezením: chybí časová řada 5min DB host metrik a post-run G-03 SSE, proto se netvrdí plný výkonový audit sdílené DB ani produkční připravenost. Zálohy postradatelné V2 historie nejsou povinné dle ADR 0010. Trvalý writer ani nasazení na produkci tím nejsou schváleny."
     },
     {
       "id": "J11",
