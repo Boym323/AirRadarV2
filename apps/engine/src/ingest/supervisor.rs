@@ -7,7 +7,8 @@ use super::{
     state::RadarState,
 };
 use crate::contract::Observation;
-use crate::{history::Sample, history_store::WriterDiagnostics};
+use crate::{history::{HistorySampler, Sample}, history_store::WriterDiagnostics};
+use std::future::Future;
 use std::{
     path::{Path, PathBuf},
     sync::{
@@ -20,7 +21,7 @@ use tokio::{
     io::AsyncReadExt,
     net::TcpStream,
     sync::mpsc,
-    time::{self, timeout},
+    time::{self, Instant, timeout},
 };
 
 #[derive(Debug, Clone)]
@@ -176,29 +177,42 @@ pub async fn run_with_publisher(
 /// G-04 explicitní opt-in. Jediná SQL task nikdy nečeká v ingest actoru.
 pub async fn run_with_publisher_and_history(
     config: Config,
-    mut publisher: Option<crate::api::Publisher>,
+    publisher: Option<crate::api::Publisher>,
     history_pool: Option<sqlx::PgPool>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    run_with_publisher_and_history_until(config, publisher, history_pool, std::future::pending::<()>()).await
+}
+
+/// Jen opt-in G-04 dostává jednorázový signál pro řízený drain.
+/// Bez tohoto signálu zůstává chování živého G-03 beze změny.
+pub async fn run_with_publisher_and_history_until<F: Future<Output = ()>>(
+    config: Config,
+    mut publisher: Option<crate::api::Publisher>,
+    history_pool: Option<sqlx::PgPool>,
+    shutdown: F,
+) -> Result<(), Box<dyn std::error::Error>> {
+    tokio::pin!(shutdown);
     if config.receiver_id != "rx-primary" {
         return Err("invalid receiver ID".into());
     }
     let (tx, mut rx) = mpsc::channel::<Ingress>(2048);
     let drops = Arc::new(AtomicU64::new(0));
     let json_pending = Arc::new(AtomicBool::new(false));
+    let mut source_tasks = Vec::new();
     if let Some(path) = config.json_path {
         let sender = tx.clone();
         let dropped = Arc::clone(&drops);
         let pending = Arc::clone(&json_pending);
-        tokio::spawn(async move {
+        source_tasks.push(tokio::spawn(async move {
             poll_json(&path, sender, dropped, pending).await;
-        });
+        }));
     }
     if let Some(address) = config.beast_addr {
         let sender = tx.clone();
         let dropped = Arc::clone(&drops);
-        tokio::spawn(async move {
+        source_tasks.push(tokio::spawn(async move {
             poll_beast(&address, sender, dropped).await;
-        });
+        }));
     }
     drop(tx);
     let mut state = RadarState::default();
@@ -207,10 +221,11 @@ pub async fn run_with_publisher_and_history(
     let mut next_history_trace = 0.0;
     let (history_tx, mut history_rx) = mpsc::channel::<Vec<Sample>>(1);
     let (history_ack_tx, mut history_ack_rx) = mpsc::channel::<bool>(1);
+    let mut writer_task = None;
     if let Some(pool) = history_pool {
         state.history = Some(Default::default());
         let diagnostics = Arc::clone(&writer_diagnostics);
-        tokio::spawn(async move {
+        writer_task = Some(tokio::spawn(async move {
             while let Some(batch) = history_rx.recv().await {
                 let result = crate::history_store::insert_batch_with_retry_observed(
                     &pool,
@@ -227,7 +242,7 @@ pub async fn run_with_publisher_and_history(
                 }
             }
             pool.close().await;
-        });
+        }));
     } else {
         drop(history_rx);
         drop(history_ack_tx);
@@ -237,6 +252,7 @@ pub async fn run_with_publisher_and_history(
     let mut tick = time::interval(Duration::from_secs(1));
     loop {
         tokio::select! {
+            _ = &mut shutdown => break,
             ack=history_ack_rx.recv(), if history_enabled => {
                 if let Some(committed) = ack {
                     if let Some(history) = &mut state.history {
@@ -279,31 +295,100 @@ pub async fn run_with_publisher_and_history(
                 {
                     next_history_trace = now + 15.0;
                     if let Some(history) = &state.history {
-                        let memory = history.diagnostics();
-                        eprintln!(
-                            "G-04 history observed_at={} pending={} inflight={} eligible={} coalesced={} committed={} dropped_capacity={} dropped_stale={} dropped_writer={} sql_attempts={} committed_batches={} failed_batches={} sql_timeouts={} connection={:?}",
-                            now,
-                            memory.pending,
-                            memory.inflight,
-                            memory.eligible,
-                            memory.coalesced,
-                            memory.committed,
-                            memory.dropped_capacity,
-                            memory.dropped_stale,
-                            memory.dropped_writer,
-                            writer_diagnostics.sql_attempts.load(Ordering::Relaxed),
-                            writer_diagnostics.committed_batches.load(Ordering::Relaxed),
-                            writer_diagnostics.failed_batches.load(Ordering::Relaxed),
-                            writer_diagnostics.sql_timeouts.load(Ordering::Relaxed),
-                            writer_diagnostics.connection_state(),
-                        );
+                        log_history_trace(history, &writer_diagnostics, now);
                     }
                 }
             }
         }
     }
+
+    // Odpojíme pouze lokální G-04 producenty. U G-03 se tato větev
+    // bez explicitního shutdown future nikdy nespustí.
+    for task in source_tasks {
+        task.abort();
+    }
+    rx.close();
+    drop(rx);
+
+    let drained = if let Some(history) = &mut state.history {
+        // 30s UTC bucket + 5s close-delay a bounded SQL potvrzení.
+        // 60s limit ponechává rezervu pod systemd RuntimeMaxSec=1875.
+        drain_history_until(
+            history, &history_tx, &mut history_ack_rx,
+            Instant::now() + Duration::from_secs(60),
+            wall_seconds,
+        ).await
+    } else {
+        true
+    };
+    drop(history_tx);
+    let writer_finished = if let Some(writer) = writer_task {
+        matches!(time::timeout(Duration::from_secs(3), writer).await, Ok(Ok(())))
+    } else {
+        true
+    };
+    if let Some(history) = &state.history {
+        log_history_trace(history, &writer_diagnostics, wall_seconds());
+    }
+    eprintln!("G-04 shutdown drained={drained} writer_finished={writer_finished}");
+    if !drained || !writer_finished {
+        return Err("G-04 shutdown: poslední SQL fronta nebyla potvrzeně vyprázdněna".into());
+    }
     Ok(())
 }
+
+/// Žádné nové pozice při drainu: jen uzavřené UTC buckety,
+/// potvrzené dávky a pevně omezený čas; bez SQL zápisu naslepo.
+async fn drain_history_until<F: Fn() -> f64>(
+    history: &mut HistorySampler,
+    tx: &mpsc::Sender<Vec<Sample>>,
+    ack: &mut mpsc::Receiver<bool>,
+    deadline: Instant,
+    now: F,
+) -> bool {
+    loop {
+        if Instant::now() >= deadline {
+            return false;
+        }
+        let state = history.diagnostics();
+        if state.pending == 0 && state.inflight == 0 {
+            return true;
+        }
+        if state.inflight > 0 {
+            match time::timeout_at(deadline, ack.recv()).await {
+                Ok(Some(success)) => {
+                    history.finish_batch(success, now());
+                    if !success { return false; }
+                }
+                _ => return false,
+            }
+            continue;
+        }
+        let batch = history.next_batch(now());
+        if batch.is_empty() {
+            time::sleep(Duration::from_millis(200)).await;
+            continue;
+        }
+        if !matches!(time::timeout_at(deadline, tx.send(batch)).await, Ok(Ok(()))) {
+            history.finish_batch(false, now());
+            return false;
+        }
+    }
+}
+
+fn log_history_trace(history: &HistorySampler, writer: &WriterDiagnostics, now: f64) {
+    let memory = history.diagnostics();
+    eprintln!(
+        "G-04 history observed_at={} pending={} inflight={} eligible={} coalesced={} committed={} dropped_capacity={} dropped_stale={} dropped_writer={} sql_attempts={} committed_batches={} failed_batches={} sql_timeouts={} connection={:?}",
+        now, memory.pending, memory.inflight, memory.eligible, memory.coalesced,
+        memory.committed, memory.dropped_capacity, memory.dropped_stale,
+        memory.dropped_writer, writer.sql_attempts.load(Ordering::Relaxed),
+        writer.committed_batches.load(Ordering::Relaxed),
+        writer.failed_batches.load(Ordering::Relaxed),
+        writer.sql_timeouts.load(Ordering::Relaxed), writer.connection_state(),
+    );
+}
+
 fn enqueue(sender: &mpsc::Sender<Ingress>, dropped: &AtomicU64, event: Ingress) {
     if sender.try_send(event).is_err() {
         dropped.fetch_add(1, Ordering::Relaxed);
