@@ -21,12 +21,13 @@ class DeployWorkflowTests(unittest.TestCase):
         self.assertNotIn("verify-dev-lxc:", TEXT)
         self.assertNotIn("g02-status.json", TEXT)
 
-    def test_g03_release_auto_enabled(self):
+    def test_stage_release_auto_enabled(self):
         self.assertNotIn("g03_runtime == 'false'", TEXT)
-        self.assertIn("name: G-03 — ověřit stage marker před vydáním", TEXT)
-        self.assertIn("test -f contracts/openapi.g03.yaml", TEXT)
-        self.assertIn("grep -qx 'G-03' package/web/g03-runtime-required.txt", TEXT)
-        self.assertIn("G03_STAGE_GATE_V2", TEXT)
+        self.assertIn("name: G-04 — ověřit stage marker před vydáním", TEXT)
+        self.assertIn("deploy/runtime-stage", TEXT)
+        self.assertIn("package/web/runtime-stage.txt", TEXT)
+        self.assertIn("G04_STAGE_GATE_V3", TEXT)
+        self.assertIn("verify-airradarv2-runtime.py", TEXT)
 
     def test_metrics_serialize_and_cannot_invalidate_valid_app_release(self):
         metrics = WORKFLOW.with_name("development-metrics.yml").read_text(encoding="utf-8")

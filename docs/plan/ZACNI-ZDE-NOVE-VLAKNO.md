@@ -45,4 +45,4 @@ Před převzetím G-01 použij [audit architektury z 22. 10. 2026](../audits/ARC
 
 ## Aktuální etapa k převzetí
 
-**Navazuj G-05** podle [zadání mapy](../ukoly/G-05-ZIVA-MAPA.md) a [průběžného reportu](../reports/G-05-VYSLEDEK.md). G-04 byla DEV ACCEPTED a PR #21 sloučen do main na `e9e38689`. G-03 je již uzavřena; [její runbook](../runbooks/DEV-MAIN-AUTODEPLOY.md) popisuje fungující automatické nasazení do izolovaného DEV LXC. G-05 se vyvíjí v draft PR #22 samostatně, bez nasazení do DEV až do CI/browser gate. Trvalý G-04 writer ani produkční V1 nebyly zapnuty.
+**Navazuj G-05** podle [zadání mapy](../ukoly/G-05-ZIVA-MAPA.md) a [průběžného reportu](../reports/G-05-VYSLEDEK.md). G-04 byla DEV ACCEPTED a PR #21 sloučen do main na `e9e38689`. G-03 je již uzavřena; [její runbook](../runbooks/DEV-MAIN-AUTODEPLOY.md) popisuje fungující automatické nasazení do izolovaného DEV LXC. G-05 první mapa prošla CI a připravuje se do DEV náhledu. Dokončení výkonových a mapových funkcí zůstává otevřené. Trvalý G-04 writer ani produkční V1 nebyly zapnuty.

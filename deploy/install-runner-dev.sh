@@ -51,6 +51,7 @@ install -o root -g root -m 0644 "$repo_dir/deploy/archive_validation.py" /usr/lo
 install -o root -g root -m 0755 "$repo_dir/deploy/main-dev-auto-pull.py" /usr/local/libexec/airradarv2-main-deploy-pull.py
 install -o root -g root -m 0755 "$repo_dir/deploy/install-dev-bundle.sh" /usr/local/libexec/airradarv2-main-deploy-install.sh
 install -o root -g root -m 0755 "$repo_dir/deploy/verify-g03-runtime.py" /usr/local/libexec/airradarv2-verify-g03-runtime.py
+install -o root -g root -m 0755 "$repo_dir/deploy/verify-airradarv2-runtime.py" /usr/local/libexec/verify-airradarv2-runtime.py
 install -d -o root -g root -m 0755 /etc/systemd/system/nginx.service.d
 install -o root -g root -m 0644 "$repo_dir/deploy/systemd/nginx-airradarv2.conf" \
   /etc/systemd/system/nginx.service.d/airradarv2.conf

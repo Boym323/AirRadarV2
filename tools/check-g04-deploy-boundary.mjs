@@ -8,8 +8,11 @@ for (const file of files) {
   const text = fs.readFileSync(`${root}${file}`, "utf8");
   assert.equal(text.includes("--g04-dev-history"), false, `${file}: G-04 leakage`);
 }
-const g03 = fs.readFileSync(`${root}deploy/install-dev-bundle.sh`, "utf8");
-assert.match(g03, /ExecStart=\/opt\/airradar-v2\/current\/airradarv2-engine --g03-live-api/);
+const installer = fs.readFileSync(`${root}deploy/install-dev-bundle.sh`, "utf8");
+assert.match(installer, /G04_STAGE_GATE_V3/);
+assert.match(installer, /--g04-live-history/);
+assert.match(installer, /runtime-stage\.txt/);
+assert.match(installer, /g04-canary\.env/);
 const canary = fs.readFileSync(`${root}deploy/systemd/airradarv2-g04-canary.service`, "utf8");
 const rollback = fs.readFileSync(`${root}tools/rollback_g04_canary.sh`, "utf8");
 assert.match(canary, /airradarv2-g04-canary\.service/);
@@ -30,4 +33,4 @@ assert.match(rollback, /systemctl stop airradarv2-g04-canary\.service/);
 assert.match(rollback, /systemctl is-active --quiet airradarv2-engine\.service/);
 assert.doesNotMatch(rollback, /systemctl restart airradarv2-engine\.service/);
 assert.doesNotMatch(rollback, /\b(rm|DROP|pg_restore)\b/);
-console.log("PASS: main auto-deploy nemění G-03 a G-04 je oddělený opt-in unit.");
+console.log("PASS: main auto-deploy je stage-aware; G-04 canary zůstává oddělený.");

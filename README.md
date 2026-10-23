@@ -2,7 +2,7 @@
 
 Nová generace leteckého radaru, budovaná **od nuly**. Tento repozitář je zcela oddělený od [AirRadar V1](https://github.com/Boym323/AirRadar). Původní aplikace, produkční LXC a databáze se nemění.
 
-**Aktuální stav 23. 10. 2026:** G-00, G-01 (10/10), G-02 (11/11) a **G-03 (10/10) jsou HOTOVO**. G-03 živě běží na izolovaném DEV LXC: HTTP/SSE snapshot/delta/15s heartbeat/reconnect, read-only BEAST a automatický `main → CI → immutable release → runner → LXC` deployment. Poslední provozně ověřená verze před uzavřením: [`29ee2ee7`](https://github.com/Boym323/AirRadarV2/commit/29ee2ee75feab9279123b77d50895d648c5419d7), [GitHub Actions #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759) **6/6 PASS**. **G-04 je ROZPRACOVÁNO** (izolovaná SQL migrace; skutečná V2 DB a writer zatím nejsou aktivovány). Produkční V1 nedotčena.
+**Aktuální stav 23. 10. 2026:** G-00, G-01 (10/10), G-02 (11/11), **G-03 (10/10)** a **G-04/J09 (DEV ACCEPTED)** jsou dokončené ve vývojovém rozsahu. `main → CI → immutable release → runner → LXC` je stage-aware: release z `main` nasadí aktuální runtime marker, G-03 HTTP/SSE, read-only BEAST a po přijetí G-04 také trvalý DEV SQLx writer. Produkční V1 nedotčena.
 
 <!-- AIRRADAR_STATS_START -->
 ## Statistiky vývoje (automaticky aktualizované)
@@ -67,9 +67,9 @@ vypnutý; G-02 zůstává chráněno sdíleným lockem a jeho přejímky jsou od
 - **Jedno místní pokrytí:** uživatel pracuje vždy s daty místního přijímače, bez přepínače datových zdrojů.
 - **45 schválených funkcí:** 9 KEEP funkcí má důkaz `TESTED` (6 v G-02 a `J06/J07/J08` v G-03); etapová DEV přejímka G-03 je `ACCEPTED`, nikoliv plošná produktová akceptace všech 45 funkcí.
 
-**Zvoleno a implementováno:** Vite + React/TypeScript pro webový základ a Rust HTTP/SSE nad RAM. **PostgreSQL/SQLx** je cílová technologie; G-04 už obsahuje izolovanou SQL migraci v repozitáři, avšak reálná V2 DB na odděleném LXC ani runtime writer nejsou aktivovány. Viz [ADR 0005](docs/adr/0005-vite-a-postgresql-v2.md).
+**Zvoleno a implementováno:** Vite + React/TypeScript pro webový základ a Rust HTTP/SSE nad RAM. **PostgreSQL/SQLx** je cílová technologie; G-04/J09 má DEV ACCEPTED runtime writer aktivovaný stage-aware releasem, zatímco produkční V2 DB/release zůstávají mimo rozsah. Viz [ADR 0005](docs/adr/0005-vite-a-postgresql-v2.md) a [ADR 0014](docs/adr/0014-g04-trvaly-dev-runtime-a-stage-aware-autodeploy.md).
 
-**DEV engine běží s `--g03-live-api` a skutečným read-only BEAST zdrojem**, vrací `stage=G-03`, `status=live` při aktuálních pozorováních a vysílá SSE. Výchozí samostatné `cargo run` bez tohoto přepínače nadále záměrně spouští historický G-00 bootstrap `NOT_IMPLEMENTED`. Databázový writer G-04 a produkční vydání nejsou aktivní.
+**DEV engine běží s runtime režimem podle `web/runtime-stage.txt`** a skutečným read-only BEAST zdrojem. Po aktuálním G-04 markeru používá `--g04-live-history`, vrací `stage=G-04`, `database_connected=true` a živé SSE; DB writer zůstává doplňkový k RAM-first ingestu. Výchozí samostatné `cargo run` bez přepínače nadále záměrně spouští G-00 bootstrap `NOT_IMPLEMENTED`.
 
 ## Lokální vývoj
 

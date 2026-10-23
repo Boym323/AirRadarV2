@@ -10,10 +10,10 @@ class G03AutomaticDeployment(unittest.TestCase):
     def test_main_auto_publishes_and_deploys(self):
         self.assertNotIn("g03_runtime == 'false'", W)
         self.assertIn("needs: publish-dev-candidate", W)
-        self.assertIn("G03_STAGE_GATE_V2", W)
+        self.assertIn("G04_STAGE_GATE_V3", W)
     def test_root_install_is_one_time_and_safe(self):
         self.assertIn("refs/remotes/origin/main", B)
-        self.assertIn("G03_STAGE_GATE_V2", B)
+        self.assertIn("G04_STAGE_GATE_V3", B)
         self.assertIn("airradarv2-main-deploy-install.sh", B)
         self.assertNotIn("systemctl restart", B)
     def test_mode_and_release_roll_back_together(self):
@@ -22,8 +22,10 @@ class G03AutomaticDeployment(unittest.TestCase):
                        'ln -sfn "$old" "$base/.rollback-next"',
                        "ExecStart=/opt/airradar-v2/current/airradarv2-engine --g03-live-api",
                        "AIRRADAR_V2_BEAST_ADDR=$receiver:30005",
-                       "airradarv2-verify-g03-runtime.py"):
+                       "verify-airradarv2-runtime.py"):
             self.assertIn(marker, I)
+        self.assertIn("--g04-live-history", I)
+        self.assertIn("runtime-stage.txt", I)
     def test_does_not_mutate_v1(self):
         self.assertNotIn("Boym323/AirRadar/", B)
         self.assertNotIn("systemctl restart readsb", I)

@@ -1,6 +1,6 @@
 # G-05 — průběžný výsledek implementace živé mapy
 
-**Datum:** 23. 10. 2026 · **Stav:** ROZPRACOVÁNO, první 4/11 kroků ověřené (G-05.01/.02/.05/.06) · [PR #22](https://github.com/Boym323/AirRadarV2/pull/22) (draft). Implementace je izolovaná od `main` a automatického DEV deploymentu, k žádnému produktovému nasazení nedošlo.
+**Datum:** 23. 10. 2026 · **Stav:** ROZPRACOVÁNO, první 4/11 kroků ověřené (G-05.01/.02/.05/.06) · [PR #22](https://github.com/Boym323/AirRadarV2/pull/22) (draft). Před merge byla implementace izolovaná od `main`; první celek je určen pro DEV náhled, ne produkční release.
 
 ## Implementované části
 

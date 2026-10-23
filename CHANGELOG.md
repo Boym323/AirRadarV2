@@ -10,6 +10,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 - G-03 SSE adapter s atomickým snapshot/delta, verzovaným epoch/seq resync, bounded 5000 cílů a 1Hz UI publikací; jediný stav sdílený mapou a seznamem. Jednotkové testy identity, smazání, reconnect, validace a retence 64 bodů/20 minut.
 - G-05 stále IN_PROGRESS; G-05.10 letiště po G-06, E2E/MapLibre GPU výkonnost G-05.11 neověřena. Bez zásahu do G-03, DB a AirRadar V1 či automatického DEV deploye.
 
+
+### G-04 — opraven automatický DEV runtime podle hlavní větve
+- Release z `main` nyní nese verzovaný `runtime-stage` marker. Po přijetí J09 root-owned instalátor atomicky přepne immutable release na `--g04-live-history`, předá pouze chráněné DB prostředí a ověří `stage=G-04`/`database_connected=true` přes přímé i proxované HTTP/SSE.
+- G-04 canary zůstává oddělený; živý RAM/SSE příjem není blokován databází. V1, její LXC/DB, firewall a readsb konfigurace se nemění. Důkaz: ADR 0014, Rust health test, stage boundary, workflow a shell/Python regrese.
+
 ### G-04 — etapa uzavřena v DEV (J09 ACCEPTED, 23. 10. 2026)
 - Vlastník přijal skutečný 1817,498s DEV canary: `eligible=committed=1312`, 61/61 SQL dávek, 0 dropů/SQL timeoutů, `pending=inflight=0`, `drained=true writer_finished=true`, systemd `Result=success`/`ExecMainStatus=0`/`ActiveState=inactive`, PostgreSQL 1490 → 2802 (+1312). Rust/Web/docs a izolované PostgreSQL CI PASS.
 - **DEV ACCEPTED s výslovnou evidenční výjimkou:** doložena vstupní DB baseline, chybí průběžné 5min host disk/WAL/CPU/RAM záznamy a závěrečný G-03 SSE. To není dodatečně vydáváno za naměřené hodnoty ani za PASS úplného evaluatoru. Vlastník na tomto podkladě uzavřel DEV G-04 a nepožaduje další SQL soak; omezení evidence se nepřenáší na produkční akceptaci.

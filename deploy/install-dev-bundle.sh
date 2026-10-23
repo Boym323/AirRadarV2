@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# G03_STAGE_GATE_V2 — atomic systemd mode + immutable release switch + rollback.
+# G04_STAGE_GATE_V3 — stage-aware systemd mode + immutable release switch + rollback.
 set -Eeuo pipefail
 if [ "$(id -u)" -ne 0 ] || [ "$#" -ne 1 ]; then
   echo "Použití: bash install-dev-bundle.sh /root/airradarv2-dev-linux-amd64-....tar.gz" >&2
@@ -156,17 +156,26 @@ else
   # Do not delete the staging directory until healthcheck has used it.
 fi
 
-# G03_STAGE_GATE_V2: auto-activate the runtime after validated bundle;
+# G04_STAGE_GATE_V3: auto-activate the runtime after the validated bundle;
 # the root-owned bridge owns systemd and can roll back *both* release and mode.
-requires_g03=0
-if [[ -f "$target/web/g03-runtime-required.txt" ]]; then
-  test "$(tr -d '\r\n' < "$target/web/g03-runtime-required.txt")" == "G-03"
-  test -r /usr/local/libexec/airradarv2-verify-g03-runtime.py
-  requires_g03=1
+if [[ -s "$target/web/runtime-stage.txt" ]]; then
+  runtime_stage="$(tr -d '\r\n' < "$target/web/runtime-stage.txt")"
+elif [[ -f "$target/web/g03-runtime-required.txt" ]]; then
+  # Historické G-03 release před zavedením runtime-stage markeru.
+  runtime_stage=G-03
+else
+  runtime_stage=G-00
+fi
+case "$runtime_stage" in
+  G-00|G-03|G-04) ;;
+  *) echo "ERROR: neplatný runtime stage: $runtime_stage" >&2; exit 1 ;;
+esac
+if [[ "$runtime_stage" != "G-00" ]]; then
+  test -r /usr/local/libexec/verify-airradarv2-runtime.py
 fi
 # Nezbytně nejprve ověřit skutečný zdroj read-only BEAST již dříve
 # schválený a testovaný v G-02; nikdy nehledat receiver ve V1 configu.
-if [[ "$requires_g03" -eq 1 ]]; then
+if [[ "$runtime_stage" != "G-00" ]]; then
   source_unit=/etc/systemd/system/airradarv2-g02-live-auto.service
   test -r "$source_unit" || {
     echo "G-03: chybí již nakonfigurovaná G-02 read-only BEAST služba." >&2
@@ -186,7 +195,21 @@ PY
 fi
 
 install -d -o root -g root -m 0755 "$mode_dir"
-if [[ "$requires_g03" -eq 1 ]]; then
+if [[ "$runtime_stage" == "G-04" ]]; then
+  test -r /etc/airradar-v2/g04-canary.env
+  mode_next="$(mktemp "$mode_dir/.g04-auto.XXXXXXXX")"
+  cat > "$mode_next" <<UNIT
+# G-04 auto-managed by the root-owned DEV installer; do not hand-edit.
+[Service]
+EnvironmentFile=/etc/airradar-v2/g04-canary.env
+Environment=AIRRADAR_V2_BEAST_ADDR=$receiver:30005
+ExecStart=
+ExecStart=/opt/airradar-v2/current/airradarv2-engine --g04-live-history
+UNIT
+  chmod 0644 "$mode_next"
+  mode_changed=1
+  mv -f -- "$mode_next" "$mode_file"
+elif [[ "$runtime_stage" == "G-03" ]]; then
   mode_next="$(mktemp "$mode_dir/.g03-auto.XXXXXXXX")"
   cat > "$mode_next" <<UNIT
 # G-03 auto-managed by the root-owned DEV installer; do not hand-edit.
@@ -199,8 +222,7 @@ UNIT
   mode_changed=1
   mv -f -- "$mode_next" "$mode_file"
 else
-  # Older G-00 release, e.g. for a deliberate rollback, must not inherit
-  # the G-03 ExecStart override.
+  # Historical G-00 release must not inherit a live-runtime override.
   mode_changed=1
   rm -f -- "$mode_file"
 fi
@@ -222,24 +244,26 @@ if [[ "$AUTO" != 1 ]]; then
 fi
 systemctl reload nginx
 
-# Health check accepts G-00 bootstrap or explicit G-03+ state (never stale fake live).
+# Health check accepts only the runtime stage declared by the immutable release.
 ready=0
 for attempt in $(seq 1 25); do
   if curl -fsS --max-time 3 http://127.0.0.1:4101/api/v1/health -o "$health_tmp" 2>/dev/null &&
-     python3 - "$health_tmp" "$requires_g03" <<'PY'
+     python3 - "$health_tmp" "$runtime_stage" <<'PY'
 import json,sys
 try:
     with open(sys.argv[1],encoding="utf-8") as f:
         d=json.load(f)
-    if sys.argv[2] == "1":
-        assert d.get("stage") == "G-03"
-        assert d.get("status") in ("live", "waiting_for_observations")
-        assert d.get("live_ingest") is (d["status"] == "live")
-    else:
+    stage = sys.argv[2]
+    assert d.get("stage") == stage
+    if stage == "G-00":
         assert d.get("stage") == "G-00"
         assert d.get("status") == "bootstrap"
         assert d.get("live_ingest") is False
-    assert d.get("database_connected") is False
+    else:
+        assert d.get("stage") == stage
+        assert d.get("status") in ("live", "waiting_for_observations")
+        assert d.get("live_ingest") is (d["status"] == "live")
+    assert d.get("database_connected") is (stage == "G-04")
 except (OSError,ValueError,KeyError,AssertionError,TypeError):
     sys.exit(1)
 PY
@@ -258,10 +282,11 @@ bind_ip="$(sed -nE 's/^[[:space:]]*listen ([0-9.]+):8080;.*$/\1/p' \
 test -n "$bind_ip"
 curl -fsS --max-time 5 "http://$bind_ip:8080/" |
   grep -q '<div id="root"></div>'
-if [[ "$requires_g03" == 1 ]]; then
-  # Still inside the EXIT rollback trap: a missing/blocked proxy SSE stream
-  # restores the previous release instead of marking a false deployment PASS.
-  python3 /usr/local/libexec/airradarv2-verify-g03-runtime.py \
+# Still inside the EXIT rollback trap: a missing/blocked proxy SSE stream
+# restores the previous release instead of marking a false deployment PASS.
+if [[ "$runtime_stage" != "G-00" ]]; then
+  python3 /usr/local/libexec/verify-airradarv2-runtime.py \
+    --expected-stage "$runtime_stage" \
     --direct http://127.0.0.1:4101 \
     --proxy "http://$bind_ip:8080"
 fi
@@ -270,8 +295,4 @@ systemctl is-active --quiet nginx
 echo "PASS: DEV AirRadar V2 SHA=$sha"
 echo "LAN web: http://$bind_ip:8080/"
 echo "Lokální API: http://127.0.0.1:4101/api/v1/health"
-if [[ "$requires_g03" == 1 ]]; then
-  echo "G-03 HTTP/SSE je aktivní nad read-only BEAST, DB G-04 zůstává vypnutá."
-else
-  echo "G-00 bootstrap bez G-03; DB G-04 zůstává vypnutá."
-fi
+echo "Runtime stage $runtime_stage je aktivní nad read-only BEAST."

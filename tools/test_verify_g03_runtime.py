@@ -54,13 +54,12 @@ class G03StageGuardTests(unittest.TestCase):
                     module.parse_first_event(invalid)
 
     def test_runtime_checks_are_stage_bound_not_bootstrap_allowed(self):
-        runtime = (ROOT / ".github/workflows/g02-dev-candidate.yml").read_text()
+        runtime = (ROOT / "deploy/verify-g03-runtime.py").read_text()
         installer = (ROOT / "deploy/install-dev-bundle.sh").read_text()
         runner = (ROOT / "deploy/install-runner-dev.sh").read_text()
-        self.assertIn("g03-runtime-required.txt", runtime)
-        self.assertIn("G03_STAGE_GATE_V2", runtime)
-        self.assertIn("G03_STAGE_GATE_V2", installer)
-        self.assertIn("verify-g03-runtime.py", installer)
+        self.assertIn("expected_stage", runtime)
+        self.assertIn("G04_STAGE_GATE_V3", installer)
+        self.assertIn("verify-airradarv2-runtime.py", installer)
         self.assertIn("verify-g03-runtime.py", runner)
 
 

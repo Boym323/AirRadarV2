@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""G-03.08 — přísná lokální DEV přejímka skutečného HTTP/SSE (bez V1/DB).
+"""G-03.08/G-04 — přísná lokální DEV přejímka HTTP/SSE runtime stage.
 
 Spouští výhradně schválený root-owned DEV installer/Runner, nikoli veřejné API.
 Nezaměnit úspěšné HTTP 200 bootstrap G-00 za aktivní G-03.
@@ -11,19 +11,20 @@ import urllib.request
 MAX_EVENT_BYTES = 1024 * 1024 + 8192
 
 
-def validate_health(data: object) -> None:
+def validate_health(data: object, expected_stage: str = "G-03") -> None:
     if not isinstance(data, dict):
         raise ValueError("Health musí být JSON objekt")
-    if data.get("stage") != "G-03" or data.get("status") not in (
+    if data.get("stage") != expected_stage or data.get("status") not in (
         "live", "waiting_for_observations"
     ):
-        raise ValueError("G-03 není aktivní nebo je degradovaná; bootstrap není přejímka")
+        raise ValueError(f"{expected_stage} není aktivní nebo je degradovaná; bootstrap není přejímka")
     if not isinstance(data.get("live_ingest"), bool):
         raise ValueError("Health live_ingest není boolean")
     if data["live_ingest"] != (data["status"] == "live"):
         raise ValueError("Nekonzistentní health status/live_ingest")
-    if data.get("database_connected") is not False:
-        raise ValueError("G-04 databáze nesmí být vydávána za připojenou")
+    expected_database = expected_stage == "G-04"
+    if data.get("database_connected") is not expected_database:
+        raise ValueError("Health DB příznak neodpovídá runtime stage")
 
 
 def validate_snapshot(data: object) -> None:
@@ -107,7 +108,7 @@ def first_stream_snapshot(url: str, require_accel: bool, require_heartbeat: bool
         raise ValueError(f"{url}: SSE frame překročil bezpečný limit nebo heartbeat nedorazil")
 
 
-def verify(direct: str, proxy: str) -> dict:
+def verify(direct: str, proxy: str, expected_stage: str = "G-03") -> dict:
     direct = direct.rstrip("/")
     proxy = proxy.rstrip("/")
     if not direct.startswith("http://127.0.0.1:"):
@@ -115,7 +116,7 @@ def verify(direct: str, proxy: str) -> dict:
     if not proxy.startswith("http://"):
         raise ValueError("Proxy musí být výhradně interní DEV HTTP")
     health = json_get(direct + "/api/v1/health")
-    validate_health(health)
+    validate_health(health, expected_stage)
     aircraft = json_get(direct + "/api/v1/aircraft")
     if aircraft.get("status") not in ("live", "waiting_for_observations"):
         raise ValueError("Aircraft API není aktivní")
@@ -132,9 +133,10 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--direct", default="http://127.0.0.1:4101")
     parser.add_argument("--proxy", required=True)
+    parser.add_argument("--expected-stage", choices=("G-03", "G-04"), default="G-03")
     args = parser.parse_args()
-    result = verify(args.direct, args.proxy)
-    print("PASS G-03 DEV direct HTTP/SSE + Nginx no-buffer full snapshot: " +
+    result = verify(args.direct, args.proxy, args.expected_stage)
+    print(f"PASS {args.expected_stage} DEV direct HTTP/SSE + Nginx no-buffer full snapshot: " +
           json.dumps(result, ensure_ascii=False, sort_keys=True))
     return 0
 

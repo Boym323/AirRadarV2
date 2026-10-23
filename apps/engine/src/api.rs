@@ -282,6 +282,8 @@ impl Feed {
 #[derive(Clone)]
 struct ApiState {
     feed: Feed,
+    stage: &'static str,
+    database_connected: bool,
 }
 
 #[derive(Serialize)]
@@ -338,9 +340,9 @@ async fn health(State(state): State<ApiState>, query: RawQuery) -> Response {
         } else {
             "waiting_for_observations"
         },
-        stage: "G-03",
+        stage: state.stage,
         live_ingest: active,
-        database_connected: false,
+        database_connected: state.database_connected,
     })
     .into_response()
 }
@@ -545,11 +547,19 @@ async fn events(State(state): State<ApiState>, query: RawQuery) -> Response {
 }
 
 pub fn router(feed: Feed) -> Router {
+    router_with_runtime(feed, "G-03", false)
+}
+
+pub fn router_with_runtime(feed: Feed, stage: &'static str, database_connected: bool) -> Router {
     Router::new()
         .route("/api/v1/health", get(health))
         .route("/api/v1/aircraft", get(aircraft))
         .route("/api/v1/stream", get(events))
-        .with_state(ApiState { feed })
+        .with_state(ApiState {
+            feed,
+            stage,
+            database_connected,
+        })
 }
 
 #[cfg(test)]
@@ -671,6 +681,25 @@ mod tests {
             "no-cache, no-transform"
         );
         assert_eq!(response.headers()["x-accel-buffering"], "no");
+    }
+
+    #[tokio::test]
+    async fn g04_runtime_health_exposes_database_stage() {
+        let (feed, _) = new();
+        let response = router_with_runtime(feed, "G-04", true)
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        let body = to_bytes(response.into_body(), 1024).await.unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(json["stage"], "G-04");
+        assert_eq!(json["database_connected"], true);
+        assert_eq!(json["live_ingest"], false);
     }
 
     #[tokio::test]
