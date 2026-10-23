@@ -1,6 +1,6 @@
 # AirRadar V2 — závazné technické kontrakty a limity
 
-**Datum:** 22. 10. 2026. **Stav:** návrh G-04+ stále nepřevzat; G-03 HTTP/SSE a Chromium browser byly otestovány izolovaně v CI #39849652858, bez cílového DEV LXC měření či DB tabulek. Rozsah nadále obsahuje pouze 45 aktivních funkcí.
+**Aktualizováno 23. 10. 2026.** G-03 HTTP/SSE a Chromium jsou TESTED v CI, **DEV runtime ACCEPTED** s přímým i Nginx streamem, snapshot/delta/15s heartbeat a reconnectem ([main deployment #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759), SHA `29ee2ee7`). Reálné OS TCP/kernel buffer/RSS parametry a úmyslný rollback nové LIVE verze zůstávají nezměřeny. Návrh G-04+ je nadále oddělený; G-04 má pouze izolovanou SQL migraci, skutečné DB LXC se touto etapou neměnilo. Schválených funkcí zůstává 45.
 
 | Oblast | Startovací rozhodnutí | Detailní české zadání | Etapa |
 |---|---|---|---|
@@ -17,7 +17,7 @@ Tato čísla jsou **konfigurační výchozí hodnoty**, nikoli garantovaný výk
 
 K implementaci nejprve G-01 fixture a kontrakty, potom G-02 ingest, G-03 SSE, G-04 DB, G-05 mapa. Playwright a bezpečnostní testy běží v izolovaném DEV/CI bez skutečných notifikací a bez přístupu k V1. Každou změnu rozhodnutí je třeba podložit měřením a českým reportem.
 
-**Neprováděno:** žádná databázová migrace, instalace Playwright, nasazení, změna firewallu, TLS či LXC. Závěry shrnuje [ADR 0006](../adr/0006-kontrakty-dat-streamu-mapy-a-lxc.md).
+**Hranice etapy:** G-03 je skutečně nasazena na oddělené DEV aplikační LXC, nikoli na produkční V1; Chromium bylo ověřeno v CI. SQL migrace G-04 existuje pouze jako izolovaný soubor a CI test bez nasazení na skutečné DB LXC. Bez změny produkčního firewallu, DB TLS či V1. Závěry shrnuje [ADR 0006](../adr/0006-kontrakty-dat-streamu-mapy-a-lxc.md).
 
 ## Pozdější revize — ochrana CPU a SSD (ADR 0007)
 

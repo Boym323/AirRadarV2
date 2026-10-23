@@ -3,7 +3,7 @@
 **Datum:** 22. 10. 2026 · **Aktuální branch:** `main`  
 **Rozsah:** přesně **45 aktivních produktových funkcí** v 9 logických modulech, bez automatického rozšiřování.  
 **Technologie:** Rust/Tokio/Axum, Vite/React/TypeScript/MapLibre, PostgreSQL/SQLx na již provozovaném samostatném DB LXC.  
-**Stav k 22. 10. 2026:** G-00 scaffold, G-01 HOTOVO 10/10, G-02 HOTOVO 11/11, G-03 10/10 TESTED v CI (DEV release NO-GO); G-04 až G-13 NEZAHÁJENO. Tento plán jsou instrukce a odkazy na důkazy v etapových reportech.
+**Stav k 23. 10. 2026:** G-00, G-01 10/10, G-02 11/11 a **G-03 10/10 HOTOVO; G-03 DEV ACCEPTED** ([automatický deploy #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759), `29ee2ee7`). **G-04 ROZPRACOVÁNO** (izolovaná PostgreSQL migrace/CI; skutečná DB LXC zatím nepřipojena); G-05 až G-13 produktově/produkčně NEZAHÁJENO. Instrukce a závislosti níže platí dál, historické příklady nejsou stavem dnešního runtime.
 
 ## Implementační seznam
 
@@ -81,7 +81,7 @@ G-00 (hotový skeleton)
 
 ## Nejbližší krok
 
-**G-03.06–.10 — Dokončit lifecycle, backpressure, proxy a měření.** Navazuj v [G-03](../ukoly/G-03-API-A-SSE.md) a ověř CI finálního SHA. Celý projekt lze převzít v novém chatu z [průvodce](ZACNI-ZDE-NOVE-VLAKNO.md). Samotný zápis tohoto dokumentu nemění funkční stav aplikace.
+**G-03 uzavřena 23. 10. 2026:** všech 10 kroků TESTED, živý DEV SSE a automatické nasazování ACCEPTED. **Další práce: G-04 (DB historie) a následně G-05 (mapa)** dle [aktuálního stavu](ETAPY-A-STAV.md). Úmyslný rollback nové LIVE verze a OS TCP buffer/RSS limity zůstávají oddělené provozní riziko, nikoli důkaz produkčního GO pro G-13.
 
 ## Detailní technické kontrakty před realizací
 

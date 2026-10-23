@@ -1,4 +1,7 @@
-# V2 DEV main auto-deploy — průběžný implementační report
+# V2 DEV main auto-deploy — historický implementační report (22. 10. 2026)
+
+> **Nový stav 23. 10. 2026:** původní příprava níže již byla dokončena. `main → shared CI → SHA256 release → V2 runner → DEV LXC` je funkční a **ACCEPTED** pro G-03: [run #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759), runtime `29ee2ee75feab9279123b77d50895d648c5419d7`, všech šest jobů PASS včetně lokálního HTTP/SSE healthchecku. Staré věty o chybějícím auto-deployi či třech workflow níže jsou **původním záznamem incidentu**, nikoliv novým omezením. V repozitáři jsou nyní čtyři workflow včetně samostatné izolované G-04 DB CI; V1 a reálná DB se tím nemění. Aktuální instrukce jsou v [runbooku](../runbooks/DEV-MAIN-AUTODEPLOY.md).
+
 
 **Historický záznam 22. 10. 2026.** Původní přípravná část reportu zachovává
 stav před registrací runneru; aktuální uzavření je uvedeno níže.

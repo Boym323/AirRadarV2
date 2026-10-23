@@ -1,6 +1,6 @@
 # G-03 — Rust HTTP API a SSE full/delta
 
-**Stav:** **10/10 kroků TESTED v izolované CI**, provozní DEV LXC a release **NEPŘEVZATY (NO-GO pro merge)**.  
+**Aktuální stav 23. 10. 2026:** **HOTOVO — 10/10 kroků TESTED, živý G-03 HTTP/SSE DEV ACCEPTED a automatický `main → LXC` deployment PASS** ([run #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759), runtime SHA `29ee2ee75feab9279123b77d50895d648c5419d7`). Produkční G-11/G-13, přesná OS TCP paměť a úmyslný rollback nové živé verze zůstávají oddělené.  
 **Odpovědnost:** M02 — Axum.  
 **Závislosti:** G-01 a G-02.  
 **Primární KEEP ID:** `J06`, `J07`, `J08`.  
@@ -54,7 +54,9 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Implementace:** Na syntetickém radarovém replay změř 1/10/100 klientů, bytes/s, CPU, RSS, p95/p99 a počet discard/resync.  
   **Ověření:** Výsledky s hardwarem a SHA v českém reportu, bez nevysvětlené ztráty pozic.
 
-## První CI důkazy G-03.03–.05 (22. 10. 2026)
+## Historie: první CI důkazy G-03.03–.05 (22. 10. 2026)
+
+**Pozor:** níže uvedené starší stavy a neuzavřené body zachycují mezikroky k 22. 10.; závěrečný stav je `HOTOVO / DEV ACCEPTED` dle úvodu a [finálního reportu](../reports/G-03-VYSLEDEK.md).
 
 Na commitu `dbd9af7ceefe9455aae1297691f94cf2eeb9ea63` prošla [CI #39803605266](https://github.com/Boym323/AirRadarV2/actions/runs/39803605266): Rust fmt/Clippy/test, offline G-02 replay, Vite lint/TypeScript/test/build a česká dokumentace, 3/3 PASS. Nové testy `sse_snapshot_delta_and_resync_after_coalesced_seq` a `deltas_reconstruct_exact_canonical_full_state` přímo ověřují HTTP SSE snapshot, delta upsert/removed, resynchronizaci při ztraceném watch okně a shodu výsledné replica RAM s kanonickým stavem. SSE klient se na žádná data z V1 nepřipojoval.
 
@@ -104,4 +106,4 @@ Doložen [GitHub Actions #39835102766](https://github.com/Boym323/AirRadarV2/act
 
 [**GitHub Actions #39848794079**](https://github.com/Boym323/AirRadarV2/actions/runs/39848794079), SHA **`c43ab9d543a740020ac9133941f1a4829b2c7dea`**: všechny tři joby Rust, Vite a dokumentace PASS. G-03.07: 90 nečtoucích TCP klientů, 1 zdravý klient dostal všech pět následujících aktualizací; Rust VmRSS přírůstek **15 112 KiB**, pod samostatně deklarovaným limitem **25 600 KiB** (bez OS socket bufferů). G-03.08: skutečný Chromium EventSource přes Vite i Nginx (snapshot, delta, full reconnect). G-03.10: 1/10/100 klientů s až **5 000 kompaktními letadly**; při 100×5k všech 100 aktualizací, p95 **1 576 ms**, p99 **1 630 ms**, Rust VmRSS peak **48 764 KiB**; žádné neodůvodněné discards. Metodika a další omezení v [reportu](../reports/G-03-VYSLEDEK.md).
 
-**Rozlišení stavu:** všechny implementační checkboxy jsou testově splněné v izolovaném GitHub runneru; **to neznamená provozní ACCEPTED na cílovém DEV LXC**. Nelze zatím bezpečně provést G-03 cutover, dokud není ověřen root-owned instalátor, systemd přepnutí z G-00 na G-03 a atomický rollback v DEV. V1 nedotčena. **PR #11 zůstává draft a NO-GO pro merge do `main`.**
+**Historický závěr k 22. 10.:** implementační CI sama o sobě ještě nebyla důkazem DEV provozu. **Tento blok je překonán provozní přejímkou 23. 10.** PR #11 byl sloučen; po opravě heartbeat, systemd/Nginx a rollbacku prošel živý G-03 DEV i automatický release ([#39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759)). Stále neprohlašujeme úmyslný LIVE rollback, měření OS socket bufferů ani produkční G-13 za hotové.

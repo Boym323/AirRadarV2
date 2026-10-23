@@ -47,6 +47,7 @@ jobs:
           python3 -m unittest discover -s tools -p 'test_workflows_layout.py'
           python3 -m unittest discover -s tools -p 'test_deploy_workflow.py'
           python3 -m unittest discover -s tools -p 'test_g03_auto_deploy.py'
+          python3 -m unittest discover -s tools -p 'test_g03_documentation.py'
           python3 -m py_compile deploy/verify-g03-runtime.py
           python3 -m unittest discover -s tools -p 'test_verify_g03_runtime.py'
           python3 -m unittest discover -s tools -p 'test_benchmark_g03_sse.py'

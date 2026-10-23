@@ -1,6 +1,16 @@
 # G-03 — výsledkový report Rust HTTP API a SSE
 
-**Datum:** 23. 10. 2026. **Stav:** **G-03 10/10 TESTED v izolované CI; provozní přejímka NEOVĚŘENO do dokončení nového main CI/deploy běhu**. V1, DB a produkční receiver zůstaly nedotčené.
+**Datum uzavření:** 23. 10. 2026. **Finální stav etapy: HOTOVO — 10/10 kroků TESTED, DEV HTTP/SSE a automatické nasazení ACCEPTED.** Referenční provozní SHA `29ee2ee75feab9279123b77d50895d648c5419d7` a [GitHub Actions #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759) (6/6 PASS, včetně `deploy-dev` a post-deploy healthchecku). V1, DB a produkční přijímač nedotčeny. **Úmyslný destruktivní rollback nové implementace na běžícím DEV nebyl opakován**; důkaz rollback logiky tvoří regresní testy a incidentní záznam, nejde o vyhodnocení budoucí produkční G-13.
+
+## Provozní uzavření G-03 — 23. 10. 2026
+
+- **GitHub `main` před uzavíracím dokumentačním commitem:** `29ee2ee75feab9279123b77d50895d648c5419d7`, shodné s uvedenou nasazenou `VERSION` v LXC `/opt/airradar-v2/releases/29ee2ee75fea`.
+- **Automatické deploymenty:** [#39905085484](https://github.com/Boym323/AirRadarV2/actions/runs/39905085484), [#39905632012](https://github.com/Boym323/AirRadarV2/actions/runs/39905632012) a **[#39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759)** — všechny `SUCCESS`. U posledního ověřeno 3× CI, build, publish a self-hosted DEV deployment včetně závěrečné kontroly LXC (`6/6`).
+- **Runtime podle provozního reportu správce:** Rust `--g03-live-api`, Nginx a runner `active`; G-02 testovací služby `inactive`. REST `stage=G-03`, `status=live`, `live_ingest=true`, `database_connected=false`; živý read-only BEAST, 67 letadel při přejímce. Přímé a proxované SSE: úvodní snapshot, delta, cca 15s heartbeat i nový snapshot po reconnectu.
+- **Limity důkazů:** GitHub potvrzuje úspěšné joby a post-deploy kontrolu; údaj o počtu letadel a naměřeném heartbeat vychází z provozního reportu LXC. Neexistuje zde zvláštní 24h soak, plný RAM/TCP kernel buffer benchmark ani úmyslný rollback na nové LIVE verzi. Nezaměňovat DEV ACCEPTED s produkční G-11/G-13 akceptací.
+- **Rozsah:** strojové KEEP funkce `J06`, `J07`, `J08` ponechány jako `TESTED` (nikoli plošně produktově `ACCEPTED`), protože závěrečná produktová přejímka je v G-11; ostatní etapy ani DB/V1 tím nejsou dokončeny.
+
+---
 
 ## Incident 23. 10. 2026 — kořenová příčina a oprava
 
@@ -14,7 +24,7 @@ Oprava patří ke krokům **G-03.06/G-03.08**, konzumenty jsou Rust HTTP/SSE, DE
 
 ## Provozní přejímka DEV — PASS 23. 10. 2026
 
-Finální commit `749ffb942407f7c7cd88f3d983a72841664f52ee` je shodný s `main` i s `/opt/airradar-v2/current/VERSION`. GitHub Actions [run #39905632012](https://github.com/Boym323/AirRadarV2/actions/runs/39905632012) skončil `SUCCESS`; přímý runner journal potvrzuje start deploymentu v 07:29:05, přepnutí releasu v 07:29:08 a dokončení celého jobu v 07:29:44 bez ručního opakování.
+V okamžiku dílčí přejímky byl commit `749ffb942407f7c7cd88f3d983a72841664f52ee` shodný s tehdejším `main` i `/opt/airradar-v2/current/VERSION`; pozdější aktuální úspěšné nasazení `29ee2ee7` je uvedeno v úvodním finálním uzavření. GitHub Actions [run #39905632012](https://github.com/Boym323/AirRadarV2/actions/runs/39905632012) skončil `SUCCESS`; přímý runner journal potvrzuje start deploymentu v 07:29:05, přepnutí releasu v 07:29:08 a dokončení celého jobu v 07:29:44 bez ručního opakování.
 
 Na cílovém LXC byly po deploymentu ověřeny:
 
@@ -29,7 +39,9 @@ Rollback důkaz: při incidentním selhání `03be...` journal zachytil obnoven�
 
 **Výsledek:** G-03 DEV HTTP/SSE a automatické `main → CI → immutable release → runner → LXC → healthcheck` jsou ACCEPTED pro vývojový LXC. Produkční AirRadar V1, jeho LXC, databáze a konfigurace readsb nebyly měněny.
 
-## První implementační celek — G-03.01 až G-03.06 (CI PASS, dílčí přejímka)
+## Historický postup implementace — G-03.01 až G-03.06 (CI PASS, dílčí přejímka 22. 10.)
+
+Následující časově označené části dokládají **starší mezistavy**. Výrazy „rozpracováno“, „čeká na CI“ a „NO-GO“ v nich nejsou aktuálním stavem G-03; finální verdikt je na začátku reportu.
 
 - **G-03.01 / J06:** Veřejná `PublicAircraft` projekce z již existující G-01 typové smlouvy; nevystavuje `receiverId`, transport, IP, raw BEAST zprávu ani privátní čas doručení. Stabilní epoch a monotónní sequence, RFC3339 UTC čas snímku.
 - **G-03.02 / J06:** Opt-in `--g03-live-api` poskytuje `GET /api/v1/health` a `GET /api/v1/aircraft` s verzovaným snapshotem. Stav je `live` pouze s pozorováními nejvýše 5 s starými; jinak explicitní `waiting_for_observations`. Defaultní start běžící G-00 service zůstává `NOT_IMPLEMENTED`.
