@@ -2,6 +2,8 @@
 
 **Aktuální provozní stav 23. 10. 2026 — FUNKČNÍ, DEV ACCEPTED.** G-03 běží na izolovaném LXC s `--g03-live-api`, read-only BEAST, SSE snapshot/delta a heartbeat; [Actions #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759) pro `29ee2ee75feab9279123b77d50895d648c5419d7` má všech šest jobů PASS včetně runner deploymentu/post-deploy ověření. Jednorázový bootstrap root-owned G-03 instalátoru už proběhl, nepouštět jej rutinně před každým push. Další push do `main` po úspěšném CI automaticky vytváří SHA-ověřený prerelease a nasazuje bez schvalování. Starší incidentní pokyny níže jsou **historické** a nejsou blokací dnešního G-03 provozu.
 
+**Oprava kolize statistik a release 23. 10. 2026:** během vydání dokumentačního SHA `ee11bd60` změnil `main` bot metrik (`6162c00c`), a striktní HEAD kontrola před deployem odmítla starší SHA, ačkoliv se aplikační kód nezměnil ([run #39909065853](https://github.com/Boym323/AirRadarV2/actions/runs/39909065853), CI/build/publish PASS, preflight deploy FAIL). Obě workflow nyní používají **stejný repo-wide concurrency lock** a před deployem lze výjimečně uznat nanejvýš tři lineární mezilehlé commity, jen pokud každý pochází přesně od `github-actions[bot]`, má známou zprávu metrik a mění výhradně `README.md`/`docs/metrics/**`. Jakýkoli jiný autor/rodič/soubor znamená striktní FAIL. **Toto není povolení libovolného zastaralého releasu.** V1/DB nedotčeny.
+
 **Zbývající rizika:** nový rollback nebyl úmyslně znovu vyvolán na živém DEV; OS TCP socket memory a dlouhý soak nejsou finálně změřeny. G-11/G-13 produkční přejímka zůstává samostatná.
 
 ## Cílová cesta přes repo-scoped runner
