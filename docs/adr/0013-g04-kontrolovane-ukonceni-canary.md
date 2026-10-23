@@ -1,6 +1,6 @@
 # ADR 0013 — G-04: časově omezené řízené ukončení SQL writeru
 
-**Datum:** 23. 10. 2026. **Stav:** implementováno v PR #21, **živý DEV canary writeru a graceful drainu úspěšně proveden (J09 TESTED); úplná provozní G-04 akceptace čeká na DB host/SSE metriky**. Platí jen pro opt-in `--g04-dev-history`.
+**Datum:** 23. 10. 2026. **Stav:** implementováno v PR #21, **DEV ACCEPTED / J09 ACCEPTED na základě 30min reálného canary a SQL readbacku; časované DB host metriky a koncový G-03 SSE nebyly doloženy a jsou evidovanou výjimkou této DEV přejímky (nikoli důkazem produkční bezpečnosti)**. Platí jen pro opt-in `--g04-dev-history`.
 
 ## Důvod
 
@@ -16,7 +16,7 @@ První živý BEAST/CPR canary úspěšně uložil 1 489 ze 1 502 kandidátů ve
 
 ## Živý technický důkaz a zbývající provozní brána
 
-V reálném DEV BEAST/CPR canary 23. 10. 2026 byl potvrzen běh 1817,498 s, `eligible=1312`, `committed=1312`, `pending=0`, `inflight=0`, 61/61 SQL dávek, `sql_timeouts=0` a závěrečné `drained=true writer_finished=true`; systemd `Result=success` a databáze narostla z 1490 na 2802 řádků. **Technická část rozhodnutí tedy PASS.** Dosud nejsou doloženy průběžné 5min DB host metriky ani závěrečný G-03 SSE; nelze proto tvrdit celkový G-04 ACCEPTED.
+V reálném DEV BEAST/CPR canary 23. 10. 2026 byl potvrzen běh 1817,498 s, `eligible=1312`, `committed=1312`, `pending=0`, `inflight=0`, 61/61 SQL dávek, `sql_timeouts=0` a závěrečné `drained=true writer_finished=true`; systemd `Result=success` a databáze narostla z 1490 na 2802 řádků. **Technická část rozhodnutí PASS a vlastník přijal etapu v rozsahu DEV (G-04 DEV ACCEPTED).** Průběžné 5min DB host metriky ani závěrečný G-03 SSE nejsou doloženy; pro tento DEV milestone bylo jejich doložení výslovně prominuto jako evidenční požadavek, nikoliv splněno. Žádné tvrzení o produktové G-13 připravenosti.
 
 ## Regresní a provozní brána
 
