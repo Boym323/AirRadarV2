@@ -6,6 +6,8 @@ import { loadAirportCatalog, type Airport } from "./radar/airport-catalog";
 
 type Panel = "none" | "traffic" | "detail" | "airport";
 
+const appVersion = import.meta.env.VITE_APP_VERSION || "dev";
+
 function displayName(a: Aircraft): string {
   return a.callsign?.trim() || a.id;
 }
@@ -231,6 +233,9 @@ export default function App() {
       </section>
       <footer className="radar-footer">
         AirRadar V2 · Lokální ADS-B · Letiště: OurAirports (public domain){airportsError ? " — katalog dočasně nedostupný" : ""}
+        <span className="radar-version" title={appVersion === "dev" ? "Lokální vývojový build" : `Commit ${appVersion}`}>
+          Verze {appVersion === "dev" ? appVersion : appVersion.slice(0, 12)}
+        </span>
       </footer>
     </main>
   );
