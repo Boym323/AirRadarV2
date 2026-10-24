@@ -7,7 +7,7 @@
 - Detail zobrazuje pouze dostupnou výšku, rychlost vůči zemi, skutečný track a vertikální rychlost; neznámá data jsou „—“. Follow je explicitní a je zakázáno pro stale polohu či přerušený SSE stream. Bez nových backendových dat, mapových zdrojů a závislostí.
 - MapLibre `RadarMap` a jediný `useRadarStream` zůstávají trvale namountované a beze změny. Výběr při smazání identity a reconnectu nadále podléhá stávající kontrole epoch/seq.
 - Browser Chromium fixture byla rozšířena o výchozí map-first obrazovku, otevření/zavření panelů, fokus, detail, změnu stylu bez remountu a mobil 390×844 bez horizontálního scrollování.
-- **Přejímka:** nový commit a CI se teprve ověřují. E2E/FPS na fyzickém telefonu, měření G-05.11, letiště G-05.10 ani produkční release nejsou tímto krokem deklarované jako hotové.
+- **Přejímka:** [PR #26](https://github.com/Boym323/AirRadarV2/pull/26) sloučen do `main` jako `c17601d55180b44b5bdbac7c53da00defe3bae46`. Izolovaná [CI #40079234896](https://github.com/Boym323/AirRadarV2/actions/runs/40079234896) **3/3 PASS** (web, Rust/SSE + Chromium desktop/mobil, česká dokumentace). **DEV release z main je samostatné ověření**; screenshot reálného DEV browseru a FPS benchmark zatím nedoloženy. E2E/FPS na fyzickém telefonu, měření G-05.11, letiště G-05.10 ani produkční release nejsou tímto krokem deklarované jako hotové.
 
 
 **Aktualizace:** 24. 10. 2026 · **Stav:** ROZPRACOVÁNO, 4/11 kroků plně ověřené (G-05.01/.02/.05/.06). [PR #22](https://github.com/Boym323/AirRadarV2/pull/22) byl **sloučen do main 23. 10.**; [DEV nasazení #40028968380](https://github.com/Boym323/AirRadarV2/actions/runs/40028968380) PASS, včetně G-04 živého API/SSE. Jde o DEV náhled, nikoli produkční release nebo finální G-05 přejímku.
