@@ -112,7 +112,7 @@ describe("G-05.03 / R03 — vlastní směrové symboly", () => {
       icon: "rotorcraft", heading: 92, label: "OKTEST",
       selected: true,
     });
-    expect(String(output.features[0].properties?.detailLabel).replace(/\\s+/g, " ")).toBe("OKTEST 6 500 ft");
+    expect(String(output.features[0].properties?.detailLabel).replace(/\s+/g, " ")).toBe("OKTEST 6 500 ft");
     expect(output.features[1].properties?.icon).toBe("glider");
     expect(output.features[2].properties?.icon).toBeNull();
     expect(output.features[3].properties?.icon).toBe("large-fixedwing");
