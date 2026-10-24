@@ -9,6 +9,15 @@ TEXT = WORKFLOW.read_text(encoding="utf-8")
 
 
 class DeployWorkflowTests(unittest.TestCase):
+    def test_runner_publishes_actual_activated_sha(self):
+        runner = (Path(__file__).resolve().parents[1] / "deploy/runner-deploy.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("/opt/airradar-v2/current/VERSION", runner)
+        self.assertIn("/var/cache/airradarv2-main-deploy/status.json", runner)
+        self.assertIn("temporary.replace(public)", runner)
+        self.assertIn("sha != expected", runner)
+
     def test_has_local_post_deploy_gate(self):
         self.assertIn("Ověřit právě nasazený release a lokální služby", TEXT)
         self.assertIn("/opt/airradar-v2/current", TEXT)
