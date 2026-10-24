@@ -2,6 +2,13 @@
 
 ## [Nepublikováno]
 
+### G-05.11 — CI MapLibre benchmark a adaptivní diff (24. 10. 2026)
+- [PR #34](https://github.com/Boym323/AirRadarV2/pull/34) sloučen `b8691f8b`, [CI #40095503907](https://github.com/Boym323/AirRadarV2/actions/runs/40095503907) 3/3 PASS; 32 skutečně naměřených software Chromium scénářů, `setData/updateData`, 25/100/500/2 000 cílů při 1/2 Hz, desktop/mobile emulation. [Celý p95 report](docs/reports/G-05-VYKON-MERENI-2026-10-24.md) s odkazy na JSON artefakt.
+- [PR #36](https://github.com/Boym323/AirRadarV2/pull/36): podmíněné GeoJSON updateData na hustém provozu a bezpečný fallback při nové epoše/stylu; zatím čeká na vlastní CI.
+- **G-05.11 stále otevřená**: software RAF měření není ověřený fyzický GPU/FPS desktop/telefonu.
+
+
+
 ### G-06.01/.02/.03/.07 → G-05.10 — legální letištní data a mapová vrstva (24. 10. 2026)
 - OurAirports The Unlicense, přesný SHA upstream CSV ověřený při Vite buildu; statický regionální JSON CZ/SK/AT/PL/HU s validovanými pozicemi a testy importéru. Žádná externí runtime síťová služba.
 - Oddělený statický GeoJSON source MapLibre, přepínač letištní vrstvy a klikací kontextový detail. NAVAID, frekvence a úplný G-06 REST jsou mimo tento základ; G-05.10/R12 pro mapovou vrstvu jsou TESTED: PR #33 `bfa48c3f`, [CI #40094724356](https://github.com/Boym323/AirRadarV2/actions/runs/40094724356) 3/3 PASS a [DEV #40095020297](https://github.com/Boym323/AirRadarV2/actions/runs/40095020297) SUCCESS. Plná G-06 REST/NAVAID/frekvence dál rozpracovaná.
