@@ -135,7 +135,8 @@ jobs:
             http://127.0.0.1:4102/api/v1/stream -o /tmp/g03-heartbeat.txt || test "$?" -eq 28
           grep -q ': heartbeat' /tmp/g03-heartbeat.txt
 
-      - name: G03 · SSE zátěž
+      - name: G03 · SSE zátěž (non-PR)
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -202,13 +203,15 @@ jobs:
           npm run build --prefix apps/web
           /tmp/airradar-g03-browser/bin/python tools/test_g05_browser.py
 
-      - name: G05 · Render benchmark
+      - name: G05 · Render benchmark (non-PR)
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -Eeuo pipefail
           /tmp/airradar-g03-browser/bin/python tools/benchmark_g05_map.py
 
       - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request'
         with:
           name: g05-chromium-benchmark-${{ github.sha }}
           path: .artifacts/g05-map-benchmark.json

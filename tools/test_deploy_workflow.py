@@ -54,6 +54,8 @@ class DeployWorkflowTests(unittest.TestCase):
     def test_release_and_deploy_dependencies_remain(self):
         self.assertIn("needs: test-and-build", TEXT)
         self.assertIn("needs: publish-dev-candidate", TEXT)
+        self.assertIn("always() && needs.test-and-build.result == 'success'", TEXT)
+        self.assertIn("always() && needs.publish-dev-candidate.result == 'success'", TEXT)
         self.assertIn("airradarv2-runner-deploy.sh", TEXT)
         self.assertIn("sha256sum -c", TEXT)
         self.assertIn("tar -tzf", TEXT)

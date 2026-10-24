@@ -107,7 +107,7 @@ jobs:
     needs: test-and-build
     # Každý main commit po úspěšných testech automaticky publikuje
     # immutable prerelease; G-03 režim bezpečně přepne až root installer.
-    if: github.repository == 'Boym323/AirRadarV2' && github.ref == 'refs/heads/main'
+    if: always() && needs.test-and-build.result == 'success' && github.repository == 'Boym323/AirRadarV2' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -139,7 +139,7 @@ jobs:
   deploy-dev:
     name: DEV · Nasazení
     needs: publish-dev-candidate
-    if: github.repository == 'Boym323/AirRadarV2' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: always() && needs.publish-dev-candidate.result == 'success' && github.repository == 'Boym323/AirRadarV2' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: [self-hosted, linux, x64, airradarv2-dev]
     timeout-minutes: 120
     permissions:
