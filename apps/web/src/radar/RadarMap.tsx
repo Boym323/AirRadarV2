@@ -11,10 +11,11 @@ import { setWorkerUrl } from "maplibre-gl";
 
 setWorkerUrl(workerUrl);
 
-export type MapStyle = "liberty" | "fiord";
+export type MapStyle = "liberty" | "fiord" | "dark";
 const STYLES: Record<MapStyle, string> = {
   liberty: "https://tiles.openfreemap.org/styles/liberty",
   fiord: "https://tiles.openfreemap.org/styles/fiord",
+  dark: "https://tiles.openfreemap.org/styles/dark",
 };
 // G-05.09 / R14: skutečný záložní podklad na druhém hostu. Nikdy
 // nenahrazovat několik chyb dlaždic jednobarevnou plochou bez geografie.
@@ -280,8 +281,14 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
         // style.load je důležitější než přechodné chyby jednotlivých tiles.
         if (styleEverLoaded.current || fallbackActive.current) return;
         fallbackActive.current = true;
-        setError("Mapový podklad není dostupný; používá se náhradní mapa OpenStreetMap.");
         instance.setStyle(FALLBACK_STYLE, { diff: false });
+        // Při úspěšném přepnutí na zálohu nech mapu čistou. Varování patří
+        // jen na stav, kdy nelze načíst ani hlavní, ani záložní styl.
+        styleLoadTimer = setTimeout(() => {
+          if (!styleEverLoaded.current) {
+            setError("Nepodařilo se načíst mapový podklad. Zkus mapu znovu obnovit.");
+          }
+        }, 6500);
       }, 6500);
     };
     scheduleRecovery.current = recoverUnloadedStyle;
@@ -332,7 +339,7 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
       // Úspěšné obnovení podkladu ruší staré varování, nikoli samotný radar.
       styleEverLoaded.current = true;
       if (styleLoadTimer) clearTimeout(styleLoadTimer);
-      if (!fallbackActive.current) setError(null);
+      setError(null);
       // Změna stylu zahodí registry map sources; nikdy neposlat diff do nové mapy.
       previousAircraft = null;
       previousEpoch = null;
@@ -380,26 +387,20 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
         }
       }
     }, 1000);
-    let clearMapErrorTimer: ReturnType<typeof setTimeout> | undefined;
-    instance.on("error", () => {
-      // Tile errors mohou být krátkodobé, nebo se mohou týkat jen části mapy.
-      // Nikdy proto při jejich počítání nezahodit již načtený geografický styl.
-      if (!styleEverLoaded.current) {
-        setError("Mapový podklad není dostupný; zkouší se náhradní mapa.");
-        return;
-      }
-      if (fallbackActive.current) {
-        setError("Mapový podklad není dostupný; používá se náhradní mapa OpenStreetMap.");
-        return;
-      }
-      setError("Některé dlaždice mapového podkladu nejsou dostupné; ostatní mapa a živá letadla zůstávají zachovány.");
-      if (clearMapErrorTimer) clearTimeout(clearMapErrorTimer);
-      clearMapErrorTimer = setTimeout(() => setError(null), 4500);
+    // MapLibre hlásí error i při selhání jedné glyph/tile/sprite žádosti.
+    // Uživatelské hlášení pro takovou událost bylo trvale rušivé a nepravdivé:
+    // úspešně načtená mapa není nedostupná. Timeout style.load řeší selhání
+    // celého stylu; samotné dílčí chyby nejsou důvodem pro banner či remount.
+    instance.on("error", () => {});
+    instance.on("webglcontextlost", () => {
+      setError("Grafické vykreslování mapy se přerušilo. Obnov mapu.");
+    });
+    instance.on("webglcontextrestored", () => {
+      setError(null);
     });
     return () => {
       clearInterval(tick);
       if (styleLoadTimer) clearTimeout(styleLoadTimer);
-      if (clearMapErrorTimer) clearTimeout(clearMapErrorTimer);
       scheduleRecovery.current = () => {};
       canvasContainer.removeEventListener("wheel", stopFollow);
       canvasContainer.removeEventListener("touchmove", stopFollow);
