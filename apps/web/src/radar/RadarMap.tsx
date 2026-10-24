@@ -394,7 +394,9 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
     canvasContainer.addEventListener("keydown", manualKeyboardMove);
     const tick = setInterval(() => {
       if (!instance.isStyleLoaded()) return;
-      if (!benchMode) refresh();
+      // Benchmark neprovádí pravidelné refresh, ale zdroje musí být po
+      // prvním skutečně načteném stylu založené alespoň jednou.
+      if (!benchMode || !instance.getSource(AIRCRAFT_SOURCE)) refresh();
       const selected = props.current.frame.aircraft.find(a => a.id === props.current.selectedId);
       if (props.current.follow && selected?.position && !selected.stale) {
         const nextTarget = { id: selected.id, lon: selected.position.lon, lat: selected.position.lat };
