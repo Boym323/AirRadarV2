@@ -1,0 +1,45 @@
+name: G05 · Vizuální kontrola veřejné V2
+
+on:
+  workflow_run:
+    workflows:
+      - "AirRadar V2 · DEV release"
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: g05-visual-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: true
+
+jobs:
+  public-visual:
+    name: G05 · Public screenshot
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: G05 · Playwright browser
+        run: |
+          python3 -m venv /tmp/g05-visual
+          /tmp/g05-visual/bin/pip install --disable-pip-version-check playwright==1.57.0
+          command -v google-chrome >/dev/null || command -v google-chrome-stable >/dev/null
+      - name: G05 · Veřejné DEV screenshoty
+        env:
+          G05_EXPECTED_SHA: ${{ github.event.workflow_run.head_sha }}
+          G05_PUBLIC_URL: https://airradarv2.pomykal.cz
+        run: /tmp/g05-visual/bin/python tools/verify_g05_public.py
+      - name: G05 · Doklady a snímky
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g05-public-${{ github.event.workflow_run.head_sha }}
+          path: .artifacts/g05-public-after-release/
+          if-no-files-found: warn
+          retention-days: 14
