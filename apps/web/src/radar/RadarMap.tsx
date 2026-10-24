@@ -16,11 +16,20 @@ const STYLES: Record<MapStyle, string> = {
   liberty: "https://tiles.openfreemap.org/styles/liberty",
   fiord: "https://tiles.openfreemap.org/styles/fiord",
 };
-// Lokální plátno bez externích tiles zachová radar i při výpadku podkladu.
+// G-05.09 / R14: skutečný záložní podklad na druhém hostu. Nikdy
+// nenahrazovat několik chyb dlaždic jednobarevnou plochou bez geografie.
+// Záložní raster OSM se používá jen v případě selhání načtení stylu.
 const FALLBACK_STYLE: StyleSpecification = {
   version: 8,
-  sources: {},
-  layers: [{ id: "radar-fallback-background", type: "background", paint: { "background-color": "#1a3145" } }],
+  sources: {
+    "radar-osm-backup": {
+      type: "raster",
+      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      tileSize: 256,
+      attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>',
+    },
+  },
+  layers: [{ id: "radar-osm-backup-layer", type: "raster", source: "radar-osm-backup" }],
 };
 const AIRCRAFT_SOURCE = "radar-aircraft";
 const TRAIL_SOURCE = "radar-trail";
@@ -231,6 +240,7 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
   const fallbackActive = useRef(false);
   const styleEverLoaded = useRef(false);
   const map = useRef<LibreMap | null>(null);
+  const scheduleRecovery = useRef<() => void>(() => {});
   const lastFollowTarget = useRef<{ id: string; lon: number; lat: number } | null>(null);
   const props = useRef({ frame, airports, selectedAirportId, showAirports, onSelectAirport, selectedId, follow, onSelect, onStopFollow });
   props.current = { frame, airports, selectedAirportId, showAirports, onSelectAirport, selectedId, follow, onSelect, onStopFollow };
@@ -263,6 +273,19 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
     let previousAircraft: FeatureCollection<Point> | null = null;
     let previousEpoch: string | null = null;
     let revision = 0;
+    let styleLoadTimer: ReturnType<typeof setTimeout> | undefined;
+    const recoverUnloadedStyle = () => {
+      if (styleLoadTimer) clearTimeout(styleLoadTimer);
+      styleLoadTimer = setTimeout(() => {
+        // style.load je důležitější než přechodné chyby jednotlivých tiles.
+        if (styleEverLoaded.current || fallbackActive.current) return;
+        fallbackActive.current = true;
+        setError("Mapový podklad není dostupný; používá se náhradní mapa OpenStreetMap.");
+        instance.setStyle(FALLBACK_STYLE, { diff: false });
+      }, 6500);
+    };
+    scheduleRecovery.current = recoverUnloadedStyle;
+    recoverUnloadedStyle();
     const refresh = () => {
       const current = props.current;
       const key = JSON.stringify([current.frame.epoch, current.frame.seq, current.selectedId]);
@@ -308,6 +331,7 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
     instance.on("style.load", () => {
       // Úspěšné obnovení podkladu ruší staré varování, nikoli samotný radar.
       styleEverLoaded.current = true;
+      if (styleLoadTimer) clearTimeout(styleLoadTimer);
       if (!fallbackActive.current) setError(null);
       // Změna stylu zahodí registry map sources; nikdy neposlat diff do nové mapy.
       previousAircraft = null;
@@ -356,41 +380,27 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
         }
       }
     }, 1000);
-    let tileErrorWindowStart = 0;
-    let tileErrorsInWindow = 0;
     let clearMapErrorTimer: ReturnType<typeof setTimeout> | undefined;
     instance.on("error", () => {
-      // Při chybě stylu přepni pouze jednou na lokální plátno bez tiles.
-      // Opakované chyby tiles během krátkého okna mají stejný výsledek;
-      // jednotlivá přechodná chyba pouze zobrazí stabilní upozornění.
-      const now = Date.now();
-      if (now - tileErrorWindowStart > 1500) {
-        tileErrorWindowStart = now;
-        tileErrorsInWindow = 0;
+      // Tile errors mohou být krátkodobé, nebo se mohou týkat jen části mapy.
+      // Nikdy proto při jejich počítání nezahodit již načtený geografický styl.
+      if (!styleEverLoaded.current) {
+        setError("Mapový podklad není dostupný; zkouší se náhradní mapa.");
+        return;
       }
-      tileErrorsInWindow += 1;
-      if (!styleEverLoaded.current && !fallbackActive.current) {
-        fallbackActive.current = true;
-        instance.setStyle(FALLBACK_STYLE, { diff: false });
-      } else if (styleEverLoaded.current && tileErrorsInWindow >= 3 && !fallbackActive.current) {
-        fallbackActive.current = true;
-        instance.setStyle(FALLBACK_STYLE, { diff: false });
+      if (fallbackActive.current) {
+        setError("Mapový podklad není dostupný; používá se náhradní mapa OpenStreetMap.");
+        return;
       }
-      setError(fallbackActive.current
-        ? "Mapový podklad není dostupný; živá letadla zůstávají zobrazena."
-        : "Některé dlaždice mapového podkladu nejsou dostupné; živá letadla fungují dál.");
-      if (!fallbackActive.current) {
-        if (clearMapErrorTimer) clearTimeout(clearMapErrorTimer);
-        clearMapErrorTimer = setTimeout(() => setError(null), 2500);
-      }
-    });
-    instance.on("idle", () => {
-      // Chybu odstraňuje až stabilní timeout nebo nový style.load, nikoli
-      // každý krátký idle event; tím se banner nerozbliká.
+      setError("Některé dlaždice mapového podkladu nejsou dostupné; ostatní mapa a živá letadla zůstávají zachovány.");
+      if (clearMapErrorTimer) clearTimeout(clearMapErrorTimer);
+      clearMapErrorTimer = setTimeout(() => setError(null), 4500);
     });
     return () => {
       clearInterval(tick);
+      if (styleLoadTimer) clearTimeout(styleLoadTimer);
       if (clearMapErrorTimer) clearTimeout(clearMapErrorTimer);
+      scheduleRecovery.current = () => {};
       canvasContainer.removeEventListener("wheel", stopFollow);
       canvasContainer.removeEventListener("touchmove", stopFollow);
       canvasContainer.removeEventListener("keydown", manualKeyboardMove);
@@ -419,13 +429,26 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
       fallbackActive.current = false;
       styleEverLoaded.current = false;
       setError(null);
+      scheduleRecovery.current();
       map.current.setStyle(STYLES[style]);
     }
   }, [style]);
+  const retryMap = () => {
+    const instance = map.current;
+    if (!instance) return;
+    fallbackActive.current = false;
+    styleEverLoaded.current = false;
+    setError(null);
+    scheduleRecovery.current();
+    instance.setStyle(STYLES[style], { diff: false });
+  };
   return (
     <div className="map-wrap">
       <div ref={container} className="map-canvas" role="region" aria-label="Mapa živého provozu" />
-      {error && <p className="map-error" role="status">{error}</p>}
+      {error && <div className="map-error" role="status">
+        <span>{error}</span>
+        <button type="button" onClick={retryMap}>Obnovit mapu</button>
+      </div>}
     </div>
   );
 }

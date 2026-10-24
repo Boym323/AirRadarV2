@@ -365,8 +365,18 @@ def main():
                 window.__g05BenchMap.fire('error', {error: new Error('repeated tile error')});
               }
             }""")
+            # Chyby jednotlivých dlaždic nesmějí přepnout celou mapu na
+            # prázdný fallback: potvrď zachovaný původní styl a všechny vrstvy.
             expect(recovery.locator(".map-error")).to_contain_text(
-                "Mapový podklad není dostupný", timeout=12000)
+                "Některé dlaždice mapového podkladu", timeout=12000)
+            assert recovery.evaluate("""() => {
+              const map = window.__g05BenchMap;
+              return !map.getSource('radar-osm-backup') &&
+                !!map.getSource('radar-aircraft') &&
+                !!map.getLayer('radar-aircraft-symbols');
+            }"""), "Tři dočasné chyby nesmí odstranit mapový podklad nebo živá letadla"
+            recovery.get_by_role("button", name="Obnovit mapu").click()
+            expect(recovery.locator(".maplibregl-canvas")).to_be_visible()
             recovery.close()
 
             # Úplný výpadek externího stylu nesmí skrýt radar ani rozkmitat canvas.
