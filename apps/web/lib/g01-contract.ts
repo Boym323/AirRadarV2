@@ -1,5 +1,10 @@
 // G-01: stejný datový kontrakt jako Rust, bez živého přijímače nebo databáze.
 export type Position = { lat: number; lon: number };
+export const VALID_EMITTER_CATEGORIES = ["A1", "A2", "A3", "A4", "A5", "A6", "A7", "B1", "B2", "B4", "B6", "C1", "C2"] as const;
+export type EmitterCategory = typeof VALID_EMITTER_CATEGORIES[number];
+export const emitterCategory = (raw: unknown): EmitterCategory | undefined =>
+  typeof raw === "string" && (VALID_EMITTER_CATEGORIES as readonly string[]).includes(raw)
+    ? raw as EmitterCategory : undefined;
 export type FlightData = { altitudeBaroFt?: number; groundSpeedKt?: number; trackDegrees?: number; verticalRateFpm?: number; onGround?: boolean };
 export type TimeBasis = "derived_readsb" | "receiver_utc" | "server_arrival" | "unknown";
 export type PositionOrigin = "adsb" | "mlat" | "tisb" | "rebroadcast" | "estimated" | "unknown";
@@ -15,6 +20,7 @@ export type Observation = {
   position: Position | null;
   callsign: string | null;
   squawk: string | null;
+  emitterCategory?: EmitterCategory;
   telemetry?: FlightData;
 };
 export type PublicAircraft = {
@@ -26,6 +32,7 @@ export type PublicAircraft = {
   stale: boolean;
   callsign: string | null;
   squawk: string | null;
+  emitterCategory?: EmitterCategory;
   telemetry?: FlightData;
 };
 export type Snapshot = {
@@ -98,7 +105,8 @@ export function normalizeReadsb(input: unknown, receiverId: string, receivedAt: 
       positionAtUtc: position ? now - (row.seen_pos as number) : null,
       position,
       callsign: callsign.length > 0 && callsign.length <= 8 ? callsign : null,
-      squawk: typeof row.squawk === "string" ? row.squawk : null
+      squawk: typeof row.squawk === "string" ? row.squawk : null,
+      ...(emitterCategory(row.category) ? { emitterCategory: emitterCategory(row.category) } : {})
     });
   }
   return output;
@@ -112,7 +120,7 @@ export function parsePublicAircraft(data: unknown): PublicAircraft {
   if (!isObject(data) ||
     Object.keys(data).some(k => ![
       "id", "lastMessageAt", "lastPositionAt", "position", "positionOrigin",
-      "stale", "callsign", "squawk", "telemetry"
+      "stale", "callsign", "squawk", "emitterCategory", "telemetry"
     ].includes(k)) ||
     typeof data.id !== "string" || !keyRegex.test(data.id) ||
     !age(data.lastMessageAt) ||
@@ -125,6 +133,7 @@ export function parsePublicAircraft(data: unknown): PublicAircraft {
     typeof data.stale !== "boolean" ||
     (data.callsign !== null && (typeof data.callsign !== "string" || data.callsign.length > 8)) ||
     (data.squawk !== null && (typeof data.squawk !== "string" || !/^[0-7]{4}$/.test(data.squawk))) ||
+    (data.emitterCategory !== undefined && emitterCategory(data.emitterCategory) === undefined) ||
     (data.telemetry !== undefined && (!isObject(data.telemetry) ||
       Object.entries(data.telemetry).some(([k,v]) => {
         if (k === "onGround") return typeof v !== "boolean";
