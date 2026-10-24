@@ -1,57 +1,40 @@
-# Issue #41 — audit zbývajících provozních bran
+# Issue #41 — provozní audit a stabilizace DEV LXC
 
-**Datum:** 24. 10. 2026
-**Výchozí SHA:** `fecc55b` (`main`)
-**Issue:** [#41 — Audit 24. 10. — zbývající provozní brány AirRadar V2](https://github.com/Boym323/AirRadarV2/issues/41)
+**Datum měření:** 24. 10. 2026, Europe/Prague
+**Repozitář:** `Boym323/AirRadarV2`
+**SHA auditu:** `43e20d8ce460a5bd3f12503db22ae98c4d02db85`
+**DEV LXC:** `lo-dev-airradarv2`, Debian 13, 4 vCPU, 8 GiB RAM, 20 GiB ZFS
+**Nasazený SHA:** stejný jako SHA auditu; immutable release `/opt/airradar-v2/releases/43e20d8ce460`
 
-## Výsledek
+## Výsledek bran
 
-Issue neobsahuje jednu opravu v aplikačním kódu, ale šest provozních bran. Kódová část je na aktuálním `main` přítomná a testovatelná. Ochrana `main` byla po auditu nastavena přes GitHub Branch Protection API; DB retence a fyzický desktop/telefon stále vyžadují externí provozní podmínky.
-
-| Brána | Stav | Důkaz nebo další vlastník |
+| Bod | Stav | Důkaz |
 |---|---|---|
-| Ochrana `main` | **DOKONČENO** | Branch Protection API nyní vrací `protected=true`: povinný PR review, `rust-engine`, `vite-web`, `Česká dokumentace`, aktuální větev, zákaz force-push/mazání, ochrana administrátorů a povinné vyřešení konverzací. |
-| DB retence | **BLOKOVÁNO — DBA** | Na odděleném DB LXC ověřit kapacitu, schválit dedikovanou maintenance roli, provést jednorázový test `database/maintenance/g04_retention_once.sql` podle [runbooku G-04](../runbooks/G-04-POSTGRES-DEV-PRIJEMKA.md) a až poté ručně zapnout timer. Žádný timer ani zásah do V1 se nepřidává do tohoto commitu. |
-| GPU/FPS | **NEOVĚŘENO — fyzický hardware** | CI Chromium je funkční regrese, nikoli GPU benchmark. Potřeba je měření 25/100/500/2 000 cílů × 1/2 Hz na desktopu a telefonu s přesným SHA, zařízením a metodikou. |
-| Snapshot 1 MiB | **KÓDOVĚ OŠETŘENO, PROVOZNĚ NEOVĚŘENO** | Rust testy ověřují 5 000 plných DTO, překročení rozpočtu, `503 CAPACITY_EXCEEDED`, ukončení přetíženého streamu a obnovu novým snapshotem. Neprobíhá tiché ořezání. Skutečné 1/10/100-klientské měření zůstává samostatnou branou. |
-| Release security | **NEZAHÁJENO / NO-GO** | Před G-13 chybí schválená licence, SECURITY kontakt, dependency audit/SBOM a GitHub Actions supply-chain evidence. |
-| G-06 až G-13 | **NO-GO** | Etapy zůstávají podle `ETAPY-A-STAV.md` nezahájené nebo bez cílových přejímacích důkazů. |
+| Brána 1 — ochrana `main` | **TESTED** | Branch Protection API: povinný PR review, aktuální větev, `rust-engine`, `vite-web`, `Česká dokumentace`, zákaz force-push/mazání, ochrana administrátorů a vyřešení konverzací. |
+| Brána 2 — služby a deployment | **TESTED** | CI run [#40112006453](https://github.com/Boym323/AirRadarV2/actions/runs/40112006453) má všech 6 jobů PASS; engine, Nginx a runner jsou `active`; `current/VERSION` odpovídá SHA auditu. |
+| Brána 3 — DB retence G-04 | **BLOKOVÁNO** | Vzdálený DB LXC `192.168.1.55`, `airradar_v2_dev`, PostgreSQL 17.10, 14 MB, 46 872 řádků, 0 starších než 30 dní. Runtime role nemá `DELETE`; maintenance role, DBA schválení a timer nejsou aktivní. |
+| Brána 4 — živý ingest a health | **TESTED** | `/api/v1/health` lokálně i přes DEV web vrací HTTP 200, `status=live`, `stage=G-04`, `live_ingest=true`, `database_connected=true`; API po ingestu obsahovalo 75 cílů. Lokální BEAST `192.168.1.50:30005` odpovídal. |
+| Brána 5 — SSE snapshot/delta/reconnect | **TESTED** | Po nasazení snapshot `seq=52` a delty `53–55`, jednotná epocha, plná veřejná DTO, bez `receiverId`; izolovaný harness ověřil reconnect, heartbeat, 503 při 101. klientovi a návrat pod limit. |
+| Brána 6 — SSE syntetická kapacita | **TESTED** | 1/10/100 klientů a 25/250/1 000/5 000 cílů; 0 ztracených aktualizací. RSS špička 55 480 KiB při 90 pomalých klientech, růst 4 276 KiB, CPU 15,71 % jednoho jádra při 100×5 000. |
+| Brána 7 — mapa a fallback | **TESTED** | CI Chromium MapLibre smoke a fallback při výpadku podkladu PASS v runu #40112006453; fyzický GPU test není tímto důkazem nahrazen. |
+| Brána 8 — fyzický FPS | **NEOVĚŘENO** | CI používá headless Chromium/SwiftShader. Chybí skutečný desktop s GPU a telefon; proto není uveden fyzický FPS/p95. |
+| Brána 9 — systemd stabilita | **TESTED** | Opraveny pouze V2 DEV jednotky: `ConditionPathExists`, `TimeoutStartSec` pro oneshot služby. `systemd-analyze verify` bez chyb, žádné nové warningy engine/Nginx, služby zůstaly aktivní. |
+| Brána 10 — veřejný deploy status | **TESTED** | Runner bridge nyní po úspěšném nasazení atomicky publikuje ověřený `current/VERSION`, nikoli starý stav vypnutého legacy timeru. |
+| Brána 11 — dependency/release security | **NEOVĚŘENO** | `npm audit --omit=dev` nehlásí vysoké zranitelnosti; `cargo-audit` není v LXC nainstalován. Licence, SECURITY kontakt, SBOM a supply-chain schválení patří před G-13. |
+| Brána 12 — další etapy | **BLOKOVÁNO** | Nejde o součást tohoto auditu; etapy zůstávají v původním etapovém stavu a není proveden produkční deploy. |
 
-## Ověření retenčního SQL
+## Testy a měření
 
-Na 24. 10. 2026 proběhl izolovaný test z aktuálního pracovního stromu (`main` SHA `fecc55b`) v dočasném PostgreSQL 17.11 clusteru na loopbacku. Nebyla použita lokální běžící databáze ani sdílené DB LXC.
+- Rust: `cargo fmt --check`, `cargo test --locked --workspace` — 67/67 PASS; Clippy s `-D warnings` PASS.
+- Web: lint, TypeScript, Vitest 30 testů, import testy 3/3 a Vite build PASS. Lokální LXC má Node 20/npm 9, proto je výsledkem hostitelského běhu pouze podpůrný důkaz; závazný Node 26/npm 11 důkaz je CI.
+- SSE izolace: 1/10/100 klientů, 5 000 cílů, limit 100 spojení, 101. klient HTTP 503, žádné tiché ořezání. p95/p99 harnessu 1,76–1,97 s zahrnuje periodický syntetický ingest tick a není čistou síťovou latencí.
+- Systém: při běžícím enginu RSS 4,7 MiB, 5 tasků, `MemoryMax=2G`, `LimitNOFILE=4096`, `Restart=on-failure`, účet `airradarv2`; disk 5,3/20 GiB.
+- PostgreSQL: pouze read-only dotazy na oddělený host; žádná změna `pg_hba.conf`, firewallu, V1, PP Studio ani jiné databáze.
 
-- migrace G-04 vytvořila `airradar_v2.flight_samples`;
-- vloženo 2 501 starých řádků a 1 nový řádek;
-- tři běhy `database/maintenance/g04_retention_once.sql` provedly `2501 → 1501 → 501 → 0`;
-- každý běh byl omezen dávkou nejvýše 1 000 řádků;
-- nový řádek zůstal a tabulka zachovala jediný primární index;
-- dočasný PostgreSQL cluster byl po testu zastaven.
+## Retence G-04
 
-Výsledek: **retenční SQL je v izolaci funkčně ověřené**. Skutečné DB LXC stále není provozně potvrzené: chybí DBA schválení, kapacitní baseline a oprávnění k jednorázovému spuštění proti `airradar_v2_dev`. Timer se proto neinstaluje ani nezapíná.
+Izolované CI testy retenčního skriptu zůstávají PASS. Skutečná DB má 0 expirovaných řádků, takže nebylo co mazat. Timer `airradarv2-g04-retention.timer` není nalezen a canary zůstává pouze `static`/neaktivní. Bez DBA schválení se žádná maintenance role, timer ani `DELETE` nespouští.
 
-### Read-only audit skutečné DEV databáze
+## Závěr
 
-Přes již existující chráněné DEV připojení proběhl pouze read-only audit. Dotaz potvrdil databázi `airradar_v2_dev`, PostgreSQL 17.10, schéma `airradar_v2` a tabulku `flight_samples`. Stav byl 44 990 řádků, 2 350 různých identit, **0 řádků starších než 30 dní**, nejstarší bucket `2026-10-22 12:00:00+00`, nejnovější `2026-10-24 16:00:30+00`, databáze přibližně 13 MB a jediný index.
-
-Runtime role `airradar_v2_dev_app` má právo `SELECT`, ale nemá `DELETE`; pokus o plánování mazací operace skončil očekávaným `permission denied`. To potvrzuje, že běžný Rust runtime nemůže retenci spustit. `airradarv2-g04-canary.service` je `inactive` a retenční timer není nainstalovaný (`not-found`). Skutečné mazání proto nebylo a nemá být provedeno bez schválené maintenance role DBA.
-
-## Ověření kódové části snapshotu
-
-Kontrakt [SSE protokolu](../technical/SSE-PROTOKOL-A-LIMITY.md) stanoví limit 1 MiB serializovaného snapshotu, maximálně 5 000 veřejných cílů a zákaz tichého ořezání. Implementace v `apps/engine/src/api.rs` při překročení:
-
-1. nevydá starý snapshot jako nový živý stav;
-2. nastaví stav API na `degraded`;
-3. vrátí `503 CAPACITY_EXCEEDED`;
-4. ukončí existující stream událostí `unavailable`;
-5. po návratu pod limit vydá nový plný snapshot.
-
-To je bezpečná implementace kontraktu, nikoli důkaz výkonu fyzického klientského hardwaru. Stávající syntetický SSE benchmark pokrývá 1/10/100 klientů a 5 000 kompaktních cílů; plný DTO případ záměrně ověřuje ochrannou větev, protože může překročit 1 MiB.
-
-## Bezpečnostní hranice
-
-V tomto auditu nebyl měněn GitHub Ruleset, žádný DB LXC, žádná PostgreSQL konfigurace, timer, firewall, V1, PP Studio ani produkční deploy. Ověření, které vyžaduje správce nebo fyzické zařízení, zůstává označeno `BLOKOVÁNO`/`NEOVĚŘENO`, nikoli `HOTOVO`.
-
-## Převzetí
-
-Issue #41 je částečně uzavřen: ochrana `main` a kódová část snapshotu jsou doložené. DB retence a fyzický GPU/FPS test stále vyžadují DBA/fyzické zařízení; release security a G-06 až G-13 zůstávají záměrně NO-GO.
+DEV LXC je po nasazení SHA `43e20d8…` provozně stabilní pro aktuální G-03/G-04/G-05 DEV rozsah: živý ingest, DB health, SSE, mapa, rollbackové nasazení a systemd hranice prošly dostupnými testy. Nejde o produkční schválení. Zbývají pouze fyzický GPU/FPS test, DBA schválení skutečné retence a release-security evidence před G-13.

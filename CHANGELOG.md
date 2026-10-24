@@ -1,5 +1,12 @@
 # CHANGELOG — AirRadar V2
 
+## 24. 10. 2026 — Provozní audit issue #41 a stabilizace DEV LXC
+
+- Ověřen DEV release `43e20d8ce460a5bd3f12503db22ae98c4d02db85`, health G-04, živý BEAST ingest, PostgreSQL na odděleném DB LXC, SSE snapshot/delta a mapový fallback.
+- Opravena instalovaná DEV systemd evidence: `ConditionPathExists` a účinné `TimeoutStartSec` pro oneshot testovací služby; bez zásahu do V1, PP Studio nebo PostgreSQL konfigurace.
+- Runner po úspěšném SHA-bound deployi atomicky publikuje skutečný `current/VERSION` do `/dev-deploy-status.json`; doplněn regresní test.
+- Retence G-04 zůstává deaktivovaná do DBA schválení; fyzický GPU/FPS test a release-security evidence zůstávají NEOVĚŘENO/BLOKOVÁNO podle reportu [issue #41](docs/reports/ISSUE-41-PROVOZNI-BRANY-2026-10-24.md).
+
 ## 24. 10. 2026 — Omezení opakovaných PR/main testů bez oslabení release gate
 
 - Po úspěšném `pull_request` CI a odděleném PostgreSQL CI se ukládá krátkodobý artefakt s PR číslem, přesným HEAD SHA, ID a pokusem běhu a Git tree skutečně otestovaného merge checkoutu.
