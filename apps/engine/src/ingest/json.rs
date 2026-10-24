@@ -70,10 +70,16 @@ mod tests {
     fn g05_readsb_json_path_preserves_valid_category() {
         let mut data: serde_json::Value = serde_json::from_slice(include_bytes!(
             "../../../../contracts/fixtures/readsb/initial.json"
-        )).unwrap();
+        ))
+        .unwrap();
         data["aircraft"][0]["category"] = serde_json::json!("A7");
         data["aircraft"][1]["category"] = serde_json::json!("A0");
-        let found = parse_replay(&serde_json::to_vec(&data).unwrap(), "rx-primary", 1792627200.0).unwrap();
+        let found = parse_replay(
+            &serde_json::to_vec(&data).unwrap(),
+            "rx-primary",
+            1792627200.0,
+        )
+        .unwrap();
         assert_eq!(found[0].emitter_category.as_deref(), Some("A7"));
         assert_eq!(found[1].emitter_category, None);
     }
