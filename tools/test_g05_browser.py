@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""G-05.01/.02/.05/.06 browser smoke bez reálného RF/DB/tile serveru."""
+"""G-05.01–.09 browser smoke bez reálného RF/DB/tile serveru."""
 import json
 import subprocess
 import time
@@ -171,8 +171,40 @@ def main():
             expect(mobile.get_by_role("button", name="Letadla", exact=True)).to_be_focused()
             expect(mobile.locator(".maplibregl-canvas")).to_be_visible()
             mobile.close()
+            # G-05.03/.11: Chromium smoke s 2 000 kategoriovanými cíli a skutečným
+            # MapLibre canvasem. Jde o funkční zátěžový smoke SwiftShader,
+            # NIKOLIV referenční FPS/GPU benchmark desktopu nebo telefonu.
+            page.evaluate("""() => {
+              const now = Date.now() / 1000;
+              const aircraft = Array.from({length: 2000}, (_, i) => ({
+                id: 'icao:' + i.toString(16).padStart(6, '0'),
+                lastMessageAt: now, lastPositionAt: now,
+                position: {lat: 48.5 + (i % 67) * .01,
+                           lon: 14.5 + (i % 97) * .01},
+                positionOrigin: 'adsb', stale: false,
+                callsign: 'C' + i.toString().padStart(5, '0'),
+                squawk: null,
+                emitterCategory: i % 2 ? 'A7' : 'B1',
+                telemetry: {trackDegrees: i % 360, altitudeBaroFt: 5000 + i}
+              }));
+              window.__emitRadar('snapshot', {
+                kind: 'snapshot', epoch: 'g05-dense', seq: 0,
+                generatedAt: new Date().toISOString(), aircraft
+              });
+            }""")
+            expect(page.get_by_label("Počet zachycených letadel")).to_contain_text(
+                "000 letadel", timeout=20000)
+            assert canvas.get_attribute("data-g05-mounted") == "once", (
+                "MapLibre remount při hustém SSE snapshotu")
+            # Style reload musí obnovit celý sprite registr a zachovat mapu.
+            page.get_by_label("Mapový podklad").select_option("fiord")
+            expect(canvas).to_be_visible()
+            page.get_by_label("Mapový podklad").select_option("liberty")
+            expect(canvas).to_be_visible()
+            assert canvas.get_attribute("data-g05-mounted") == "once", (
+                "MapLibre remount po 2 000 cílech a změně podkladu")
             browser.close()
-        print("PASS G-05 Chromium: map-first desktop/mobil, panely, focus, stabilní mapa/SSE, výběr, podklady a follow")
+        print("PASS G-05 Chromium: map-first desktop/mobil, panely, focus, MapLibre/SSE, kategorie a 2 000 synthetic targets (SwiftShader smoke, ne FPS)")
     finally:
         process.terminate()
         try:
