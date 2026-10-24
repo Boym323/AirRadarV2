@@ -31,6 +31,24 @@ Dřívější ruční skript s dávkou 1 000 řádků doplňuje [DBA-managed 30d
 
 SQLx runtime a RAM sampler jsou izolovaně implementované. Jednorázová retence: [g04_retention_once.sql](maintenance/g04_retention_once.sql). Bezpečný [postup G-04](../docs/runbooks/G-04-POSTGRES-DEV-PRIJEMKA.md) vyžaduje samostatnou DEV databázi a bezpečnou kapacitu sdíleného LXC; izolovaný export/restore G-04.11 již proběhl. Pravidelné zálohy historie V2 nejsou požadovány ([ADR 0010](../docs/adr/0010-g04-postradatelna-historie-bez-zaloh.md)). Tento repozitář nenastavuje databázové LXC automaticky.
 
+### Aktuálně zapisovaný objekt
+
+Současná migrace vytváří pouze `airradar_v2.flight_samples`; `receiver_daily` ani
+jiná agregační tabulka zatím není implementovaná a Rust ji nezapisuje. Jeden řádek
+obsahuje `bucket_at`, `aircraft_key`, `position_at`, `latitude`, `longitude` a
+volitelně `altitude_ft`, `ground_speed_kt`, `track_deg`, `squawk`, `on_ground`.
+Do PostgreSQL se nezapisuje raw BEAST, celý readsb JSON, callsign, emitter
+category, `time_basis` ani `position_origin`.
+
+Zápis projde pouze pro `rx-primary` s validní polohou a důvěryhodným časem:
+readsb/receiver UTC s ADS-B původem nebo validně rekonstruované BEAST CPR
+(`server_arrival` + `adsb_cpr`). RAM sampler ukládá nejvýše jeden řádek na
+letadlo a 30sekundový UTC bucket; primární klíč a `ON CONFLICT DO NOTHING`
+chrání před replayem/retry. Výpadek SQL může nepotvrzené vzorky zahodit podle
+bounded writer politiky. Pokud samotný CPR rámec neobsahuje kurz/rychlost,
+sampler doplní poslední známou telemetrii z RAM pouze do stáří 30 sekund;
+starší nebo nedostupné hodnoty zůstanou `NULL`.
+
 **Připojení G-04 v LAN:** podle [ADR 0009](../docs/adr/0009-g04-postgresql-lan-bez-tls.md) používá SQLx `sslmode=disable` a přihlášení jménem a heslem z chráněné konfigurace. Použijí se výhradně existující pravidla PostgreSQL a firewallu; nové `hostnossl` se nepřidává. Nešifrovaný přenos je vědomou výjimkou pouze pro důvěryhodnou místní síť.
 
 **Přístup bez změny `pg_hba.conf`:** G-04 použije pouze stávající PostgreSQL pravidla a privátní spojení v LAN. Pravidlo `host` může pokrývat i TCP bez TLS; nové `hostnossl` není vyžadováno ani vytvářeno. Pokud přihlášení neprojde, nesmí jej kód obejít ani měnit pravidla; viz [ADR 0009](../docs/adr/0009-g04-postgresql-lan-bez-tls.md).
