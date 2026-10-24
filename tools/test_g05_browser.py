@@ -221,6 +221,7 @@ def main():
             airport_page.goto(URL)
             airport_canvas = airport_page.locator(".maplibregl-canvas")
             expect(airport_canvas).to_be_visible(timeout=12000)
+            airport_canvas.evaluate("el => { el.dataset.g05Mounted = 'once'; }")
             airport_toggle = airport_page.get_by_label("Letiště", exact=True)
             expect(airport_toggle).to_be_enabled(timeout=12000)
             airport_toggle.uncheck()
