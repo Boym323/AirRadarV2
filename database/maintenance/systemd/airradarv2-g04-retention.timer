@@ -1,0 +1,12 @@
+[Unit]
+Description=AirRadar V2 G-04 — denní retence samostatné DEV DB
+
+[Timer]
+OnCalendar=*-*-* 03:40:00
+RandomizedDelaySec=900
+Persistent=true
+AccuracySec=60
+Unit=airradarv2-g04-retention.service
+
+[Install]
+WantedBy=timers.target
