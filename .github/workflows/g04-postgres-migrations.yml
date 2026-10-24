@@ -1,4 +1,4 @@
-name: AirRadar V2 — G-04 izolovaný PostgreSQL test
+name: AirRadar V2 · G04 PostgreSQL
 on:
   push:
     branches: [main]
@@ -32,7 +32,7 @@ concurrency:
 
 jobs:
   pr_reuse:
-    name: Najít bezpečně znovupoužitelný PR PostgreSQL test
+    name: G04 · Ověřit PR test
     if: github.event_name == 'push'
     runs-on: ubuntu-24.04
     permissions:
@@ -43,7 +43,7 @@ jobs:
       reusable: ${{ steps.check.outputs.reusable }}
     steps:
       - uses: actions/checkout@v7
-      - name: Porovnat reálný merge Git tree s PR důkazem
+      - name: G04 · Shoda Git tree
         id: check
         env:
           GH_TOKEN: ${{ github.token }}
@@ -56,7 +56,7 @@ jobs:
   isolated-postgres:
     needs: pr_reuse
     if: always() && (github.event_name != 'push' || (needs.pr_reuse.result == 'success' && needs.pr_reuse.outputs.reusable != 'true'))
-    name: G-04.04 — migrace a SQL integrita (jen CI)
+    name: G04 · Migrace a SQL
     runs-on: ubuntu-24.04
     services:
       postgres:
@@ -80,28 +80,28 @@ jobs:
       PGSSLMODE: disable
     steps:
       - uses: actions/checkout@v4
-      - name: Instalovat PostgreSQL klienta
+      - name: G04 · PostgreSQL klient
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client
-      - name: Ověřit migraci, integritu a oddělení práv
+      - name: G04 · Migrace a práva
         run: bash tools/test_g04_migrations.sh
       - uses: dtolnay/rust-toolchain@stable
-      - name: SQLx integrační test J09 ve stejném izolovaném PostgreSQL
+      - name: G04 · SQLx integrace
         env:
           AIRRADAR_G04_CI_DATABASE_URL: postgres://postgres:ci-temporary-not-a-real-secret@127.0.0.1:5432/airradar_v2_dev?sslmode=disable
         run: |
           cargo test --locked -p airradarv2-engine g04_postgres_batch_dedup_and_bounded_history
           cargo test --locked -p airradarv2-engine g04_beast_only_cpr_ram_sampler_sqlx_postgres_regression
           cargo test --locked -p airradarv2-engine g04_explicit_lan_connection_has_no_tls_in_ci
-      - name: Skutečný izolovaný pg_dump/pg_restore a jednorázová retence
+      - name: G04 · Záloha a retence
         run: bash tools/test_g04_backup_restore.sh
-      - name: G-04.09 — ohraničená údržba 30 dnů s oddělenou SQL rolí
+      - name: G04 · Retence 30 dní
         run: bash tools/test_g04_retention_bounded.sh
 
 
   pr-reuse-proof:
-    name: Důkaz izolovaného PostgreSQL testu PR
+    name: G04 · Důkaz PR testů
     needs: isolated-postgres
     # 'always' překoná implicitní success() zděděné ze skipped pr_reuse.
     if: always() && github.event_name == 'pull_request' && needs.isolated-postgres.result == 'success'
@@ -110,7 +110,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
-      - name: Zaznamenat otestovaný merge Git tree
+      - name: G04 · Uložit Git tree
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
