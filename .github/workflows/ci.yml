@@ -212,6 +212,7 @@ jobs:
             .artifacts/g05-i1-*.png
             .artifacts/g05-public-*.png
             .artifacts/g05-public-*.json
+          include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14
 
