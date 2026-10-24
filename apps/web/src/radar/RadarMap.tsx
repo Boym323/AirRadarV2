@@ -4,6 +4,7 @@ import type { FeatureCollection, Point, MultiLineString } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Aircraft, ViewState } from "./aircraft-store";
 import { airportsToGeoJSON, type Airport } from "./airport-catalog";
+import { diffAircraftGeoJSON, shouldUseAircraftDiff } from "./aircraft-diff";
 import { iconForAircraft, registerAircraftIcons, validGroundTrack } from "./aircraft-icons";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { setWorkerUrl } from "maplibre-gl";
@@ -241,13 +242,42 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
       (window as Window & { __g05BenchMap?: LibreMap }).__g05BenchMap = instance;
     }
     instance.addControl(new NavigationControl({ showCompass: true }), "top-right");
+    let lastVersion: string | null = null;
+    let previousAircraft: FeatureCollection<Point> | null = null;
+    let previousEpoch: string | null = null;
+    let revision = 0;
     const refresh = () => {
-      addRadarLayers(instance);
       const current = props.current;
-      (instance.getSource(AIRCRAFT_SOURCE) as GeoJSONSource | undefined)
-        ?.setData(toGeoJSON(current.frame.aircraft, current.selectedId));
-      (instance.getSource(TRAIL_SOURCE) as GeoJSONSource | undefined)
-        ?.setData(trailGeoJSON(current.frame, current.selectedId));
+      const key = JSON.stringify([current.frame.epoch, current.frame.seq, current.selectedId]);
+      // G-03 bez delty posílá každou sekundu nový React snapshot se stejným seq.
+      // Nepřekreslovat stejné polohy a štítky opakovaně.
+      if (lastVersion === key) return;
+      addRadarLayers(instance);
+      const source = instance.getSource(AIRCRAFT_SOURCE) as GeoJSONSource | undefined;
+      const trail = instance.getSource(TRAIL_SOURCE) as GeoJSONSource | undefined;
+      if (!source || !trail) return;
+      const next = toGeoJSON(current.frame.aircraft, current.selectedId);
+      const patch = previousAircraft ? diffAircraftGeoJSON(previousAircraft, next) : null;
+      const sameEpoch = previousAircraft !== null && current.frame.epoch === previousEpoch;
+      const generation = ++revision;
+      if (patch?.changes === 0 && sameEpoch) {
+        // Stable data, žádný worker rebuild. Stopa se přesto aktualizuje při změně seq.
+      } else if (patch && previousAircraft && shouldUseAircraftDiff(
+        previousAircraft.features.length, next.features.length, patch.changes, sameEpoch,
+      )) {
+        // Ověřeno #40095503907: u 2 000 cílů s 10 % změn výrazně menší p95.
+        void source.updateData(patch.diff).catch(() => {
+          if (revision === generation && instance.getSource(AIRCRAFT_SOURCE) === source) {
+            void source.setData(next);
+          }
+        });
+      } else {
+        void source.setData(next);
+      }
+      void trail.setData(trailGeoJSON(current.frame, current.selectedId));
+      previousAircraft = next;
+      previousEpoch = current.frame.epoch;
+      lastVersion = key;
     };
     const refreshAirportLayer = () => {
       if (!instance.isStyleLoaded()) return;
@@ -258,7 +288,15 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
         if (instance.getLayer(id)) instance.setLayoutProperty(id,"visibility",current.showAirports?"visible":"none");
       }
     };
-    instance.on("style.load", () => { refresh(); refreshAirportLayer(); });
+    instance.on("style.load", () => {
+      // Změna stylu zahodí registry map sources; nikdy neposlat diff do nové mapy.
+      previousAircraft = null;
+      previousEpoch = null;
+      lastVersion = null;
+      revision++;
+      refresh();
+      refreshAirportLayer();
+    });
     const click = (event: { features?: Array<{ properties: Record<string, unknown> | null }> }) => {
       const id = event.features?.[0]?.properties?.id;
       if (typeof id === "string") props.current.onSelect(id);
@@ -303,6 +341,7 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
       canvasContainer.removeEventListener("touchmove", stopFollow);
       canvasContainer.removeEventListener("keydown", manualKeyboardMove);
       if (benchMode) delete (window as Window & { __g05BenchMap?: LibreMap }).__g05BenchMap;
+      revision++;
       instance.remove();
       map.current = null;
     };
