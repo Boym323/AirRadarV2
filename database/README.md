@@ -23,6 +23,10 @@ Bezpečné připojení a role: [POSTGRES-LXC.md](POSTGRES-LXC.md). Skutečný DB
 **Optimalizace CPU a SSD:** [RAM-first deduplikace a adaptivní historie](../docs/technical/RAM-CACHE-A-DEDUP-ZAPISU.md), [ADR 0007](../docs/adr/0007-ram-first-deduplikace-a-usporny-zapis.md). Obě dokumentace nahrazují starý plán fixního 15s INSERT. `node tools/check-eco-sampling.mjs` ověřuje pouze deterministický matematický model, ne skutečnou PostgreSQL zátěž.
 
 
+## Pravidelná retence G-04.09 — připraveno, nikoli zapnuto
+
+Dřívější ruční skript s dávkou 1 000 řádků doplňuje [DBA-managed 30denní údržba](../docs/runbooks/G-04-RETENCE-30-DNI.md) s explicitním GO, 20×1 000 omezením a separátní rolí. Systemd timer se instaluje **jen na DB LXC správcem**, nikoli na DEV app LXC a ne po merge. [ADR 0017](../docs/adr/0017-g04-dba-retence.md).
+
 ## G-04 implementace (PR #21)
 
 SQLx runtime a RAM sampler jsou izolovaně implementované. Jednorázová retence: [g04_retention_once.sql](maintenance/g04_retention_once.sql). Bezpečný [postup G-04](../docs/runbooks/G-04-POSTGRES-DEV-PRIJEMKA.md) vyžaduje samostatnou DEV databázi a bezpečnou kapacitu sdíleného LXC; izolovaný export/restore G-04.11 již proběhl. Pravidelné zálohy historie V2 nejsou požadovány ([ADR 0010](../docs/adr/0010-g04-postradatelna-historie-bez-zaloh.md)). Tento repozitář nenastavuje databázové LXC automaticky.
