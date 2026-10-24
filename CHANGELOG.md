@@ -1,5 +1,11 @@
 # CHANGELOG — AirRadar V2
 
+## 24. 10. 2026 — Kratší názvy GitHub Actions
+
+- Zkráceny pouze viditelné názvy workflow, jobů a kroků v CI, DEV release, G-04 PostgreSQL a denních statistikách. Jednotné české prefixy `CI`, `G01`–`G05`, `Rust`, `Web`, `DEV` a `Statistiky`.
+- Beze změny zůstaly ID jobů, povinný status check `Česká dokumentace`, názvy artefaktů, testovací příkazy, podmínky i samotné nasazování.
+- Regresní test hlídá maximální délku 35 znaků a zachování identifikátorů důležitých pro CI.
+
 ## 24. 10. 2026 — Provozní audit issue #41 a stabilizace DEV LXC
 
 - Ověřen DEV release `43e20d8ce460a5bd3f12503db22ae98c4d02db85`, health G-04, živý BEAST ingest, PostgreSQL na odděleném DB LXC, SSE snapshot/delta a mapový fallback.

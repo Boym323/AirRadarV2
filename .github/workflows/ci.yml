@@ -1,4 +1,4 @@
-name: AirRadar V2 — testy a česká dokumentace (bez nasazení)
+name: AirRadar V2 · CI
 
 on:
   pull_request:
@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-      - name: Statická validace GitHub Actions pracovních postupů
+      - name: CI · Syntaxe workflow
         # P0 release gate: parsování a validace expressions ještě před merge.
         # CI obsahuje původní SC2034 upozornění na smyčkové čítače,
         # a vlastní label self-hosted runneru. Validujeme syntaxe/actions
@@ -29,9 +29,9 @@ jobs:
         # Starší development-metrics.yml používá vlastní timezone klíč
         # neslučitelný s actionlint 1.7.7; jeho plánování zde neměníme.
         run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -shellcheck= -ignore 'label "airradarv2-dev" is unknown' .github/workflows/ci.yml .github/workflows/g02-dev-candidate.yml .github/workflows/g04-postgres-migrations.yml
-      - name: Kontrola dokumentace a 45 aktivních funkcí
+      - name: CI · Dokumentace a funkce
         run: node tools/check-docs.mjs
-      - name: Kontrola syntaxe skriptů DEV LXC
+      - name: CI · DEV skripty
         run: |
           bash -n deploy/bootstrap-dev-lxc.sh deploy/install-dev-bundle.sh deploy/install-g02-auto-lxc.sh deploy/activate-g03-main-autodeploy.sh
           python3 -m unittest discover -s tools -p 'test_verify_g02_public_status.py'
@@ -57,9 +57,9 @@ jobs:
           python3 -m py_compile deploy/verify-g03-runtime.py deploy/verify-airradarv2-runtime.py
           python3 -m unittest discover -s tools -p 'test_verify_g03_runtime.py'
           python3 -m unittest discover -s tools -p 'test_benchmark_g03_sse.py'
-      - name: G-03.08 statická kontrola proxy (bez instalace)
+      - name: G03 · Proxy konfigurace
         run: node tools/check-g03-network.mjs
-      - name: Formální validace OpenAPI a JSON Schema G-01
+      - name: G01 · API schémata
         run: |
           python3 -m venv /tmp/airradar-g01-venv
           /tmp/airradar-g01-venv/bin/pip install --disable-pip-version-check --quiet "openapi-spec-validator==0.7.2" "jsonschema==4.25.1" "PyYAML==6.0.3"
@@ -72,17 +72,17 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-      - name: Formátování Rust
+      - name: Rust · Formátování
         run: cargo fmt --all -- --check
-      - name: Statická kontrola Rust
+      - name: Rust · Clippy
         run: cargo clippy --locked --workspace --all-targets -- -D warnings
-      - name: Testy Rust enginu
+      - name: Rust · Testy
         run: cargo test --locked --workspace
-      - name: G-02 skutečný offline Rust replay a benchmark (bez živého přijímače)
+      - name: G02 · Replay a benchmark
         run: |
           cargo run --locked --quiet -p airradarv2-engine -- --g02-replay
           cargo run --locked --quiet -p airradarv2-engine -- --g02-benchmark
-      - name: Zkušební spuštění API bez přijímače
+      - name: API · Bootstrap smoke
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -105,7 +105,7 @@ jobs:
           curl -fsS http://127.0.0.1:4101/api/v1/aircraft -o /tmp/airradar-v2-aircraft.json
           python3 -c 'import json; data=json.load(open("/tmp/airradar-v2-aircraft.json")); assert data["status"] == "NOT_IMPLEMENTED" and data["aircraft"] == []'
 
-      - name: G-03 opt-in HTTP/SSE smoke bez skutečného přijímače
+      - name: G03 · HTTP/SSE smoke
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -135,14 +135,14 @@ jobs:
             http://127.0.0.1:4102/api/v1/stream -o /tmp/g03-heartbeat.txt || test "$?" -eq 28
           grep -q ': heartbeat' /tmp/g03-heartbeat.txt
 
-      - name: G-03.07/.09/.10 syntetický 1/10/100 SSE load, včetně 5000 letadel
+      - name: G03 · SSE zátěž
         shell: bash
         run: |
           set -Eeuo pipefail
           python3 -m py_compile tools/benchmark_g03_sse.py
           python3 tools/benchmark_g03_sse.py --binary target/debug/airradarv2-engine
 
-      - name: G-03.08 Nginx proxy curl -N s postupným SSE a heartbeat
+      - name: G03 · Nginx SSE
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -180,7 +180,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-      - name: G-03.08 Chromium EventSource Nginx + Vite same-origin
+      - name: G03 · Browser SSE
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -195,14 +195,14 @@ jobs:
           trap 'sudo nginx -s stop 2>/dev/null || true' EXIT
           /tmp/airradar-g03-browser/bin/python tools/test_g03_browser.py --binary target/debug/airradarv2-engine
 
-      - name: G-05 izolovaný Chromium smoke MapLibre + SSE (bez RF/DB)
+      - name: G05 · Map smoke
         shell: bash
         run: |
           set -Eeuo pipefail
           npm run build --prefix apps/web
           /tmp/airradar-g03-browser/bin/python tools/test_g05_browser.py
 
-      - name: G-05.11 — render benchmark 25/100/500/2000 cílů, 1/2 Hz, desktop/mobil
+      - name: G05 · Render benchmark
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -225,17 +225,17 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-      - name: Instalace ze zamčeného npm lockfile
+      - name: Web · npm ci
         run: npm ci --no-audit --no-fund
-      - name: Lint
+      - name: Web · Lint
         run: npm run lint
-      - name: TypeScript
+      - name: Web · TypeScript
         run: npm run typecheck
-      - name: Jednotkové testy
+      - name: Web · Testy
         run: npm test
-      - name: Sestavení statického Vite webu
+      - name: Web · Build
         run: npm run build
-      - name: Zkušební HTTP kontrola českého webu
+      - name: Web · HTTP smoke
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -260,7 +260,7 @@ jobs:
           grep -q 'lang="cs"' /tmp/airradar-v2-home.html
 
   pr-reuse-proof:
-    name: Důkaz úspěšného PR CI pro přesný Git tree
+    name: CI · Důkaz PR testů
     if: github.event_name == 'pull_request'
     needs: [documentation, rust-engine, vite-web]
     runs-on: ubuntu-24.04
@@ -268,7 +268,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
-      - name: Zaznamenat testovaný merge checkout
+      - name: CI · Uložit Git tree
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
