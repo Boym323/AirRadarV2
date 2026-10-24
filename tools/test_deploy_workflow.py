@@ -19,7 +19,7 @@ class DeployWorkflowTests(unittest.TestCase):
         self.assertIn("sha != expected", runner)
 
     def test_has_local_post_deploy_gate(self):
-        self.assertIn("Ověřit právě nasazený release a lokální služby", TEXT)
+        self.assertIn("DEV · Kontrola nasazení", TEXT)
         self.assertIn("/opt/airradar-v2/current", TEXT)
         self.assertIn("airradarv2-engine.service", TEXT)
         self.assertIn("nginx.service", TEXT)
@@ -32,7 +32,7 @@ class DeployWorkflowTests(unittest.TestCase):
 
     def test_stage_release_auto_enabled(self):
         self.assertNotIn("g03_runtime == 'false'", TEXT)
-        self.assertIn("name: G-04 — ověřit stage marker před vydáním", TEXT)
+        self.assertIn("name: G04 · Kontrola stage", TEXT)
         self.assertIn("deploy/runtime-stage", TEXT)
         self.assertIn("package/web/runtime-stage.txt", TEXT)
         self.assertIn("G04_STAGE_GATE_V3", TEXT)
