@@ -50,6 +50,10 @@
           "squawk": {
             "type": "string",
             "pattern": "^[0-7]{4}$"
+          },
+          "category": {
+            "type": "string",
+            "pattern": "^[A-D][0-7]$"
           }
         }
       }
