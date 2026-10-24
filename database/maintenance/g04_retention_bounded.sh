@@ -39,7 +39,6 @@ WITH victim AS (
   WHERE bucket_at < now() - interval '30 days'
   ORDER BY bucket_at
   LIMIT 1000
-  FOR UPDATE SKIP LOCKED
 ), removed AS (
   DELETE FROM airradar_v2.flight_samples
   WHERE ctid IN (SELECT ctid FROM victim)
