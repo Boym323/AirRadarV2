@@ -206,28 +206,51 @@ def main():
             expect(page.get_by_text("Žádná odpovídající letadla.")).to_be_visible()
             page.get_by_role("button", name="Zavřít seznam").click()
             expect(page.get_by_role("complementary", name="Seznam letadel")).to_have_count(0)
-            # G-05.10: ověřená samostatná letištní vrstva bez mutace SSE.
-            page.evaluate("""() => window.__emitRadar('snapshot', {
-              kind:'snapshot',epoch:'g05-airport-ci',seq:0,
-              generatedAt:new Date().toISOString(),aircraft:[]
-            })""")
-            expect(page.get_by_text("0 letadel")).to_be_visible(timeout=12000)
-            airport_toggle = page.get_by_label("Letiště", exact=True)
+            # G-05.10: nový izolovaný kontext = počáteční střed mapy
+            # 17.67/49.23. Nepoužívat kameru z dřívějšího follow testu.
+            airport_page = browser.new_page(viewport={"width": 1440, "height": 900})
+            airport_page.add_init_script(MOCK)
+            airport_page.route("https://tiles.openfreemap.org/**",
+                               lambda route: route.fulfill(
+                                   status=200, content_type="application/json",
+                                   body=json.dumps(STYLE)))
+            airport_page.route("**/data/airports-ourairports.json",
+                               lambda route: route.fulfill(
+                                   status=200, content_type="application/json",
+                                   body=json.dumps(AIRPORTS)))
+            airport_page.goto(URL)
+            airport_canvas = airport_page.locator(".maplibregl-canvas")
+            expect(airport_canvas).to_be_visible(timeout=12000)
+            airport_toggle = airport_page.get_by_label("Letiště", exact=True)
             expect(airport_toggle).to_be_enabled(timeout=12000)
             airport_toggle.uncheck()
             airport_toggle.check()
-            bounds = canvas.bounding_box()
+            # Není jisté, že worker stihl vytvořit GeoJSON symbol ve stejném
+            # ticku jako React dokončil fetch, proto aktivně čekáme na WebGL pixel.
+            bounds = airport_canvas.bounding_box()
             assert bounds is not None
-            page.mouse.click(bounds["x"] + bounds["width"] / 2,
-                             bounds["y"] + bounds["height"] / 2)
-            expect(page.get_by_role("complementary", name="Vybrané letiště")).to_be_visible(
+            mid_x = bounds["x"] + bounds["width"] / 2
+            mid_y = bounds["y"] + bounds["height"] / 2
+            matched = False
+            deadline = time.monotonic() + 12
+            while time.monotonic() < deadline:
+                image = Image.open(BytesIO(airport_canvas.screenshot())).convert("RGB")
+                center = image.getpixel((int(bounds["width"] / 2), int(bounds["height"] / 2)))
+                if center[0] > 155 and center[1] > 85 and center[2] < 120:
+                    matched = True
+                    break
+                time.sleep(.2)
+            assert matched, "G-05.10: bod letiště v centru WebGL nebyl vykreslen"
+            airport_page.mouse.click(mid_x, mid_y)
+            expect(airport_page.get_by_role("complementary", name="Vybrané letiště")).to_be_visible(
                 timeout=12000)
-            expect(page.get_by_role("heading", name="Testovací letiště CZ-TEST1")).to_be_visible()
-            page.get_by_label("Mapový podklad").select_option("fiord")
-            expect(page.get_by_role("heading", name="Testovací letiště CZ-TEST1")).to_be_visible()
-            assert canvas.get_attribute("data-g05-mounted") == "once"
-            page.get_by_role("button", name="Zavřít detail letiště").click()
-            expect(page.get_by_role("complementary", name="Vybrané letiště")).to_have_count(0)
+            expect(airport_page.get_by_role("heading", name="Testovací letiště CZ-TEST1")).to_be_visible()
+            airport_page.get_by_label("Mapový podklad").select_option("liberty")
+            expect(airport_page.get_by_role("heading", name="Testovací letiště CZ-TEST1")).to_be_visible()
+            assert airport_canvas.get_attribute("data-g05-mounted") == "once"
+            airport_page.get_by_role("button", name="Zavřít detail letiště").click()
+            expect(airport_page.get_by_role("complementary", name="Vybrané letiště")).to_have_count(0)
+            airport_page.close()
 
             # Základní mobilní geometrie G-05 (plná a11y/GPU přejímka patří G-10).
             mobile = browser.new_page(viewport={"width": 390, "height": 844},
