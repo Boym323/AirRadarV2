@@ -3,6 +3,7 @@ import { Map as LibreMap, NavigationControl, type GeoJSONSource } from "maplibre
 import type { FeatureCollection, Point, LineString } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Aircraft, ViewState } from "./aircraft-store";
+import { iconForAircraft, registerAircraftIcons, validGroundTrack } from "./aircraft-icons";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { setWorkerUrl } from "maplibre-gl";
 
@@ -16,6 +17,8 @@ const STYLES: Record<MapStyle, string> = {
 const AIRCRAFT_SOURCE = "radar-aircraft";
 const TRAIL_SOURCE = "radar-trail";
 const PLANE_LAYER = "radar-aircraft-symbols";
+const LABEL_LAYER = "radar-aircraft-labels";
+const SELECTION_LAYER = "radar-selected-halo";
 const DOT_LAYER = "radar-aircraft-unknown-heading";
 const TRAIL_LAYER = "radar-selected-trail";
 const emptyAircraft = (): FeatureCollection<Point> => ({ type: "FeatureCollection", features: [] });
@@ -31,8 +34,15 @@ export function toGeoJSON(aircraft: Aircraft[], selectedId: string | null): Feat
       geometry: { type: "Point", coordinates: [a.position!.lon, a.position!.lat] },
       properties: {
         id: a.id,
-        label: a.callsign || "",
-        heading: a.telemetry?.trackDegrees ?? null,
+        label: a.callsign?.trim() || "",
+        detailLabel: a.callsign?.trim()
+          ? (typeof a.telemetry?.altitudeBaroFt === "number" &&
+             Number.isFinite(a.telemetry.altitudeBaroFt) &&
+             a.telemetry.altitudeBaroFt >= -2000 && a.telemetry.altitudeBaroFt <= 65000
+              ? `${a.callsign.trim()}\n${Math.round(a.telemetry.altitudeBaroFt).toLocaleString("cs-CZ")} ft`
+              : a.callsign.trim()) : "",
+        heading: validGroundTrack(a.telemetry?.trackDegrees) ? a.telemetry!.trackDegrees : null,
+        icon: iconForAircraft(a.emitterCategory, a.telemetry?.trackDegrees),
         selected: a.id === selectedId,
       },
     })),
@@ -50,42 +60,9 @@ function trailGeoJSON(frame: ViewState, selectedId: string | null): FeatureColle
     }],
   };
 }
-function addPlaneImage(map: LibreMap) {
-  if (map.hasImage("radar-plane")) return;
-  const canvas = document.createElement("canvas");
-  canvas.width = 64;
-  canvas.height = 64;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-  ctx.lineJoin = "round";
-  ctx.fillStyle = "#f9fcff";
-  ctx.strokeStyle = "#17314d";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(32, 4);
-  ctx.lineTo(39, 25);
-  ctx.lineTo(57, 38);
-  ctx.lineTo(56, 45);
-  ctx.lineTo(37, 39);
-  ctx.lineTo(36, 52);
-  ctx.lineTo(44, 58);
-  ctx.lineTo(43, 62);
-  ctx.lineTo(32, 58);
-  ctx.lineTo(21, 62);
-  ctx.lineTo(20, 58);
-  ctx.lineTo(28, 52);
-  ctx.lineTo(27, 39);
-  ctx.lineTo(8, 45);
-  ctx.lineTo(7, 38);
-  ctx.lineTo(25, 25);
-  ctx.closePath();
-  ctx.stroke();
-  ctx.fill();
-  map.addImage("radar-plane", ctx.getImageData(0, 0, 64, 64), { pixelRatio: 2 });
-}
 function addRadarLayers(map: LibreMap) {
   if (!map.isStyleLoaded()) return;
-  addPlaneImage(map);
+  registerAircraftIcons(map);
   if (!map.getSource(AIRCRAFT_SOURCE))
     map.addSource(AIRCRAFT_SOURCE, { type: "geojson", data: emptyAircraft(), promoteId: "id" });
   if (!map.getSource(TRAIL_SOURCE))
@@ -95,32 +72,59 @@ function addRadarLayers(map: LibreMap) {
       id: TRAIL_LAYER, type: "line", source: TRAIL_SOURCE,
       paint: { "line-color": "#f5bc58", "line-width": 3, "line-opacity": .9 },
     });
+  if (!map.getLayer(SELECTION_LAYER))
+    map.addLayer({
+      id: SELECTION_LAYER, type: "circle", source: AIRCRAFT_SOURCE,
+      filter: ["==", ["get", "selected"], true],
+      paint: {
+        "circle-radius": 17,
+        "circle-color": "#082438",
+        "circle-opacity": .35,
+        "circle-stroke-width": 2.5,
+        "circle-stroke-color": "#77cef4",
+      },
+    });
   if (!map.getLayer(PLANE_LAYER))
     map.addLayer({
       id: PLANE_LAYER, type: "symbol", source: AIRCRAFT_SOURCE,
       filter: ["==", ["typeof", ["get", "heading"]], "number"],
       layout: {
-        "icon-image": "radar-plane",
-        "icon-size": ["case", ["get", "selected"], 1.3, .95],
+        "icon-image": ["concat", "radar-", ["get", "icon"]],
+        "icon-size": ["case", ["get", "selected"], 1, .75],
         "icon-rotate": ["get", "heading"],
         "icon-rotation-alignment": "map",
         "icon-allow-overlap": true,
-        "text-field": ["get", "label"],
-        "text-offset": [0, 1.6],
-        "text-size": 11,
-        "text-optional": true,
+        "icon-ignore-placement": true,
+        "symbol-sort-key": ["case", ["get", "selected"], 2, 1],
       },
-      paint: { "text-color": "#ffffff", "text-halo-color": "#142133", "text-halo-width": 2 },
     });
   if (!map.getLayer(DOT_LAYER))
     map.addLayer({
       id: DOT_LAYER, type: "circle", source: AIRCRAFT_SOURCE,
       filter: ["!=", ["typeof", ["get", "heading"]], "number"],
       paint: {
-        "circle-radius": ["case", ["get", "selected"], 9, 6],
+        "circle-radius": ["case", ["get", "selected"], 6, 5],
         "circle-color": "#73cbea",
         "circle-stroke-width": 2,
         "circle-stroke-color": "#142133",
+      },
+    });
+  if (!map.getLayer(LABEL_LAYER))
+    map.addLayer({
+      id: LABEL_LAYER, type: "symbol", source: AIRCRAFT_SOURCE,
+      layout: {
+        "text-field": ["step", ["zoom"], "", 8, ["get", "label"], 11, ["get", "detailLabel"]],
+        "text-size": ["case", ["get", "selected"], 13, 11],
+        "text-offset": [0, 1.5],
+        "text-anchor": "top",
+        "text-allow-overlap": false,
+        "text-ignore-placement": false,
+        "symbol-sort-key": ["case", ["get", "selected"], 0, 1],
+      },
+      paint: {
+        "text-color": "#f9fcff",
+        "text-halo-color": "#112536",
+        "text-halo-width": 2,
       },
     });
 }
