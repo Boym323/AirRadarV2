@@ -335,6 +335,32 @@ def main():
             expect(canvas).to_be_visible()
             assert canvas.get_attribute("data-g05-mounted") == "once", (
                 "MapLibre remount po 2 000 cílech a změně podkladu")
+            # Audit A07: po krátké chybě podkladu musí následné style.load
+            # odstranit starý chybový banner a nerozpojit živé SSE.
+            # Benchmark query povolí kontrolovaný přístup k již existující
+            # instanci MapLibre pouze na 127.0.0.1, bez veřejného API.
+            recovery = browser.new_page(viewport={"width": 1370, "height": 850})
+            recovery.add_init_script(MOCK)
+            recovery.route("https://tiles.openfreemap.org/**",
+                           lambda route: route.fulfill(
+                               status=200, content_type="application/json",
+                               body=json.dumps(STYLE)))
+            recovery.route("**/data/airports-ourairports.json",
+                           lambda route: route.fulfill(
+                               status=200, content_type="application/json",
+                               body=json.dumps(AIRPORTS)))
+            recovery.goto(URL + "?g05-benchmark")
+            recovery.wait_for_function(
+                "window.__g05BenchMap && window.__g05BenchMap.isStyleLoaded()",
+                timeout=12000)
+            recovery.evaluate("""() =>
+                window.__g05BenchMap.fire('error', {error: new Error('synthetic tile error')})
+            """)
+            expect(recovery.locator(".map-error")).to_be_visible()
+            recovery.evaluate("() => window.__g05BenchMap.fire('style.load')")
+            expect(recovery.locator(".map-error")).to_have_count(0)
+            expect(recovery.locator(".maplibregl-canvas")).to_be_visible()
+            recovery.close()
             browser.close()
         print("PASS G-05 Chromium: map-first desktop/mobil, panely, focus, MapLibre/SSE, kategorie a 2 000 synthetic targets (SwiftShader smoke, ne FPS)")
     finally:
