@@ -11,6 +11,28 @@ WF = ROOT / ".github" / "workflows"
 
 
 class WorkflowTopology(unittest.TestCase):
+    def test_short_display_names_keep_ci_contracts(self):
+        """Názvy v GitHub UI jsou stručné, technická identita zůstává stejná."""
+        display_names = []
+        for path in sorted(WF.glob("*.yml")):
+            for line in path.read_text(encoding="utf-8").splitlines():
+                if (line.startswith("name: ") or line.startswith("    name: ")
+                        or line.startswith("      - name: ")):
+                    label = line.split("name: ", 1)[1]
+                    self.assertLessEqual(len(label), 35, f"{path.name}: {label!r}")
+                    display_names.append(label)
+        self.assertGreaterEqual(len(display_names), 45)
+        ci = (WF / "ci.yml").read_text(encoding="utf-8")
+        g04 = (WF / "g04-postgres-migrations.yml").read_text(encoding="utf-8")
+        dev = (WF / "g02-dev-candidate.yml").read_text(encoding="utf-8")
+        self.assertIn("    name: Česká dokumentace", ci)
+        self.assertIn("  rust-engine:", ci)
+        self.assertIn("  vite-web:", ci)
+        self.assertIn("name: validated-ci-${{ github.run_id }}-${{ github.run_attempt }}", ci)
+        self.assertIn("validated-g04-postgres-migrations-${{ github.run_id }}-${{ github.run_attempt }}", g04)
+        self.assertIn("name: g05-chromium-benchmark-${{ github.sha }}", ci)
+        self.assertIn("name: g02-dev-${{ github.sha }}", dev)
+
     def test_four_workflows_and_no_historical_duplicates(self):
         actual = {f.name for f in WF.glob("*.yml")}
         self.assertEqual(actual, {
@@ -66,13 +88,13 @@ class WorkflowTopology(unittest.TestCase):
         self.assertNotIn("  verify-dev-lxc:", release)
         self.assertIn("runs-on: [self-hosted, linux, x64, airradarv2-dev]", release)
         self.assertIn("sudo -n /usr/local/libexec/airradarv2-runner-deploy.sh", release)
-        self.assertIn("Ověřit právě nasazený release a lokální služby", release)
+        self.assertIn("DEV · Kontrola nasazení", release)
         self.assertIn("github.ref == 'refs/heads/main'", release)
 
     def test_g03_main_commit_publishes_and_runs_runner(self):
         release = (WF / "g02-dev-candidate.yml").read_text(encoding="utf-8")
         self.assertNotIn("g03_runtime == 'false'", release)
-        self.assertIn("name: G-04 — ověřit stage marker před vydáním", release)
+        self.assertIn("name: G04 · Kontrola stage", release)
         self.assertIn("package/web/runtime-stage.txt", release)
         self.assertIn("deploy/runtime-stage", release)
         self.assertIn("  publish-dev-candidate:", release)
