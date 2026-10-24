@@ -9,6 +9,13 @@
 
 
 
+### G-05.04/.07 — čitelné popisky a přerušená stopa (24. 10. 2026, CI před přejímkou)
+- R04: štítky jen z validovaného krátkého callsignu; chybějící/nereálnou výšku neuvádíme, selected má prioritu proti ostatním nekolidujícím textům.
+- R08: GeoJSON MultiLineString bez falešných spojnic přes výpadek >120 s nebo antimeridián; browserově udržovaná stopa max. 64 bodů / 20 min zůstala.
+- Vitest pro segmentaci, podvržený text, retenci a odstranění; Chromium WebGL barevný obrazový test vykreslení stopy s omezeným testovacím Pillow balíčkem. Stav `IN_PROGRESS` do dokončení CI.
+
+
+
 ### G-05.03 — veřejné validované ADS-B emitter category, PR #30 (24. 10. 2026)
 - [CI #40084080300](https://github.com/Boym323/AirRadarV2/actions/runs/40084080300) 3/3 PASS, [izolovaný G-04 SQL #40084080298](https://github.com/Boym323/AirRadarV2/actions/runs/40084080298) PASS; squash merge `9c398c2f`.
 - Přes readsb JSON a CRC-validní identifikační BEAST DF17 přidána validovaná `emitterCategory` do jediné Rust RAM a volitelného veřejného G-03 SSE DTO. Staré snapshoty zůstávají kompatibilní; rezervované a nepovolené kódy se vynechají.
