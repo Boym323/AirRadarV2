@@ -24,7 +24,7 @@ const CATEGORY_ICON: Record<string, AircraftIcon> = {
   A3: "large-fixedwing", A4: "large-fixedwing", A5: "large-fixedwing",
   A6: "high-performance", A7: "rotorcraft",
   B1: "glider", B2: "lighter-than-air", B4: "ultralight",
-  B6: "uav", C 1: "ground-unit", C 2: "ground-unit",
+  B6: "uav", C1: "ground-unit", C2: "ground-unit",
 };
 
 /** Záměrně bez odhadu; neznámý směr = MapLibre kruh, ne otočené letadlo. */
