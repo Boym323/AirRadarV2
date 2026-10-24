@@ -5,7 +5,7 @@
 - Proveden [konkrétní vizuální audit veřejného screenshotu](docs/audits/G-05-VIZUALNI-PREJIMKA-2026-10-24.md), kritické priority P0/P1 a měřitelné podmínky pro opakované iterace G-05.
 - G-05.01/R01 a G-05.05/R06: mapa nyní zabírá celý viewport, značka a ovládací prvky se vznášejí nad mapou, hledání letadel/ICAO používá stávající jediný seznam a store; klávesa `/` otevře hledání.
 - G-05.09/R14: čitelnější OpenFreeMap Fiord jako výchozí atlas; předchozí tmavý a světlý styl zůstávají výslovnou volbou ve Vrstvách. Technická patička z výchozího pohledu odstraněna, MapLibre atribuce musí zůstat.
-- G-05.11: Chromium pořizuje desktop/mobile layout snímky a read-only porovnává nasazenou veřejnou V2; samostatný post-release workflow kontroluje skutečný veřejný web po úspěšném V2 DEV releasu. Pokud je veřejný web nedostupný ze sítě runneru, report stav pravdivě označí jako NEOVĚŘENO. **Ani tyto screenshoty nenahrazují fyzické GPU/FPS**.
+- G-05.11: Chromium pořizuje desktop/mobile layout snímky a read-only porovnává nasazenou veřejnou V2; samostatný post-release job stávajícího DEV workflow kontroluje skutečný veřejný web po úspěšném V2 DEV releasu. Pokud je veřejný web nedostupný ze sítě runneru, report stav pravdivě označí jako NEOVĚŘENO. **Ani tyto screenshoty nenahrazují fyzické GPU/FPS**.
 - G-05 stále formálně 10/11, beze změn V1, Rust, DB, schválených KEEP ID.
 
 
