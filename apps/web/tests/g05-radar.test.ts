@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AircraftStore, type Aircraft } from "../src/radar/aircraft-store";
-import { toGeoJSON } from "../src/radar/RadarMap";
+import { toGeoJSON, mapCallsign, mapLabel, trailGeoJSON } from "../src/radar/RadarMap";
 import { AIRCRAFT_PATHS, iconForAircraft, validGroundTrack } from "../src/radar/aircraft-icons";
 
 const aircraft = (id = "icao:abc123", at = 1000): Aircraft => ({
@@ -146,5 +146,71 @@ describe("G-05.03 / R03 — vlastní směrové symboly", () => {
     expect(output.features[2].properties?.icon).toBeNull();
     expect(output.features[3].properties?.icon).toBe("large-fixedwing");
     expect(output.features[3].properties?.detailLabel).toBe("");
+  });
+});
+
+describe("G-05.04 / R04 — popisky a priorita vybraného cíle", () => {
+  it("odstraňuje podvržené řídicí znaky a nikdy nevymýšlí neznámé údaje", () => {
+    expect(mapCallsign(" OK-123 ")).toBe("OK-123");
+    for (const value of ["A\\nB", "<script>", "P R A H A", "abcdefgh9", "☃"]) {
+      expect(mapCallsign(value)).toBe("");
+    }
+    expect(mapLabel({...aircraft(), callsign:null, telemetry:undefined})).toEqual({
+      label:"", detailLabel:"",
+    });
+    expect(mapLabel({...aircraft(), telemetry:{trackDegrees:90}})).toEqual({
+      label:"OKTEST", detailLabel:"OKTEST",
+    });
+    expect(mapLabel({...aircraft(), telemetry:{altitudeBaroFt: Infinity}}).detailLabel).toBe("OKTEST");
+    expect(mapLabel({...aircraft(), telemetry:{altitudeBaroFt: 100000}}).detailLabel).toBe("OKTEST");
+  });
+  it("GeoJSON zaručuje krátký text, omezenou výšku a selected prioritu", () => {
+    const items=[aircraft(), {...aircraft("icao:bbbbbb"), callsign:"FAKE\\nAB"}];
+    const fc=toGeoJSON(items,"icao:abc123");
+    expect(fc.features[0].properties?.selected).toBe(true);
+    expect(fc.features[0].properties?.detailLabel?.includes("ft")).toBe(true);
+    expect(fc.features[1].properties?.label).toBe("");
+    expect(fc.features[1].properties?.detailLabel).toBe("");
+  });
+});
+
+describe("G-05.07 / R08 — věrná skutečná stopa bez interpolace výpadků", () => {
+  const trail=(coords: [number,number,number][]) => ({
+    aircraft: [aircraft()], epoch: "e", seq: 3,
+    trails: new Map([["icao:abc123",coords.map(([lon,lat,at])=>({lon,lat,at}))]]),
+  });
+  it("prázdná/samotná stopa se nevykreslí", () => {
+    expect(trailGeoJSON(trail([]),"icao:abc123").features).toHaveLength(0);
+    expect(trailGeoJSON(trail([[17,49,1000]]),"icao:abc123").features).toHaveLength(0);
+    expect(trailGeoJSON(trail([[17,49,1000],[18,49,1010]]),null).features).toHaveLength(0);
+  });
+  it("objeví se spojnice jen ze skutečných následných bodů a přeruší se při výpadku", () => {
+    const frame=trail([
+      [17,49,1000],[17.1,49.1,1010],[17.2,49.2,1400],
+      [17.3,49.3,1410],[17.4,49.4,1420]
+    ]);
+    const geom=trailGeoJSON(frame,"icao:abc123").features[0].geometry;
+    expect(geom.type).toBe("MultiLineString");
+    expect(geom.coordinates).toEqual([
+      [[17,49],[17.1,49.1]],
+      [[17.2,49.2],[17.3,49.3],[17.4,49.4]],
+    ]);
+  });
+  it("nespojuje letadla skrz celý svět při přechodu přes ±180°", () => {
+    const geometry=trailGeoJSON(trail([
+      [179.9,15,1000],[-179.9,15.1,1010],[-179.8,15.2,1020]
+    ]),"icao:abc123").features[0].geometry;
+    expect(geometry.coordinates).toEqual([[[-179.9,15.1],[-179.8,15.2]]]);
+  });
+  it("při odstranění cíle SSE odebere i jeho celou stopu", () => {
+    const store=new AircraftStore();
+    expect(store.apply(snapshot([aircraft()]))).toBe("applied");
+    expect(store.apply(delta([{
+      ...aircraft("icao:abc123",1010),position:{lon:17.7,lat:49.2}
+    }],[],1,"epoch-a",1010))).toBe("applied");
+    expect(trailGeoJSON(store.snapshot(),"icao:abc123").features).toHaveLength(1);
+    expect(store.apply(delta([],["icao:abc123"],2))).toBe("applied");
+    expect(store.snapshot().trails.size).toBe(0);
+    expect(trailGeoJSON(store.snapshot(),"icao:abc123").features).toHaveLength(0);
   });
 });
