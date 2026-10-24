@@ -1,4 +1,4 @@
-name: Statistiky vývoje AirRadar V2
+name: AirRadar V2 · Statistiky
 
 on:
   schedule:
@@ -25,11 +25,11 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-      - name: Syntaxe generátoru
+      - name: Statistiky · Syntaxe
         run: node --check tools/update-dev-stats.mjs
-      - name: Přepočet statistik a historie
+      - name: Statistiky · Přepočet
         run: node tools/update-dev-stats.mjs
-      - name: Kontrola opakovaného spuštění a whitespace
+      - name: Statistiky · Idempotence
         shell: bash
         run: |
           set -euo pipefail
@@ -37,7 +37,7 @@ jobs:
           node tools/update-dev-stats.mjs
           cmp /tmp/v2-metrics-history.json docs/metrics/history.json
           git diff --check
-      - name: Uložení metrik do main
+      - name: Statistiky · Uložení
         shell: bash
         run: |
           set -euo pipefail
