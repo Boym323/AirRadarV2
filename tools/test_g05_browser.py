@@ -155,6 +155,8 @@ def main():
             page.get_by_role("button", name="Letadla", exact=True).click()
             page.get_by_role("button", name="OKTEST").click()
             expect(page.get_by_role("heading", name="OKTEST")).to_be_visible()
+            Path(".artifacts").mkdir(exist_ok=True)
+            page.screenshot(path=".artifacts/g05-i2-selected.png", full_page=True)
             # G-05.07: na mapě musí být skutečně žlutá stopa z nových
             # dvou časově odlišných poloh; offline styl nemá jiné žluté prvky.
             # Sekvence 0->1->2 už v testu proběhla. Nový bod není predikce.
@@ -385,6 +387,13 @@ def main():
             recovery.wait_for_function(
                 "window.__g05BenchMap && window.__g05BenchMap.isStyleLoaded()",
                 timeout=12000)
+            assert recovery.evaluate("""() => {
+              const map = window.__g05BenchMap;
+              return ['generic-fixedwing', 'rotorcraft'].every(icon =>
+                map.hasImage('radar-' + icon) &&
+                map.hasImage('radar-selected-' + icon)
+              );
+            }"""), "Vybrané siluety musí být v MapLibre sprite registru po style.load"
             recovery.evaluate("""() =>
                 window.__g05BenchMap.fire('error', {error: new Error('synthetic tile error')})
             """)
@@ -399,12 +408,13 @@ def main():
             # Ani opakovaný výpadek částí stylu nesmí vytvořit banner:
             # vnější chyba není důkazem nedostupné geografické mapy.
             expect(recovery.locator(".map-error")).to_have_count(0)
-            assert recovery.evaluate("""() => {
+            recovery.wait_for_function("""() => {
               const map = window.__g05BenchMap;
-              return !map.getSource('radar-osm-backup') &&
+              return map && map.isStyleLoaded() &&
+                !map.getSource('radar-osm-backup') &&
                 !!map.getSource('radar-aircraft') &&
                 !!map.getLayer('radar-aircraft-symbols');
-            }"""), "Dílčí chyby nesmějí skrýt mapu ani letadla"
+            }""", timeout=12000)
             recovery.close()
 
             # Úplný výpadek externího stylu nesmí skrýt radar ani rozkmitat canvas.

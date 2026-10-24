@@ -161,11 +161,11 @@ function addRadarLayers(map: LibreMap) {
       id: SELECTION_LAYER, type: "circle", source: AIRCRAFT_SOURCE,
       filter: ["==", ["get", "selected"], true],
       paint: {
-        "circle-radius": 17,
-        "circle-color": "#082438",
-        "circle-opacity": .35,
+        "circle-radius": 18,
+        "circle-color": "#07364a",
+        "circle-opacity": .28,
         "circle-stroke-width": 2.5,
-        "circle-stroke-color": "#77cef4",
+        "circle-stroke-color": "#8ae9f8",
       },
     });
   if (!map.getLayer(PLANE_LAYER))
@@ -173,8 +173,11 @@ function addRadarLayers(map: LibreMap) {
       id: PLANE_LAYER, type: "symbol", source: AIRCRAFT_SOURCE,
       filter: ["==", ["typeof", ["get", "heading"]], "number"],
       layout: {
-        "icon-image": ["concat", "radar-", ["get", "icon"]],
-        "icon-size": ["case", ["get", "selected"], 1, .75],
+        "icon-image": ["case", ["get", "selected"],
+          ["concat", "radar-selected-", ["get", "icon"]],
+          ["concat", "radar-", ["get", "icon"]]],
+        "icon-size": ["case", ["get", "selected"], 1,
+          ["interpolate", ["linear"], ["zoom"], 6, .61, 8, .68, 11, .82]],
         "icon-rotate": ["get", "heading"],
         "icon-rotation-alignment": "map",
         "icon-allow-overlap": true,
@@ -187,10 +190,10 @@ function addRadarLayers(map: LibreMap) {
       id: DOT_LAYER, type: "circle", source: AIRCRAFT_SOURCE,
       filter: ["!=", ["typeof", ["get", "heading"]], "number"],
       paint: {
-        "circle-radius": ["case", ["get", "selected"], 6, 5],
-        "circle-color": "#73cbea",
+        "circle-radius": ["case", ["get", "selected"], 6.5, 4.5],
+        "circle-color": ["case", ["get", "selected"], "#80e9f8", "#7dc9df"],
         "circle-stroke-width": 2,
-        "circle-stroke-color": "#142133",
+        "circle-stroke-color": "#143448",
       },
     });
   if (!map.getLayer(LABEL_LAYER))
@@ -199,7 +202,7 @@ function addRadarLayers(map: LibreMap) {
       layout: {
         "text-field": ["case", ["get", "selected"], ["get", "detailLabel"],
           ["step", ["zoom"], "", 8, ["get", "label"], 11, ["get", "detailLabel"]]],
-        "text-size": ["case", ["get", "selected"], 13, 11],
+        "text-size": ["case", ["get", "selected"], 13, 11.5],
         "text-offset": [0, 1.4],
         "text-anchor": "top",
         "text-max-width": 12,
@@ -209,9 +212,9 @@ function addRadarLayers(map: LibreMap) {
         "symbol-sort-key": ["case", ["get", "selected"], 0, 1],
       },
       paint: {
-        "text-color": "#f9fcff",
-        "text-halo-color": "#112536",
-        "text-halo-width": 2,
+        "text-color": ["case", ["get", "selected"], "#c8faff", "#e6f2fa"],
+        "text-halo-color": "#16384c",
+        "text-halo-width": 2.3,
       },
     });
 }
@@ -354,6 +357,11 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
     };
     instance.on("click", PLANE_LAYER, click);
     instance.on("click", DOT_LAYER, click);
+    // Nápověda interakce při hoveru nepřidává DOM marker na každý cíl.
+    for (const layer of [PLANE_LAYER, DOT_LAYER, AIRPORT_POINTS]) {
+      instance.on("mouseenter", layer, () => { instance.getCanvas().style.cursor = "pointer"; });
+      instance.on("mouseleave", layer, () => { instance.getCanvas().style.cursor = ""; });
+    }
     instance.on("click", AIRPORT_POINTS, event => {
       if (instance.queryRenderedFeatures(event.point,{layers:[PLANE_LAYER,DOT_LAYER]}).length) return;
       const id=event.features?.[0]?.properties?.id;

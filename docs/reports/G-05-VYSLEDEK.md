@@ -1,11 +1,19 @@
 # G-05 — průběžný výsledek implementace živé mapy
 
-## 24. 10. 2026 — Aviation Atlas I1 (kandidát, testy zatím NEOVĚŘENO)
+## 24. 10. 2026 — Aviation Atlas I2 (PR ve validaci)
+
+- G-05.03/R03: dvě opticky odlišné vlastní sprite varianty pro 10 již podporovaných Path2D kategorií (běžná jemná modrobílá, vybraná azurová) bez změny validovaného `emitterCategory` ani data DTO.
+- G-05.04/R04: kontrastní text/halo u existujících validovaných `callsign` a výšek, dynamická velikost běžné ikony podle zoomu a halo při výběru; bez falešné identity.
+- E2E kontroluje existenci obou sprite variant po style.load, průchod SSE, selected screenshot, mobilní layout a veřejné V2 před merge. Upravený public post-release browser job má ověřit nasazený layout; pokud screenshot vypadá jako jednobarevná plocha, nese výslovnou poznámku NEOVĚŘENO.
+- CI/DEV této iterace dosud NEOVĚŘENO, fyzické GPU/FPS a G-05.11 nadále otevřené. Žádný zásah do V1/G-04.
+
+
+## 24. 10. 2026 — Aviation Atlas I1 (PR #53, CI a DEV PASS)
 
 - **Audit screenshotu:** téměř černý atlas, nízký kontrast hranic/měst a rovnocenné bílé siluety; staré blokové horní ovládání a technický footer. Zdokumentováno v [vizuálním auditu](../audits/G-05-VIZUALNI-PREJIMKA-2026-10-24.md), který výslovně rozlišuje uživatelský screenshot a testovací fixture.
 - **I1 implementace:** plnohodnotná full-viewport mapa se zřetelně plovoucí značkou a ovladači; přístupné rychlé hledání nad jediným datovým seznamem; přepnutý výchozí OpenFreeMap Fiord (pro geografickou čitelnost) se zachovanou volbou Dark/Liberty; technická patička odstraněna. Uložení a zachování příjmu SSE, stopy/follow/letišť beze změny.
 - **Ověřitelnost:** test přístupnosti vyhledávání, mapového viewportu, single-canvas, mobilního layoutu a stávajících letových funkcí, generování `.artifacts/g05-i1-desktop.png` / mobil, automatický read-only pokus o screenshot existující veřejné V2 před merge. Po DEV releasu nový job `g05-public-visual` uvnitř `g02-dev-candidate.yml` ověří veřejný web skutečným browserem a uloží dva screenshoty + metriky.
-- **Meze:** API public V2 může být ze sítě runneru nedostupné; report to musí uvést. Screenshot ze SwiftShaderu není skutečný fyzický GPU benchmark, 10/11 se nemění. G-13 produkční nasazení není tímto schváleno.
+- **Důkazy po implementaci:** [PR #53](https://github.com/Boym323/AirRadarV2/pull/53), [CI #40130532118](https://github.com/Boym323/AirRadarV2/actions/runs/40130532118) PASS včetně Chromium 2 000 identit a desktop/mobile screenshot fixture; merge `e249baa5`, [DEV #40130900374](https://github.com/Boym323/AirRadarV2/actions/runs/40130900374) SUCCESS. Public před merge HTTP 200, mapa 760/850 px, hlavička 66 px, footer přítomen. Snímek public CI runneru měl 0 letadel/Connecting a jednobarevné plátno: nezaměňovat HTTP za důkaz živé mapy. V prvním releasu doplňkový public job SKIPPED; podmínka opravena v I2. **Meze:** API public V2 může být ze sítě runneru omezené; report to musí uvést. Screenshot ze SwiftShaderu není skutečný fyzický GPU benchmark, 10/11 se nemění. G-13 produkční nasazení není tímto schváleno.
 
 
 ## 24. 10. 2026 — Uživatelská reklamace UI po prvním DEV nasazení
