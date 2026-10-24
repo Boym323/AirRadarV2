@@ -7,6 +7,7 @@ Bez fixture/live API mutací. Nejde o fyzické GPU měření.
 import json
 import os
 from pathlib import Path
+from PIL import Image
 from playwright.sync_api import sync_playwright
 
 URL = os.getenv("G05_PUBLIC_URL", "https://airradarv2.pomykal.cz")
@@ -26,7 +27,7 @@ def inspect(browser, name, width, height, mobile=False):
         page.get_by_role("heading", name="AirRadar", exact=True).wait_for(timeout=10000)
         page.get_by_role("button", name="Vrstvy").wait_for(timeout=10000)
         # Počkáme na první stabilní render, ne na celé dlouhotrvající síťové idle.
-        page.wait_for_timeout(2200)
+        page.wait_for_timeout(8500)
         state = page.evaluate("""() => {
           const map = document.querySelector(".maplibregl-canvas").getBoundingClientRect();
           const header = document.querySelector(".radar-header").getBoundingClientRect();
@@ -51,8 +52,23 @@ def inspect(browser, name, width, height, mobile=False):
             raise AssertionError(f"{name}: chybí MapLibre atribuce")
         if state["map"]["height"] < height - 3:
             raise AssertionError(f"{name}: mapa není fullscreen: {state['map']['height']} / {height}")
-        page.screenshot(path=str(OUTPUT / f"{name}.png"), full_page=True)
-        return {"name": name, "status": "PASS", **state}
+        image_path = OUTPUT / f"{name}.png"
+        page.screenshot(path=str(image_path), full_page=True)
+        # Pouze vizuální heuristika, nikoli dokazování přesnosti jednotlivých
+        # mapových dlaždic. Zabraňuje vydat prázdné plátno za vizuální PASS.
+        img = Image.open(image_path).convert("RGB")
+        visible_map = img.crop((
+            int(img.width * .20), int(img.height * .25),
+            int(img.width * .80), int(img.height * .80)
+        )).resize((80, 55))
+        colors = visible_map.getcolors(80 * 55)
+        state["mapColorCount"] = len(colors) if colors else 80 * 55
+        state["geographyVisibleLikely"] = state["mapColorCount"] > 35
+        state["visualEvidence"] = (
+            "MAPA PRAVDĚPODOBNĚ VYKRESLENA" if state["geographyVisibleLikely"]
+            else "NEOVĚŘENO: screenshot může být jen jednobarevné plátno"
+        )
+        return {"name": name, "status": "PASS LAYOUT", **state}
     finally:
         page.close()
 
