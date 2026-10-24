@@ -6,8 +6,6 @@ import { loadAirportCatalog, type Airport } from "./radar/airport-catalog";
 
 type Panel = "none" | "traffic" | "detail" | "airport";
 
-const appVersion = import.meta.env.VITE_APP_VERSION || "dev";
-
 function displayName(a: Aircraft): string {
   return a.callsign?.trim() || a.id;
 }
@@ -30,7 +28,7 @@ export default function App() {
   const [filter, setFilter] = useState<"all" | "position">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [follow, setFollow] = useState(false);
-  const [style, setStyle] = useState<MapStyle>("dark");
+  const [style, setStyle] = useState<MapStyle>("fiord");
   const [layersOpen, setLayersOpen] = useState(false);
   const [airports, setAirports] = useState<Airport[]>([]);
   const [showAirports, setShowAirports] = useState(true);
@@ -101,6 +99,24 @@ export default function App() {
     if (panel === "traffic") closePanel();
     else setPanel("traffic");
   };
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      if (event.key !== "/" || event.altKey || event.ctrlKey || event.metaKey) return;
+      const el = event.target;
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) return;
+      const search = document.querySelector<HTMLInputElement>(".quick-search input");
+      if (search) {
+        event.preventDefault();
+        search.focus();
+      } else {
+        setLayersOpen(false);
+        setPanel("traffic");
+        window.requestAnimationFrame(() => document.getElementById("traffic-query")?.focus());
+      }
+    };
+    document.addEventListener("keydown", handleShortcut);
+    return () => document.removeEventListener("keydown", handleShortcut);
+  }, []);
   const connectionMessage = status === "live" ? "Živý provoz" :
     status === "connecting" ? "Připojování k radaru" :
     status === "unavailable" ? "Provoz je dočasně nedostupný" :
@@ -120,6 +136,16 @@ export default function App() {
           </div>
         </div>
         <nav className="header-actions" aria-label="Hlavní ovládání radaru">
+          <label className="quick-search">
+            <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+            <input type="search" aria-label="Hledat letadlo" placeholder="Hledat letadlo nebo ICAO"
+              autoComplete="off" value={query} onChange={event => {
+                setQuery(event.target.value);
+                setLayersOpen(false);
+                setPanel("traffic");
+              }} onFocus={() => { setLayersOpen(false); setPanel("traffic"); }} />
+            <span className="quick-search-shortcut" aria-hidden="true">/</span>
+          </label>
           <div className="flight-summary">
             <span className="radar-count" aria-label="Počet zachycených letadel">{aircraftCount(frame.aircraft.length)}</span>
             <div className={"connection connection-" + status} role="status" aria-live="polite">
@@ -164,8 +190,8 @@ export default function App() {
             <label className="layer-field" htmlFor="radar-map-style">Mapový podklad</label>
             <select id="radar-map-style" aria-label="Mapový podklad" value={style}
               onChange={event => setStyle(event.target.value as MapStyle)}>
-              <option value="dark">Tmavý kontrastní</option>
-              <option value="fiord">Tmavý atlas</option>
+              <option value="fiord">Atlas · výchozí</option>
+              <option value="dark">Noční · vysoký kontrast</option>
               <option value="liberty">Světlý</option>
             </select>
             <label className="layer-row">
@@ -258,12 +284,6 @@ export default function App() {
           </aside>
         )}
       </section>
-      <footer className="radar-footer">
-        <span>AirRadar V2 · Lokální ADS-B · Letiště: OurAirports (public domain)</span>
-        <span className="radar-version" title={appVersion === "dev" ? "Lokální vývojový build" : `Commit ${appVersion}`}>
-          Nasazeno {appVersion === "dev" ? appVersion : appVersion.slice(0, 12)}
-        </span>
-      </footer>
     </main>
   );
 }
