@@ -408,12 +408,13 @@ def main():
             # Ani opakovaný výpadek částí stylu nesmí vytvořit banner:
             # vnější chyba není důkazem nedostupné geografické mapy.
             expect(recovery.locator(".map-error")).to_have_count(0)
-            assert recovery.evaluate("""() => {
+            recovery.wait_for_function("""() => {
               const map = window.__g05BenchMap;
-              return !map.getSource('radar-osm-backup') &&
+              return map && map.isStyleLoaded() &&
+                !map.getSource('radar-osm-backup') &&
                 !!map.getSource('radar-aircraft') &&
                 !!map.getLayer('radar-aircraft-symbols');
-            }"""), "Dílčí chyby nesmějí skrýt mapu ani letadla"
+            }""", timeout=12000)
             recovery.close()
 
             # Úplný výpadek externího stylu nesmí skrýt radar ani rozkmitat canvas.
