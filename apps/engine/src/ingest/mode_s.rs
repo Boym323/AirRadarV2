@@ -314,7 +314,8 @@ mod tests {
     fn g05_df17_emitter_category_requires_valid_crc_and_type_code() {
         let cases: serde_json::Value = serde_json::from_str(include_str!(
             "../../../../contracts/fixtures/beast/cases.json"
-        )).unwrap();
+        ))
+        .unwrap();
         let original = hex_decode(cases["valid"][0]["modeS"].as_str().unwrap()).unwrap();
         for (tc, subtype, expected) in [
             (4u8, 7u8, Some("A7")),
