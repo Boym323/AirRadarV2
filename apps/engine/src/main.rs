@@ -77,7 +77,6 @@ fn app() -> Router {
         .route("/api/v1/stream", get(stream_stub))
 }
 
-
 async fn monitor_database(pool: sqlx::PgPool, feed: api::Feed) {
     // G-04/J09: oddělená read-only kontrola, bez dotazů na každý event.
     let mut tick = tokio::time::interval(Duration::from_secs(15));
@@ -128,14 +127,18 @@ async fn run_supervised_live(
             config,
             Some(publisher),
             history_pool,
-            async move { let _ = ingest_stop_rx.await; },
+            async move {
+                let _ = ingest_stop_rx.await;
+            },
         )
         .await
         .map_err(|error| error.to_string())
     });
     let mut http_task = tokio::spawn(async move {
         axum::serve(listener, router)
-            .with_graceful_shutdown(async move { let _ = http_stop_rx.await; })
+            .with_graceful_shutdown(async move {
+                let _ = http_stop_rx.await;
+            })
             .await
             .map_err(|error| error.to_string())
     });
