@@ -2,7 +2,7 @@
 
 Nová generace leteckého radaru, budovaná **od nuly**. Tento repozitář je zcela oddělený od [AirRadar V1](https://github.com/Boym323/AirRadar). Původní aplikace, produkční LXC a databáze se nemění.
 
-**Aktuální stav 23. 10. 2026:** G-00, G-01 (10/10), G-02 (11/11), **G-03 (10/10)** a **G-04/J09 (DEV ACCEPTED)** jsou dokončené ve vývojovém rozsahu. `main → CI → immutable release → runner → LXC` je stage-aware: release z `main` nasadí aktuální runtime marker, G-03 HTTP/SSE, read-only BEAST a po přijetí G-04 také trvalý DEV SQLx writer. Produkční V1 nedotčena.
+**Aktuální stav 24. 10. 2026:** G-00, G-01 (10/10), G-02 (11/11), **G-03 (10/10)** a **G-04/J09 (DEV ACCEPTED)** jsou dokončené ve vývojovém rozsahu. `main → CI → immutable release → runner → LXC` je stage-aware: release z `main` nasadí aktuální runtime marker, G-03 HTTP/SSE, read-only BEAST a po přijetí G-04 také trvalý DEV SQLx writer. Produkční V1 nedotčena.
 
 <!-- AIRRADAR_STATS_START -->
 ## Statistiky vývoje (automaticky aktualizované)
@@ -30,7 +30,7 @@ Měřený commit: [fecc55b2](https://github.com/Boym323/AirRadarV2/commit/fecc55
 > Jde o vývojové statistiky repozitáře, nikoli o výkon živého radaru. Funkce se počítají jen ze strojové matice s důkazem testu. Úspěšná CI sama o sobě nedokazuje dokončení funkcí.
 <!-- AIRRADAR_STATS_END -->
 
-> **Poznámka k metrikám:** automatický blok zachycuje **commit uvedený v položce „Měřený commit“**. Dokud se liší od aktuálního `main`, jeho čísla jsou historický snapshot, nikoli aktuální provozní stav. K uzavření G-03 dne 23. 10. platí **4/14 etap HOTOVO** a **9/45 funkcí TESTED**, viz [stav etap](docs/plan/ETAPY-A-STAV.md) a [aktivní matice](docs/plan/MATICE-FUNKCI.md). Denní workflow blok průběžně přepočítává; tuto poznámku ponech i po přepočtu.
+> **Poznámka k metrikám:** automatický blok zachycuje **commit uvedený v položce „Měřený commit“**. Dokud se liší od aktuálního `main`, jeho čísla jsou historický snapshot, nikoli aktuální provozní stav. K uzavření G-04 dne 24. 10. platí **5/14 etap HOTOVO** a **18/45 funkcí TESTED/ACCEPTED**, viz [stav etap](docs/plan/ETAPY-A-STAV.md) a [aktivní matice](docs/plan/MATICE-FUNKCI.md). Denní workflow blok průběžně přepočítává; tuto poznámku ponech i po přepočtu.
 
 ## Kontinuální DEV nasazování z main
 
@@ -65,10 +65,10 @@ vypnutý; G-02 zůstává chráněno sdíleným lockem a jeho přejímky jsou od
 ## Aktuální architektura a navržené změny
 
 - **Rust/Tokio/Axum:** readsb JSON a BEAST TCP, vlastní RAM letadel, bezpečné REST API a SSE.
-- **Vite/React:** G-05 MapLibre, seznam, stopa a follow jsou už implementované a nasazené na DEV (PR #22, #40028968380), ale etapa není plně přejata; chybí mapové E2E/výkon a letiště po G-06.
+- **Vite/React:** G-05 MapLibre, seznam, stopa, follow a mapová vrstva letišť jsou implementované a ověřené v DEV (PR #22, #32, #33); etapa zůstává otevřená kvůli G-05.11 a fyzickému GPU/FPS měření.
 - **PostgreSQL/SQLx:** samostatná V2 databáze na existujícím odděleném DB LXC; historie V1 se nepřenáší.
 - **Jedno místní pokrytí:** uživatel pracuje vždy s daty místního přijímače, bez přepínače datových zdrojů.
-- **45 schválených funkcí:** 9 KEEP funkcí má důkaz `TESTED` (6 v G-02 a `J06/J07/J08` v G-03); etapová DEV přejímka G-03 je `ACCEPTED`, nikoliv plošná produktová akceptace všech 45 funkcí.
+- **45 schválených funkcí:** 18 funkcí má v aktivní matici stav `TESTED` nebo `ACCEPTED` (G-02/G-03/G-04 a ověřené mapové funkce G-05); G-05 zůstává rozpracovaná a nejde o plošnou produktovou akceptaci všech 45 funkcí.
 
 **Zvoleno a implementováno:** Vite + React/TypeScript pro webový základ a Rust HTTP/SSE nad RAM. **PostgreSQL/SQLx** je cílová technologie; G-04/J09 má DEV ACCEPTED runtime writer aktivovaný stage-aware releasem, zatímco produkční V2 DB/release zůstávají mimo rozsah. Viz [ADR 0005](docs/adr/0005-vite-a-postgresql-v2.md) a [ADR 0014](docs/adr/0014-g04-trvaly-dev-runtime-a-stage-aware-autodeploy.md).
 
@@ -103,7 +103,7 @@ npm test
 npm run build
 ~~~
 
-Pro vývoj je schváleno **45 aktivních funkcí**; 9 z nich má důkaz `TESTED`. G-03 je skutečně nasazeno jen v **DEV**, nikoli do produkční V1. Závislosti jsou připnuté v `Cargo.lock` a `apps/web/package-lock.json`. [CI běh 39659205202](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202) ověřil na commitu `99df0456` Rust, Vite a HTTP smoke testy; podrobný [report](docs/reports/G-00-BOOTSTRAP.md). Pozdější změny dokumentace a českého úvodu se ověřují samostatným CI.
+Pro vývoj je schváleno **45 aktivních funkcí**; 18 z nich má v matici důkaz `TESTED` nebo `ACCEPTED`. G-03 je skutečně nasazeno jen v **DEV**, nikoli do produkční V1. Závislosti jsou připnuté v `Cargo.lock` a `apps/web/package-lock.json`. [CI běh 39659205202](https://github.com/Boym323/AirRadarV2/actions/runs/39659205202) ověřil na commitu `99df0456` Rust, Vite a HTTP smoke testy; podrobný [report](docs/reports/G-00-BOOTSTRAP.md). Pozdější změny dokumentace a českého úvodu se ověřují samostatným CI.
 
 **Není nakonfigurováno žádné produkční nasazení V2.** Izolované DEV LXC je funkční a automaticky aktualizované; V1 se nemění.
 
