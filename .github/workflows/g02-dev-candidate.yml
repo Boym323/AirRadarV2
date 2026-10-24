@@ -299,3 +299,35 @@ jobs:
           test "$(systemctl is-active airradarv2-engine.service)" = active
           test "$(systemctl is-active nginx.service)" = active
           echo "PASS: DEV release, služby, API a web odpovídají SHA $EXPECTED_SHA" >> "$GITHUB_STEP_SUMMARY"
+
+
+  g05-public-visual:
+    name: G05 · Veřejná vizuální přejímka
+    needs: deploy-dev
+    if: ${{ success() && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: G05 · Příprava Playwright
+        run: |
+          python3 -m venv /tmp/g05-public
+          /tmp/g05-public/bin/pip install --disable-pip-version-check playwright==1.57.0
+          command -v google-chrome >/dev/null || command -v google-chrome-stable >/dev/null
+      - name: G05 · Srovnání veřejné V2
+        continue-on-error: true
+        env:
+          G05_PUBLIC_URL: https://airradarv2.pomykal.cz
+          G05_EXPECTED_SHA: ${{ github.sha }}
+        run: /tmp/g05-public/bin/python tools/verify_g05_public.py
+      - name: G05 · Screenshoty a důkazy
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g05-public-${{ github.sha }}
+          path: .artifacts/g05-public-after-release/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14

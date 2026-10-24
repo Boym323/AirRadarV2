@@ -1,5 +1,13 @@
 # G-05 — průběžný výsledek implementace živé mapy
 
+## 24. 10. 2026 — Aviation Atlas I1 (kandidát, testy zatím NEOVĚŘENO)
+
+- **Audit screenshotu:** téměř černý atlas, nízký kontrast hranic/měst a rovnocenné bílé siluety; staré blokové horní ovládání a technický footer. Zdokumentováno v [vizuálním auditu](../audits/G-05-VIZUALNI-PREJIMKA-2026-10-24.md), který výslovně rozlišuje uživatelský screenshot a testovací fixture.
+- **I1 implementace:** plnohodnotná full-viewport mapa se zřetelně plovoucí značkou a ovladači; přístupné rychlé hledání nad jediným datovým seznamem; přepnutý výchozí OpenFreeMap Fiord (pro geografickou čitelnost) se zachovanou volbou Dark/Liberty; technická patička odstraněna. Uložení a zachování příjmu SSE, stopy/follow/letišť beze změny.
+- **Ověřitelnost:** test přístupnosti vyhledávání, mapového viewportu, single-canvas, mobilního layoutu a stávajících letových funkcí, generování `.artifacts/g05-i1-desktop.png` / mobil, automatický read-only pokus o screenshot existující veřejné V2 před merge. Po DEV releasu nový job `g05-public-visual` uvnitř `g02-dev-candidate.yml` ověří veřejný web skutečným browserem a uloží dva screenshoty + metriky.
+- **Meze:** API public V2 může být ze sítě runneru nedostupné; report to musí uvést. Screenshot ze SwiftShaderu není skutečný fyzický GPU benchmark, 10/11 se nemění. G-13 produkční nasazení není tímto schváleno.
+
+
 ## 24. 10. 2026 — Uživatelská reklamace UI po prvním DEV nasazení
 
 - **Důkaz:** nový screenshot zachycuje existující mapu OpenFreeMap, 56 letadel a stále viditelný banner „Některé dlaždice mapového podkladu nejsou dostupné“, navíc viditelné zbytečné technické překryvy a zalomení AirRadar V2.
