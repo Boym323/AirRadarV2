@@ -1,8 +1,8 @@
 # G-05 — MapLibre mapa v již připraveném Vite webu
 
-**Navazující G-05 map-first UI (24. 10.):** implementováno nové kompaktní rozložení mapy, skrývatelný seznam a kontextový detail v izolované větvi; nová Chromium regresní CI #40079234896 PASS, PR #26 sloučen do main na `c17601d5`. Tento krok realizuje již existující R01/R06/R08/R09/R14 a schválenou `WEB-UX-UI-SPECIFIKACE.md`, nikoli nové produktové ID. Formálně 7/11 po doložených testech G-05.03/.08/.09; G-05.04/.07/.10/.11 zůstávají otevřené.
+**Navazující G-05 map-first UI (24. 10.):** implementováno nové kompaktní rozložení mapy, skrývatelný seznam a kontextový detail v izolované větvi; nová Chromium regresní CI #40079234896 PASS, PR #26 sloučen do main na `c17601d5`. Tento krok realizuje již existující R01/R06/R08/R09/R14 a schválenou `WEB-UX-UI-SPECIFIKACE.md`, nikoli nové produktové ID. Formálně **10/11** po CI #40087996178 a #40094724356 a DEV #40095020297. G-05.11 zůstává otevřená pro prokazatelné FPS/p95/heap a fyzický GPU test.
 
-**Stav:** ROZPRACOVÁNO; [PR #22](https://github.com/Boym323/AirRadarV2/pull/22) sloučen 23. 10. 2026, DEV nasazení [#40028968380](https://github.com/Boym323/AirRadarV2/actions/runs/40028968380) PASS. 7 z 11 kroků je formálně ověřených, G-05.08 má navazující opravu a čeká na nové CI; úplný benchmark a letiště nejsou hotové.  
+**Stav:** ROZPRACOVÁNO; [PR #22](https://github.com/Boym323/AirRadarV2/pull/22) sloučen 23. 10. 2026, DEV nasazení [#40028968380](https://github.com/Boym323/AirRadarV2/actions/runs/40028968380) PASS. **10 z 11 kroků** je formálně otestováno; mapová vrstva letišť, popisky a stopa mají Chromium a DEV důkazy. Zbývá G-05.11 výkon (SwiftShader baseline a skutečné GPU).  
 **Odpovědnost:** M04 — Vite/React/MapLibre.  
 **Závislosti:** G-03; letištní vrstva se dokončí po G-06, ostatní části lze provést dříve.  
 **Primární KEEP ID:** `R01`, `R03`, `R04`, `R06`, `R08`, `R09`, `R12`, `R14`.  
@@ -36,9 +36,9 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Implementace:** Použij jeden GeoJSON source a layer pro ikony dle skutečně známého typu a směru, stabilní feature IDs; mapování a fallback podle [ikonografického kontraktu](../plan/MAPOVE-IKONY-A-POPISKY.md).  
   **Ověření:** Správné směry, bez fiktivních defaultních vlastností a duplicit.
 
-- [ ] **G-05.04 — Čitelné popisky**  
+- [x] **G-05.04 — Čitelné popisky**  
   **Implementace:** Zobraz stručné popisky jen pro dostupný callsign/výšku, MapLibre collision a minimalizovanou práci React. Použít [priority a kolizní testy](../plan/MAPOVE-IKONY-A-POPISKY.md) na zoom a hustý provoz.  
-  **Ověření:** Test hustého provozu nepřekrývá obrazovku nekontrolovanými DOM markery. PR G-05.04/.07 přidává sanitizaci a kolizní prioritu, ale čeká na CI obrazovou regresi a akceptaci.
+  **Ověření:** Test hustého provozu nepřekrývá obrazovku nekontrolovanými DOM markery. PR #32, [CI #40087996178](https://github.com/Boym323/AirRadarV2/actions/runs/40087996178) PASS: 2 000 cílů, sanitizace, výška, MapLibre text priority; DEV #40088791328 SUCCESS.
 
 - [x] **G-05.05 — Seznam a vyhledávání v provozu**  
   **Implementace:** Vytvoř živý seznam letadel se základními filtry a řazením; používej stejný state jako mapa.  
@@ -48,9 +48,9 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Implementace:** Kliknutí v mapě nebo seznamu aktivuje výběr pro stopu/follow; nevytvářet zbytečný samostatný analytický panel.  
   **Ověření:** Výběr reaguje správně i při zániku tracku a opětovném výskytu.
 
-- [ ] **G-05.07 — Skutečná letová stopa**  
+- [x] **G-05.07 — Skutečná letová stopa**  
   **Implementace:** Kresli krátkou omezenou stopu jen z validních přijatých poloh, s TTL a maximálním počtem bodů.  
-  **Ověření:** Test retence odřízne staré body a nevytváří budoucí predikce. PR G-05.04/.07 přidává segmentaci výpadků i antimeridiánu, unit Vitest a kontrolu skutečné čáry na Chromium WebGL; checkbox až po PASS.
+  **Ověření:** Test retence odřízne staré body a nevytváří budoucí predikce. PR #32, [CI #40087996178](https://github.com/Boym323/AirRadarV2/actions/runs/40087996178) PASS: stopa skutečně vykreslena (124 pixelů), segmentace >120 s a antimeridiánu, odstranění ztracené identity; DEV #40088791328 SUCCESS.
 
 - [x] **G-05.08 — Follow kamera**  
   **Implementace:** Volitelně sleduj vybrané letadlo s možností okamžitě vypnout sledování interakcí uživatele.  
@@ -60,9 +60,9 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Implementace:** Implementuj jen funkční schválené mapové styly a jejich bezpečné URL; preference mohou být lokálně uložené.  
   **Ověření:** Test změny stylu zachová live tracky a výběr.
 
-- [ ] **G-05.10 — Vrstva letišť**  
-  **Implementace:** Po dokončení G-06 zobraz letištní body nad stabilním zdrojem; neduplikuj katalog ve webu.  
-  **Ověření:** Zobrazené letiště vede ke správnému katalogovému detailu a API. Průběžně je připravený public-domain static JSON + klikací vrstva a referenční detail z G-06.01/.02/.03/.07; G-06.05 finální REST a datová akceptace stále otevřené.
+- [x] **G-05.10 — Vrstva letišť**  
+  **Implementace:** Zobraz letiště z verzovaného veřejného OurAirports katalogu připraveného build-time G-06.01/.02/.03/.07, bez duplicitního přenosu v G-03 SSE.  
+  **Ověření:** Zobrazené letiště vede ke správnému katalogovému detailu a API. [PR #33](https://github.com/Boym323/AirRadarV2/pull/33), [CI #40094724356](https://github.com/Boym323/AirRadarV2/actions/runs/40094724356) PASS: 884 reálných validovaných letišť, /data/airports-ourairports.json, pixelový test bodu, kliknutí/detail a zachování při style switch; [DEV #40095020297](https://github.com/Boym323/AirRadarV2/actions/runs/40095020297) SUCCESS. G-06.05 full vyhledávací REST, frekvence a NAVAID zůstávají výslovně v navazující G-06, nikoli G-05.
 
 - [ ] **G-05.11 — Výkon a regresní E2E**  
   **Implementace:** Porovnej setData a updateData pouze podle skutečných dat; změř 25/100/500/2000 cílů, 1/2 Hz, FPS, re-renders a paměť.  

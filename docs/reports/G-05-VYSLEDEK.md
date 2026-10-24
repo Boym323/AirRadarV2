@@ -1,11 +1,19 @@
 # G-05 — průběžný výsledek implementace živé mapy
 
-## 24. 10. 2026 — G-05.04/.07: pravdivé popisky a stopa (PR v testování)
+## 24. 10. 2026 — mapová letiště G-05.10 / R12 (TESTED)
+
+- [PR #33](https://github.com/Boym323/AirRadarV2/pull/33) sloučen `bfa48c3f`, [CI #40094724356](https://github.com/Boym323/AirRadarV2/actions/runs/40094724356) **3/3 PASS**, [DEV release #40095020297](https://github.com/Boym323/AirRadarV2/actions/runs/40095020297) **SUCCESS**.
+- Build-time import veřejného OurAirports JSON z kontrolovaného commitu/blobu, 884 validních letišť CZ/SK/AT/PL/HU, samostatný read-only statický katalog `/data/airports-ourairports.json`, MapLibre source/layers a klikací detail i po změně stylu. Chromium ověřilo skutečný letištní bod i výběr; v G-03 SSE se nic nezvětšilo. **R12 TESTED pro mapový rozsah, nikoliv full G-06 REST/NAVAID/frekvence.**
+- Formální stav **10/11**. G-05.11: browser benchmark běží odděleně v PR #34; fyzický desktop/mobil GPU nezměřen a žádný výsledný PASS se zde netvrdí.
+
+
+
+## 24. 10. 2026 — G-05.04/.07: pravdivé popisky a stopa (PR #32, CI PASS)
 
 - **R04 / G-05.04:** přísná normalizace callsign pro mapové štítky (max. 8 ASCII alfanumerických znaků nebo spojovník, bez vložených řádků či značek), výška pouze ve známém intervalu. Vybraný cíl má textové prvenství a ostatní labely jsou stále pod kolizní logikou MapLibre. Žádné DOM markery.
 - **R08 / G-05.07:** segmentovaná `MultiLineString` stopa jen ze skutečně přijatých poloh v jedné browser RAM mapě. Výpadek nad 120 sekund, časový návrat nebo překročení antimeridiánu **nepropojuje fiktivní přímkou**. Platná data stále max. 64 bodů / 20 minut.
 - **Testy přidané:** Vitest neznámých a podvržených textů, chybné výšky, 1/2/5 bodů stopy, přerušení u výpadku a ±180°, odstranění cíle; Chromium WebGL obrazový důkaz barvy skutečně vykreslené stopy (testovací screenshot, PIL pouze ve workflow) a kontrola bez opětovného vytvoření mapy.
-- **Přejímka:** dokud není zelené CI PR, G-05.04/.07 a R04/R08 ponecháváme `IN_PROGRESS`. Výkonové referenční měření na skutečném desktopu a mobilu G-05.11 ani letiště z G-06 zde nejsou deklarovány.
+- **Přejímka:** [PR #32](https://github.com/Boym323/AirRadarV2/pull/32) sloučen `87838925`, [CI #40087996178](https://github.com/Boym323/AirRadarV2/actions/runs/40087996178) **3/3 PASS**, [DEV #40088791328](https://github.com/Boym323/AirRadarV2/actions/runs/40088791328) SUCCESS. R04/R08 mají stav `TESTED`. Benchmark G-05.11 na fyzickém GPU zde není deklarován.
 
 
 

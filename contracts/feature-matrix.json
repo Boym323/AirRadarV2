@@ -156,11 +156,11 @@
       "id": "R04",
       "name": "Popisky letadel a řízení jejich kolizí",
       "decision": "KEEP",
-      "status": "IN_PROGRESS",
+      "status": "TESTED",
       "tests": [
-        "G-05 první implementace v PR #22; jednotkové testy projekce/retence a browser smoke #40024971130 PASS; plná interakční/benchmark přejímka ještě neproběhla."
+        "G-05.04 PR #32, CI #40087996178 PASS: MapLibre vybraný štítek, zoom 8/11, sanitizovaný callsign, známá výška, 2 000 syntetických cílů; DEV #40088791328 SUCCESS."
       ],
-      "notes": "Funkční základ v G-05 prvním PR; přiřazené konkrétní ověření v plném browser E2E/perf scénáři zůstává otevřené."
+      "notes": "R04 TESTED v Chromium (MapLibre label/overlap) a Vitest sanitizace; finální fyzický GPU/typografický kontrast patří G-05.11/G-10."
     },
     {
       "id": "R06",
@@ -176,11 +176,11 @@
       "id": "R08",
       "name": "Zobrazení živé letové stopy (trail)",
       "decision": "KEEP",
-      "status": "IN_PROGRESS",
+      "status": "TESTED",
       "tests": [
-        "G-05 první implementace v PR #22; jednotkové testy projekce/retence a browser smoke #40024971130 PASS; plná interakční/benchmark přejímka ještě neproběhla."
+        "G-05.07 PR #32, CI #40087996178 PASS: věrná MultiLineString stopa, 120s výpadek, antimeridián, odstranění cíle a WebGL screenshot warm_pixels=124; DEV #40088791328 SUCCESS."
       ],
-      "notes": "Funkční základ v G-05 prvním PR; přiřazené konkrétní ověření v plném browser E2E/perf scénáři zůstává otevřené."
+      "notes": "R08 TESTED: jen skutečně přijaté pozice, 64 bodů/20 minut, žádná predikce, WebGL pixel test."
     },
     {
       "id": "R09",
@@ -196,19 +196,21 @@
       "id": "R12",
       "name": "Vrstvy okolních letišť",
       "decision": "KEEP",
-      "status": "NOT_STARTED",
-      "tests": [],
-      "notes": ""
+      "status": "TESTED",
+      "tests": [
+        "G-05.10 PR #33, CI #40094724356 PASS: připnutý OurAirports SHA1, import 884 letišť, Vitest GeoJSON, Chromium pixel bodu a klikací detail při přepnutí stylu; DEV #40095020297 SUCCESS."
+      ],
+      "notes": "R12 TESTED jen pro mapovou letištní vrstvu a samostatný statický JSON z G-06; plný G-06 REST/NAVAID/frekvence zůstávají v rozvoji."
     },
     {
       "id": "R14",
       "name": "Mapové podklady, vzhled a předvolby vrstev",
       "decision": "KEEP",
-      "status": "IN_PROGRESS",
+      "status": "TESTED",
       "tests": [
-        "G-05 první implementace v PR #22; jednotkové testy projekce/retence a browser smoke #40024971130 PASS; plná interakční/benchmark přejímka ještě neproběhla."
+        "G-05.09/.10 PR #32 a #33, CI #40087996178 a #40094724356 PASS: přepnutí Fiord/Liberty, obnova sprite, zachování stop/follow/výběru a vrstev; DEV #40095020297 SUCCESS."
       ],
-      "notes": "Funkční základ v G-05 prvním PR; přiřazené konkrétní ověření v plném browser E2E/perf scénáři zůstává otevřené."
+      "notes": "R14 TESTED pro schválené mapové styly, chybový fallback, zapínání letišť a layer pořadí; fyzický FPS benchmark dále G-05.11."
     },
     {
       "id": "A01",
