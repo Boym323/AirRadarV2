@@ -503,6 +503,55 @@ mod tests {
         serde_json::from_str(text).unwrap()
     }
 
+
+    #[test]
+    fn g05_readsb_category_is_validated_and_public_only_if_known() {
+        let mut raw = fixture(include_str!("../../../contracts/fixtures/readsb/initial.json"));
+        raw["aircraft"][0]["category"] = serde_json::json!("A7");
+        raw["aircraft"][1]["category"] = serde_json::json!("A0");
+        raw["aircraft"][2]["category"] = serde_json::json!({"unexpected":"data"});
+        let observations = normalize_readsb(&raw, "rx-primary", 1792627200.0).unwrap();
+        assert_eq!(observations[0].emitter_category.as_deref(), Some("A7"));
+        assert_eq!(observations[1].emitter_category, None);
+        assert_eq!(observations[2].emitter_category, None);
+        let mut tracks = BTreeMap::new();
+        for observation in observations {
+            merge(&mut tracks, &observation);
+        }
+        let tracked = &tracks["icao:abc123"];
+        assert_eq!(tracked.emitter_category.as_deref(), Some("A7"));
+        let serialized = serde_json::to_value(tracked).unwrap();
+        assert_eq!(serialized["emitterCategory"], "A7");
+        assert!(serialized.get("receiverId").is_none());
+
+        let mut old = fixture(include_str!("../../../contracts/fixtures/readsb/initial.json"));
+        old["aircraft"][0]["category"] = serde_json::json!("nonsense");
+        let fresh = normalize_readsb(&old, "rx-primary", 1792627200.0).unwrap();
+        assert_eq!(fresh[0].emitter_category, None);
+        assert!(serde_json::to_value(&fresh[0]).unwrap().get("emitterCategory").is_none());
+        assert!(emitter_category(Some("B4")).is_some());
+        assert!(emitter_category(Some("D1")).is_none());
+    }
+
+    #[test]
+    fn g05_merge_rejects_old_category_and_preserves_when_absent() {
+        let mut raw = fixture(include_str!("../../../contracts/fixtures/readsb/initial.json"));
+        raw["aircraft"][0]["category"] = serde_json::json!("B1");
+        let initial = normalize_readsb(&raw, "rx-primary", 1792627200.0).unwrap();
+        let mut tracks = BTreeMap::new();
+        merge(&mut tracks, &initial[0]);
+        let mut stale = initial[0].clone();
+        stale.message_at_utc -= 3.0;
+        stale.emitter_category = Some("A7".to_owned());
+        merge(&mut tracks, &stale);
+        assert_eq!(tracks["icao:abc123"].emitter_category.as_deref(), Some("B1"));
+        let mut missing = initial[0].clone();
+        missing.message_at_utc += 1.0;
+        missing.emitter_category = None;
+        merge(&mut tracks, &missing);
+        assert_eq!(tracks["icao:abc123"].emitter_category.as_deref(), Some("B1"));
+    }
+
     #[test]
     fn readsb_golden_time_origin_and_nonicao() {
         let f = fixture(include_str!(
