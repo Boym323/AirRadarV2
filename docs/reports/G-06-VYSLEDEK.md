@@ -1,6 +1,6 @@
 # G-06 — průběžná implementace veřejného katalogu letišť pro G-05.10
 
-**24. 10. 2026 · Stav: ROZPRACOVÁNO, nikoli dokončeno.**  
+**24. 10. 2026 · Stav: ROZPRACOVÁNO, nikoli dokončeno.** G-05.10 mapové využití tohoto katalogu je [PR #33](https://github.com/Boym323/AirRadarV2/pull/33) dokončeno a otestováno: [CI #40094724356](https://github.com/Boym323/AirRadarV2/actions/runs/40094724356) 3/3 PASS, [DEV #40095020297](https://github.com/Boym323/AirRadarV2/actions/runs/40095020297) SUCCESS. G-06 REST/NAVAID/frekvence ještě nejsou hotové.  
 **Výchozí commit:** `0f6b76002c63e29a14fcb94a473d84403c29e95e`.
 
 ## Provedená izolovaná část
