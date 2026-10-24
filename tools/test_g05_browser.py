@@ -89,9 +89,9 @@ def main():
             expect(canvas).to_be_visible(timeout=12000)
             canvas.evaluate("(el) => { el.dataset.g05Mounted = 'once'; }")
             # G-05 R01/R06: mapa zůstává dominantní, seznam je na vyžádání.
-            expect(page.get_by_role("region", name="Seznam letadel")).to_have_count(0)
+            expect(page.get_by_role("complementary", name="Seznam letadel")).to_have_count(0)
             page.get_by_role("button", name="Letadla", exact=True).click()
-            expect(page.get_by_role("region", name="Seznam letadel")).to_be_visible()
+            expect(page.get_by_role("complementary", name="Seznam letadel")).to_be_visible()
             page.get_by_role("button", name="OKTWO").click()
             expect(page.get_by_role("heading", name="OKTWO")).to_be_visible()
             page.evaluate("window.__emitRadar('delta', window.__radarFixture.next)")
@@ -142,15 +142,15 @@ def main():
             expect(canvas).to_be_visible()
             expect(page.get_by_role("heading", name="OKTEST")).to_be_visible()
             page.get_by_role("button", name="Zavřít detail letadla").click()
-            expect(page.get_by_role("region", name="Vybrané letadlo")).to_have_count(0)
-            expect(page.get_by_role("region", name="Seznam letadel")).to_have_count(0)
+            expect(page.get_by_role("complementary", name="Vybrané letadlo")).to_have_count(0)
+            expect(page.get_by_role("complementary", name="Seznam letadel")).to_have_count(0)
             expect(page.get_by_role("button", name="Letadla", exact=True)).to_be_focused()
             assert canvas.get_attribute("data-g05-mounted") == "once", "Mapa nesmí remountovat při zavření detailu"
             page.get_by_role("button", name="Letadla", exact=True).click()
             page.get_by_label("Hledat volací znak nebo ICAO").fill("neexistuje")
             expect(page.get_by_text("Žádná odpovídající letadla.")).to_be_visible()
             page.get_by_role("button", name="Zavřít seznam").click()
-            expect(page.get_by_role("region", name="Seznam letadel")).to_have_count(0)
+            expect(page.get_by_role("complementary", name="Seznam letadel")).to_have_count(0)
             # Základní mobilní geometrie G-05 (plná a11y/GPU přejímka patří G-10).
             mobile = browser.new_page(viewport={"width": 390, "height": 844},
                                       is_mobile=True, has_touch=True)
@@ -164,7 +164,7 @@ def main():
             assert mobile.evaluate("document.documentElement.scrollWidth <= innerWidth"), (
                 "Mobil má horizontální scroll")
             mobile.get_by_role("button", name="Letadla", exact=True).click()
-            expect(mobile.get_by_role("region", name="Seznam letadel")).to_be_visible()
+            expect(mobile.get_by_role("complementary", name="Seznam letadel")).to_be_visible()
             assert mobile.evaluate("document.documentElement.scrollWidth <= innerWidth"), (
                 "Mobilní panel přetéká")
             mobile.get_by_role("button", name="Zavřít seznam").click()
