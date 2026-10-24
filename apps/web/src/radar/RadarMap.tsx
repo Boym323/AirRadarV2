@@ -351,6 +351,16 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
       refresh();
       refreshAirportLayer();
     });
+    // style.load může dorazit dříve, než jsou všechny mapové zdroje
+    // připravené. První skutečné idle obnoví vrstvy bez čekání na 1s
+    // interval; zároveň podporuje CI benchmark bez pravidelného ticku.
+    // Po založení zdroje se další idle neúčastní letištního setData.
+    instance.on("idle", () => {
+      if (!instance.isStyleLoaded()) return;
+      const missingAircraftSource = !instance.getSource(AIRCRAFT_SOURCE);
+      refresh();
+      if (missingAircraftSource) refreshAirportLayer();
+    });
     const click = (event: { features?: Array<{ properties: Record<string, unknown> | null }> }) => {
       const id = event.features?.[0]?.properties?.id;
       if (typeof id === "string") props.current.onSelect(id);
