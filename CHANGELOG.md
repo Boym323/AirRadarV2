@@ -4,15 +4,15 @@
 
 ### G-06.01/.02/.03/.07 → G-05.10 — legální letištní data a mapová vrstva (24. 10. 2026)
 - OurAirports The Unlicense, přesný SHA upstream CSV ověřený při Vite buildu; statický regionální JSON CZ/SK/AT/PL/HU s validovanými pozicemi a testy importéru. Žádná externí runtime síťová služba.
-- Oddělený statický GeoJSON source MapLibre, přepínač letištní vrstvy a klikací kontextový detail. NAVAID, frekvence a úplný G-06 REST jsou mimo tento základ; G-05.10 a R12 zůstávají ve stavu rozpracováno do plné přejímky.
-- [Průběžný report](docs/reports/G-06-VYSLEDEK.md). CI a nasazení dosud NEOVĚŘENO.
+- Oddělený statický GeoJSON source MapLibre, přepínač letištní vrstvy a klikací kontextový detail. NAVAID, frekvence a úplný G-06 REST jsou mimo tento základ; G-05.10/R12 pro mapovou vrstvu jsou TESTED: PR #33 `bfa48c3f`, [CI #40094724356](https://github.com/Boym323/AirRadarV2/actions/runs/40094724356) 3/3 PASS a [DEV #40095020297](https://github.com/Boym323/AirRadarV2/actions/runs/40095020297) SUCCESS. Plná G-06 REST/NAVAID/frekvence dál rozpracovaná.
+- [Průběžný report](docs/reports/G-06-VYSLEDEK.md). CI a DEV nasazení pro mapový rozsah G-05.10 ověřeno, viz předchozí bod.
 
 
 
 ### G-05.04/.07 — čitelné popisky a přerušená stopa (24. 10. 2026, CI před přejímkou)
 - R04: štítky jen z validovaného krátkého callsignu; chybějící/nereálnou výšku neuvádíme, selected má prioritu proti ostatním nekolidujícím textům.
 - R08: GeoJSON MultiLineString bez falešných spojnic přes výpadek >120 s nebo antimeridián; browserově udržovaná stopa max. 64 bodů / 20 min zůstala.
-- Vitest pro segmentaci, podvržený text, retenci a odstranění; Chromium WebGL barevný obrazový test vykreslení stopy s omezeným testovacím Pillow balíčkem. Stav `IN_PROGRESS` do dokončení CI.
+- Vitest pro segmentaci, podvržený text, retenci a odstranění; Chromium WebGL barevný obrazový test vykreslení stopy s omezeným testovacím Pillow balíčkem. PR #32 `87838925`, [CI #40087996178](https://github.com/Boym323/AirRadarV2/actions/runs/40087996178) 3/3 PASS a [DEV #40088791328](https://github.com/Boym323/AirRadarV2/actions/runs/40088791328) SUCCESS; R04 a R08 TESTED.
 
 
 
