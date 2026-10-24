@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """G-05.01–.09 browser smoke bez reálného RF/DB/tile serveru."""
 import json
+from io import BytesIO
+from PIL import Image
 import subprocess
 import time
 from contextlib import closing
@@ -112,6 +114,39 @@ def main():
             page.get_by_role("button", name="Letadla", exact=True).click()
             page.get_by_role("button", name="OKTEST").click()
             expect(page.get_by_role("heading", name="OKTEST")).to_be_visible()
+            # G-05.07: na mapě musí být skutečně žlutá stopa z nových
+            # dvou časově odlišných poloh; offline styl nemá jiné žluté prvky.
+            # Sekvence 0->1->2 už v testu proběhla. Nový bod není predikce.
+            page.evaluate("""() => {
+              const first = window.__radarFixture.initial.aircraft[0];
+              const at = first.lastPositionAt + 20;
+              window.__emitRadar('delta', {
+                kind:'delta', epoch:'g05-ci', seq:3,
+                generatedAt:new Date(at * 1000).toISOString(),
+                upsert:[{...first,lastMessageAt:at,lastPositionAt:at,
+                  position:{lat:49.2,lon:17.84}}],removed:[]
+              });
+            }""")
+            # Screenshot assertion na reálném WebGL canvasu, ne pouze na store.
+            # Čeká se na konkrétní barevný důkaz, nikoli pevný timeout.
+            warm_pixels = 0
+            stop_at = time.monotonic() + 12
+            while time.monotonic() < stop_at:
+                shot = canvas.screenshot()
+                pixels = Image.open(BytesIO(shot)).convert("RGB")
+                warm_pixels = sum(
+                    1 for red, green, blue in pixels.getdata()
+                    if red > 170 and green > 100 and blue < 170
+                    and red > green + 25 and green > blue + 20
+                )
+                if warm_pixels >= 30:
+                    break
+                time.sleep(.25)
+            assert warm_pixels >= 30, (
+                f"G-05.07 stopa není vidět na WebGL canvasu; warm_pixels={warm_pixels}")
+            assert canvas.get_attribute("data-g05-mounted") == "once", (
+                "MapLibre remount při vytvoření trailu")
+            print(f"PASS G-05.07: viditelná skutečná žlutá stopa, warm_pixels={warm_pixels}")
             assert canvas.get_attribute("data-g05-mounted") == "once", "MapLibre remount během SSE"
             # G-05.08: follow se musí vypnout při skutečném kolečku myši.
             page.get_by_role("button", name="Sledovat na mapě").click()
