@@ -4,7 +4,7 @@
 
 - [PR #34](https://github.com/Boym323/AirRadarV2/pull/34) sloučen `b8691f8b`, [CI #40095503907](https://github.com/Boym323/AirRadarV2/actions/runs/40095503907) **3/3 PASS**: **32 kombinací** (25/100/500/2 000 letadel, 1/2 Hz, setData/updateData, desktop/mobile emulation), artefakt obsahuje p95 worker update, RAF intervaly, Chrome JS heap, DOM mutace, počet WebGL canvasů a TaskDuration.
 - [Podrobný měřicí report](G-05-VYKON-MERENI-2026-10-24.md) uvádí všechna čísla a rozdíl mezi skutečným p95 worker voláním a **nezměřeným fyzickým GPU FPS**. 2 000 / 1 Hz: desktop p95 6,6 vs 2,1 ms; mobile emulation 9,8 vs 2,1 ms. Na mobilní emulaci 2 Hz ale diff může být pomalejší.
-- [PR #36](https://github.com/Boym323/AirRadarV2/pull/36) implementuje na základě měření podmíněné `updateData` (>=250 cílů, <=35 % změn) a fallback setData při nové epoše/stylu či chybě. Testy PR #36 jsou **samostatně v ověřování**, tento dokument je nepovyšuje na PASS.
+- [PR #36](https://github.com/Boym323/AirRadarV2/pull/36) implementuje na základě měření podmíněné `updateData` (>=250 cílů, <=35 % změn) a fallback setData při nové epoše/stylu či chybě. PR #36 sloučen jako `3bf49297`; [CI #40096318946](https://github.com/Boym323/AirRadarV2/actions/runs/40096318946) **3/3 PASS**, včetně TypeScript/Vitest a Chromium SSE delta 200 ze 2 000 cílů bez remountu.
 - **G-05.11 není formálně dokončená**: k úplné přejímce dle výkonového zadání chybí měření skutečného desktopového GPU a fyzického telefonu, pan/zoom/follow a reprezentativní dlouhodobý p95/FPS. G-05 proto **10/11**, nikoli HOTOVO.
 
 
