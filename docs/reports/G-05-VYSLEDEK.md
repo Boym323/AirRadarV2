@@ -65,7 +65,7 @@
 - **G-05.03/.04 — mapová reprezentace:** jediný GeoJSON aircraft source, symbolová ikona letadla pouze při známém reálném `trackDegrees`, jinak bod; popisek podle skutečného callsign. Stabilní feature ID. Nepoužívají se jednotlivé DOM markery.
 - **G-05.05/.06 — seznam a výběr:** jeden store pro mapu i vyhledatelný seznam, filtr podle dostupné čerstvé polohy, výběr letadla a vysloveně neprodukční prázdný stav.
 - **G-05.07/.08/.09 — navazující základ:** browser-only přijaté body stopy omezené na 64 bodů/20 minut bez extrapolace, volitelný follow s vypnutím při pan a podklady Liberty/Fiord. Pro finální TESTED je nutná prohlížečová interakční regrese.
-- **Výpadek mapového podkladu:** při nedostupném externím OpenFreeMap stylu se MapLibre jednorázově přepne na lokální background-only styl. Živá letadla a seznam zůstávají dostupné; chyba jednotlivých tiles pouze zobrazí upozornění. Chromium regrese tento fallback ověřuje abortem všech OpenFreeMap požadavků.
+- **Výpadek mapového podkladu:** při nedostupném externím OpenFreeMap stylu nebo třech chybách tiles v krátkém okně se MapLibre jednorázově přepne na lokální background-only styl. Jednotlivá přechodná chyba pouze stabilně zobrazí upozornění po omezenou dobu. Živá letadla a seznam zůstávají dostupné; Chromium regrese ověřuje úplný i opakovaný výpadek.
 - **Jednotkové testy:** `apps/web/tests/g05-radar.test.ts` testuje atomické delty, duplicitní cíle, gaps, epochy, odstranění, validitu souřadnic, retenci a heading. `apps/web/tests/app.test.tsx` ověřuje české UI i stav bez live dat.
 
 ## Navazující změna G-05.08 / R09 — ochrana ručního pohybu mapou

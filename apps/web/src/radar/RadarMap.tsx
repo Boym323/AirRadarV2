@@ -356,23 +356,41 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
         }
       }
     }, 1000);
+    let tileErrorWindowStart = 0;
+    let tileErrorsInWindow = 0;
+    let clearMapErrorTimer: ReturnType<typeof setTimeout> | undefined;
     instance.on("error", () => {
       // Při chybě stylu přepni pouze jednou na lokální plátno bez tiles.
-      // Chyba jednotlivé dlaždice po načtení stylu fallback neaktivuje.
+      // Opakované chyby tiles během krátkého okna mají stejný výsledek;
+      // jednotlivá přechodná chyba pouze zobrazí stabilní upozornění.
+      const now = Date.now();
+      if (now - tileErrorWindowStart > 1500) {
+        tileErrorWindowStart = now;
+        tileErrorsInWindow = 0;
+      }
+      tileErrorsInWindow += 1;
       if (!styleEverLoaded.current && !fallbackActive.current) {
+        fallbackActive.current = true;
+        instance.setStyle(FALLBACK_STYLE, { diff: false });
+      } else if (styleEverLoaded.current && tileErrorsInWindow >= 3 && !fallbackActive.current) {
         fallbackActive.current = true;
         instance.setStyle(FALLBACK_STYLE, { diff: false });
       }
       setError(fallbackActive.current
         ? "Mapový podklad není dostupný; živá letadla zůstávají zobrazena."
         : "Některé dlaždice mapového podkladu nejsou dostupné; živá letadla fungují dál.");
+      if (!fallbackActive.current) {
+        if (clearMapErrorTimer) clearTimeout(clearMapErrorTimer);
+        clearMapErrorTimer = setTimeout(() => setError(null), 2500);
+      }
     });
     instance.on("idle", () => {
-      // Po úspěšném dokončení style/tile loadingu odstranit zastaralou chybu.
-      if (!fallbackActive.current && instance.isStyleLoaded() && instance.areTilesLoaded()) setError(null);
+      // Chybu odstraňuje až stabilní timeout nebo nový style.load, nikoli
+      // každý krátký idle event; tím se banner nerozbliká.
     });
     return () => {
       clearInterval(tick);
+      if (clearMapErrorTimer) clearTimeout(clearMapErrorTimer);
       canvasContainer.removeEventListener("wheel", stopFollow);
       canvasContainer.removeEventListener("touchmove", stopFollow);
       canvasContainer.removeEventListener("keydown", manualKeyboardMove);
