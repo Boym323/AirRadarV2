@@ -1,4 +1,4 @@
-name: AirRadar V2 — DEV release a nasazení přes Runner
+name: AirRadar V2 · DEV release
 on:
   push:
     branches: [main]
@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   pr_reuse:
-    name: Ověřit PR důkaz před opakováním CI
+    name: CI · Ověření PR
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -25,7 +25,7 @@ jobs:
       reusable: ${{ steps.check.outputs.reusable }}
     steps:
       - uses: actions/checkout@v7
-      - name: Ověřit shodu merge tree a úspěšných PR testů
+      - name: CI · Shoda Git tree
         id: check
         env:
           GH_TOKEN: ${{ github.token }}
@@ -35,7 +35,7 @@ jobs:
             --github-output "$GITHUB_OUTPUT"
 
   validate:
-    name: Kompletní CI před vydáním (při chybějícím PR důkazu)
+    name: CI · Úplná validace
     needs: pr_reuse
     if: needs.pr_reuse.outputs.reusable != 'true'
     uses: ./.github/workflows/ci.yml
@@ -43,7 +43,7 @@ jobs:
       contents: read
 
   test-and-build:
-    name: Sestavit immutable DEV artefakt
+    name: DEV · Sestavit artefakt
     needs: [pr_reuse, validate]
     if: always() && needs.pr_reuse.result == 'success' && (needs.pr_reuse.outputs.reusable == 'true' || needs.validate.result == 'success')
     runs-on: ubuntu-24.04
@@ -54,7 +54,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-      - name: Sestavit release Rust enginu a Vite webu (testy převzaty z CI)
+      - name: DEV · Rust a web build
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -63,7 +63,7 @@ jobs:
           npm ci --no-audit --no-fund
           npm run build
           cd ../..
-      - name: Sestavit immutable Debian artefakt pro DEV LXC
+      - name: DEV · Balíček pro LXC
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -89,7 +89,7 @@ jobs:
           grep -qx './airradarv2-engine' /tmp/airradarv2-archive.list
           grep -qx './VERSION' /tmp/airradarv2-archive.list
           grep -qx './web/index.html' /tmp/airradarv2-archive.list
-      - name: G-04 — ověřit stage marker před vydáním
+      - name: G04 · Kontrola stage
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -116,7 +116,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: g02-dev-${{ github.sha }}
-      - name: Publikovat SHA-pripnutý prerelease (nikoli deploy)
+      - name: DEV · Publikovat release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -137,7 +137,7 @@ jobs:
             --notes "Ověřený CI artefakt pro izolovaný DEV deployment; bez zásahu do V1, DB nebo přijímače."
 
   deploy-dev:
-    name: DEV deployment přes AirRadar V2 runner
+    name: DEV · Nasazení
     needs: publish-dev-candidate
     if: github.repository == 'Boym323/AirRadarV2' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: [self-hosted, linux, x64, airradarv2-dev]
@@ -148,7 +148,7 @@ jobs:
       group: airradarv2-dev-deployment
       cancel-in-progress: false
     steps:
-      - name: Stáhnout pouze prerelease artefakt přesného SHA
+      - name: DEV · Stáhnout artefakt
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -228,7 +228,7 @@ jobs:
               exit 1
             fi
           fi
-      - name: Nasadit nebo bezpečně čekat na dokončení G-02
+      - name: DEV · Nasadit s retry
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -247,9 +247,9 @@ jobs:
             sleep 30
           done
           exit 75
-      - name: Zápis výsledku do summary
+      - name: DEV · Souhrn
         run: echo "DEV deployment dokončen pro $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
-      - name: Ověřit právě nasazený release a lokální služby
+      - name: DEV · Kontrola nasazení
         env:
           EXPECTED_SHA: ${{ github.sha }}
         shell: bash
