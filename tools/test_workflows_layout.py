@@ -90,6 +90,9 @@ class WorkflowTopology(unittest.TestCase):
         self.assertIn("sudo -n /usr/local/libexec/airradarv2-runner-deploy.sh", release)
         self.assertIn("DEV · Kontrola nasazení", release)
         self.assertIn("github.ref == 'refs/heads/main'", release)
+        self.assertIn("name: G03 · SSE zátěž (non-PR)", ci)
+        self.assertIn("name: G05 · Render benchmark (non-PR)", ci)
+        self.assertEqual(ci.count("if: github.event_name != 'pull_request'"), 2)
 
     def test_g03_main_commit_publishes_and_runs_runner(self):
         release = (WF / "g02-dev-candidate.yml").read_text(encoding="utf-8")
