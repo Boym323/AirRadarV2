@@ -6,6 +6,8 @@
 **Primární KEEP ID:** `A01`, `A02`, `T10`.  
 **Odhad realizace:** nepodložený, nedávat termín bez změřené kapacity týmu.
 
+**Vizuální návaznost (24. 10. 2026):** [map-first UX](../plan/WEB-UX-UI-SPECIFIKACE.md), [ikony a mapové popisky](../plan/MAPOVE-IKONY-A-POPISKY.md), [audit úplnosti](../audits/VIZUALNI-ZADANI-AUDIT-2026-10-24.md): Letiště, dráhy a NAVAID/FIX musejí mít vlastní odlišitelný tvar a přístupný kontextový detail; nevydávat neověřené frekvence/zdroje, nezahlcovat mapu a nechat funkční živá letadla. Tento dokumentační odkaz neuzavírá žádný krok.
+
 ## Výstup etapy
 
 Samostatně otestovaný modul odpovídající uvedeným schváleným ID; zbytečné části systému se nepřidávají.

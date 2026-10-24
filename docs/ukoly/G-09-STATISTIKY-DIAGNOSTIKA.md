@@ -5,6 +5,8 @@
 **Závislosti:** G-02 až G-08 podle aktivovaných funkcí; pouze existující komponenty.  
 **Primární KEEP ID:** `S01`, `S06`, `S09`, `O01`, `O02`, `O03`, `O04`, `O05`, `O06`, `O07`, `O08`.
 
+**Vizuální návaznost (24. 10. 2026):** [map-first UX](../plan/WEB-UX-UI-SPECIFIKACE.md), [ikony a mapové popisky](../plan/MAPOVE-IKONY-A-POPISKY.md), [audit úplnosti](../audits/VIZUALNI-ZADANI-AUDIT-2026-10-24.md): Statistiky a diagnostika jsou sekundární panely nad mapou, se skutečnými `OK/degraded/unavailable` stavy, nikoli další hlavní dashboard. Tento dokumentační odkaz neuzavírá žádný krok.
+
 ## Cíl
 
 Implementovat schválenou funkční část s minimem závislostí, testy a transparentním provozním dopadem.

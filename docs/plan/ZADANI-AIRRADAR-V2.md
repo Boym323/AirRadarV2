@@ -21,6 +21,8 @@ Základní produkt tvoří: příjem readsb/BEAST, korektní identita a stav let
 
 **Schválené UX rozhodnutí (24. 10. 2026):** AirRadar V2 je **radar primárně orientovaný na mapu**. Výchozí pracovní plochou webu je živá MapLibre mapa; seznam letadel, detaily, letiště, meteorologie, notifikace, statistiky a diagnostika mají kontextové/sekundární ovládání. Podrobnosti a otevřené designové volby stanoví [map-first UX/UI specifikace](WEB-UX-UI-SPECIFIKACE.md). Toto rozhodnutí nemění rozsah 45 funkcí ani stav implementace.
 
+**Konkretizace vizuálního zadání (24. 10.):** [ikonografie letadel a popisky](MAPOVE-IKONY-A-POPISKY.md), [úplný UX návrh](WEB-UX-UI-SPECIFIKACE.md) a [audit pokrytí](../audits/VIZUALNI-ZADANI-AUDIT-2026-10-24.md). Typová klasifikace je zatím **specifikace**, nikoli implementované datové pole nebo hotové assety.
+
 ## 3. Správnost příjmu a API
 
 - BEAST parser musí správně zvládat escape, rámcování, DF/CRC24, krátké/ztracené rámce a časová razítka.

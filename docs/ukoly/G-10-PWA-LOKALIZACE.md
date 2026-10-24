@@ -7,6 +7,8 @@
 
 **UX návaznost:** [Map-first UX/UI specifikace](../plan/WEB-UX-UI-SPECIFIKACE.md) je výchozím podkladem pro `G-10.01/.02/.08/.09/.10`: mobil má zachovat hlavní mapu, seznam a detail mají být kontextové; offline obsah se nesmí tvářit jako živý.
 
+**Vizuální návaznost (24. 10. 2026):** [map-first UX](../plan/WEB-UX-UI-SPECIFIKACE.md), [ikony a mapové popisky](../plan/MAPOVE-IKONY-A-POPISKY.md), [audit úplnosti](../audits/VIZUALNI-ZADANI-AUDIT-2026-10-24.md): Doplněné design tokeny, mobile viewporty, focus/ESC, safe-area, dark/light, offline chybové a screenshot/a11y testy platí pro stávající U01–U08; žádné nové produktové ID. Tento dokumentační odkaz neuzavírá žádný krok.
+
 ## Cíl
 
 Implementovat schválenou funkční část s minimem závislostí, testy a transparentním provozním dopadem.

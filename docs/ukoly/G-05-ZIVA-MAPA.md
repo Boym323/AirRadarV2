@@ -10,6 +10,8 @@
 
 **UX návaznost:** [Map-first UX/UI specifikace](../plan/WEB-UX-UI-SPECIFIKACE.md) stanoví mapu jako výchozí hlavní plochu a seznam/výběr/detail jako kontextové ovládání. První G-05 dvojpanelové rozložení je přechodný stav; přestavba nesmí narušit SSE ani měření G-05.11. Specifikace nepřidává nové ID ani nezaškrtává neověřené kroky.
 
+**Ikony a vizuální přejímka (24. 10.):** závazný podklad [MAPOVE-IKONY-A-POPISKY.md](../plan/MAPOVE-IKONY-A-POPISKY.md) a [audit vizuálního zadání](../audits/VIZUALNI-ZADANI-AUDIT-2026-10-24.md). Specifikovány vlastní siluety podle **validované** emitter category, track a bezsměrový fallback, velikosti, barvy, kolize a testy. Současné veřejné G-03 DTO **nemá emitter category**: nejdříve samostatně ověřit a schválit kontrakt. Tato dokumentační změna neuzavírá G-05.03/.04 ani žádné jiné checkboxy.
+
 ## Výstup etapy
 
 Samostatně otestovaný modul odpovídající uvedeným schváleným ID; zbytečné části systému se nepřidávají.
@@ -27,11 +29,11 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Ověření:** Unit test normalizuje, maže a obnoví tracky při resync.
 
 - [ ] **G-05.03 — Symbolová vrstva**  
-  **Implementace:** Použij jeden GeoJSON source a layer pro ikony dle skutečně známého typu a směru, stabilní feature IDs.  
+  **Implementace:** Použij jeden GeoJSON source a layer pro ikony dle skutečně známého typu a směru, stabilní feature IDs; mapování a fallback podle [ikonografického kontraktu](../plan/MAPOVE-IKONY-A-POPISKY.md).  
   **Ověření:** Správné směry, bez fiktivních defaultních vlastností a duplicit.
 
 - [ ] **G-05.04 — Čitelné popisky**  
-  **Implementace:** Zobraz stručné popisky jen pro dostupný callsign/výšku, MapLibre collision a minimalizovanou práci React.  
+  **Implementace:** Zobraz stručné popisky jen pro dostupný callsign/výšku, MapLibre collision a minimalizovanou práci React. Použít [priority a kolizní testy](../plan/MAPOVE-IKONY-A-POPISKY.md) na zoom a hustý provoz.  
   **Ověření:** Test hustého provozu nepřekrývá obrazovku nekontrolovanými DOM markery.
 
 - [x] **G-05.05 — Seznam a vyhledávání v provozu**  

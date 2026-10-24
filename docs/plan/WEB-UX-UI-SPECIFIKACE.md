@@ -95,6 +95,32 @@ Přednost má souvislá mapa přes hlavní obsahovou oblast. Ovládání tvoří
 - Nepoužívat mnoho překrývajících se plovoucích karet, trvalou druhou navigaci nebo zbytečné animace. Respektovat `prefers-reduced-motion`.
 - Zachovat přístupný textový seznam jako alternativu k WebGL mapě.
 
+## 6a. Konkrétní vizuální kontrakty pro návazné etapy (návrh k přejímce)
+
+Hlavní pravidlo je **mapa > vybraný cíl > stav spojení > seznam a vrstvy > sekundární diagnostika**. Následující hodnoty nejsou vydávány za finální schválené CSS nebo PASS; jde o jednotné zadání, které musí G-05/G-10 vyzkoušet.
+
+### Rozměry a responzivní model
+- **Desktop ≥ 1024 px:** doporučená výška kompaktní hlavičky cca 56–68 px; mapa přes zbytek plochy. Kontextové panely doporučeně 320–360 px, zavíratelné a bez nutnosti současně nechat roztažený seznam i detail. Žádný hero úvod místo mapy.
+- **Tablet 651–1023 px:** přepnutí z boku na spodní panel podle skutečné šířky, nikdy druhá instance mapy. Ovládání mapy musí zůstat přístupné.
+- **Telefon ≤ 650 px:** mapa jako hlavní obrazovka, spodní panel zpravidla do 60–65 % dostupné výšky, s tlačítkem Zavřít i bez gesta, respektovat safe-area a `100dvh`. Testovat minimálně 320×568, 390×844, 768×1024 a 1440×900. Breakpointy jsou návrh k testu, ne hardwarová detekce.
+
+### Návrh design tokenů pro sjednocení
+- Pozadí `#09121F`, panel `#101F32`, zvýšený povrch `#182B40`, hlavní text `#E5EDF7`, sekundární text `#B7C8D8`, hranice `#38556C`, focus `#6FD1F5`, vybraný `#77CEF4`, chyba `#F58888`, úspěch `#61DF9A`, varování `#ECB45F`. Vybrané barvy jsou **návrh**; neaplikovat naslepo na světlý mapový podklad bez měření kontrastu.
+- UI text typicky 14–16 px, druhotné údaje 12–14 px, telemetrie 14–16 px s tabulárními číslicemi. Systémový fontový fallback; není potřeba další externí fontový provider.
+- Prvky vždy specifikovat pro `default/hover/focus-visible/active/disabled/loading/error`; barva není jediným indikátorem stavu. Pravidla skutečné ikonografie a kolizí viz [mapové ikony](MAPOVE-IKONY-A-POPISKY.md).
+
+### Hierarchie mapových vrstev
+Podklad → ČHMÚ radar → SIGMET → letiště/NAVAID → pravdivá stopa → běžná letadla → vybraný/nouzový cíl → ovládání a přístupné popisky. Neznámý a rezervovaný údaj = konzervativní fallback. Panel „Vrstvy“ ukazuje jen **skutečně dostupné a licencované** zdroje, jejich zapnutí, čas platnosti a krátkou legendu. Chyba jedné vrstvy nesmí vypnout živý místní radar.
+
+### Detail, stavy, hledání a přístupnost
+- Výběr ikony nebo položky seznamu odkazuje na stejný aircraft ID. Follow je samostatný úkon a ruční posun ho přeruší, nikoli výběr. Znovuotevření detailu nesmí obnovit zastaralý cíl.
+- Zvlášť zobrazit spojování, skutečně živý SSE, reconnect, odpojeno, offline snapshot (s časovým razítkem), chybný tile/WebGL, žádný příjem vs žádný výsledek filtru. Každý stav českým textem, ikonou/strukturou a vhodnou možností pokračování.
+- Globální hledání G-10 musí rozlišovat letadlo/letiště/FIX a nabídnout jen existující ID. Otevření/Zavření/ESC/Enter a návrat focusu testovat klávesnicí; seznam letadel musí být funkční i bez WebGL.
+- `ft, kt, °, ft/min` a `cs-CZ` musí být konzistentní; `trackDegrees` znamená track nad zemí, ne obecný magnetický heading.
+- Povinný E2E screenshot/kontrast test dark/light, default/selected, hustý provoz, mobil, offline/chyby a reduced-motion; nezaměňovat CI screenshot za měřený GPU benchmark.
+
+Podrobný [audit pokrytí](../audits/VIZUALNI-ZADANI-AUDIT-2026-10-24.md) přesně rozlišuje formulované požadavky a dosud nevyřešené grafické/datové závislosti.
+
 ## 7. Stavy a chybové scénáře
 
 | Situace | Co smí UI tvrdit a ukázat |
@@ -142,7 +168,7 @@ Přednost má souvislá mapa přes hlavní obsahovou oblast. Ovládání tvoří
 4. **G-10:** definitivně sjednotit responzivní geometrii, mobilní panel, PWA, globální hledání, a11y a lokalizaci.
 5. **G-11:** validovat průchod všemi existujícími funkčními scénáři a výkon proti skutečnému releasu.
 
-**Otevřené a nikoliv předem schválené detaily:** přesné breakpointy, šířka bočních panelů, výsledná barevná paleta, mobilní výška spodního panelu, podoba ikonek a počet současně zobrazitelných sekundárních panelů. Přijímat je podle návrhu a E2E přejímky, bez změny aktivního rozsahu.
+**Otevřené detaily:** konkrétní CSS breakpointy a rozměry/paleta (§6a jsou pracovní hodnoty), konečné originální siluety a logo, datový kontrakt emitter category, přijaté referenční screenshoty a měřený výkon. Bez těchto důkazů nic nevydávat za hotové.
 
 ## 11. Konkurence a vizuální inspirace
 
@@ -159,3 +185,5 @@ Srovnání Flightradar24, ADS-B Exchange, AirNav Radar, Plane Finder, tar1090, A
 - [G-09 — Diagnostika](../ukoly/G-09-STATISTIKY-DIAGNOSTIKA.md)
 - [G-10 — Mobilní web a PWA](../ukoly/G-10-PWA-LOKALIZACE.md)
 - [MapLibre výkon a testování](../technical/MAPLIBRE-VYKON-A-ZATEZ.md)
+- [Mapové ikony a popisky](MAPOVE-IKONY-A-POPISKY.md)
+- [Audit úplnosti vizuálního zadání](../audits/VIZUALNI-ZADANI-AUDIT-2026-10-24.md)

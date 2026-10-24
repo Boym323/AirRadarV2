@@ -2,6 +2,8 @@
 
 **Stav:** technické zadání a benchmark G-05; neprohlašuje žádné naměřené FPS. **Aktivní ID:** R01, R03, R04, R06, R08, R09, R12, R14, U01. Použít **Vite + React + MapLibre**, nikoli další framework.
 
+Při realizaci R03/R04 respektovat [ikonografii](../plan/MAPOVE-IKONY-A-POPISKY.md): vlastní atlas, pravdivá emitter category, fallback pro neznámý směr, kontrastní popisky a validované sprite po `style.load`. Screenshot CI není důkaz GPU výkonu.
+
 ## Renderovací architektura
 
 1. **Jedna trvalá MapLibre instance** po celou dobu zobrazení stránky. Nedělat nový \`Map()\` při SSE zprávě nebo změně vybraného letadla; React je pouze životní cyklus a běžné ovládání.
