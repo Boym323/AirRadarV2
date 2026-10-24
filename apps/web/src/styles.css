@@ -152,6 +152,8 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 .follow-button[aria-pressed="true"] { background: #29684d; border-color: #91d8af; }
 .follow-button:disabled { opacity: .43; cursor: not-allowed; }
 .detail-hint, .empty-message, .hint { font-size: .77rem; line-height: 1.5; color: #abc0cd; }
+.radar-footer { flex: 0 0 auto; display: flex; justify-content: space-between; gap: 12px; padding: 6px 18px; background: #0b182a; color: #6f879b; font-size: .66rem; letter-spacing: .01em; white-space: normal; }
+.radar-version { color: #89a8bd; white-space: nowrap; }
 .map-error {
   position: absolute; z-index: 8; left: 15px; top: 15px; bottom: auto;
   width: min(450px, calc(100% - 30px)); margin: 0; padding: 12px 14px;
@@ -188,6 +190,7 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   .traffic-panel { height: min(66dvh, 590px); }
   .detail-panel { bottom: 0; overflow-y: auto; }
   .map-error { left: 9px; top: 10px; max-width: calc(100% - 60px); font-size: .73rem; }
+  .radar-footer { flex-wrap: wrap; justify-content: center; text-align: center; padding: 4px 7px; font-size: .61rem; }
 }
 @media (max-width: 340px) {
   .radar-header { padding: 8px; }
