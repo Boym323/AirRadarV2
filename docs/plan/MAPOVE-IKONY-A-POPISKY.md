@@ -1,7 +1,7 @@
 # AirRadar V2 — ikony letadel a popisky mapy
 
 **24. 10. 2026 · Specifikace pro G-05.03/.04 (R03/R04), návazně R01/R06/R08/R09/R14 a G-10.**  
-**Stav 24. 10. 2026:** v PR #29 byly implementovány původní Path2D siluety; [PR #30](https://github.com/Boym323/AirRadarV2/pull/30) implementuje volitelná validovaná metadata `emitterCategory` ze skutečného readsb JSON i CRC-validních DF17 BEAST zpráv. **Finální G-05 vizuální/GPU přejímka zůstává otevřená**. Rozhodnutí popisuje [ADR 0015](../adr/0015-g05-emitter-category.md). [Hlavní UX](WEB-UX-UI-SPECIFIKACE.md) · [Vizuální audit](../audits/VIZUALNI-ZADANI-AUDIT-2026-10-24.md).
+**Stav 24. 10. 2026:** v PR #29 byly implementovány původní Path2D siluety; [PR #30](https://github.com/Boym323/AirRadarV2/pull/30) úspěšně sloučen (`9c398c2f`, [CI 3/3 PASS](https://github.com/Boym323/AirRadarV2/actions/runs/40084080300)) a implementuje volitelná validovaná metadata `emitterCategory` ze skutečného readsb JSON i CRC-validních DF17 BEAST zpráv. **Finální G-05 vizuální/GPU přejímka zůstává otevřená**. Rozhodnutí popisuje [ADR 0015](../adr/0015-g05-emitter-category.md). [Hlavní UX](WEB-UX-UI-SPECIFIKACE.md) · [Vizuální audit](../audits/VIZUALNI-ZADANI-AUDIT-2026-10-24.md).
 
 ## 1. Historická výchozí implementace před G-05.03 / PR #29 a #30
 

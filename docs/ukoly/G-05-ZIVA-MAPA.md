@@ -1,8 +1,8 @@
 # G-05 — MapLibre mapa v již připraveném Vite webu
 
-**Navazující G-05 map-first UI (24. 10.):** implementováno nové kompaktní rozložení mapy, skrývatelný seznam a kontextový detail v izolované větvi; nová Chromium regresní CI #40079234896 PASS, PR #26 sloučen do main na `c17601d5`. Tento krok realizuje již existující R01/R06/R08/R09/R14 a schválenou `WEB-UX-UI-SPECIFIKACE.md`, nikoli nové produktové ID. Formální 4/11 se beze změny udržuje do přejímky.
+**Navazující G-05 map-first UI (24. 10.):** implementováno nové kompaktní rozložení mapy, skrývatelný seznam a kontextový detail v izolované větvi; nová Chromium regresní CI #40079234896 PASS, PR #26 sloučen do main na `c17601d5`. Tento krok realizuje již existující R01/R06/R08/R09/R14 a schválenou `WEB-UX-UI-SPECIFIKACE.md`, nikoli nové produktové ID. Formálně 7/11 po doložených testech G-05.03/.08/.09; G-05.04/.07/.10/.11 zůstávají otevřené.
 
-**Stav:** ROZPRACOVÁNO; [PR #22](https://github.com/Boym323/AirRadarV2/pull/22) sloučen 23. 10. 2026, DEV nasazení [#40028968380](https://github.com/Boym323/AirRadarV2/actions/runs/40028968380) PASS. 4 z 11 kroků jsou formálně ověřené, G-05.08 má navazující opravu a čeká na nové CI; úplný benchmark a letiště nejsou hotové.  
+**Stav:** ROZPRACOVÁNO; [PR #22](https://github.com/Boym323/AirRadarV2/pull/22) sloučen 23. 10. 2026, DEV nasazení [#40028968380](https://github.com/Boym323/AirRadarV2/actions/runs/40028968380) PASS. 7 z 11 kroků je formálně ověřených, G-05.08 má navazující opravu a čeká na nové CI; úplný benchmark a letiště nejsou hotové.  
 **Odpovědnost:** M04 — Vite/React/MapLibre.  
 **Závislosti:** G-03; letištní vrstva se dokončí po G-06, ostatní části lze provést dříve.  
 **Primární KEEP ID:** `R01`, `R03`, `R04`, `R06`, `R08`, `R09`, `R12`, `R14`.  
@@ -10,11 +10,11 @@
 
 **UX návaznost:** [Map-first UX/UI specifikace](../plan/WEB-UX-UI-SPECIFIKACE.md) stanoví mapu jako výchozí hlavní plochu a seznam/výběr/detail jako kontextové ovládání. První G-05 dvojpanelové rozložení je přechodný stav; přestavba nesmí narušit SSE ani měření G-05.11. Specifikace nepřidává nové ID ani nezaškrtává neověřené kroky.
 
-**Ikony a vizuální přejímka (24. 10.):** závazný podklad [MAPOVE-IKONY-A-POPISKY.md](../plan/MAPOVE-IKONY-A-POPISKY.md) a [audit vizuálního zadání](../audits/VIZUALNI-ZADANI-AUDIT-2026-10-24.md). Specifikovány vlastní siluety podle **validované** emitter category, track a bezsměrový fallback, velikosti, barvy, kolize a testy. **PR #30** implementuje zpětně kompatibilní volitelnou `emitterCategory` v jediném G-03 DTO podle [ADR 0015](../adr/0015-g05-emitter-category.md); akceptaci určuje výsledek CI a skutečné browser testy. Tato dokumentační změna neuzavírá G-05.03/.04 ani žádné jiné checkboxy.
+**Ikony a vizuální přejímka (24. 10.):** závazný podklad [MAPOVE-IKONY-A-POPISKY.md](../plan/MAPOVE-IKONY-A-POPISKY.md) a [audit vizuálního zadání](../audits/VIZUALNI-ZADANI-AUDIT-2026-10-24.md). Specifikovány vlastní siluety podle **validované** emitter category, track a bezsměrový fallback, velikosti, barvy, kolize a testy. **PR #30** sloučen jako `9c398c2f`; zpětně kompatibilní validované `emitterCategory` přichází z readsb JSON a BEAST DF17 (ADR 0015), [CI #40084080300](https://github.com/Boym323/AirRadarV2/actions/runs/40084080300) **3/3 PASS**, izolovaný SQL test [#40084080298](https://github.com/Boym323/AirRadarV2/actions/runs/40084080298) PASS. Tato dokumentační změna neuzavírá G-05.03/.04 ani žádné jiné checkboxy.
 
 ## Výstup etapy
 
-**Pokračování implementace G-05.03/.04 (24. 10. 2026; [PR #29](https://github.com/Boym323/AirRadarV2/pull/29), [CI 3/3 PASS](https://github.com/Boym323/AirRadarV2/actions/runs/40082045615), sloučeno jako `8309f069`):** nově existuje `apps/web/src/radar/aircraft-icons.ts` s vlastními Path2D siluetami, bezpečnou kategoriovou volbou/fallbackem a mapová vrstva s halo/štítky podle zoomu. **Navazuje PR #30:** příjem kategorií z readsb JSON a DF17 BEAST byl doplněn do Rust/TypeScript kontraktu; prokazatelný GPU/label benchmark a závěrečná přejímka dosud nejsou hotové. Checkboxy G-05.03/.04 zůstávají [ ] do důkazů a dokončení datové části. [Průběžný report](../reports/G-05-VYSLEDEK.md).
+**Pokračování implementace G-05.03/.04 (24. 10. 2026; [PR #29](https://github.com/Boym323/AirRadarV2/pull/29), [CI 3/3 PASS](https://github.com/Boym323/AirRadarV2/actions/runs/40082045615), sloučeno jako `8309f069`):** nově existuje `apps/web/src/radar/aircraft-icons.ts` s vlastními Path2D siluetami, bezpečnou kategoriovou volbou/fallbackem a mapová vrstva s halo/štítky podle zoomu. **PR #30 sloučen:** G-05.03 má testované originální ikony, validovaný datový kontrakt a browser smoke pro 2 000 cílů. G-05.04 a G-05.11 stále potřebují měřenou kolizní/grafickou přejímku. [Průběžný report](../reports/G-05-VYSLEDEK.md).
 
 
 
@@ -32,7 +32,7 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Implementace:** Založ úzký klient nad /api/v1/stream; aplikuj snapshot/delta na vlastní browser store s kontrolou sekvence.  
   **Ověření:** Unit test normalizuje, maže a obnoví tracky při resync.
 
-- [ ] **G-05.03 — Symbolová vrstva**  
+- [x] **G-05.03 — Symbolová vrstva**  
   **Implementace:** Použij jeden GeoJSON source a layer pro ikony dle skutečně známého typu a směru, stabilní feature IDs; mapování a fallback podle [ikonografického kontraktu](../plan/MAPOVE-IKONY-A-POPISKY.md).  
   **Ověření:** Správné směry, bez fiktivních defaultních vlastností a duplicit.
 
@@ -52,11 +52,11 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
   **Implementace:** Kresli krátkou omezenou stopu jen z validních přijatých poloh, s TTL a maximálním počtem bodů.  
   **Ověření:** Test retence odřízne staré body a nevytváří budoucí predikce.
 
-- [ ] **G-05.08 — Follow kamera**  
+- [x] **G-05.08 — Follow kamera**  
   **Implementace:** Volitelně sleduj vybrané letadlo s možností okamžitě vypnout sledování interakcí uživatele.  
-  **Ověření:** Playwright ověří výběr, follow stop a nezaseknutou kameru. Doplněno vypnutí follow při ručním wheel/touchmove/keyboard a drag/rotate/pitch; nový Chromium test čeká na CI a G-05.08 zůstává neuzavřená do doložení všech scénářů.
+  **Ověření:** Playwright ověří výběr, follow stop a nezaseknutou kameru. Doplněno vypnutí follow při ručním wheel/touchmove/keyboard a drag/rotate/pitch; Chromium CI #40084080300 PASS; G-05.08 je TESTED pro popsaná gesta, plná fyzická mobilní přejímka zůstává v G-10.
 
-- [ ] **G-05.09 — Výběr mapového podkladu**  
+- [x] **G-05.09 — Výběr mapového podkladu**  
   **Implementace:** Implementuj jen funkční schválené mapové styly a jejich bezpečné URL; preference mohou být lokálně uložené.  
   **Ověření:** Test změny stylu zachová live tracky a výběr.
 
