@@ -4,7 +4,7 @@
 
 ### G-05.11 — CI MapLibre benchmark a adaptivní diff (24. 10. 2026)
 - [PR #34](https://github.com/Boym323/AirRadarV2/pull/34) sloučen `b8691f8b`, [CI #40095503907](https://github.com/Boym323/AirRadarV2/actions/runs/40095503907) 3/3 PASS; 32 skutečně naměřených software Chromium scénářů, `setData/updateData`, 25/100/500/2 000 cílů při 1/2 Hz, desktop/mobile emulation. [Celý p95 report](docs/reports/G-05-VYKON-MERENI-2026-10-24.md) s odkazy na JSON artefakt.
-- [PR #36](https://github.com/Boym323/AirRadarV2/pull/36): podmíněné GeoJSON updateData na hustém provozu a bezpečný fallback při nové epoše/stylu; zatím čeká na vlastní CI.
+- [PR #36](https://github.com/Boym323/AirRadarV2/pull/36) sloučen `3bf49297`: podmíněné GeoJSON updateData pro hustý provoz, skip idle stavu a bezpečný fallback při nové epoše/stylu. [CI #40096318946](https://github.com/Boym323/AirRadarV2/actions/runs/40096318946) 3/3 PASS, včetně 200/2 000 SSE delta.
 - **G-05.11 stále otevřená**: software RAF měření není ověřený fyzický GPU/FPS desktop/telefonu.
 
 
