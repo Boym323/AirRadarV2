@@ -1,6 +1,6 @@
 # G-05 — MapLibre mapa v již připraveném Vite webu
 
-**Stav:** ROZPRACOVÁNO v [PR #22](https://github.com/Boym323/AirRadarV2/pull/22); 4 z 11 kroků mají první automatické důkazy, úplný benchmark a letiště nejsou hotové.  
+**Stav:** ROZPRACOVÁNO; [PR #22](https://github.com/Boym323/AirRadarV2/pull/22) sloučen 23. 10. 2026, DEV nasazení [#40028968380](https://github.com/Boym323/AirRadarV2/actions/runs/40028968380) PASS. 4 z 11 kroků jsou formálně ověřené, G-05.08 má navazující opravu a čeká na nové CI; úplný benchmark a letiště nejsou hotové.  
 **Odpovědnost:** M04 — Vite/React/MapLibre.  
 **Závislosti:** G-03; letištní vrstva se dokončí po G-06, ostatní části lze provést dříve.  
 **Primární KEEP ID:** `R01`, `R03`, `R04`, `R06`, `R08`, `R09`, `R12`, `R14`.  
@@ -44,7 +44,7 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
 
 - [ ] **G-05.08 — Follow kamera**  
   **Implementace:** Volitelně sleduj vybrané letadlo s možností okamžitě vypnout sledování interakcí uživatele.  
-  **Ověření:** Playwright ověří výběr, follow stop a nezaseknutou kameru.
+  **Ověření:** Playwright ověří výběr, follow stop a nezaseknutou kameru. Doplněno vypnutí follow při ručním wheel/touchmove/keyboard a drag/rotate/pitch; nový Chromium test čeká na CI a G-05.08 zůstává neuzavřená do doložení všech scénářů.
 
 - [ ] **G-05.09 — Výběr mapového podkladu**  
   **Implementace:** Implementuj jen funkční schválené mapové styly a jejich bezpečné URL; preference mohou být lokálně uložené.  

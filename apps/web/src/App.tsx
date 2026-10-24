@@ -99,7 +99,7 @@ export default function App() {
               </div>
               <p>{selected.id} · {formatAltitude(selected)}</p>
               <p>{selected.position && !selected.stale ? "Poloha dostupná" : "Bez čerstvé polohy"}</p>
-              <button type="button" disabled={!selected.position || selected.stale}
+              <button type="button" aria-pressed={follow} disabled={!selected.position || selected.stale}
                 onClick={() => setFollow(previous => !previous)}>
                 {follow ? "Ukončit sledování" : "Sledovat na mapě"}
               </button>

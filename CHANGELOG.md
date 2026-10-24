@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-05.08 — navazující ochrana ručního ovládání follow (24. 10. 2026)
+- Po nasazení první mapy do DEV opravena konkurence ručního zoomu/pohybu s automatickým follow (R09): wheel, touchmove, šipky, drag/rotate/pitch nyní režim vypnou; programové easeTo jej samo nevypne.
+- Tlačítko sledování hlásí `aria-pressed`. Izolovaný Chromium test pokrývá myš/klávesnici/dotyk a zachování MapLibre instance; **CI nové změny se teprve ověří**, R09 i etapa G-05 zůstávají IN_PROGRESS.
+- PR #22 již sloučen (23. 10.) a první G-05 mapa nasazena na DEV přes [#40028968380](https://github.com/Boym323/AirRadarV2/actions/runs/40028968380); V1/produkce/DB bez změny.
+
 ### G-05 — první ověřená MapLibre mapa (PR #22)
 - CI #40024971130 PASS: Chromium MapLibre canvas a izolovaný SSE snapshot/delta fixture bez real ADS-B/DB/external tiles, bez remountu; interakční výběr, smazání a změna stylu. R01 a R06 `TESTED` na základě prohlížečové přejímky, G-05.01/.02/.05/.06 mají jednotkové a browser důkazy.
 - Na samostatné větvi Vite/React klient MapLibre GL JS 6.15.0 s připnutým npm lockfile, Vite workerem a OpenFreeMap podkladem Liberty/Fiord. Jeden GeoJSON source, čitelné symboly, známý track/heading, mapová stopa, follow a klikací výběr.

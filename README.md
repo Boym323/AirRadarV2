@@ -62,7 +62,7 @@ vypnutý; G-02 zůstává chráněno sdíleným lockem a jeho přejímky jsou od
 ## Aktuální architektura a navržené změny
 
 - **Rust/Tokio/Axum:** readsb JSON a BEAST TCP, vlastní RAM letadel, bezpečné REST API a SSE.
-- **Vite/React:** nasazený statický webový základ; **MapLibre, seznam, stopa a follow jsou teprve plán G-05**.
+- **Vite/React:** G-05 MapLibre, seznam, stopa a follow jsou už implementované a nasazené na DEV (PR #22, #40028968380), ale etapa není plně přejata; chybí mapové E2E/výkon a letiště po G-06.
 - **PostgreSQL/SQLx:** samostatná V2 databáze na existujícím odděleném DB LXC; historie V1 se nepřenáší.
 - **Jedno místní pokrytí:** uživatel pracuje vždy s daty místního přijímače, bez přepínače datových zdrojů.
 - **45 schválených funkcí:** 9 KEEP funkcí má důkaz `TESTED` (6 v G-02 a `J06/J07/J08` v G-03); etapová DEV přejímka G-03 je `ACCEPTED`, nikoliv plošná produktová akceptace všech 45 funkcí.

@@ -172,7 +172,21 @@ export function RadarMap({ frame, selectedId, follow, style, onSelect, onStopFol
     };
     instance.on("click", PLANE_LAYER, click);
     instance.on("click", DOT_LAYER, click);
-    instance.on("dragstart", () => props.current.onStopFollow());
+    // G-05.08 / R09: automatické easeTo nesmí bojovat s ruční navigací.
+    // zoomstart/movestart nejsou vhodné: vyvolává je také naše easeTo.
+    const stopFollow = () => props.current.onStopFollow();
+    instance.on("dragstart", stopFollow);
+    instance.on("rotatestart", stopFollow);
+    instance.on("pitchstart", stopFollow);
+    const canvasContainer = instance.getCanvasContainer();
+    const manualKeyboardMove = (event: KeyboardEvent) => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "+", "=", "-"].includes(event.key)) {
+        stopFollow();
+      }
+    };
+    canvasContainer.addEventListener("wheel", stopFollow, { passive: true });
+    canvasContainer.addEventListener("touchmove", stopFollow, { passive: true });
+    canvasContainer.addEventListener("keydown", manualKeyboardMove);
     const tick = setInterval(() => {
       if (!instance.isStyleLoaded()) return;
       refresh();
@@ -187,6 +201,9 @@ export function RadarMap({ frame, selectedId, follow, style, onSelect, onStopFol
     });
     return () => {
       clearInterval(tick);
+      canvasContainer.removeEventListener("wheel", stopFollow);
+      canvasContainer.removeEventListener("touchmove", stopFollow);
+      canvasContainer.removeEventListener("keydown", manualKeyboardMove);
       instance.remove();
       map.current = null;
     };

@@ -1,6 +1,6 @@
 # G-05 — průběžný výsledek implementace živé mapy
 
-**Datum:** 23. 10. 2026 · **Stav:** ROZPRACOVÁNO, první 4/11 kroků ověřené (G-05.01/.02/.05/.06) · [PR #22](https://github.com/Boym323/AirRadarV2/pull/22) (draft). Před merge byla implementace izolovaná od `main`; první celek je určen pro DEV náhled, ne produkční release.
+**Aktualizace:** 24. 10. 2026 · **Stav:** ROZPRACOVÁNO, 4/11 kroků plně ověřené (G-05.01/.02/.05/.06). [PR #22](https://github.com/Boym323/AirRadarV2/pull/22) byl **sloučen do main 23. 10.**; [DEV nasazení #40028968380](https://github.com/Boym323/AirRadarV2/actions/runs/40028968380) PASS, včetně G-04 živého API/SSE. Jde o DEV náhled, nikoli produkční release nebo finální G-05 přejímku.
 
 ## Implementované části
 
@@ -10,6 +10,12 @@
 - **G-05.05/.06 — seznam a výběr:** jeden store pro mapu i vyhledatelný seznam, filtr podle dostupné čerstvé polohy, výběr letadla a vysloveně neprodukční prázdný stav.
 - **G-05.07/.08/.09 — navazující základ:** browser-only přijaté body stopy omezené na 64 bodů/20 minut bez extrapolace, volitelný follow s vypnutím při pan a podklady Liberty/Fiord. Pro finální TESTED je nutná prohlížečová interakční regrese.
 - **Jednotkové testy:** `apps/web/tests/g05-radar.test.ts` testuje atomické delty, duplicitní cíle, gaps, epochy, odstranění, validitu souřadnic, retenci a heading. `apps/web/tests/app.test.tsx` ověřuje české UI i stav bez live dat.
+
+## Navazující změna G-05.08 / R09 — ochrana ručního pohybu mapou
+
+- Opravena situace, kdy se follow režim vypnul pouze po `dragstart`, ale při ručním zoomu kolečkem, dotykovém přesunu nebo navigaci šipkami se mapa mohla každou sekundu vracet k letadlu.
+- MapLibre nyní uvolňuje follow při drag/rotate/pitch a při `wheel`, `touchmove` a navigačních klávesách uvnitř mapy. Programové `easeTo` sledování neruší. Přidána korektní registrace i odregistrování DOM listenerů a přístupný stav tlačítka `aria-pressed`.
+- Rozšířen izolovaný Chromium regresní test o skutečné kolečko myši a obsluhu klávesnice/dotykového pohybu. **Výsledek nového CI musí být doložen před změnou statusu kroku na TESTED.** Bez RF/DB a bez tvrzení o mobilním GPU/FPS.
 
 ## Co zůstává
 
