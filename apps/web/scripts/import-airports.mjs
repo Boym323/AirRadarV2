@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global process, fetch, AbortSignal, Buffer, console */
 // G-06.01/.02/.03 → G-05.10 (R12): statický veřejný datový podklad.
 // Stahuje se JEDNOU při buildu, nikoli z browseru/radaru za běhu.
 // Zdroj OurAirports, The Unlicense (public domain), připnutý git commit i blob.
