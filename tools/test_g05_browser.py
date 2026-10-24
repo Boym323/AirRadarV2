@@ -108,7 +108,8 @@ def main():
             expect(page.get_by_role("heading", name="AirRadar", exact=True)).to_be_visible()
             expect(page.locator(".version-tag")).to_have_text("V2")
             expect(page.locator(".map-disclosure")).to_have_count(0)
-            expect(page.locator(".radar-footer")).to_have_count(0)
+            expect(page.locator(".radar-footer")).to_have_count(1)
+            expect(page.locator(".radar-version")).to_contain_text("Nasazeno")
             assert page.evaluate("""() => {
               const title = document.querySelector('.brand-title');
               const container = document.querySelector('.brand');
