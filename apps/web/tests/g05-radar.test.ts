@@ -65,6 +65,35 @@ describe("G-05.02 atomický G-03 SSE adapter", () => {
   });
 });
 
+describe("G-05.03 — veřejný kategoriový kontrakt", () => {
+
+  it("G-05 atomický SSE store odmítne podvrženou kategorii", () => {
+    const store = new AircraftStore();
+    expect(store.apply(snapshot([{...aircraft(), emitterCategory:"A7"}]))).toBe("applied");
+    expect(store.snapshot().aircraft[0].emitterCategory).toBe("A7");
+    const invalid = {...aircraft(), emitterCategory:"C0"} as unknown as Aircraft;
+    expect(store.apply(delta([invalid], [], 1))).toBe("invalid");
+    expect(store.version.seq).toBe(0);
+    expect(store.snapshot().aircraft[0].emitterCategory).toBe("A7");
+    expect(store.apply(delta([{...aircraft(), emitterCategory:"B1"}], [], 1))).toBe("applied");
+    expect(store.snapshot().aircraft[0].emitterCategory).toBe("B1");
+    expect(toGeoJSON(store.snapshot().aircraft, null).features[0].properties?.icon).toBe("glider");
+  });
+  it("2 000 stabilních cílů používá jediný GeoJSON source bez DOM markerů", () => {
+    const targets = Array.from({length: 2000}, (_, i) => ({
+      ...aircraft(`icao:${i.toString(16).padStart(6, "0")}`),
+      position: {lat: 48 + (i % 60) * .01, lon: 14 + (i % 90) * .01},
+      emitterCategory: (i % 2 === 0 ? "A7" : "B1") as "A7" | "B1",
+    }));
+    const points = toGeoJSON(targets, targets[0].id).features;
+    expect(points).toHaveLength(2000);
+    expect(new Set(points.map(f => f.id)).size).toBe(2000);
+    expect(points[0].properties?.icon).toBe("rotorcraft");
+    expect(points[1].properties?.icon).toBe("glider");
+  });
+
+});
+
 describe("G-05.03 / R03 — vlastní směrové symboly", () => {
   it("má originální vektorovou siluetu pro každou podporovanou kategorii", () => {
     expect(Object.keys(AIRCRAFT_PATHS)).toHaveLength(10);
