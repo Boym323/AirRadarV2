@@ -10,7 +10,7 @@ describe("G-05 map-first český radar", () => {
     expect(html).toContain("Mapa živého provozu");
     expect(html).toContain("Letadla");
     expect(html).toContain("Mapový podklad");
-    expect(html).toContain("AirRadar V1");
+    expect(html).toContain("Lokální ADS-B");
     expect(html).not.toContain("Seznam letadel");
     expect(html).not.toContain("Vybrané letadlo");
     expect(html).not.toContain("LIVE DATA");
