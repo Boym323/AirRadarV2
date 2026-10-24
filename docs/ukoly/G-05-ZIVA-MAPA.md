@@ -62,7 +62,7 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
 
 - [ ] **G-05.10 — Vrstva letišť**  
   **Implementace:** Po dokončení G-06 zobraz letištní body nad stabilním zdrojem; neduplikuj katalog ve webu.  
-  **Ověření:** Zobrazené letiště vede ke správnému katalogovému detailu a API.
+  **Ověření:** Zobrazené letiště vede ke správnému katalogovému detailu a API. Průběžně je připravený public-domain static JSON + klikací vrstva a referenční detail z G-06.01/.02/.03/.07; G-06.05 finální REST a datová akceptace stále otevřené.
 
 - [ ] **G-05.11 — Výkon a regresní E2E**  
   **Implementace:** Porovnej setData a updateData pouze podle skutečných dat; změř 25/100/500/2000 cílů, 1/2 Hz, FPS, re-renders a paměť.  

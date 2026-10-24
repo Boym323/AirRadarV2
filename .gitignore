@@ -13,3 +13,6 @@ coverage/
 __pycache__/
 *.py[cod]
 .artifacts/
+
+# G-06 generated from pinned OurAirports commit during Vite build
+apps/web/public/data/airports-ourairports.json

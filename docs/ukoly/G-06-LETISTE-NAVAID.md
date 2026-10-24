@@ -1,12 +1,14 @@
 # G-06 — Lehký katalog letišť, frekvencí a NAVAID
 
-**Stav:** NEZAHÁJENO (podrobné zadání; nejde o implementaci).  
+**Stav 24. 10. 2026:** ROZPRACOVÁNO — build-time veřejný OurAirports katalog pro G-05.10. Jednotlivé G-06 checkpointy zůstávají otevřené do CI a úplného REST/NAVAID/frekvenčního modelu. [Průběžný report](../reports/G-06-VYSLEDEK.md).  
 **Odpovědnost:** M05 — Rust + schválené statické datové podklady.  
 **Závislosti:** G-01, G-03; G-04 jen pokud konkrétní čtení skutečně potřebuje DB.  
 **Primární KEEP ID:** `A01`, `A02`, `T10`.  
 **Odhad realizace:** nepodložený, nedávat termín bez změřené kapacity týmu.
 
 **Vizuální návaznost (24. 10. 2026):** [map-first UX](../plan/WEB-UX-UI-SPECIFIKACE.md), [ikony a mapové popisky](../plan/MAPOVE-IKONY-A-POPISKY.md), [audit úplnosti](../audits/VIZUALNI-ZADANI-AUDIT-2026-10-24.md): Letiště, dráhy a NAVAID/FIX musejí mít vlastní odlišitelný tvar a přístupný kontextový detail; nevydávat neověřené frekvence/zdroje, nezahlcovat mapu a nechat funkční živá letadla. Tento dokumentační odkaz neuzavírá žádný krok.
+
+**Předběžný implementovaný základ:** statický read-only JSON `/data/airports-ourairports.json` generovaný při buildu z přesné revize public-domain OurAirports, bez další služby či synchronizačního daemona; vykreslení v MapLibre jako samostatná vrstva nad mapou a nezávisle na SSE. Není to ještě plný REST G-06.05 ani dokončená etapa.
 
 ## Výstup etapy
 

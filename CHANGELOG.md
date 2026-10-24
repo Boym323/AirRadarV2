@@ -2,6 +2,13 @@
 
 ## [Nepublikováno]
 
+### G-06.01/.02/.03/.07 → G-05.10 — legální letištní data a mapová vrstva (24. 10. 2026)
+- OurAirports The Unlicense, přesný SHA upstream CSV ověřený při Vite buildu; statický regionální JSON CZ/SK/AT/PL/HU s validovanými pozicemi a testy importéru. Žádná externí runtime síťová služba.
+- Oddělený statický GeoJSON source MapLibre, přepínač letištní vrstvy a klikací kontextový detail. NAVAID, frekvence a úplný G-06 REST jsou mimo tento základ; G-05.10 a R12 zůstávají ve stavu rozpracováno do plné přejímky.
+- [Průběžný report](docs/reports/G-06-VYSLEDEK.md). CI a nasazení dosud NEOVĚŘENO.
+
+
+
 ### G-05.04/.07 — čitelné popisky a přerušená stopa (24. 10. 2026, CI před přejímkou)
 - R04: štítky jen z validovaného krátkého callsignu; chybějící/nereálnou výšku neuvádíme, selected má prioritu proti ostatním nekolidujícím textům.
 - R08: GeoJSON MultiLineString bez falešných spojnic přes výpadek >120 s nebo antimeridián; browserově udržovaná stopa max. 64 bodů / 20 min zůstala.
