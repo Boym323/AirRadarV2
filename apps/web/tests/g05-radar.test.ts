@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AircraftStore, type Aircraft } from "../src/radar/aircraft-store";
-import { toGeoJSON, mapCallsign, mapLabel, trailGeoJSON } from "../src/radar/RadarMap";
+import { toGeoJSON, mapCallsign, mapLabel, trailGeoJSON, followTargetChanged } from "../src/radar/RadarMap";
 import { AIRCRAFT_PATHS, iconForAircraft, validGroundTrack } from "../src/radar/aircraft-icons";
 
 const aircraft = (id = "icao:abc123", at = 1000): Aircraft => ({
@@ -212,5 +212,16 @@ describe("G-05.07 / R08 — věrná skutečná stopa bez interpolace výpadků",
     expect(store.apply(delta([],["icao:abc123"],2))).toBe("applied");
     expect(store.snapshot().trails.size).toBe(0);
     expect(trailGeoJSON(store.snapshot(),"icao:abc123").features).toHaveLength(0);
+  });
+});
+
+
+describe("G-05.08 — kamera pouze při změně ověřené polohy", () => {
+  it("neanimuje opakovaně stále stejné letadlo a obnoví follow při jiné identitě", () => {
+    const target = { id: "icao:abc123", lon: 17.5, lat: 49.2 };
+    expect(followTargetChanged(null, target)).toBe(true);
+    expect(followTargetChanged(target, { ...target })).toBe(false);
+    expect(followTargetChanged(target, { ...target, lat: 49.2001 })).toBe(true);
+    expect(followTargetChanged(target, { ...target, id: "icao:bbbbbb" })).toBe(true);
   });
 });

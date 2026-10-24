@@ -1,5 +1,12 @@
 # CHANGELOG — AirRadar V2
 
+## 24. 10. 2026 — Auditní opravy mapy G-05.08 a obnovy podkladu
+
+- `R09/G-05.08`: kamera `follow` nespouští animaci každou sekundu při stejné poloze; nový výběr nebo opětovné zapnutí stále provede úvodní přesun. Respektováno `prefers-reduced-motion`.
+- `R14/G-05.09`: MapLibre odstraní zastaralé upozornění při úspěšném `style.load` a při dokončení načítání dlaždic. Stream i seznam zůstávají nezávislé na mapovém podkladu.
+- Regresní testy: Vitest `followTargetChanged` a offline Chromium emulace chyby a obnovy podkladu; průběžná CI není dokladem fyzického GPU výkonu. G-05.11 zůstává otevřena.
+
+
 ## 24. 10. 2026 — Provozní oprava auditu G-03/G-04 (ověření probíhá)
 
 - `J09` — zdravotní stav PostgreSQL nyní odpovídá read-only `SELECT 1` sondě s intervalem 15 s; HTTP při selhání přiznává `degraded`, namísto statického `database_connected=true`.
