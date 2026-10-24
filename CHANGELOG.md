@@ -4,6 +4,11 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### UX/UI — schválen princip „mapa na prvním místě“ (24. 10. 2026)
+- Nová [specifikace UX/UI](docs/plan/WEB-UX-UI-SPECIFIKACE.md) sjednocuje cílovou informační architekturu, desktop/mobilní panely, stavy a akceptační scénáře G-05 až G-10. Jediná živá mapa je výchozí pracovní plocha, doplňkové informace jsou kontextové.
+- Jde **jen o dokumentační návrh** (schválený hlavní princip, detailní vizuální volby otevřené), bez změny kódu, počtu 45 aktivních funkcí, stavů TESTED/ACCEPTED, DB, V1 či nasazení.
+- Doplněn [konkurenční UX průzkum](docs/audits/KONKURENCNI-UX-PRUZKUM-2026-10-24.md) se zdrojovaným srovnáním, prioritami P0/P1 a výslovně nepřebíranými prvky; rozhodnutí zůstávají uvnitř aktuálního schváleného rozsahu.
+
 ### G-05.08 — navazující ochrana ručního ovládání follow (24. 10. 2026)
 - Po nasazení první mapy do DEV opravena konkurence ručního zoomu/pohybu s automatickým follow (R09): wheel, touchmove, šipky, drag/rotate/pitch nyní režim vypnou; programové easeTo jej samo nevypne.
 - Tlačítko sledování hlásí `aria-pressed`. Izolovaný Chromium test pokrývá myš/klávesnici/dotyk a zachování MapLibre instance; **CI nové změny se teprve ověří**, R09 i etapa G-05 zůstávají IN_PROGRESS.

@@ -6,6 +6,8 @@
 **Primární KEEP ID:** `R01`, `R03`, `R04`, `R06`, `R08`, `R09`, `R12`, `R14`.  
 **Odhad realizace:** nepodložený, nedávat termín bez změřené kapacity týmu.
 
+**UX návaznost:** [Map-first UX/UI specifikace](../plan/WEB-UX-UI-SPECIFIKACE.md) stanoví mapu jako výchozí hlavní plochu a seznam/výběr/detail jako kontextové ovládání. První G-05 dvojpanelové rozložení je přechodný stav; přestavba nesmí narušit SSE ani měření G-05.11. Specifikace nepřidává nové ID ani nezaškrtává neověřené kroky.
+
 ## Výstup etapy
 
 Samostatně otestovaný modul odpovídající uvedeným schváleným ID; zbytečné části systému se nepřidávají.
