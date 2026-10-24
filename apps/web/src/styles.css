@@ -1,4 +1,4 @@
-/* G-05 R01/R06/R14 · kompaktní map-first vizuál, bez dekorativních informačních overlayů */
+/* G-05 R01/R06/R14 · Aviation Atlas I1 · mapa zabírá celý viewport */
 :root {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   color: #eff5fa;
@@ -152,8 +152,6 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 .follow-button[aria-pressed="true"] { background: #29684d; border-color: #91d8af; }
 .follow-button:disabled { opacity: .43; cursor: not-allowed; }
 .detail-hint, .empty-message, .hint { font-size: .77rem; line-height: 1.5; color: #abc0cd; }
-.radar-footer { flex: 0 0 auto; display: flex; justify-content: space-between; gap: 12px; padding: 6px 18px; background: #0b182a; color: #6f879b; font-size: .66rem; letter-spacing: .01em; white-space: normal; }
-.radar-version { color: #89a8bd; white-space: nowrap; }
 .map-error {
   position: absolute; z-index: 8; left: 15px; top: 15px; bottom: auto;
   width: min(450px, calc(100% - 30px)); margin: 0; padding: 12px 14px;
@@ -190,7 +188,6 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   .traffic-panel { height: min(66dvh, 590px); }
   .detail-panel { bottom: 0; overflow-y: auto; }
   .map-error { left: 9px; top: 10px; max-width: calc(100% - 60px); font-size: .73rem; }
-  .radar-footer { flex-wrap: wrap; justify-content: center; text-align: center; padding: 4px 7px; font-size: .61rem; }
 }
 @media (max-width: 340px) {
   .radar-header { padding: 8px; }
@@ -200,4 +197,138 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
+/* I1: plovoucí nástroje nechávají geografii pod celou obrazovkou.
+   Zachována jediná MapLibre instance, stávající JSX panely i SSE stav. */
+.radar-page { position: relative; display: block; background: #243c4c; }
+.radar-stage { position: absolute; inset: 0; background: #243c4c; }
+.radar-header {
+  position: absolute; z-index: 12; top: 16px; left: 18px; right: 18px;
+  min-height: 0; padding: 0; gap: 16px;
+  border: 0; background: transparent; box-shadow: none;
+  pointer-events: none;
+}
+.brand, .header-actions { pointer-events: auto; }
+.brand {
+  display: flex; min-height: 58px; padding: 8px 15px 8px 10px;
+  background: rgba(11, 27, 42, .91);
+  border: 1px solid rgba(190, 219, 237, .22);
+  border-radius: 17px;
+  box-shadow: 0 10px 40px rgba(3, 14, 26, .26);
+  backdrop-filter: blur(22px) saturate(1.12);
+}
+.brand-mark {
+  width: 39px; height: 39px; flex-basis: 39px; border-radius: 12px;
+  background: linear-gradient(145deg, #1d5773, #14384f);
+  border: 1px solid #94e4f543;
+}
+.brand h1 { font-size: 1.2rem; font-weight: 780; letter-spacing: -.035em; }
+.brand-subtitle { color: #b0c7d5; font-size: .66rem; letter-spacing: .015em; }
+.version-tag { background: #58bfdd19; border-color: #6dcde36b; color: #a4e8f4; }
+.header-actions {
+  display: flex; gap: 9px; align-items: center;
+  min-height: 58px; padding: 7px;
+  border: 1px solid rgba(191, 220, 238, .19); border-radius: 17px;
+  background: rgba(11, 27, 42, .91);
+  box-shadow: 0 10px 40px rgba(3, 14, 26, .25);
+  backdrop-filter: blur(22px) saturate(1.12);
+}
+.quick-search {
+  display: flex; align-items: center; gap: 8px; height: 39px;
+  border: 1px solid rgba(199, 227, 242, .16);
+  border-radius: 11px; padding: 0 11px;
+  background: rgba(3, 13, 25, .32);
+  color: #a6c7d8; transition: border-color .15s, background-color .15s;
+}
+.quick-search:focus-within { border-color: #7cdcf0; background: rgba(19, 53, 70, .80); }
+.search-icon { width: 17px; height: 17px; flex: 0 0 17px; }
+.quick-search input {
+  width: 190px; max-width: 21vw; min-width: 0;
+  color: #edf7fc; border: 0; outline: none; background: transparent;
+  font-size: .77rem; font-weight: 500;
+}
+.quick-search input::placeholder { color: #a3b9c8; opacity: .95; }
+.quick-search input::-webkit-search-cancel-button { filter: grayscale(1) invert(1); }
+.quick-search input:focus-visible { outline: none; }
+.quick-search-shortcut { display: inline-flex; justify-content: center; align-items: center; width: 20px; height: 22px; font: 11px ui-monospace, monospace; color: #a9bed0; background: #ffffff14; border: 1px solid #ffffff26; border-radius: 5px; }
+.flight-summary { gap: 12px; margin: 0 3px; }
+.radar-count { font-size: .79rem; font-weight: 760; }
+.connection { min-height: 36px; background: #1743399c; border-color: #5fe0b638; }
+.header-divider { height: 26px; margin: 0 1px; }
+.header-button {
+  border: 1px solid transparent; border-radius: 10px;
+  background: transparent; color: #eaf4fc;
+  font-size: .78rem; min-height: 39px; padding: 8px 11px;
+}
+.header-button:hover, .header-button[aria-expanded="true"] {
+  background: #75c9e51b; border-color: #a2e3f13a;
+}
+.button-icon { color: #b9d5e3; }
+.maplibregl-ctrl-top-right { top: 91px; right: 17px; }
+.maplibregl-ctrl-group {
+  background: rgba(11, 27, 42, .89) !important;
+  border: 1px solid #a8cfdf4d !important;
+  border-radius: 14px !important;
+  box-shadow: 0 7px 27px #061d336b !important;
+  backdrop-filter: blur(16px);
+}
+.maplibregl-ctrl-group button { width: 39px; height: 39px; }
+.radar-panel {
+  top: 91px; bottom: 19px;
+  background: rgba(10, 29, 44, .94);
+  border: 1px solid rgba(194, 225, 241, .24);
+  border-radius: 17px;
+  box-shadow: 0 24px 70px #04131f8c;
+}
+.traffic-panel { left: 18px; }
+.detail-panel { top: 91px; right: 18px; bottom: auto; max-height: calc(100% - 110px); }
+.layers-panel {
+  top: 91px; right: 75px;
+  background: rgba(10, 29, 44, .94);
+  border: 1px solid rgba(194, 225, 241, .24);
+  border-radius: 17px;
+  box-shadow: 0 24px 70px #04131f8c;
+}
+.radar-panel .panel-heading h2 { font-size: 1.18rem; letter-spacing: -.025em; }
+.traffic-button { background: #24435772; border-color: #aec8d528; }
+.traffic-button:hover, .traffic-button.selected { background: #23556c; }
+.telemetry-grid div { background: #22465a6e; }
+.map-error { top: 91px; bottom: auto; }
+@media (max-width: 1180px) {
+  .quick-search input { width: 130px; }
+  .quick-search-shortcut { display: none; }
+  .header-actions { gap: 5px; }
+  .flight-summary { gap: 7px; }
+}
+@media (max-width: 1010px) {
+  .quick-search { display: none; }
+  .radar-count { display: inline; }
+}
+@media (max-width: 720px) {
+  .radar-header { left: 9px; right: 9px; top: 9px; gap: 6px; }
+  .brand { min-height: 48px; padding: 7px 9px; border-radius: 13px; }
+  .brand-mark { width: 32px; height: 32px; flex-basis: 32px; border-radius: 10px; }
+  .brand h1 { font-size: .99rem; }
+  .brand-subtitle { display: none; }
+  .header-actions { min-height: 48px; padding: 5px; gap: 4px; border-radius: 13px; }
+  .radar-count { display: none; }
+  .header-divider { display: none; }
+  .flight-summary { margin: 0; }
+  .connection { width: 36px; min-height: 36px; padding: 0; justify-content: center; }
+  .connection-label { display: none; }
+  .header-button { width: 36px; min-height: 36px; padding: 0; gap: 0; }
+  .button-label { display: none; }
+  .maplibregl-ctrl-top-right { top: 75px; right: 10px; }
+  .radar-panel { left: 0; right: 0; top: auto; bottom: 0; width: 100%; max-height: min(67dvh, 590px); border-radius: 17px 17px 0 0; padding: 17px 17px calc(17px + env(safe-area-inset-bottom)); }
+  .traffic-panel { height: min(67dvh, 590px); }
+  .detail-panel { top: auto; right: 0; bottom: 0; max-height: min(67dvh, 590px); overflow-y: auto; }
+  .layers-panel { top: auto; right: 0; bottom: 0; width: 100%; max-height: min(57dvh, 500px); border-radius: 17px 17px 0 0; padding-bottom: calc(17px + env(safe-area-inset-bottom)); }
+  .map-error { top: 75px; }
+}
+@media (max-width: 340px) {
+  .brand { padding: 6px; gap: 6px; }
+  .brand h1 { font-size: .86rem; }
+  .brand-mark { width: 30px; height: 30px; flex-basis: 30px; }
+  .header-actions { padding: 4px; gap: 2px; }
 }
