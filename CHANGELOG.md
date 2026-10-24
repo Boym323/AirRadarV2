@@ -456,3 +456,9 @@ Každá skutečná implementační změna vyžaduje položku v části Nepubliko
   `RuntimeMaxSec=1875` (1800 s důkaz + uzavření bucketu/drain) a bez automatického
   restartu. G-03/4101 zůstává nedotčené.
 - Přidán read-only SQL audit DB/WAL a návrh externích záloh s RPO 24 h/RTO 2 h.
+
+
+## 24. 10. 2026 — Oddělená retence G-04 DEV (připraveno, NEAKTIVOVÁNO)
+
+- Audit A03/G-04.09/J09: root/DBA-managed script `database/maintenance/g04_retention_bounded.sh` čistí pouze V2 DEV, max. 20 dávek po 1 000 řádcích a 90 s. Vyžaduje dedikovanou SQL roli a explicitní GO, běžná Rust runtime role nezískává `DELETE`.
+- Přidány samostatné systemd šablony pro DB LXC, bezpečnostní [ADR 0017](docs/adr/0017-g04-dba-retence.md), [runbook](docs/runbooks/G-04-RETENCE-30-DNI.md) a izolovaný PostgreSQL 18 CI test. Po merge se nic na DB LXC neinstaluje a timer se automaticky nezapíná; provozní schválení a měření stále chybí.
