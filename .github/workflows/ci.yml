@@ -200,6 +200,19 @@ jobs:
           npm run build --prefix apps/web
           /tmp/airradar-g03-browser/bin/python tools/test_g05_browser.py
 
+      - name: G-05.11 — render benchmark 25/100/500/2000 cílů, 1/2 Hz, desktop/mobil
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          /tmp/airradar-g03-browser/bin/python tools/benchmark_g05_map.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: g05-chromium-benchmark-${{ github.sha }}
+          path: .artifacts/g05-map-benchmark.json
+          if-no-files-found: error
+          retention-days: 14
+
   vite-web:
     runs-on: ubuntu-24.04
     defaults:

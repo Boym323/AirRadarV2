@@ -234,6 +234,12 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
       return;
     }
     map.current = instance;
+    // G-05.11: instrumentace pouze pro místní CI benchmark, bez veřejného API.
+    const benchMode = window.location.hostname === "127.0.0.1" &&
+      new URLSearchParams(window.location.search).has("g05-benchmark");
+    if (benchMode) {
+      (window as Window & { __g05BenchMap?: LibreMap }).__g05BenchMap = instance;
+    }
     instance.addControl(new NavigationControl({ showCompass: true }), "top-right");
     const refresh = () => {
       addRadarLayers(instance);
@@ -281,7 +287,7 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
     canvasContainer.addEventListener("keydown", manualKeyboardMove);
     const tick = setInterval(() => {
       if (!instance.isStyleLoaded()) return;
-      refresh();
+      if (!benchMode) refresh();
       const selected = props.current.frame.aircraft.find(a => a.id === props.current.selectedId);
       if (props.current.follow && selected?.position) {
         instance.easeTo({ center: [selected.position.lon, selected.position.lat], duration: 700 });
@@ -296,6 +302,7 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
       canvasContainer.removeEventListener("wheel", stopFollow);
       canvasContainer.removeEventListener("touchmove", stopFollow);
       canvasContainer.removeEventListener("keydown", manualKeyboardMove);
+      if (benchMode) delete (window as Window & { __g05BenchMap?: LibreMap }).__g05BenchMap;
       instance.remove();
       map.current = null;
     };
