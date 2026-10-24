@@ -302,6 +302,32 @@ def main():
                 "000 letadel", timeout=20000)
             assert canvas.get_attribute("data-g05-mounted") == "once", (
                 "MapLibre remount při hustém SSE snapshotu")
+            # G-05.11: 10 % změn ze stejné SSE epochy → inkrementální
+            # updateData nad 2 000 stabilními identitami; bez remountu.
+            page.evaluate("""() => {
+              const now = Date.now()/1000;
+              const changed = Array.from({length:200},(_,i)=>{
+                const idx = i*10;
+                return {
+                  id:'icao:'+idx.toString(16).padStart(6,'0'),
+                  lastMessageAt:now,lastPositionAt:now,
+                  position:{lat:48.6+(idx%67)*.01,lon:14.6+(idx%97)*.01},
+                  positionOrigin:'adsb',stale:false,
+                  callsign:'C'+idx.toString().padStart(5,'0'),
+                  squawk:null,emitterCategory:idx%2?'A7':'B1',
+                  telemetry:{trackDegrees:idx%360,altitudeBaroFt:5000+idx}
+                };
+              });
+              window.__emitRadar('delta',{
+                kind:'delta',epoch:'g05-dense',seq:1,
+                generatedAt:new Date().toISOString(),upsert:changed,removed:[]
+              });
+            }""")
+            expect(page.get_by_label("Počet zachycených letadel")).to_contain_text(
+                "000 letadel", timeout=12000)
+            assert canvas.get_attribute("data-g05-mounted") == "once", (
+                "MapLibre remount po 200 změněných identitách")
+
             # Style reload musí obnovit celý sprite registr a zachovat mapu.
             page.get_by_label("Mapový podklad").select_option("fiord")
             expect(canvas).to_be_visible()
