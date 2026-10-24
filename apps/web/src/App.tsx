@@ -122,18 +122,20 @@ export default function App() {
             onClick={toggleTraffic}>
             {panel === "traffic" ? "Skrýt letadla" : "Letadla"}
           </button>
-          <label className="style-control">
-            <input type="checkbox" checked={showAirports}
-              disabled={!airports.length} onChange={event => setShowAirports(event.target.checked)} />
-            Letiště
-          </label>
-          <label className="style-control">
-            <span>Podklad</span>
-            <select aria-label="Mapový podklad" value={style} onChange={event => setStyle(event.target.value as MapStyle)}>
-              <option value="fiord">Tmavý</option>
-              <option value="liberty">Světlý</option>
-            </select>
-          </label>
+          <div className="header-tools">
+            <label className="style-control">
+              <input type="checkbox" checked={showAirports}
+                disabled={!airports.length} onChange={event => setShowAirports(event.target.checked)} />
+              Letiště
+            </label>
+            <label className="style-control">
+              <span>Podklad</span>
+              <select aria-label="Mapový podklad" value={style} onChange={event => setStyle(event.target.value as MapStyle)}>
+                <option value="fiord">Tmavý</option>
+                <option value="liberty">Světlý</option>
+              </select>
+            </label>
+          </div>
         </div>
       </header>
 
