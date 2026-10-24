@@ -33,6 +33,7 @@ class WorkflowTopology(unittest.TestCase):
         self.assertIn("needs: pr_reuse", g04)
         self.assertIn("--workflow g04-postgres-migrations.yml", g04)
         self.assertIn("validated-g04-postgres-migrations-", g04)
+        self.assertIn("if: always() && github.event_name == 'pull_request' && needs.isolated-postgres.result == 'success'", g04)
 
     def test_single_canonical_validation_suite(self):
         ci = (WF / "ci.yml").read_text(encoding="utf-8")
