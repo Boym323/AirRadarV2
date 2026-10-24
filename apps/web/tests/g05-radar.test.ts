@@ -109,9 +109,10 @@ describe("G-05.03 / R03 — vlastní směrové symboly", () => {
     const output = toGeoJSON(rows, "icao:abc123");
     expect(output.features.map(x => x.id)).toEqual(rows.map(x => x.id));
     expect(output.features[0].properties).toMatchObject({
-      icon: "rotorcraft", heading: 92, label: "OKTEST", detailLabel: "OKTEST\\n6 500 ft",
+      icon: "rotorcraft", heading: 92, label: "OKTEST",
       selected: true,
     });
+    expect(String(output.features[0].properties?.detailLabel).replace(/\\s+/g, " ")).toBe("OKTEST 6 500 ft");
     expect(output.features[1].properties?.icon).toBe("glider");
     expect(output.features[2].properties?.icon).toBeNull();
     expect(output.features[3].properties?.icon).toBe("large-fixedwing");
