@@ -19,7 +19,7 @@
 | G-12 | [Oddělený shadow provoz](../ukoly/G-12-ODDELENY-SHADOW.md) | NEZAHÁJENO |
 | G-13 | [Schválené nasazení a rollback](../ukoly/G-13-BEZPECNY-RELEASE.md) | **PRODUKČNÍ ETAPA NEZAHÁJENA** — oddělený DEV auto-deploy je již aktivní a ověřený; není to G-13 release |
 
-**Aktuální doklad G-03 (23. 10. 2026):** `main` `29ee2ee75feab9279123b77d50895d648c5419d7`, [GitHub Actions #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759) `SUCCESS` včetně runner deploymentu a post-deploy LXC kontroly. DEV rust `--g03-live-api`, Nginx, read-only BEAST, snapshot/delta/15s heartbeat a reconnect byly doloženy správou LXC. Starší stavy níže jsou **chronologická historie**, nikoliv aktuální červené brány. 10/45 KEEP funkcí `TESTED`/`ACCEPTED`; `J06/J07/J08` zůstávají `TESTED`, nikoli produktově `ACCEPTED`. Výjimkou z úplného provozního ověření je úmyslný rollback nové živé verze a OS TCP buffer/RSS měření — ty netvrdíme jako PASS.
+**Aktuální doklad G-03 (23. 10. 2026):** `main` `29ee2ee75feab9279123b77d50895d648c5419d7`, [GitHub Actions #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759) `SUCCESS` včetně runner deploymentu a post-deploy LXC kontroly. DEV rust `--g03-live-api`, Nginx, read-only BEAST, snapshot/delta/15s heartbeat a reconnect byly doloženy správou LXC. Starší stavy níže jsou **chronologická historie**, nikoliv aktuální červené brány. 18/45 KEEP funkcí má stav `TESTED`/`ACCEPTED`; `J06/J07/J08` zůstávají `TESTED`, nikoli produktově `ACCEPTED`. Výjimkou z úplného provozního ověření je úmyslný rollback nové živé verze a OS TCP buffer/RSS měření — ty netvrdíme jako PASS.
 
 ## Historické záznamy a podklady (stav v době jednotlivých dat)
 
