@@ -26,8 +26,36 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: g04-postgres-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  pr_reuse:
+    name: Najít bezpečně znovupoužitelný PR PostgreSQL test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    outputs:
+      reusable: ${{ steps.check.outputs.reusable }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Porovnat reálný merge Git tree s PR důkazem
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 tools/ci_reuse_gate.py verify \
+            --workflow g04-postgres-migrations.yml \
+            --repo "$GITHUB_REPOSITORY" --main-sha "$GITHUB_SHA" \
+            --github-output "$GITHUB_OUTPUT"
+
   isolated-postgres:
+    needs: pr_reuse
+    if: always() && (github.event_name != 'push' || (needs.pr_reuse.result == 'success' && needs.pr_reuse.outputs.reusable != 'true'))
     name: G-04.04 — migrace a SQL integrita (jen CI)
     runs-on: ubuntu-24.04
     services:
@@ -71,3 +99,30 @@ jobs:
       - name: G-04.09 — ohraničená údržba 30 dnů s oddělenou SQL rolí
         run: bash tools/test_g04_retention_bounded.sh
 
+
+  pr-reuse-proof:
+    name: Důkaz izolovaného PostgreSQL testu PR
+    needs: isolated-postgres
+    # 'always' překoná implicitní success() zděděné ze skipped pr_reuse.
+    if: always() && github.event_name == 'pull_request' && needs.isolated-postgres.result == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: Zaznamenat otestovaný merge Git tree
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 tools/ci_reuse_gate.py create \
+            --workflow g04-postgres-migrations.yml \
+            --pr "$PR_NUMBER" --head "$PR_HEAD_SHA" \
+            --run "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT" \
+            --output validated-pr-tree.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: validated-g04-postgres-migrations-${{ github.run_id }}-${{ github.run_attempt }}
+          path: validated-pr-tree.json
+          if-no-files-found: error
+          retention-days: 7
