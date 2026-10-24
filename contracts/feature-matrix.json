@@ -146,11 +146,11 @@
       "id": "R03",
       "name": "Ikony letadel podle typu a směru",
       "decision": "KEEP",
-      "status": "IN_PROGRESS",
+      "status": "TESTED",
       "tests": [
-        "G-05 první implementace v PR #22; jednotkové testy projekce/retence a browser smoke #40024971130 PASS; plná interakční/benchmark přejímka ještě neproběhla."
+        "G-05.03 typové siluety G-05 PR #29+#30, CI #40082045615 a #40084080300 PASS: Rust readsb/DF17-CRC, veřejný G-03 DTO, TS atomický SSE store, 2 000 cílů Chromium a fallback bez směru."
       ],
-      "notes": "Funkční základ v G-05 prvním PR; přiřazené konkrétní ověření v plném browser E2E/perf scénáři zůstává otevřené."
+      "notes": "G-05.03 R03 TESTED v syntetických a browser scénářích. Originální Path2D siluety, ověřený datový původ, stabilní GeoJSON ID; finální měřená GPU/UX přejímka G-05.11 zůstává otevřená."
     },
     {
       "id": "R04",
@@ -186,11 +186,11 @@
       "id": "R09",
       "name": "Sledování letadla kamerou mapy (follow)",
       "decision": "KEEP",
-      "status": "IN_PROGRESS",
+      "status": "TESTED",
       "tests": [
-        "G-05 první implementace v PR #22; jednotkové testy projekce/retence a browser smoke #40024971130 PASS; plná interakční/benchmark přejímka ještě neproběhla."
+        "G-05.08 volitelný follow CI #40082045615 a #40084080300 PASS v Chromium: explicitní zapnutí, drag/wheel/touchmove/klávesnice vypne režim bez přemountování mapy."
       ],
-      "notes": "Funkční základ v G-05 prvním PR; přiřazené konkrétní ověření v plném browser E2E/perf scénáři zůstává otevřené."
+      "notes": "G-05.08 R09 TESTED v izolovaném Chromium fixture, nikoli v mobilním fyzickém GPU testu G-10."
     },
     {
       "id": "R12",
