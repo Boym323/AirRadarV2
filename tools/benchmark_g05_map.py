@@ -15,7 +15,8 @@ from test_g05_browser import MOCK, STYLE, URL
 
 JS = r"""async ({count, hz, method}) => {
   const map = window.__g05BenchMap;
-  if (!map || !map.isStyleLoaded()) throw new Error('MapLibre benchmark hook nenalezen');
+  if (!map) throw new Error('MapLibre benchmark hook nenalezen');
+  // isStyleLoaded() je během asynchronního setData() krátce false; není to remount.
   const source = map.getSource('radar-aircraft');
   if (!source || typeof source.updateData !== 'function') throw new Error('GeoJSONSource.updateData není k dispozici');
   const features = Array.from({length:count},(_,i)=>({
@@ -102,6 +103,7 @@ def main():
                     for hz in [1,2]:
                         for method in ["setData","updateData"]:
                             before={x["name"]:x["value"] for x in cdp.send("Performance.getMetrics")["metrics"]}
+                            page.wait_for_function("!!window.__g05BenchMap && !!window.__g05BenchMap.getSource(\'radar-aircraft\')",timeout=12000)
                             item=page.evaluate(JS,{"count":count,"hz":hz,"method":method})
                             after={x["name"]:x["value"] for x in cdp.send("Performance.getMetrics")["metrics"]}
                             item["profile"]=label
