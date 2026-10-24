@@ -105,7 +105,15 @@ def main():
                            body=json.dumps(AIRPORTS)))
             page.goto(URL)
             expect(page.locator("html")).to_have_attribute("lang", "cs")
-            expect(page.get_by_role("heading", name="AirRadar V2")).to_be_visible()
+            expect(page.get_by_role("heading", name="AirRadar", exact=True)).to_be_visible()
+            expect(page.locator(".version-tag")).to_have_text("V2")
+            expect(page.locator(".map-disclosure")).to_have_count(0)
+            expect(page.locator(".radar-footer")).to_have_count(0)
+            assert page.evaluate("""() => {
+              const title = document.querySelector('.brand-title');
+              const container = document.querySelector('.brand');
+              return title.getBoundingClientRect().right <= container.getBoundingClientRect().right + 1;
+            }"""), "Značka nesmí přetékat ani zalamovat název"
             expect(page.get_by_text("2 letadla")).to_be_visible(timeout=12000)
             canvas = page.locator(".maplibregl-canvas")
             expect(canvas).to_be_visible(timeout=12000)
@@ -193,6 +201,8 @@ def main():
                 "aria-pressed", "false")
             assert canvas.get_attribute("data-g05-mounted") == "once", "MapLibre remount během ovládání"
             # G-05.09: přepnutí stylu nesmaže výběr ani MapLibre canvas.
+            page.get_by_role("button", name="Vrstvy").click()
+            expect(page.get_by_role("complementary", name="Nastavení mapy")).to_be_visible()
             page.get_by_label("Mapový podklad").select_option("liberty")
             expect(canvas).to_be_visible()
             expect(page.get_by_role("heading", name="OKTEST")).to_be_visible()
@@ -222,6 +232,7 @@ def main():
             airport_canvas = airport_page.locator(".maplibregl-canvas")
             expect(airport_canvas).to_be_visible(timeout=12000)
             airport_canvas.evaluate("el => { el.dataset.g05Mounted = 'once'; }")
+            airport_page.get_by_role("button", name="Vrstvy").click()
             airport_toggle = airport_page.get_by_label("Letiště", exact=True)
             expect(airport_toggle).to_be_enabled(timeout=12000)
             airport_toggle.uncheck()
@@ -246,6 +257,7 @@ def main():
             expect(airport_page.get_by_role("complementary", name="Vybrané letiště")).to_be_visible(
                 timeout=12000)
             expect(airport_page.get_by_role("heading", name="Testovací letiště CZ-TEST1")).to_be_visible()
+            airport_page.get_by_role("button", name="Vrstvy").click()
             airport_page.get_by_label("Mapový podklad").select_option("liberty")
             expect(airport_page.get_by_role("heading", name="Testovací letiště CZ-TEST1")).to_be_visible()
             assert airport_canvas.get_attribute("data-g05-mounted") == "once"
@@ -269,6 +281,12 @@ def main():
             expect(mobile.locator(".maplibregl-canvas")).to_be_visible(timeout=12000)
             assert mobile.evaluate("document.documentElement.scrollWidth <= innerWidth"), (
                 "Mobil má horizontální scroll")
+            mobile.get_by_role("button", name="Vrstvy").click()
+            expect(mobile.get_by_role("complementary", name="Nastavení mapy")).to_be_visible()
+            assert mobile.evaluate("document.documentElement.scrollWidth <= innerWidth"), (
+                "Mobilní vrstvy přetékají")
+            mobile.get_by_role("button", name="Zavřít vrstvy").click()
+            expect(mobile.get_by_role("button", name="Vrstvy")).to_be_focused()
             mobile.get_by_role("button", name="Letadla", exact=True).click()
             expect(mobile.get_by_role("complementary", name="Seznam letadel")).to_be_visible()
             assert mobile.evaluate("document.documentElement.scrollWidth <= innerWidth"), (
@@ -329,6 +347,7 @@ def main():
                 "MapLibre remount po 200 změněných identitách")
 
             # Style reload musí obnovit celý sprite registr a zachovat mapu.
+            page.get_by_role("button", name="Vrstvy").click()
             page.get_by_label("Mapový podklad").select_option("fiord")
             expect(canvas).to_be_visible()
             page.get_by_label("Mapový podklad").select_option("liberty")
@@ -356,27 +375,23 @@ def main():
             recovery.evaluate("""() =>
                 window.__g05BenchMap.fire('error', {error: new Error('synthetic tile error')})
             """)
-            expect(recovery.locator(".map-error")).to_be_visible()
-            recovery.evaluate("() => window.__g05BenchMap.fire('style.load')")
             expect(recovery.locator(".map-error")).to_have_count(0)
+            recovery.evaluate("() => window.__g05BenchMap.fire('style.load')")
             expect(recovery.locator(".maplibregl-canvas")).to_be_visible()
             recovery.evaluate("""() => {
               for (let i = 0; i < 3; i++) {
                 window.__g05BenchMap.fire('error', {error: new Error('repeated tile error')});
               }
             }""")
-            # Chyby jednotlivých dlaždic nesmějí přepnout celou mapu na
-            # prázdný fallback: potvrď zachovaný původní styl a všechny vrstvy.
-            expect(recovery.locator(".map-error")).to_contain_text(
-                "Některé dlaždice mapového podkladu", timeout=12000)
+            # Ani opakovaný výpadek částí stylu nesmí vytvořit banner:
+            # vnější chyba není důkazem nedostupné geografické mapy.
+            expect(recovery.locator(".map-error")).to_have_count(0)
             assert recovery.evaluate("""() => {
               const map = window.__g05BenchMap;
               return !map.getSource('radar-osm-backup') &&
                 !!map.getSource('radar-aircraft') &&
                 !!map.getLayer('radar-aircraft-symbols');
-            }"""), "Tři dočasné chyby nesmí odstranit mapový podklad nebo živá letadla"
-            recovery.get_by_role("button", name="Obnovit mapu").click()
-            expect(recovery.locator(".maplibregl-canvas")).to_be_visible()
+            }"""), "Dílčí chyby nesmějí skrýt mapu ani letadla"
             recovery.close()
 
             # Úplný výpadek externího stylu nesmí skrýt radar ani rozkmitat canvas.
@@ -387,15 +402,16 @@ def main():
                           lambda route: route.fulfill(
                               status=200, content_type="application/json",
                               body=json.dumps(AIRPORTS)))
-            offline.goto(URL)
+            offline.goto(URL + "?g05-benchmark")
             expect(offline.get_by_text("2 letadla")).to_be_visible(timeout=12000)
             expect(offline.locator(".maplibregl-canvas")).to_be_visible(timeout=12000)
-            expect(offline.get_by_role("status").filter(
-                has_text="Mapový podklad není dostupný"
-            )).to_be_visible(timeout=12000)
+            offline.wait_for_function(
+                "window.__g05BenchMap && !!window.__g05BenchMap.getSource('radar-osm-backup')",
+                timeout=12000)
+            expect(offline.locator(".maplibregl-canvas")).to_be_visible(timeout=12000)
             offline.close()
             browser.close()
-        print("PASS G-05 Chromium: map-first desktop/mobil, MapLibre/SSE, 2 000 cílů a fallback při výpadku podkladu (SwiftShader smoke, ne FPS)")
+        print("PASS G-05 Chromium: kompaktní UI bez nadbytečných overlayů, 2 000 SSE cílů, funkční vrstvy a tichý partial-tile fallback (SwiftShader smoke, ne FPS)")
     finally:
         process.terminate()
         try:
