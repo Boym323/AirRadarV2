@@ -1,5 +1,13 @@
 # CHANGELOG — AirRadar V2
 
+## 24. 10. 2026 — Druhá vizuální revize G-05 a tiché chyby tiles (PR ve validaci)
+
+- G-05.09 / R14: opravena příliš agresivní prezentace chyb MapLibre. Dílčí selhání glyph/sprite/tile po úspěšném `style.load` již neotevírá chybový banner; živé symboly, letiště a podklad zůstávají zachovány. Pokud selže samotné načtení stylu, aplikace po timeoutu volí geografický OSM fallback. Text s ruční obnovou se zobrazí teprve při dvojitém selhání nebo výpadku WebGL.
+- G-05.05/R06 a G-05.09/R14: nové rozložení horního ovládání se značkou v jednom řádku, přehledným stavem, tlačítky Letadla/Vrstvy a zavíratelným kontextovým nastavením mapových podkladů a letišť. Výchozí styl OpenFreeMap Dark, možnost Fiord a Liberty.
+- Odstraněny dolní překryvné diagnostické štítky a technická patička; atribuce poskytovatelů map zůstává prostřednictvím MapLibre. Responsive mobile používá kompaktní ikony s přístupnými jmény a spodní panel vrstev.
+- Aktualizované Chromium E2E ověřuje zachování MapLibre instance, stylu, letišť, letadel, ovládání mobilu a absenci banneru po dočasných chybách. CI a DEV průchod dosud NEOVĚŘENO, fyzické FPS G-05.11 nadále otevřené.
+
+
 ## 24. 10. 2026 — Oprava prázdné mapy a modernizace G-05 UI (PR v ověření)
 
 - **G-05.09 / R14:** odstraněna chybná automatická ztráta geografického podkladu po třech dílčích MapLibre chybách. Při selhání načtení celého stylu se po 6,5 s používá záložní geografický raster OpenStreetMap s atribucí; seznam, letiště, SSE a ikony se nemažou. Přidána ruční akce „Obnovit mapu“.
