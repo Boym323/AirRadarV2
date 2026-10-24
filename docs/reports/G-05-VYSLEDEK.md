@@ -1,5 +1,14 @@
 # G-05 — průběžný výsledek implementace živé mapy
 
+## 24. 10. 2026 — vizuální náprava a incident chybějící geografie (CI zatím NEOVĚŘENO)
+
+- **Uživatelský důkaz:** screenshot DEV z 24. 10. 2026 ukázal živé symboly letadel nad jednobarevným pozadím a hlášení „Mapový podklad není dostupný“. Znamená to degradovaný mapový podklad, nikoli prokázanou chybu příjmu SSE.
+- **Kořenová příčina v kódu:** handler MapLibre `error` přepínal na background-only fallback po 3 chybách v 1,5 s; nerozlišoval úspěšně načtený styl od dílčích tile chyb. Příčinu konkrétního síťového selhání OpenFreeMap v uživatelově prohlížeči bez Network logu **neznáme**.
+- **Oprava R14/G-05.09:** u načteného stylu se po chybě jednotlivé dlaždice neodstraňuje geografický podklad. Teprve když do 6,5 s nedorazí `style.load`, přepne se zvolený OpenFreeMap styl na skutečnou záložní mapu se zdrojem OpenStreetMap raster a povinnou atribucí. Zobrazuje se možnost „Obnovit mapu“; MapLibre instance ani živý SSE store se při této akci nevyměňují.
+- **Vizuální úprava map-first UI:** jednotné tokeny, lépe čitelná kompaktní hlavička/stav, kontrastnější ovladače a panely, mobilní adaptace, sjednocené mapové zoom ovládání, oprava čtyř doslovných `\\n` v CSS. Záložní raster OSM je nouzový; dlouhodobá soběstačnost závisí na vlastní licenci/hostingu mapových dat.
+- **Regrese:** upraven Chromium test na zachování vrstev a původního stylu po trojici chyb a ruční obnovu mapy. Testy, DEV reálné síťové chování a fyzický telefon jsou do skončení CI **NEOVĚŘENO**. Formálně stále G-05 **10/11**, G-05.11 fyzické GPU nezměřeno.
+
+
 ## 24. 10. 2026 — G-05.11: naměřená Chromium baseline a adaptivní diff
 
 - [PR #34](https://github.com/Boym323/AirRadarV2/pull/34) sloučen `b8691f8b`, [CI #40095503907](https://github.com/Boym323/AirRadarV2/actions/runs/40095503907) **3/3 PASS**: **32 kombinací** (25/100/500/2 000 letadel, 1/2 Hz, setData/updateData, desktop/mobile emulation), artefakt obsahuje p95 worker update, RAF intervaly, Chrome JS heap, DOM mutace, počet WebGL canvasů a TaskDuration.
