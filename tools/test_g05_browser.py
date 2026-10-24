@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """G-05.01–.09 browser smoke bez reálného RF/DB/tile serveru."""
 import json
+from pathlib import Path
 from io import BytesIO
 from PIL import Image
 import subprocess
@@ -108,8 +109,14 @@ def main():
             expect(page.get_by_role("heading", name="AirRadar", exact=True)).to_be_visible()
             expect(page.locator(".version-tag")).to_have_text("V2")
             expect(page.locator(".map-disclosure")).to_have_count(0)
-            expect(page.locator(".radar-footer")).to_have_count(1)
-            expect(page.locator(".radar-version")).to_contain_text("Nasazeno")
+            expect(page.locator(".radar-footer")).to_have_count(0)
+            expect(page.get_by_label("Hledat letadlo")).to_be_visible()
+            assert page.evaluate("""() => {
+              const map = document.querySelector('.maplibregl-canvas').getBoundingClientRect();
+              const header = document.querySelector('.radar-header').getBoundingClientRect();
+              return Math.abs(map.height - innerHeight) <= 2 && header.top > 0 &&
+                header.bottom < 100 && document.documentElement.scrollWidth <= innerWidth;
+            }"""), "Radar musí mít mapu přes celý viewport a plovoucí nástroje"
             assert page.evaluate("""() => {
               const title = document.querySelector('.brand-title');
               const container = document.querySelector('.brand');
@@ -121,6 +128,11 @@ def main():
             canvas.evaluate("(el) => { el.dataset.g05Mounted = 'once'; }")
             # G-05 R01/R06: mapa zůstává dominantní, seznam je na vyžádání.
             expect(page.get_by_role("complementary", name="Seznam letadel")).to_have_count(0)
+            page.get_by_label("Hledat letadlo").fill("OKT")
+            expect(page.get_by_role("complementary", name="Seznam letadel")).to_be_visible()
+            expect(page.get_by_role("button", name="OKTEST")).to_be_visible()
+            page.get_by_label("Hledat letadlo").fill("")
+            page.get_by_role("button", name="Zavřít seznam").click()
             page.get_by_role("button", name="Letadla", exact=True).click()
             expect(page.get_by_role("complementary", name="Seznam letadel")).to_be_visible()
             page.get_by_role("button", name="OKTWO").click()
@@ -411,6 +423,61 @@ def main():
                 timeout=12000)
             expect(offline.locator(".maplibregl-canvas")).to_be_visible(timeout=12000)
             offline.close()
+            # Vizuální evidence se ukládá zvlášť: čistá fixture není živý
+            # provoz ani fyzický GPU benchmark. Screenshot slouží jako
+            # reprodukovatelná layoutová baseline.
+            artifacts = Path(".artifacts")
+            artifacts.mkdir(exist_ok=True)
+            page.get_by_role("button", name="Zavřít vrstvy").click()
+            page.screenshot(path=str(artifacts / "g05-i1-desktop.png"), full_page=True)
+            capture_mobile = browser.new_page(viewport={"width": 390, "height": 844},
+                                              is_mobile=True, has_touch=True)
+            capture_mobile.add_init_script(MOCK)
+            capture_mobile.route("https://tiles.openfreemap.org/**",
+                                 lambda route: route.fulfill(
+                                     status=200, content_type="application/json",
+                                     body=json.dumps(STYLE)))
+            capture_mobile.route("**/data/airports-ourairports.json",
+                                 lambda route: route.fulfill(
+                                     status=200, content_type="application/json",
+                                     body=json.dumps(AIRPORTS)))
+            capture_mobile.goto(URL)
+            expect(capture_mobile.locator(".maplibregl-canvas")).to_be_visible()
+            capture_mobile.screenshot(path=str(artifacts / "g05-i1-mobile.png"),
+                                      full_page=True)
+            capture_mobile.close()
+            # Read-only porovnání s veřejným DEV V2 před merge. Síťový
+            # neúspěch nepředstírat jako screenshot ani jako vizuální PASS.
+            public_result = {"url": "https://airradarv2.pomykal.cz",
+                             "status": "NEOVĚŘENO"}
+            public_page = browser.new_page(viewport={"width": 1370, "height": 850})
+            try:
+                response = public_page.goto(public_result["url"],
+                                            wait_until="domcontentloaded", timeout=12000)
+                if response and response.status == 200:
+                    expect(public_page.locator(".maplibregl-canvas")).to_be_visible(
+                        timeout=10000)
+                    public_result["status"] = "DOSTUPNÉ"
+                    public_result["http"] = response.status
+                    public_result["dimensions"] = public_page.evaluate("""() => ({
+                      viewportHeight: innerHeight,
+                      mapHeight: document.querySelector('.maplibregl-canvas')
+                        .getBoundingClientRect().height,
+                      headerHeight: document.querySelector('.radar-header')
+                        .getBoundingClientRect().height,
+                      footerPresent: !!document.querySelector('.radar-footer')
+                    })""")
+                    public_page.screenshot(path=str(artifacts / "g05-public-before-merge.png"))
+                else:
+                    public_result["reason"] = f"HTTP {response.status if response else 'žádná odpověď'}"
+            except Exception as exc:
+                public_result["reason"] = str(exc)[:350]
+            finally:
+                public_page.close()
+            (artifacts / "g05-public-comparison.json").write_text(
+                json.dumps(public_result, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8")
+            print("G-05 public preview: " + json.dumps(public_result, ensure_ascii=False))
             browser.close()
         print("PASS G-05 Chromium: kompaktní UI bez nadbytečných overlayů, 2 000 SSE cílů, funkční vrstvy a tichý partial-tile fallback (SwiftShader smoke, ne FPS)")
     finally:
