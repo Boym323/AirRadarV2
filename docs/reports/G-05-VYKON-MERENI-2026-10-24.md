@@ -2,7 +2,7 @@
 
 **Výsledek:** CI **PASS** v 32 opakovatelných syntetických scénářích, **pouze software-renderovaná baseline**. **Fyzický desktopový ani mobilní GPU benchmark není doložen** a G-05.11 nelze zatím označit za úplně přijaté podle [mapového výkonového kontraktu](../technical/MAPLIBRE-VYKON-A-ZATEZ.md).
 
-**Původ:** [PR #34](https://github.com/Boym323/AirRadarV2/pull/34), implementace `b8691f8b` v `main`; [GitHub Actions #40095503907](https://github.com/Boym323/AirRadarV2/actions/runs/40095503907) 3/3 PASS a [archivovaný JSON artefakt](https://github.com/Boym323/AirRadarV2/actions/runs/40095503907/artifacts) (32 scénářů, ref head SHA `664ce2757e4020d014249151ae0a837e781d6359`). Následující optimalizační PR #36 upravuje běžný render na základě těchto hodnot, ale neospravedlňuje tvrzení o fyzickém GPU.
+**Původ:** [PR #34](https://github.com/Boym323/AirRadarV2/pull/34), implementace `b8691f8b` v `main`; [GitHub Actions #40095503907](https://github.com/Boym323/AirRadarV2/actions/runs/40095503907) 3/3 PASS a [archivovaný JSON artefakt](https://github.com/Boym323/AirRadarV2/actions/runs/40095503907/artifacts) (32 scénářů, ref head SHA `664ce2757e4020d014249151ae0a837e781d6359`). Následující optimalizační [PR #36](https://github.com/Boym323/AirRadarV2/pull/36) byl sloučen jako `3bf49297`, [CI #40096318946](https://github.com/Boym323/AirRadarV2/actions/runs/40096318946) **3/3 PASS**; upravuje běžný render na základě těchto hodnot, ale neospravedlňuje tvrzení o fyzickém GPU.
 
 ## Metodika
 
@@ -31,7 +31,7 @@ Zkratka **set/diff** = `GeoJSONSource.setData` / `GeoJSONSource.updateData`.
 ## Implementační závěr pro G-05
 
 1. `setData` zachovat při malém provozu a větších změnách/doplnění epochy/stylu; je jednodušší a u 25 letadel může být i rychlejší.
-2. `updateData` využít selektivně při min. 250 stabilních cílech a nejvýše 35 % změněných features, s plným fallbackem na `setData`. Konkrétní implementace a regresní testy v [PR #36](https://github.com/Boym323/AirRadarV2/pull/36). Je to opatrná první heuristika, **ne poslední univerzální benchmarkem dokázané optimum**.
+2. `updateData` využít selektivně při min. 250 stabilních cílech a nejvýše 35 % změněných features, s plným fallbackem na `setData`. Konkrétní implementace a regresní testy ve sloučeném [PR #36](https://github.com/Boym323/AirRadarV2/pull/36), [CI #40096318946](https://github.com/Boym323/AirRadarV2/actions/runs/40096318946) PASS. Je to opatrná první heuristika, **ne poslední univerzální benchmarkem dokázané optimum**.
 3. Při novém `style.load`, nové SSE epoše a konfliktním ID vždy resetovat předchozí zdroj a provést full set. Při stejném `epoch/seq/selected` neposílat redundantní GeoJSON worker update.
 4. Pro G-05.11 **zbývá fyzický výkonový test** na konkrétním desktopovém GPU a mobilním telefonu při pan/zoom/follow s 500 a 2 000 cíli, současné měření reakce UI a reálných 1/2Hz SSE, p95 FPS/render tick, RAM, tile fallback a porovnání s tímto CI baseline. Nevydávat PR #34 za toto potvrzení.
 5. G-05.01–10 mají samostatné fungující regresní a DEV důkazy; formálně G-05 **10/11**, zbývající výkonová přejímka je oddělena od další etapy G-06 a produkční V1.
