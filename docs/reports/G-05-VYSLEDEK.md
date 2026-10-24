@@ -1,5 +1,16 @@
 # G-05 — průběžný výsledek implementace živé mapy
 
+## 24. 10. 2026 — implementace mapových symbolů a adaptivních štítků G-05.03/.04 (PR v ověřování)
+
+- Základna: `79a019e2d9c651a9d04ad04e17563c9934d602a6`. G-05.03/R03 + G-05.04/R04.
+- Přidáno `apps/web/src/radar/aircraft-icons.ts`: **10 vlastních vektorových Path2D siluet** (jednotná 64×64), deterministické mapování pouze z volitelné ADS-B emitter category; neznámý/rezervovaný typ = obecný letoun, chybějící/neplatný skutečný ground track = kruh. Žádné DOM markery a žádné obrázky třetích stran.
+- `RadarMap.tsx` nyní jednou registruje ikony do MapLibre a znovu při `style.load`; používá jeden GeoJSON aircraft source, stálou Map instance, halo vybraného cíle, oddělenou vrstvu štítků a skutečný track. Živý G-03 SSE, G-04 ani API se nemění.
+- Štítky jsou podle přiblížení: zoom pod 8 skryté, od 8 validní callsign, od 11 callsign + dostupná barometrická výška s `ft`; kolize řeší MapLibre bez skrývání symbolů, vybraný má přednost. Testy ověřují klasifikaci, rezervované hodnoty, směr a výsledné GeoJSON.
+- **Datová hranice:** `emitterCategory` je zatím pouze volitelný frontendový slot. Rust/public DTO tuto informaci zatím neposkytuje, takže skutečný DEV radar používá obecný symbol/bod. API se nezměnilo. Pro R03 plnou akceptaci je nutný samostatný ověřený G-02/G-03 datový kontrakt a reálná grafická přejímka.
+- **Zbývá:** integrační screenshot/test dark/light, interakční a vizuální hustota, G-05.11 měření GPU/FPS; G-05.10 závisí na G-06. Testy CI/průchod browserem teprve budou uvedeny po skutečném ověření — **v této etapě zatím neprohlašovat PASS ani HOTOVO**.
+
+
+
 ## G-05 map-first UI — návazná implementace podle schválené specifikace (24. 10. 2026)
 
 - Cíl: R01/R06/R08/R09/R14, P0 z `docs/plan/WEB-UX-UI-SPECIFIKACE.md`. Velká hlavička a trvale dvojpanelový layout nahrazeny kompaktní lištou a dominantní mapou na celou pracovní plochu.

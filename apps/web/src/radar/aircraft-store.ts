@@ -10,6 +10,8 @@ export type Aircraft = {
   stale: boolean;
   callsign: string | null;
   squawk: string | null;
+  /** Volitelné a až po ověření G-03: ADS-B emitter category; nikdy se neodvozuje na klientu. */
+  emitterCategory?: string;
   telemetry?: {
     altitudeBaroFt?: number;
     groundSpeedKt?: number;

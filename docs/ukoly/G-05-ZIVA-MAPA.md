@@ -14,6 +14,10 @@
 
 ## Výstup etapy
 
+**Pokračování implementace G-05.03/.04 (24. 10. 2026):** nově existuje `apps/web/src/radar/aircraft-icons.ts` s vlastními Path2D siluetami, bezpečnou kategoriovou volbou/fallbackem a mapová vrstva s halo/štítky podle zoomu. **Stále rozpracováno:** skutečné veřejné DTO nyní kategorii nevydává, prokazatelný GPU/label benchmark ani závěrečná browser přejímka nejsou hotové. Checkboxy G-05.03/.04 zůstávají [ ] do důkazů a dokončení datové části. [Průběžný report](../reports/G-05-VYSLEDEK.md).
+
+
+
 Samostatně otestovaný modul odpovídající uvedeným schváleným ID; zbytečné části systému se nepřidávají.
 
 ## Implementační kroky a důkaz přejímky

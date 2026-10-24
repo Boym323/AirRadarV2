@@ -2,6 +2,13 @@
 
 ## [Nepublikováno]
 
+
+### G-05.03/.04 — původní mapové siluety a adaptivní štítky (24. 10. 2026)
+- Nový `apps/web/src/radar/aircraft-icons.ts`: 10 vlastních vektorových Path2D ikon registrovaných v MapLibre, bezpečný fallback při chybějícím typu/směru, jediný GeoJSON source.
+- `RadarMap.tsx` přidává zvýraznění vybraného cíle a kolizní popisky podle zoomu (callsign, validní výška), zachovává G-03 SSE, follow, stopu, přepnutí podkladu a živý seznam.
+- Kategoriové metadata jsou pouze volitelná příprava ve webovém store; G-03 API ani Rust nebyly upraveny. Full R03 přejímka a G-05.11 GPU benchmark jsou **otevřené**, žádné automatické povýšení `TESTED`.
+
+
 ### G-05 až G-10 — vizuální specifikace, ikony a audit (24. 10. 2026)
 - Nová [specifikace mapových ikon a popisků](docs/plan/MAPOVE-IKONY-A-POPISKY.md) a [audit vizuální úplnosti](docs/audits/VIZUALNI-ZADANI-AUDIT-2026-10-24.md), návrhové rozměry/typografie/paleta/stavy/vrstvy a akceptační scénáře v [map-first UX](docs/plan/WEB-UX-UI-SPECIFIKACE.md).
 - Vazby na G-05 až G-10 doplněny, bez změny aktivních 45 funkcí, runtime/API/databází i dosavadních stavů `TESTED/ACCEPTED`. Veřejné DTO zatím nemá kategorii letadla a originální SVG teprve vzniknou při implementaci.
