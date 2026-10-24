@@ -9,7 +9,7 @@ Aktuální runtime role má záměrně práva pouze `SELECT` a `INSERT`; přidá
 ## Implementovaná ochrana
 
 - [`g04_retention_bounded.sh`](../../database/maintenance/g04_retention_bounded.sh) vyžaduje přesné `PGDATABASE=airradar_v2_dev`, `PGUSER=airradar_v2_dev_maintenance` a `AIRRADAR_G04_RETENTION_APPROVED=YES`; výslovný kontrolní `DO` blok běží také uvnitř každé SQL transakce.
-- Každá dávka maže maximálně 1 000 řádků starších 30 dnů s `FOR UPDATE SKIP LOCKED`, limity `statement_timeout=5s`, `lock_timeout=1s`, celkem maximálně 20 dávek / 20 000 řádků / 90 s v jednom běhu. Při chybě SQL skončí s chybovým kódem; žádné TRUNCATE, DROP, změna indexů nebo dalších DB.
+- Každá dávka maže maximálně 1 000 řádků starších 30 dnů a limity `statement_timeout=5s`, `lock_timeout=1s`, celkem maximálně 20 dávek / 20 000 řádků / 90 s v jednom běhu. Při chybě SQL skončí s chybovým kódem; žádné TRUNCATE, DROP, změna indexů nebo dalších DB.
 - Samostatné šablony `database/maintenance/systemd/` definují denní timer a systemd jednotku spouštěnou dedikovaným systémovým účtem na **DB LXC**, nikoli na DEV app LXC. Není implementovaná automatická instalace ani enable timeru.
 - GitHub PostgreSQL 18 izolovaný test `tools/test_g04_retention_bounded.sh` ověřuje zápornou bránu, oddělenou SQL roli, smazání 32denního vzorku a zachování jednodenního. CI test není důkaz volného místa skutečného hostitele.
 
