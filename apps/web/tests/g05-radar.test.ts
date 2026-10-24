@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AircraftStore, type Aircraft } from "../src/radar/aircraft-store";
 import { toGeoJSON } from "../src/radar/RadarMap";
+import { AIRCRAFT_PATHS, iconForAircraft, validGroundTrack } from "../src/radar/aircraft-icons";
 
 const aircraft = (id = "icao:abc123", at = 1000): Aircraft => ({
   id, lastMessageAt: at, lastPositionAt: at,
@@ -61,5 +62,59 @@ describe("G-05.02 atomický G-03 SSE adapter", () => {
     expect(points.features[0].properties?.selected).toBe(true);
     const unknown = toGeoJSON([{...aircraft(), telemetry: undefined}], null);
     expect(unknown.features[0].properties?.heading).toBeNull();
+  });
+});
+
+describe("G-05.03 / R03 — vlastní směrové symboly", () => {
+  it("má originální vektorovou siluetu pro každou podporovanou kategorii", () => {
+    expect(Object.keys(AIRCRAFT_PATHS)).toHaveLength(10);
+    for (const shape of Object.values(AIRCRAFT_PATHS)) {
+      expect(shape).toMatch(/^M/);
+      expect(shape).toMatch(/Z$/);
+      expect(shape.length).toBeGreaterThan(35);
+    }
+    for (const [categories, expected] of [
+      [["A1", "A2"], "light-fixedwing"],
+      [["A3", "A4", "A5"], "large-fixedwing"],
+      [["A6"], "high-performance"],
+      [["A7"], "rotorcraft"],
+      [["B1"], "glider"],
+      [["B2"], "lighter-than-air"],
+      [["B4"], "ultralight"],
+      [["B6"], "uav"],
+      [["C1", "C2"], "ground-unit"],
+    ] as const) {
+      for (const category of categories) expect(iconForAircraft(category, 90)).toBe(expected);
+    }
+  });
+  it("nevymýšlí kategorii, neznámý směr ani neplatný track", () => {
+    for (const missing of [undefined, null, "A0", "B0", "C0", "B3", "A9", "military", 123]) {
+      expect(iconForAircraft(missing, 0)).toBe("generic-fixedwing");
+    }
+    for (const invalid of [undefined, null, NaN, Infinity, -1, 360, "90"]) {
+      expect(validGroundTrack(invalid)).toBe(false);
+      expect(iconForAircraft("A7", invalid)).toBeNull();
+    }
+    for (const correct of [0, 90, 180, 270, 359.9]) {
+      expect(validGroundTrack(correct)).toBe(true);
+    }
+  });
+  it("GeoJSON používá důvěryhodný track, fallback, nadmořskou výšku a stabilní id", () => {
+    const rows = [
+      { ...aircraft(), emitterCategory: "A7" },
+      { ...aircraft("icao:bbbbbb"), emitterCategory: "B1", telemetry: {trackDegrees: 0}},
+      { ...aircraft("icao:cccccc"), telemetry: {altitudeBaroFt: 6100}},
+      { ...aircraft("icao:dddddd"), callsign: null, emitterCategory: "A3" },
+    ];
+    const output = toGeoJSON(rows, "icao:abc123");
+    expect(output.features.map(x => x.id)).toEqual(rows.map(x => x.id));
+    expect(output.features[0].properties).toMatchObject({
+      icon: "rotorcraft", heading: 92, label: "OKTEST", detailLabel: "OKTEST\\n6 500 ft",
+      selected: true,
+    });
+    expect(output.features[1].properties?.icon).toBe("glider");
+    expect(output.features[2].properties?.icon).toBeNull();
+    expect(output.features[3].properties?.icon).toBe("large-fixedwing");
+    expect(output.features[3].properties?.detailLabel).toBe("");
   });
 });
