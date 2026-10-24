@@ -8,7 +8,7 @@ Při realizaci R03/R04 respektovat [ikonografii](../plan/MAPOVE-IKONY-A-POPISKY.
 
 Reprodukovatelných **32 scénářů**: 25/100/500/2 000 cílů, 1/2 Hz, `setData` vs `updateData`, viewport 1440×900 a mobilní emulace 390×844; 10 % změněných geometrií na tick, 4 vzorky na scénář. Všechny testy prošly. Při 2 000 cílech / 1 Hz bylo p95 metody `setData` 6,6 ms desktop a 9,8 ms mobile emulation; `updateData` 2,1 ms v obou profilech. Při 2 000 / 2 Hz na mobilní emulaci se diff nezlepšil (6,7 proti 6,1 ms).
 
-**Naměřené RAF proxy FPS nejsou fyzické GPU FPS.** Kompletní čísla, hardware, verze, RAM omezení, p95 metodika a odkazy na JSON artefakt: [G-05 — výkonové měření](../reports/G-05-VYKON-MERENI-2026-10-24.md). Adaptivní diff v [PR #36](https://github.com/Boym323/AirRadarV2/pull/36) není důkazem finální mobilní fyzické přejímky.
+**Naměřené RAF proxy FPS nejsou fyzické GPU FPS.** Kompletní čísla, hardware, verze, RAM omezení, p95 metodika a odkazy na JSON artefakt: [G-05 — výkonové měření](../reports/G-05-VYKON-MERENI-2026-10-24.md). Adaptivní diff v [PR #36](https://github.com/Boym323/AirRadarV2/pull/36) sloučen (`3bf49297`), [CI #40096318946](https://github.com/Boym323/AirRadarV2/actions/runs/40096318946) PASS; stále není důkazem finální mobilní fyzické přejímky.
 
 ## Renderovací architektura
 
