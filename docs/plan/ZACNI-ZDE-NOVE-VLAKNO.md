@@ -8,7 +8,7 @@
 2. [ZADANI-AIRRADAR-V2.md](ZADANI-AIRRADAR-V2.md): závazný cíl a architektura.
 3. [MODULY-A-ROZSAH.md](MODULY-A-ROZSAH.md): devět modulů a jejich přesná aktivní ID.
 4. [TECHNOLOGICKA-ROZHODNUTI.md](TECHNOLOGICKA-ROZHODNUTI.md): Rust, **již převedený Vite/React web a definitivní PostgreSQL** na existujícím DB LXC.
-5. [KROKOVY-IMPLEMENTACNI-PLAN.md](KROKOVY-IMPLEMENTACNI-PLAN.md): **140 kroků**, závislosti, pravidla malých PR a nejbližší G-01.01; [stav etap](ETAPY-A-STAV.md).
+5. [KROKOVY-IMPLEMENTACNI-PLAN.md](KROKOVY-IMPLEMENTACNI-PLAN.md): **140 kroků**, závislosti, pravidla malých PR a aktuální navazující kroky G-05/G-06; [stav etap](ETAPY-A-STAV.md).
 6. `contracts/feature-matrix.json` a [MATICE-FUNKCI.md](MATICE-FUNKCI.md): **45 schválených funkcí**, při implementaci jen tento rozsah.
 7. [CO-NEPREBIRAT-Z-V1.md](CO-NEPREBIRAT-Z-V1.md): pravidla greenfield minimalismu.
 8. [CHANGELOG.md](../../CHANGELOG.md), pouze reporty související s aktuální etapou, a jediný úkol z `docs/ukoly/`.
@@ -29,7 +29,7 @@ K 21. 10. 2026 webový skeleton běží na **Vite + React** a build produkuje st
 - G-01: 10/10 kontrakty/fixtures, CI #39748325104.
 - G-02: 11/11 ověřený lokální readsb/BEAST ingest a jediný Rust RAM stav, 60min reálný read-only LIVE soak [#39795592425](https://github.com/Boym323/AirRadarV2/actions/runs/39795592425).
 - G-03: **HOTOVO 10/10, DEV ACCEPTED** na aktivním Rust HTTP/SSE (`--g03-live-api`), read-only BEAST, snapshot/delta/15s heartbeat/reconnect a automatický `main → runner → DEV`. Provozně ověřeno na `29ee2ee75feab9279123b77d50895d648c5419d7`, [Actions #39906245759](https://github.com/Boym323/AirRadarV2/actions/runs/39906245759) (všech 6 jobů PASS). [Závěrečný report](../reports/G-03-VYSLEDEK.md).
-- G-04 je rozpracováno: izolovaná SQLx migrace existuje v repozitáři a byla testována bez skutečného DB LXC. Běžící G-03 nemá připojenou DB, writer ani historii. Produkční V1 je nedotknutelná.
+- G-04: **HOTOVO — DEV ACCEPTED**, J09 ACCEPTED po skutečném DEV canary BEAST/CPR → RAM → SQLx → PostgreSQL. Produkční V1 je nedotknutelná; produkční release V2 není schválen.
 
 ## Postup při navazování
 
@@ -45,4 +45,4 @@ Před převzetím G-01 použij [audit architektury z 22. 10. 2026](../audits/ARC
 
 ## Aktuální etapa k převzetí
 
-**Navazuj G-05** podle [zadání mapy](../ukoly/G-05-ZIVA-MAPA.md) a [průběžného reportu](../reports/G-05-VYSLEDEK.md). G-04 byla DEV ACCEPTED a PR #21 sloučen do main na `e9e38689`. G-03 je již uzavřena; [její runbook](../runbooks/DEV-MAIN-AUTODEPLOY.md) popisuje fungující automatické nasazení do izolovaného DEV LXC. G-05 map-first web, ikony a skutečné kategorie jsou implementované v main; PR #30 `9c398c2f`, [CI #40084080300](https://github.com/Boym323/AirRadarV2/actions/runs/40084080300) PASS. Nyní 7/11 kroků, G-05.04/.07/.10/.11 stále otevřené; letiště G-05.10 vyžaduje G-06 a skutečný FPS benchmark G-05.11 zvláštní zařízení. Dokončení výkonových a mapových funkcí zůstává otevřené. Trvalý G-04 writer ani produkční V1 nebyly zapnuty.
+**Navazuj G-05** podle [zadání mapy](../ukoly/G-05-ZIVA-MAPA.md) a [průběžného reportu](../reports/G-05-VYSLEDEK.md). G-04 je DEV ACCEPTED a PR #21 je sloučen do main. G-03 je již uzavřena; [její runbook](../runbooks/DEV-MAIN-AUTODEPLOY.md) popisuje fungující automatické nasazení do izolovaného DEV LXC. G-05 map-first web, ikony a skutečné kategorie jsou implementované v main; PR #30 `9c398c2f`, [CI #40084080300](https://github.com/Boym323/AirRadarV2/actions/runs/40084080300) PASS. Nyní 10/11 kroků TESTED; otevřený zůstává pouze G-05.11. Mapová vrstva letišť G-05.10 je ověřená pro mapový rozsah, zatímco full REST/frekvence/NAVAID zůstávají v G-06. Skutečný FPS benchmark G-05.11 vyžaduje fyzický desktop a telefon. Dokončení výkonových a mapových funkcí zůstává otevřené. Trvalý G-04 writer ani produkční V1 nebyly zapnuty.
