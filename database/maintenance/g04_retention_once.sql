@@ -6,6 +6,9 @@ BEGIN
     IF current_database() <> 'airradar_v2_dev' THEN
         RAISE EXCEPTION 'G-04 retence povolena pouze ve vyhrazené airradar_v2_dev';
     END IF;
+    IF current_user <> 'airradar_v2_dev_maintenance' THEN
+        RAISE EXCEPTION 'G-04 retence vyžaduje maintenance roli';
+    END IF;
     IF to_regclass('airradar_v2.flight_samples') IS NULL THEN
         RAISE EXCEPTION 'G-04 schéma není vytvořené';
     END IF;
@@ -16,7 +19,6 @@ WITH old_rows AS (
     WHERE bucket_at < now() - interval '30 days'
     ORDER BY bucket_at
     LIMIT 1000
-    FOR UPDATE SKIP LOCKED
 )
 DELETE FROM airradar_v2.flight_samples
 WHERE ctid IN (SELECT ctid FROM old_rows);

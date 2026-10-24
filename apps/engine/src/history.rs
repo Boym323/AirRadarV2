@@ -9,6 +9,7 @@ pub const MAX_TRACK_WATERMARKS: usize = 5000;
 const BUCKET_SECONDS: i64 = 30;
 const CLOSE_DELAY: f64 = 5.0;
 const MAX_AFTER_CLOSE: f64 = 30.0;
+const MAX_TELEMETRY_AGE: f64 = 30.0;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Sample {
@@ -106,9 +107,17 @@ pub struct HistoryMemoryDiagnostics {
 pub struct HistorySampler {
     // Všechny mapy mají pevný limit; watermarks se odstraňují při stárnutí.
     confirmed: BTreeMap<String, Sample>,
+    recent_telemetry: BTreeMap<String, TelemetrySnapshot>,
     pending: BTreeMap<(i64, String), Sample>,
     in_flight: Vec<Sample>,
     pub counters: HistoryCounters,
+}
+
+#[derive(Clone, Debug)]
+struct TelemetrySnapshot {
+    at: f64,
+    telemetry: crate::contract::FlightData,
+    squawk: Option<String>,
 }
 
 fn distance_m(a: &Sample, b: &Sample) -> f64 {
@@ -152,7 +161,10 @@ fn worth_sampling(last: &Sample, next: &Sample) -> bool {
 
 impl HistorySampler {
     pub fn observe(&mut self, o: &Observation) -> bool {
-        let Some(sample) = Sample::from_observation(o) else {
+        self.remember_telemetry(o);
+        let mut enriched = o.clone();
+        self.enrich_recent_telemetry(&mut enriched);
+        let Some(sample) = Sample::from_observation(&enriched) else {
             self.counters.skipped += 1;
             return false;
         };
@@ -200,6 +212,75 @@ impl HistorySampler {
         self.pending.insert(key, sample);
         self.counters.eligible += 1;
         true
+    }
+
+    fn remember_telemetry(&mut self, o: &Observation) {
+        if !o.message_at_utc.is_finite() || (o.telemetry.is_empty() && o.squawk.is_none()) {
+            return;
+        }
+        let entry = self
+            .recent_telemetry
+            .entry(o.aircraft_key.clone())
+            .or_insert_with(|| TelemetrySnapshot {
+                at: f64::NEG_INFINITY,
+                telemetry: Default::default(),
+                squawk: None,
+            });
+        if o.message_at_utc < entry.at {
+            return;
+        }
+        entry.at = o.message_at_utc;
+        if let Some(value) = o.telemetry.altitude_baro_ft {
+            entry.telemetry.altitude_baro_ft = Some(value);
+        }
+        if let Some(value) = o.telemetry.ground_speed_kt {
+            entry.telemetry.ground_speed_kt = Some(value);
+        }
+        if let Some(value) = o.telemetry.track_degrees {
+            entry.telemetry.track_degrees = Some(value);
+        }
+        if let Some(value) = o.telemetry.vertical_rate_fpm {
+            entry.telemetry.vertical_rate_fpm = Some(value);
+        }
+        if let Some(value) = o.telemetry.on_ground {
+            entry.telemetry.on_ground = Some(value);
+        }
+        if let Some(value) = &o.squawk {
+            entry.squawk = Some(value.clone());
+        }
+    }
+
+    fn enrich_recent_telemetry(&self, o: &mut Observation) {
+        let Some(position_at) = o.position_at_utc else {
+            return;
+        };
+        let Some(previous) = self.recent_telemetry.get(&o.aircraft_key) else {
+            return;
+        };
+        if !position_at.is_finite()
+            || previous.at > position_at
+            || position_at - previous.at > MAX_TELEMETRY_AGE
+        {
+            return;
+        }
+        if o.telemetry.altitude_baro_ft.is_none() {
+            o.telemetry.altitude_baro_ft = previous.telemetry.altitude_baro_ft;
+        }
+        if o.telemetry.ground_speed_kt.is_none() {
+            o.telemetry.ground_speed_kt = previous.telemetry.ground_speed_kt;
+        }
+        if o.telemetry.track_degrees.is_none() {
+            o.telemetry.track_degrees = previous.telemetry.track_degrees;
+        }
+        if o.telemetry.vertical_rate_fpm.is_none() {
+            o.telemetry.vertical_rate_fpm = previous.telemetry.vertical_rate_fpm;
+        }
+        if o.telemetry.on_ground.is_none() {
+            o.telemetry.on_ground = previous.telemetry.on_ground;
+        }
+        if o.squawk.is_none() {
+            o.squawk = previous.squawk.clone();
+        }
     }
 
     /// Potřebuje jen zavřené buckety. Při výpadku SQL má čekání tvrdý limit.
@@ -253,6 +334,18 @@ impl HistorySampler {
             now < *bucket as f64 + BUCKET_SECONDS as f64 + MAX_AFTER_CLOSE
         });
         self.counters.dropped_stale += (before - self.pending.len()) as u64;
+        self.recent_telemetry
+            .retain(|_, value| value.at > now - MAX_TELEMETRY_AGE);
+        while self.recent_telemetry.len() > MAX_TRACK_WATERMARKS {
+            let oldest = self
+                .recent_telemetry
+                .iter()
+                .min_by(|a, b| a.1.at.total_cmp(&b.1.at))
+                .map(|(key, _)| key.clone());
+            if let Some(key) = oldest {
+                self.recent_telemetry.remove(&key);
+            }
+        }
         self.prune_confirmed(now);
     }
 
@@ -333,6 +426,37 @@ mod tests {
         assert_eq!(s.counters.committed, 1);
         assert!(!s.observe(&observation(1802.0, 17.0)));
     }
+
+    #[test]
+    fn position_carries_recent_velocity_and_squawk_into_history() {
+        let mut s = HistorySampler::default();
+        let mut velocity = observation(1795.0, 17.0);
+        velocity.position = None;
+        velocity.position_at_utc = None;
+        velocity.telemetry = FlightData {
+            altitude_baro_ft: None,
+            ground_speed_kt: Some(420.0),
+            track_degrees: Some(123.0),
+            vertical_rate_fpm: None,
+            on_ground: Some(false),
+        };
+        velocity.squawk = Some("4521".into());
+        assert!(!s.observe(&velocity));
+
+        let mut position = observation(1800.0, 17.1);
+        position.telemetry = FlightData {
+            altitude_baro_ft: Some(32000),
+            ..Default::default()
+        };
+        position.squawk = None;
+        assert!(s.observe(&position));
+        let batch = s.next_batch(1836.0);
+        assert_eq!(batch.len(), 1);
+        assert_eq!(batch[0].ground_speed_kt, Some(420.0));
+        assert_eq!(batch[0].track_deg, Some(123.0));
+        assert_eq!(batch[0].squawk.as_deref(), Some("4521"));
+        assert_eq!(batch[0].altitude_ft, Some(32000));
+    }
     #[test]
     fn timing_and_quality_rules() {
         let mut s = HistorySampler::default();
@@ -386,6 +510,32 @@ mod tests {
         assert_eq!(s.pending_len(), 0);
         assert_eq!(s.counters.dropped_stale, MAX_PENDING as u64);
         assert!(s.next_batch(1900.0).is_empty());
+    }
+
+    #[test]
+    fn full_queue_during_inflight_batch_stays_bounded() {
+        let mut s = HistorySampler::default();
+        for i in 0..MAX_PENDING {
+            let mut o = observation(1800.0, 17.0);
+            o.aircraft_key = format!("icao:{i:06x}");
+            assert!(s.observe(&o));
+        }
+        assert_eq!(s.next_batch(1836.0).len(), MAX_BATCH);
+        assert_eq!(s.diagnostics().inflight, MAX_BATCH);
+
+        // Simuluje pomalý writer: jeden batch je stále in-flight a přichází
+        // další příjem. Kapacita musí zůstat přesně MAX_PENDING.
+        for i in MAX_PENDING..MAX_PENDING + MAX_BATCH {
+            let mut o = observation(1860.0, 17.0);
+            o.aircraft_key = format!("icao:{i:06x}");
+            assert!(s.observe(&o));
+        }
+        assert_eq!(s.pending_len(), MAX_PENDING);
+        assert_eq!(s.diagnostics().dropped_capacity, MAX_BATCH as u64);
+
+        s.finish_batch(false, 1900.0);
+        assert_eq!(s.diagnostics().inflight, 0);
+        assert_eq!(s.pending_len(), MAX_PENDING - MAX_BATCH);
     }
     #[test]
     fn no_sql_on_replayed_transport_or_invalid_position() {

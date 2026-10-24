@@ -31,6 +31,18 @@ if psql -X -v ON_ERROR_STOP=1 -q -d airradar_v2_restore_ci \
 fi
 psql -X -v ON_ERROR_STOP=1 -q -d postgres -c "DROP DATABASE airradar_v2_restore_ci WITH (FORCE)"
 
+# Jednorázová retence je povolena pouze přes dedikovanou maintenance roli.
+if [[ "$(psql -X -Atc "SELECT 1 FROM pg_roles WHERE rolname = 'airradar_v2_dev_maintenance'")" != 1 ]]; then
+  psql -X -v ON_ERROR_STOP=1 -q -c "CREATE ROLE airradar_v2_dev_maintenance LOGIN PASSWORD 'ci-only-retention-test' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION"
+else
+  psql -X -v ON_ERROR_STOP=1 -q -c "ALTER ROLE airradar_v2_dev_maintenance PASSWORD 'ci-only-retention-test'"
+fi
+psql -X -v ON_ERROR_STOP=1 -q <<'SQL'
+GRANT CONNECT ON DATABASE airradar_v2_dev TO airradar_v2_dev_maintenance;
+GRANT USAGE ON SCHEMA airradar_v2 TO airradar_v2_dev_maintenance;
+GRANT SELECT, DELETE ON airradar_v2.flight_samples TO airradar_v2_dev_maintenance;
+SQL
+
 # Jednorázový CI retenční test: 2 501 starých řádků se čistí po dávkách
 # nejvýše 1 000, nový řádek zůstane a PK index zůstane použitelný.
 psql -X -v ON_ERROR_STOP=1 -q <<'SQL'
@@ -48,7 +60,8 @@ SQL
 before_rows="$(psql -X -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM airradar_v2.flight_samples WHERE bucket_at < now() - interval '30 days'")"
 [[ "$before_rows" = 2501 ]]
 for expected in 1501 501 0; do
-  psql -X -v ON_ERROR_STOP=1 -q -f database/maintenance/g04_retention_once.sql
+  PGPASSWORD=ci-only-retention-test PGUSER=airradar_v2_dev_maintenance \
+    psql -X -v ON_ERROR_STOP=1 -q -f database/maintenance/g04_retention_once.sql
   remaining="$(psql -X -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM airradar_v2.flight_samples WHERE bucket_at < now() - interval '30 days'")"
   [[ "$remaining" = "$expected" ]]
 done
