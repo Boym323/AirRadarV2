@@ -4,9 +4,14 @@ Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; vš
 
 ## [Nepublikováno]
 
+### G-05.04 — popisky bez směru letu (24. 10. 2026)
+- Místní cíl s validní polohou a callsignem se nově popíše i bez `trackDegrees` (modrý bod, žádná fiktivní šipka). Stejný GeoJSON source, samostatná MapLibre symbol layer s kolizemi, žádný DOM marker.
+- Doplněna unit test projekce a offline Chromium fixture obsahující letadlo bez směru. Před uzavřením R04 je nutné ověřit nové CI a hustý provoz.
+- G-05.08 mělo finální CI [#40077231845](https://github.com/Boym323/AirRadarV2/actions/runs/40077231845) **3/3 PASS**, následně sloučeno v [PR #23](https://github.com/Boym323/AirRadarV2/pull/23), ale funkce R09 zůstává IN_PROGRESS do ověření skutečné kamery a mobilních testů.
+
 ### G-05.08 — navazující ochrana ručního ovládání follow (24. 10. 2026)
 - Po nasazení první mapy do DEV opravena konkurence ručního zoomu/pohybu s automatickým follow (R09): wheel, touchmove, šipky, drag/rotate/pitch nyní režim vypnou; programové easeTo jej samo nevypne.
-- Tlačítko sledování hlásí `aria-pressed`. Izolovaný Chromium test pokrývá myš/klávesnici/dotyk a zachování MapLibre instance; **CI nové změny se teprve ověří**, R09 i etapa G-05 zůstávají IN_PROGRESS.
+- Tlačítko sledování hlásí `aria-pressed`. Izolovaný Chromium test pokrývá myš/klávesnici/dotyk a zachování MapLibre instance; **CI #40077231845 PASS**, R09 i etapa G-05 zůstávají IN_PROGRESS do dalších testů.
 - PR #22 již sloučen (23. 10.) a první G-05 mapa nasazena na DEV přes [#40028968380](https://github.com/Boym323/AirRadarV2/actions/runs/40028968380); V1/produkce/DB bez změny.
 
 ### G-05 — první ověřená MapLibre mapa (PR #22)

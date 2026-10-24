@@ -61,5 +61,9 @@ describe("G-05.02 atomický G-03 SSE adapter", () => {
     expect(points.features[0].properties?.selected).toBe(true);
     const unknown = toGeoJSON([{...aircraft(), telemetry: undefined}], null);
     expect(unknown.features[0].properties?.heading).toBeNull();
+    // G-05.04: neznámý heading potlačí šipku, nikoli pravdivý callsign.
+    expect(unknown.features[0].properties?.label).toBe("OKTEST");
+    const noCallsign = toGeoJSON([{...aircraft(), callsign: null, telemetry: undefined}], null);
+    expect(noCallsign.features[0].properties?.label).toBe("");
   });
 });

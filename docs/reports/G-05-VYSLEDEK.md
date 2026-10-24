@@ -15,7 +15,12 @@
 
 - Opravena situace, kdy se follow režim vypnul pouze po `dragstart`, ale při ručním zoomu kolečkem, dotykovém přesunu nebo navigaci šipkami se mapa mohla každou sekundu vracet k letadlu.
 - MapLibre nyní uvolňuje follow při drag/rotate/pitch a při `wheel`, `touchmove` a navigačních klávesách uvnitř mapy. Programové `easeTo` sledování neruší. Přidána korektní registrace i odregistrování DOM listenerů a přístupný stav tlačítka `aria-pressed`.
-- Rozšířen izolovaný Chromium regresní test o skutečné kolečko myši a obsluhu klávesnice/dotykového pohybu. **Výsledek nového CI musí být doložen před změnou statusu kroku na TESTED.** Bez RF/DB a bez tvrzení o mobilním GPU/FPS.
+- Rozšířen izolovaný Chromium regresní test o skutečné kolečko myši a obsluhu klávesnice/dotykového pohybu. **CI #40077231845: PASS (3/3)** včetně Chromium wheel/keyboard/touch a bez remountu. Test však neměří skutečný pohyb kamery či mobilní GPU/FPS, proto zůstává R09/G-05.08 IN_PROGRESS.
+
+## Navazující změna G-05.04 / R04 — popisky při neznámém heading
+
+- Dosavadní modré body bez `trackDegrees` neměly vlastní vrstvu popisků, ačkoli pravdivý callsign byl ve společném GeoJSON source. Doplněna samostatná **kolizně řízená symbolová vrstva** nad stejným GeoJSON source. Směr se nenahrazuje odhadem; při prázdném callsign se nic nevykreslí.
+- Rozšířeny jednotkové testy projekce a izolované Chromium SSE fixture tak, aby obsahovalo letadlo **bez směru**. Přejímka vizuálních kolizí za vysoké hustoty / GPU a CI tohoto pokračování zůstává otevřená; R04 zatím IN_PROGRESS.
 
 ## Co zůstává
 

@@ -17,6 +17,7 @@ const AIRCRAFT_SOURCE = "radar-aircraft";
 const TRAIL_SOURCE = "radar-trail";
 const PLANE_LAYER = "radar-aircraft-symbols";
 const DOT_LAYER = "radar-aircraft-unknown-heading";
+const DOT_LABEL_LAYER = "radar-aircraft-unknown-heading-labels";
 const TRAIL_LAYER = "radar-selected-trail";
 const emptyAircraft = (): FeatureCollection<Point> => ({ type: "FeatureCollection", features: [] });
 const emptyTrail = (): FeatureCollection<LineString> => ({ type: "FeatureCollection", features: [] });
@@ -122,6 +123,24 @@ function addRadarLayers(map: LibreMap) {
         "circle-stroke-width": 2,
         "circle-stroke-color": "#142133",
       },
+    });
+  // G-05.04 / R04: bez známého heading zůstává bod, ale pravdivý
+  // callsign se neztrácí. Text řeší MapLibre kolizně, bez DOM markerů.
+  if (!map.getLayer(DOT_LABEL_LAYER))
+    map.addLayer({
+      id: DOT_LABEL_LAYER, type: "symbol", source: AIRCRAFT_SOURCE,
+      filter: ["all",
+        ["!=", ["typeof", ["get", "heading"]], "number"],
+        ["!=", ["get", "label"], ""],
+      ],
+      layout: {
+        "text-field": ["get", "label"],
+        "text-size": 11,
+        "text-anchor": "top",
+        "text-offset": [0, 1.2],
+        "text-allow-overlap": false,
+      },
+      paint: { "text-color": "#ffffff", "text-halo-color": "#142133", "text-halo-width": 2 },
     });
 }
 type Props = {

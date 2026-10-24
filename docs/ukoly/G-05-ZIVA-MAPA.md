@@ -1,6 +1,6 @@
 # G-05 — MapLibre mapa v již připraveném Vite webu
 
-**Stav:** ROZPRACOVÁNO; [PR #22](https://github.com/Boym323/AirRadarV2/pull/22) sloučen 23. 10. 2026, DEV nasazení [#40028968380](https://github.com/Boym323/AirRadarV2/actions/runs/40028968380) PASS. 4 z 11 kroků jsou formálně ověřené, G-05.08 má navazující opravu a čeká na nové CI; úplný benchmark a letiště nejsou hotové.  
+**Stav:** ROZPRACOVÁNO; [PR #22](https://github.com/Boym323/AirRadarV2/pull/22) sloučen 23. 10. 2026, DEV nasazení [#40028968380](https://github.com/Boym323/AirRadarV2/actions/runs/40028968380) PASS. 4 z 11 kroků jsou formálně ověřené, G-05.08 má Chromium regresi #40077231845 PASS (úplná kamera dosud neověřena); úplný benchmark a letiště nejsou hotové.  
 **Odpovědnost:** M04 — Vite/React/MapLibre.  
 **Závislosti:** G-03; letištní vrstva se dokončí po G-06, ostatní části lze provést dříve.  
 **Primární KEEP ID:** `R01`, `R03`, `R04`, `R06`, `R08`, `R09`, `R12`, `R14`.  
@@ -28,7 +28,7 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
 
 - [ ] **G-05.04 — Čitelné popisky**  
   **Implementace:** Zobraz stručné popisky jen pro dostupný callsign/výšku, MapLibre collision a minimalizovanou práci React.  
-  **Ověření:** Test hustého provozu nepřekrývá obrazovku nekontrolovanými DOM markery.
+  **Ověření:** Test hustého provozu nepřekrývá obrazovku nekontrolovanými DOM markery. Doplněna kolizně řízená label vrstva pro cíle bez heading s existujícím callsign, bez nového GeoJSON source; čeká na nové CI a hustotní vizuální přejímku.
 
 - [x] **G-05.05 — Seznam a vyhledávání v provozu**  
   **Implementace:** Vytvoř živý seznam letadel se základními filtry a řazením; používej stejný state jako mapa.  
@@ -44,7 +44,7 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
 
 - [ ] **G-05.08 — Follow kamera**  
   **Implementace:** Volitelně sleduj vybrané letadlo s možností okamžitě vypnout sledování interakcí uživatele.  
-  **Ověření:** Playwright ověří výběr, follow stop a nezaseknutou kameru. Doplněno vypnutí follow při ručním wheel/touchmove/keyboard a drag/rotate/pitch; nový Chromium test čeká na CI a G-05.08 zůstává neuzavřená do doložení všech scénářů.
+  **Ověření:** Playwright ověří výběr, follow stop a nezaseknutou kameru. Doplněno vypnutí follow při ručním wheel/touchmove/keyboard a drag/rotate/pitch; Chromium #40077231845 PASS; G-05.08 zůstává neuzavřená do ověření skutečného pohybu kamery a dalšího prohlížeče.
 
 - [ ] **G-05.09 — Výběr mapového podkladu**  
   **Implementace:** Implementuj jen funkční schválené mapové styly a jejich bezpečné URL; preference mohou být lokálně uložené.  

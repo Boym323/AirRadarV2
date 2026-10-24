@@ -15,16 +15,17 @@ STYLE = {"version": 8, "name": "CI offline map", "sources": {},
 MOCK = r"""
 (() => {
   const now = Date.now() / 1000;
-  const observation = (id, lon) => ({
+  const observation = (id, lon, withHeading = true) => ({
     id, lastMessageAt: now, lastPositionAt: now,
     position: {lat: 49.2, lon}, positionOrigin: 'adsb', stale: false,
     callsign: id === 'icao:abc123' ? 'OKTEST' : 'OKTWO',
-    squawk: null, telemetry: {trackDegrees: 105, altitudeBaroFt: 6400}
+    squawk: null, telemetry: { ...(withHeading ? {trackDegrees: 105} : {}),
+                               altitudeBaroFt: 6400}
   });
   window.__radarFixture = {
     initial: {kind:'snapshot', epoch:'g05-ci', seq:0,
               generatedAt: new Date().toISOString(),
-              aircraft:[observation('icao:abc123', 17.5),observation('icao:bbbbbb',17.6)]},
+              aircraft:[observation('icao:abc123', 17.5),observation('icao:bbbbbb',17.6, false)]},
     next: {kind:'delta', epoch:'g05-ci', seq:1,
            generatedAt: new Date().toISOString(),
            upsert:[observation('icao:abc123',17.51)], removed:['icao:bbbbbb']}
@@ -137,7 +138,7 @@ def main():
             page.get_by_label("Hledat volací znak nebo ICAO").fill("neexistuje")
             expect(page.get_by_text("Žádná odpovídající letadla.")).to_be_visible()
             browser.close()
-        print("PASS G-05 Chromium: bez RF/DB, stabilní MapLibre canvas, SSE, výběr, styl a G-05.08 wheel/keyboard/touch follow stop")
+        print("PASS G-05 Chromium: offline MapLibre, SSE, známý/neznámý heading, výběr, styl a G-05.08 wheel/keyboard/touch follow stop")
     finally:
         process.terminate()
         try:
