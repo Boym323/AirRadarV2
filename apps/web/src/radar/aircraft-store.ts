@@ -1,3 +1,5 @@
+import { emitterCategory, type EmitterCategory } from "../../lib/g01-contract";
+
 /** G-05.02/.07: jediný verzovaný SSE model nad kontraktem G-03.
  *  Žádná databáze, druhý ingest nebo fiktivní polohy. */
 export type Position = { lat: number; lon: number };
@@ -11,7 +13,7 @@ export type Aircraft = {
   callsign: string | null;
   squawk: string | null;
   /** Volitelné a až po ověření G-03: ADS-B emitter category; nikdy se neodvozuje na klientu. */
-  emitterCategory?: string;
+  emitterCategory?: EmitterCategory;
   telemetry?: {
     altitudeBaroFt?: number;
     groundSpeedKt?: number;
@@ -46,7 +48,8 @@ function validateAircraft(input: unknown): input is Aircraft {
     typeof input.positionOrigin !== "string" ||
     typeof input.stale !== "boolean" ||
     (input.callsign !== null && (typeof input.callsign !== "string" || input.callsign.length > 8)) ||
-    (input.squawk !== null && (typeof input.squawk !== "string" || !/^[0-7]{4}$/.test(input.squawk)))) {
+    (input.squawk !== null && (typeof input.squawk !== "string" || !/^[0-7]{4}$/.test(input.squawk))) ||
+    (input.emitterCategory !== undefined && emitterCategory(input.emitterCategory) === undefined)) {
     return false;
   }
   if (input.position !== null && input.lastPositionAt === null) return false;

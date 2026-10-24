@@ -31,6 +31,26 @@ describe("G-01: shodný Rust/TypeScript datový kontrakt", () => {
     expect(() => normalizeReadsb(initial, "bad-station", 1792627200)).toThrow();
     expect(() => normalizeReadsb(initial, "rx-primary", 1792627400)).toThrow();
   });
+
+  it("G-05 volitelná emitterCategory v readsb a veřejném SSE je striktně validovaná", () => {
+    const raw: Record<string, unknown> = structuredClone(initial);
+    const rows = (raw.aircraft as Record<string, unknown>[]);
+    rows[0].category = "A7";
+    rows[1].category = "A0";
+    const observations = normalizeReadsb(raw, "rx-primary", 1792627200);
+    expect(observations[0].emitterCategory).toBe("A7");
+    expect(observations[1].emitterCategory).toBeUndefined();
+    const good = golden.snapshot.aircraft[0];
+    expect(parsePublicAircraft({...good, emitterCategory:"B1"}).emitterCategory).toBe("B1");
+    for (const category of ["A0", "B3", "D1", "INVALID", null, 1]) {
+      expect(() => parsePublicAircraft({...good, emitterCategory:category})).toThrow();
+    }
+    const event = parseStreamEvent({
+      ...golden.snapshot, aircraft:[{...good, emitterCategory:"C2"}]
+    });
+    expect(event.kind).toBe("snapshot");
+    if (event.kind === "snapshot") expect(event.aircraft[0].emitterCategory).toBe("C2");
+  });
   it("SSE snapshot → delta → removed, odmítne gap a restart bez snapshotu", () => {
     let r: Replica = { epoch: null, seq: null, aircraft: new Map() };
     r = applyEvent(r, parseStreamEvent(golden.snapshot));

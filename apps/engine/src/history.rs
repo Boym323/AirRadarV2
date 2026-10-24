@@ -307,6 +307,7 @@ mod tests {
             position: Some(Position { lat: 49.0, lon }),
             callsign: None,
             squawk: Some("7000".into()),
+            emitter_category: None,
             telemetry: FlightData {
                 altitude_baro_ft: Some(10000),
                 ground_speed_kt: Some(200.0),

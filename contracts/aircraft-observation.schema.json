@@ -136,6 +136,24 @@
           "type": "boolean"
         }
       }
+    },
+    "emitterCategory": {
+      "enum": [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6",
+        "A7",
+        "B1",
+        "B2",
+        "B4",
+        "B6",
+        "C1",
+        "C2"
+      ],
+      "description": "Volitelná validní ADS-B emitter category z readsb nebo CRC-validního DF17; neodvozovat z letu."
     }
   },
   "allOf": [

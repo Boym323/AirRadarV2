@@ -1,11 +1,11 @@
 # AirRadar V2 — ikony letadel a popisky mapy
 
 **24. 10. 2026 · Specifikace pro G-05.03/.04 (R03/R04), návazně R01/R06/R08/R09/R14 a G-10.**  
-**Stav:** konkrétní zadání k implementaci, nikoli implementované assety, změněné API či doložené testy. [Hlavní UX](WEB-UX-UI-SPECIFIKACE.md) · [Vizuální audit](../audits/VIZUALNI-ZADANI-AUDIT-2026-10-24.md).
+**Stav 24. 10. 2026:** v PR #29 byly implementovány původní Path2D siluety; [PR #30](https://github.com/Boym323/AirRadarV2/pull/30) implementuje volitelná validovaná metadata `emitterCategory` ze skutečného readsb JSON i CRC-validních DF17 BEAST zpráv. **Finální G-05 vizuální/GPU přejímka zůstává otevřená**. Rozhodnutí popisuje [ADR 0015](../adr/0015-g05-emitter-category.md). [Hlavní UX](WEB-UX-UI-SPECIFIKACE.md) · [Vizuální audit](../audits/VIZUALNI-ZADANI-AUDIT-2026-10-24.md).
 
-## 1. Ověřená výchozí implementace
+## 1. Historická výchozí implementace před G-05.03 / PR #29 a #30
 
-`apps/web/src/radar/RadarMap.tsx` má jedinou bílou siluetu `radar-plane` z 64×64 canvasu při číselném `telemetry.trackDegrees`; bez směru ukazuje modrou tečku. Vybraný cíl se zvětšuje. Popisek je `callsign`; GeoJSON properties mají `id, label, heading, selected`. Žádný katalog různých typů **neexistuje**. `contracts/aircraft-public.schema.json`, Rust `PublicAircraft` a webový `Aircraft` **neobsahují** ověřenou kategorii letadla. Nelze nyní právem tvrdit, že rozlišujeme dopravní letadlo, vrtulník a kluzák.
+`apps/web/src/radar/RadarMap.tsx` má jedinou bílou siluetu `radar-plane` z 64×64 canvasu při číselném `telemetry.trackDegrees`; bez směru ukazuje modrou tečku. Vybraný cíl se zvětšuje. Popisek je `callsign`; GeoJSON properties mají `id, label, heading, selected`. Toto byl stav **před PR #29**, které přidalo vlastní katalog a symbolové vrstvy. `contracts/aircraft-public.schema.json`, Rust `PublicAircraft` a webový `Aircraft` **před PR #30 neobsahovaly** ověřenou kategorii; PR #30 doplňuje zpětně kompatibilní volitelný údaj. Nelze nyní právem tvrdit, že rozlišujeme dopravní letadlo, vrtulník a kluzák.
 
 ## 2. Vizuální jazyk vlastních siluet
 
@@ -27,7 +27,7 @@ Sada původních vector/source ikon, vyobrazených **shora**, jednotný geometri
 
 `A0/B0/C0`, rezervované kódy, jiné hodnoty, neplatné metadata → generický symbol jen při známém tracku; bez tracku bod. Symbol dopravního letadla **nepředpokládá** skutečnou aerolinku, typ, počet motorů či trasu.
 
-**Grafický výstup G-05:** vlastní zdrojové SVG (průhledné pozadí) + z nich odvozené MapLibre registrované ikony; opticky porovnat čitelnost při 16/24/32 CSS px; mít variantu dark/light a highlight bez duplikace modelu. **Tento MD žádná SVG ještě nevytváří.**
+**Grafický výstup G-05:** v PR #29 byly implementovány vlastní vektorové Path2D siluety (nikoli externí SVG soubory) a registrované MapLibre ikony; opticky porovnat čitelnost při 16/24/32 CSS px; mít variantu dark/light a highlight bez duplikace modelu. **Samostatné originální SVG soubory zůstávají otevřeným grafickým výstupem; dosavadní Path2D siluety jsou funkční zdroje.**
 
 ## 3. Pravdivý datový původ (blokace)
 

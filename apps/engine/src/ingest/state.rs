@@ -68,6 +68,7 @@ impl RadarState {
             incoming.position_at_utc = None;
             incoming.callsign = None;
             incoming.squawk = None;
+            incoming.emitter_category = None;
             incoming.telemetry = FlightData::default();
         }
         let result = merge(&mut self.tracks, &incoming);
@@ -203,6 +204,7 @@ mod tests {
                 position: None,
                 callsign: None,
                 squawk: None,
+                emitter_category: None,
                 telemetry: FlightData::default(),
             };
             state.apply(&data);
@@ -230,7 +232,15 @@ mod tests {
         beast.callsign = Some("SPOOF".into());
         beast.squawk = Some("7777".into());
         beast.telemetry.ground_speed_kt = Some(999.0);
+        let mut trusted_json = first[0].clone();
+        trusted_json.emitter_category = Some("A7".to_owned());
+        state.apply(&trusted_json);
+        beast.emitter_category = Some("B1".to_owned());
         state.apply(&beast);
+        assert_eq!(
+            state.tracks["icao:abc123"].emitter_category.as_deref(),
+            Some("A7")
+        );
         assert_eq!(
             state.tracks["icao:abc123"].callsign.as_deref(),
             Some("TEST123")
