@@ -1,6 +1,6 @@
 //! G-02.04/05: konzervativní DF17 CRC, callsign a globální airborne CPR.
 //! BEAST tick (12 MHz) není UTC; pro živý RAM track používáme přijetí serverem.
-use crate::contract::{FlightData, Observation, Position, aircraft_key, crc24};
+use crate::contract::{FlightData, Observation, Position, aircraft_key, crc24, emitter_category};
 use std::collections::BTreeMap;
 
 #[derive(Clone, Debug)]
@@ -14,6 +14,7 @@ pub struct Cpr {
 pub struct Decoded {
     pub key: String,
     pub callsign: Option<String>,
+    pub emitter_category: Option<String>,
     pub cpr: Option<Cpr>,
     pub telemetry: FlightData,
 }
@@ -31,6 +32,14 @@ pub fn decode_df17(data: &[u8], received_at: f64) -> Option<Decoded> {
     }
     let key = aircraft_key(&format!("{:02x}{:02x}{:02x}", data[1], data[2], data[3]))?;
     let tc = data[4] >> 3;
+    // ADS-B identifikační type codes 1–4 kódují emitter category D/C/B/A.
+    // I při platném CRC se rezervovaný/nepodporovaný subtyp zahazuje.
+    let emitter_category = match tc {
+        4 => emitter_category(Some(&format!("A{}", data[4] & 7))),
+        3 => emitter_category(Some(&format!("B{}", data[4] & 7))),
+        2 => emitter_category(Some(&format!("C{}", data[4] & 7))),
+        _ => None,
+    };
     let callsign = if (1..=4).contains(&tc) {
         const CHARS: &[u8] = b"#ABCDEFGHIJKLMNOPQRSTUVWXYZ#####_###############0123456789######";
         let mut raw = u64::from(data[5]) << 40
@@ -126,6 +135,7 @@ pub fn decode_df17(data: &[u8], received_at: f64) -> Option<Decoded> {
     Some(Decoded {
         key,
         callsign,
+        emitter_category,
         cpr,
         telemetry,
     })
@@ -291,6 +301,7 @@ pub fn observation(decoded: Decoded, position: Option<Position>, received_at: f6
         position,
         callsign: decoded.callsign,
         squawk: None,
+        emitter_category: decoded.emitter_category,
         telemetry: decoded.telemetry,
     }
 }

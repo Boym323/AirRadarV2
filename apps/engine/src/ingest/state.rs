@@ -68,6 +68,7 @@ impl RadarState {
             incoming.position_at_utc = None;
             incoming.callsign = None;
             incoming.squawk = None;
+            incoming.emitter_category = None;
             incoming.telemetry = FlightData::default();
         }
         let result = merge(&mut self.tracks, &incoming);
@@ -203,6 +204,7 @@ mod tests {
                 position: None,
                 callsign: None,
                 squawk: None,
+                emitter_category: None,
                 telemetry: FlightData::default(),
             };
             state.apply(&data);
