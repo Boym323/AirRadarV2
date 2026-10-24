@@ -28,7 +28,8 @@ JS = r"""async ({count, hz, method}) => {
   await source.setData({type:'FeatureCollection',features});
   const times=[],raf=[], interval=1000/hz;
   const heapStart=performance.memory?.usedJSHeapSize??null;
-  const onFrame=time=>{raf.push(time); if (raf.length < 600) requestAnimationFrame(onFrame)};
+  let sampling=true;
+  const onFrame=time=>{if(!sampling)return;raf.push(time);requestAnimationFrame(onFrame)};
   requestAnimationFrame(onFrame);
   const observer=new MutationObserver(()=>{domMutations++});
   let domMutations=0;
@@ -51,6 +52,7 @@ JS = r"""async ({count, hz, method}) => {
     else await source.updateData({update:change});
     times.push(performance.now()-t);
   }
+  sampling=false;
   observer.disconnect();
   const gaps=raf.slice(1).map((x,i)=>x-raf[i]).filter(x=>x>0 && x<2000);
   gaps.sort((a,b)=>a-b);
