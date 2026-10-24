@@ -15,7 +15,10 @@ use serde::Serialize;
 use std::{
     collections::BTreeMap,
     convert::Infallible,
-    sync::{Arc, Mutex, Weak},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex, Weak,
+    },
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 use tokio::{
@@ -74,6 +77,18 @@ struct Frame {
 pub struct Feed {
     rx: watch::Receiver<Arc<Frame>>,
     clients: Arc<Semaphore>,
+    database_online: Arc<AtomicBool>,
+}
+
+impl Feed {
+    // G-04/J09: jen nezávislá read-only sonda aktualizuje tento příznak.
+    pub fn set_database_online(&self, online: bool) {
+        self.database_online.store(online, Ordering::Relaxed);
+    }
+
+    fn database_online(&self) -> bool {
+        self.database_online.load(Ordering::Relaxed)
+    }
 }
 
 pub struct Publisher {
@@ -155,6 +170,7 @@ pub fn new() -> (Feed, Publisher) {
         Feed {
             rx,
             clients: Arc::new(Semaphore::new(MAX_CLIENTS)),
+            database_online: Arc::new(AtomicBool::new(false)),
         },
         Publisher { sender, epoch },
     )
@@ -332,8 +348,9 @@ async fn health(State(state): State<ApiState>, query: RawQuery) -> Response {
     }
     let frame = state.feed.rx.borrow().clone();
     let active = !frame.unavailable && receiver_is_fresh(&frame.snapshot);
+    let database_connected = state.database_connected && state.feed.database_online();
     Json(Health {
-        status: if frame.unavailable {
+        status: if frame.unavailable || (state.database_connected && !database_connected) {
             "degraded"
         } else if active {
             "live"
@@ -342,7 +359,7 @@ async fn health(State(state): State<ApiState>, query: RawQuery) -> Response {
         },
         stage: state.stage,
         live_ingest: active,
-        database_connected: state.database_connected,
+        database_connected,
     })
     .into_response()
 }
@@ -686,6 +703,7 @@ mod tests {
     #[tokio::test]
     async fn g04_runtime_health_exposes_database_stage() {
         let (feed, _) = new();
+        feed.set_database_online(true);
         let response = router_with_runtime(feed, "G-04", true)
             .oneshot(
                 Request::builder()
@@ -700,6 +718,29 @@ mod tests {
         assert_eq!(json["stage"], "G-04");
         assert_eq!(json["database_connected"], true);
         assert_eq!(json["live_ingest"], false);
+    }
+
+    #[tokio::test]
+    async fn g04_health_reflects_database_up_and_down() {
+        let (feed, _) = new();
+        let control = feed.clone();
+        let app = router_with_runtime(feed, "G-04", true);
+        for (online, expected_status) in [
+            (false, "degraded"),
+            (true, "waiting_for_observations"),
+            (false, "degraded"),
+        ] {
+            control.set_database_online(online);
+            let response = app
+                .clone()
+                .oneshot(Request::builder().uri("/api/v1/health").body(Body::empty()).unwrap())
+                .await
+                .unwrap();
+            let body = to_bytes(response.into_body(), 1024).await.unwrap();
+            let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+            assert_eq!(json["database_connected"], online);
+            assert_eq!(json["status"], expected_status);
+        }
     }
 
     #[tokio::test]
