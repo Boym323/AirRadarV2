@@ -1,5 +1,14 @@
 # G-05 — průběžný výsledek implementace živé mapy
 
+## 24. 10. 2026 — G-05.04/.07: pravdivé popisky a stopa (PR v testování)
+
+- **R04 / G-05.04:** přísná normalizace callsign pro mapové štítky (max. 8 ASCII alfanumerických znaků nebo spojovník, bez vložených řádků či značek), výška pouze ve známém intervalu. Vybraný cíl má textové prvenství a ostatní labely jsou stále pod kolizní logikou MapLibre. Žádné DOM markery.
+- **R08 / G-05.07:** segmentovaná `MultiLineString` stopa jen ze skutečně přijatých poloh v jedné browser RAM mapě. Výpadek nad 120 sekund, časový návrat nebo překročení antimeridiánu **nepropojuje fiktivní přímkou**. Platná data stále max. 64 bodů / 20 minut.
+- **Testy přidané:** Vitest neznámých a podvržených textů, chybné výšky, 1/2/5 bodů stopy, přerušení u výpadku a ±180°, odstranění cíle; Chromium WebGL obrazový důkaz barvy skutečně vykreslené stopy (testovací screenshot, PIL pouze ve workflow) a kontrola bez opětovného vytvoření mapy.
+- **Přejímka:** dokud není zelené CI PR, G-05.04/.07 a R04/R08 ponecháváme `IN_PROGRESS`. Výkonové referenční měření na skutečném desktopu a mobilu G-05.11 ani letiště z G-06 zde nejsou deklarovány.
+
+
+
 ## 24. 10. 2026 — skutečná kategorie letadla readsb/BEAST → G-03 SSE → ikony (PR #30 sloučen, CI PASS)
 
 - Rozšířen Rust `Observation` a `PublicAircraft` o **volitelnou** `emitterCategory`, kompatibilní s dosavadním snapshot/delta DTO a klienty. Staré fixture bez pole zůstávají validní.
