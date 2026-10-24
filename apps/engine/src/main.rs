@@ -77,6 +77,99 @@ fn app() -> Router {
         .route("/api/v1/stream", get(stream_stub))
 }
 
+
+async fn monitor_database(pool: sqlx::PgPool, feed: api::Feed) {
+    // G-04/J09: oddělená read-only kontrola, bez dotazů na každý event.
+    let mut tick = tokio::time::interval(Duration::from_secs(15));
+    tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    loop {
+        tick.tick().await;
+        let online = matches!(
+            tokio::time::timeout(
+                Duration::from_secs(3),
+                sqlx::query("SELECT 1").execute(&pool),
+            )
+            .await,
+            Ok(Ok(_))
+        );
+        feed.set_database_online(online);
+    }
+}
+
+async fn shutdown_requested() {
+    #[cfg(unix)]
+    {
+        let mut term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("SIGTERM handler");
+        tokio::select! {
+            _ = tokio::signal::ctrl_c() => {}
+            _ = term.recv() => {}
+        }
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = tokio::signal::ctrl_c().await;
+    }
+}
+
+// G-03/J06–J08 a G-04/J09: nečekaný konec ingestu musí ukončit HTTP
+// s chybou a umožnit systemd provést Restart=on-failure.
+async fn run_supervised_live(
+    config: ingest::supervisor::Config,
+    listener: tokio::net::TcpListener,
+    router: Router,
+    publisher: api::Publisher,
+    history_pool: Option<sqlx::PgPool>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let (ingest_stop_tx, ingest_stop_rx) = tokio::sync::oneshot::channel::<()>();
+    let (http_stop_tx, http_stop_rx) = tokio::sync::oneshot::channel::<()>();
+    let mut ingest_task = tokio::spawn(async move {
+        ingest::supervisor::run_with_publisher_and_history_until(
+            config,
+            Some(publisher),
+            history_pool,
+            async move { let _ = ingest_stop_rx.await; },
+        )
+        .await
+        .map_err(|error| error.to_string())
+    });
+    let mut http_task = tokio::spawn(async move {
+        axum::serve(listener, router)
+            .with_graceful_shutdown(async move { let _ = http_stop_rx.await; })
+            .await
+            .map_err(|error| error.to_string())
+    });
+    tokio::select! {
+        actor = &mut ingest_task => {
+            http_task.abort();
+            let _ = http_task.await;
+            eprintln!("G-03/G-04 ingest skončil nečekaně: {actor:?}");
+            Err("Živý ingest skončil, HTTP služba vyžaduje restart".into())
+        }
+        api = &mut http_task => {
+            let _ = ingest_stop_tx.send(());
+            let drained = tokio::time::timeout(Duration::from_secs(65), &mut ingest_task).await;
+            if drained.is_err() { ingest_task.abort(); }
+            eprintln!("G-03/G-04 HTTP skončilo nečekaně: {api:?}; drain={drained:?}");
+            Err("HTTP služba skončila nečekaně".into())
+        }
+        _ = shutdown_requested() => {
+            let _ = ingest_stop_tx.send(());
+            let _ = http_stop_tx.send(());
+            let drained = tokio::time::timeout(Duration::from_secs(65), &mut ingest_task).await;
+            let http = tokio::time::timeout(Duration::from_secs(10), &mut http_task).await;
+            let ok = matches!(drained, Ok(Ok(Ok(())))) && matches!(http, Ok(Ok(Ok(()))));
+            if !ok {
+                ingest_task.abort();
+                http_task.abort();
+                eprintln!("G-03/G-04 shutdown failed: ingest={drained:?} HTTP={http:?}");
+                return Err("G-03/G-04 shutdown nebyl potvrzen".into());
+            }
+            Ok(())
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Opt-in G-02 kontrola bez zapojení V1, bez HTTP, bez DB a bez mapy.
@@ -161,65 +254,38 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    // G-03: opt-in HTTP/SSE nad *stejnou* G-02 RAM mapou. Není automaticky
-    // nasazeno do DEV, nemění G-00 service ani probíhající G-02 LIVE test.
+    // G-03: opt-in HTTP/SSE, jediný Rust RAM owner.
     if std::env::args().any(|arg| arg == "--g03-live-api") {
         let config = ingest::supervisor::Config::from_env()?;
         let (feed, publisher) = api::new();
         let bind =
             std::env::var("AIRRADAR_V2_BIND").unwrap_or_else(|_| "127.0.0.1:4102".to_owned());
-        let address: SocketAddr = bind.parse()?;
-        let listener = tokio::net::TcpListener::bind(address).await?;
-        tokio::spawn(async move {
-            if let Err(error) =
-                ingest::supervisor::run_with_publisher(config, Some(publisher)).await
-            {
-                eprintln!("G-03 ingest task ended: {error}");
-            }
-        });
-        println!("AirRadar V2 G-03 opt-in API on {}", listener.local_addr()?);
-        axum::serve(listener, api::router(feed))
-            .with_graceful_shutdown(async {
-                let _ = tokio::signal::ctrl_c().await;
-            })
-            .await?;
-        return Ok(());
+        let listener = tokio::net::TcpListener::bind(bind).await?;
+        println!("AirRadar V2 G-03 API on {}", listener.local_addr()?);
+        return run_supervised_live(config, listener, api::router(feed), publisher, None).await;
     }
-    // G-04: trvalý DEV writer aktivovaný pouze release markerem a chráněnou
-    // systemd konfigurací. Na rozdíl od canary nemá časový limit; DB je stále
-    // pouze doplňkový writer a živý RAM/SSE tok na něm nezávisí.
+    // G-04: trvalý DEV writer; DB health se ověřuje i po startupu.
     if std::env::args().any(|arg| arg == "--g04-live-history") {
         let config = ingest::supervisor::Config::from_env()?;
         let pool = history_store::dev_pool_from_env()?;
-        // Fail closed before switching the main service: the health flag must
-        // not claim an active DB runtime when the protected DEV DB is absent.
         pool.acquire().await?;
         let (feed, publisher) = api::new();
+        feed.set_database_online(true);
+        let monitor = tokio::spawn(monitor_database(pool.clone(), feed.clone()));
         let bind =
             std::env::var("AIRRADAR_V2_BIND").unwrap_or_else(|_| "127.0.0.1:4102".to_owned());
-        let address: SocketAddr = bind.parse()?;
-        let listener = tokio::net::TcpListener::bind(address).await?;
-        tokio::spawn(async move {
-            if let Err(error) = ingest::supervisor::run_with_publisher_and_history(
-                config,
-                Some(publisher),
-                Some(pool),
-            )
-            .await
-            {
-                eprintln!("G-04 live ingest task ended: {error}");
-            }
-        });
-        println!(
-            "AirRadar V2 G-04 live history API on {}",
-            listener.local_addr()?
-        );
-        axum::serve(listener, api::router_with_runtime(feed, "G-04", true))
-            .with_graceful_shutdown(async {
-                let _ = tokio::signal::ctrl_c().await;
-            })
-            .await?;
-        return Ok(());
+        let listener = tokio::net::TcpListener::bind(bind).await?;
+        println!("AirRadar V2 G-04 API on {}", listener.local_addr()?);
+        let outcome = run_supervised_live(
+            config,
+            listener,
+            api::router_with_runtime(feed, "G-04", true),
+            publisher,
+            Some(pool),
+        )
+        .await;
+        monitor.abort();
+        return outcome;
     }
     // Jen ruční diagnostický režim; běžný systemd vždy zůstává G-00 stub.
     if std::env::args().any(|arg| arg == "--g02-live") {
@@ -249,6 +315,26 @@ mod tests {
         http::{Request, StatusCode},
     };
     use tower::ServiceExt;
+
+    #[tokio::test]
+    async fn unexpected_ingest_end_closes_http() {
+        let config = ingest::supervisor::Config {
+            receiver_id: "invalid-test-receiver".to_owned(),
+            beast_addr: None,
+            json_path: None,
+        };
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let (feed, publisher) = api::new();
+        let result = tokio::time::timeout(
+            Duration::from_secs(3),
+            run_supervised_live(config, listener, api::router(feed), publisher, None),
+        )
+        .await
+        .expect("supervisor must detect an ingest exit");
+        assert!(result.is_err());
+        assert!(tokio::net::TcpStream::connect(address).await.is_err());
+    }
 
     #[tokio::test]
     async fn health_explicitly_reports_no_live_ingest() {
