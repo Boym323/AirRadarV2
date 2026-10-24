@@ -1,0 +1,18 @@
+[Unit]
+Description=AirRadar V2 G-04 — omezené mazání staré DEV historie
+Documentation=https://github.com/Boym323/AirRadarV2/blob/main/docs/runbooks/G-04-RETENCE-30-DNI.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=airradarv2-retention
+Group=airradarv2-retention
+EnvironmentFile=/etc/airradar-v2/g04-retention.env
+ExecStart=/usr/local/libexec/airradarv2-g04-retention.sh
+TimeoutStartSec=110
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=yes
+UMask=0077
