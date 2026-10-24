@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Map as LibreMap, NavigationControl, type GeoJSONSource } from "maplibre-gl";
-import type { FeatureCollection, Point, LineString } from "geojson";
+import type { FeatureCollection, Point } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Aircraft, ViewState } from "./aircraft-store";
 import { airportsToGeoJSON, type Airport } from "./airport-catalog";
