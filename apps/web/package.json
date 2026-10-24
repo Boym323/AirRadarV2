@@ -9,12 +9,13 @@
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 4100 --strictPort",
+    "prebuild": "node scripts/import-airports.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4100 --strictPort",
     "start": "npm run preview",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run && node --test scripts/import-airports.test.mjs"
   },
   "dependencies": {
     "react": "19.3.1",

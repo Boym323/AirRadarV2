@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { RadarMap, type MapStyle } from "./radar/RadarMap";
 import { useRadarStream } from "./radar/use-radar-stream";
 import type { Aircraft } from "./radar/aircraft-store";
+import { loadAirportCatalog, type Airport } from "./radar/airport-catalog";
 
-type Panel = "none" | "traffic" | "detail";
+type Panel = "none" | "traffic" | "detail" | "airport";
 
 function displayName(a: Aircraft): string {
   return a.callsign?.trim() || a.id;
@@ -28,8 +29,21 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [follow, setFollow] = useState(false);
   const [style, setStyle] = useState<MapStyle>("fiord");
+  const [airports, setAirports] = useState<Airport[]>([]);
+  const [airportsError, setAirportsError] = useState(false);
+  const [showAirports, setShowAirports] = useState(true);
+  const [selectedAirportId, setSelectedAirportId] = useState<string | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    if (typeof fetch !== "function") return () => controller.abort();
+    loadAirportCatalog(controller.signal)
+      .then(setAirports)
+      .catch(() => { if (!controller.signal.aborted) setAirportsError(true); });
+    return () => controller.abort();
+  }, []);
   const listToggleRef = useRef<HTMLButtonElement>(null);
   const selected = frame.aircraft.find(a => a.id === selectedId) ?? null;
+  const selectedAirport = airports.find(a => a.id === selectedAirportId) ?? null;
 
   // Reconnect nesmí obnovit výběr identity, která z nového snapshotu zmizela.
   useEffect(() => {
@@ -57,10 +71,19 @@ export default function App() {
 
   const select = (id: string) => {
     setSelectedId(id);
+    setSelectedAirportId(null);
     setFollow(false);
     setPanel("detail");
   };
+  const selectAirport = (id: string) => {
+    if (!airports.some(a => a.id === id)) return;
+    setSelectedAirportId(id);
+    setSelectedId(null);
+    setFollow(false);
+    setPanel("airport");
+  };
   const closePanel = () => {
+    if (panel === "airport") setSelectedAirportId(null);
     if (panel === "detail") {
       setSelectedId(null);
       setFollow(false);
@@ -100,6 +123,11 @@ export default function App() {
             {panel === "traffic" ? "Skrýt letadla" : "Letadla"}
           </button>
           <label className="style-control">
+            <input type="checkbox" checked={showAirports}
+              disabled={!airports.length} onChange={event => setShowAirports(event.target.checked)} />
+            Letiště
+          </label>
+          <label className="style-control">
             <span>Podklad</span>
             <select aria-label="Mapový podklad" value={style} onChange={event => setStyle(event.target.value as MapStyle)}>
               <option value="fiord">Tmavý</option>
@@ -112,6 +140,8 @@ export default function App() {
       <section className="radar-stage" aria-label="Živý radar">
         <div className="map-surface">
           <RadarMap frame={frame} selectedId={selected?.id ?? null}
+            airports={airports} selectedAirportId={selectedAirport?.id ?? null}
+            showAirports={showAirports} onSelectAirport={selectAirport}
             follow={follow} style={style} onSelect={select} onStopFollow={() => setFollow(false)} />
         </div>
         <div className="map-disclosure">Lokální ADS-B · jen potvrzené polohy</div>
@@ -150,6 +180,25 @@ export default function App() {
           </aside>
         )}
 
+        {panel === "airport" && selectedAirport && (
+          <aside className="radar-panel detail-panel" aria-label="Vybrané letiště">
+            <div className="panel-heading">
+              <div><span className="panel-eyebrow">Letiště · OurAirports</span>
+                <h2>{selectedAirport.name}</h2></div>
+              <button type="button" className="close-button"
+                aria-label="Zavřít detail letiště" onClick={closePanel}>✕</button>
+            </div>
+            <p className="aircraft-id">{selectedAirport.icao || selectedAirport.id}</p>
+            <dl className="telemetry-grid">
+              <div><dt>Země</dt><dd>{selectedAirport.country}</dd></div>
+              <div><dt>Obec</dt><dd>{selectedAirport.municipality || "—"}</dd></div>
+              <div><dt>Souřadnice</dt>
+                <dd>{selectedAirport.lat.toFixed(4)}°, {selectedAirport.lon.toFixed(4)}°</dd></div>
+            </dl>
+            <p className="detail-hint">Referenční veřejný katalog OurAirports. Pro letovou navigaci použij aktuální eAIP, nikoli tento mapový náhled.</p>
+          </aside>
+        )}
+
         {panel === "detail" && selected && (
           <aside className="radar-panel detail-panel" aria-label="Vybrané letadlo">
             <div className="panel-heading">
@@ -179,7 +228,7 @@ export default function App() {
         )}
       </section>
       <footer className="radar-footer">
-        Vývojová verze G-05 · Podklad OpenFreeMap vyžaduje internet · AirRadar V1 zůstává samostatný
+        Vývojová verze G-05 · Letiště: OurAirports (public domain){airportsError ? " — katalog dočasně nedostupný" : ""} · AirRadar V1 zůstává samostatný
       </footer>
     </main>
   );
