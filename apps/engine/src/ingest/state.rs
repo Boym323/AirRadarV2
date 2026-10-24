@@ -237,7 +237,10 @@ mod tests {
         state.apply(&trusted_json);
         beast.emitter_category = Some("B1".to_owned());
         state.apply(&beast);
-        assert_eq!(state.tracks["icao:abc123"].emitter_category.as_deref(), Some("A7"));
+        assert_eq!(
+            state.tracks["icao:abc123"].emitter_category.as_deref(),
+            Some("A7")
+        );
         assert_eq!(
             state.tracks["icao:abc123"].callsign.as_deref(),
             Some("TEST123")
