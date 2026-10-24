@@ -328,5 +328,6 @@ jobs:
         with:
           name: g05-public-${{ github.sha }}
           path: .artifacts/g05-public-after-release/
+          include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14
