@@ -2,6 +2,12 @@
 
 ## [Nepublikováno]
 
+### G-05.03 — veřejné validované ADS-B emitter category, PR #30 (24. 10. 2026)
+- Přes readsb JSON a CRC-validní identifikační BEAST DF17 přidána validovaná `emitterCategory` do jediné Rust RAM a volitelného veřejného G-03 SSE DTO. Staré snapshoty zůstávají kompatibilní; rezervované a nepovolené kódy se vynechají.
+- JSON Schema/OpenAPI + G-01 TS parser, G-05 browser store, Rust/TypeScript testy a izolovaný Chromium smoke se 2 000 symboly. Zdroj a bezpečné pravidlo merging zapsáno v [ADR 0015](docs/adr/0015-g05-emitter-category.md).
+- **PR #30 v ověřování**, G-05.10 (G-06) a skutečný GPU/FPS G-05.11 zůstávají NEOVĚŘENO. Žádné změny V1 ani G-04 SQL.
+
+
 
 ### G-05.03/.04 — původní mapové siluety a adaptivní štítky (24. 10. 2026, PR #29)
 - [CI #40082045615](https://github.com/Boym323/AirRadarV2/actions/runs/40082045615) **3/3 PASS**, včetně Chromium MapLibre/SSE smoke; merge `8309f069`. Plná R03/R04 akceptace bez category DTO a GPU benchmarku stále otevřená.
