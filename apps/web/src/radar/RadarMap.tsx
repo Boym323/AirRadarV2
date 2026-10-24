@@ -3,6 +3,7 @@ import { Map as LibreMap, NavigationControl, type GeoJSONSource } from "maplibre
 import type { FeatureCollection, Point, MultiLineString } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Aircraft, ViewState } from "./aircraft-store";
+import { airportsToGeoJSON, type Airport } from "./airport-catalog";
 import { iconForAircraft, registerAircraftIcons, validGroundTrack } from "./aircraft-icons";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { setWorkerUrl } from "maplibre-gl";
@@ -16,6 +17,9 @@ const STYLES: Record<MapStyle, string> = {
 };
 const AIRCRAFT_SOURCE = "radar-aircraft";
 const TRAIL_SOURCE = "radar-trail";
+const AIRPORT_SOURCE = "radar-airports";
+const AIRPORT_POINTS = "radar-airport-points";
+const AIRPORT_LABELS = "radar-airport-labels";
 const PLANE_LAYER = "radar-aircraft-symbols";
 const LABEL_LAYER = "radar-aircraft-labels";
 const SELECTION_LAYER = "radar-selected-halo";
@@ -106,6 +110,35 @@ function addRadarLayers(map: LibreMap) {
       id: TRAIL_LAYER, type: "line", source: TRAIL_SOURCE,
       paint: { "line-color": "#f5bc58", "line-width": 3, "line-opacity": .9 },
     });
+  if (!map.getSource(AIRPORT_SOURCE))
+    map.addSource(AIRPORT_SOURCE, { type: "geojson", data: emptyAircraft(), promoteId:"id" });
+  if (!map.getLayer(AIRPORT_POINTS))
+    map.addLayer({
+      id:AIRPORT_POINTS,type:"circle",source:AIRPORT_SOURCE,
+      paint:{
+        "circle-radius":["case",["get","selected"],7,4],
+        "circle-color":["case",["get","selected"],"#ffe2a1","#efa948"],
+        "circle-stroke-width":2,
+        "circle-stroke-color":"#13283d",
+      },
+    });
+  if (!map.getLayer(AIRPORT_LABELS))
+    map.addLayer({
+      id:AIRPORT_LABELS,type:"symbol",source:AIRPORT_SOURCE,
+      layout:{
+        "text-field":["step",["zoom"],"",9,["get","label"],12,["get","name"]],
+        "text-size":11,
+        "text-offset":[0,1.4],
+        "text-anchor":"top",
+        "text-allow-overlap":false,
+        "text-padding":3,
+      },
+      paint:{
+        "text-color":"#ffe3a8",
+        "text-halo-color":"#162b3a",
+        "text-halo-width":2,
+      },
+    });
   if (!map.getLayer(SELECTION_LAYER))
     map.addLayer({
       id: SELECTION_LAYER, type: "circle", source: AIRCRAFT_SOURCE,
@@ -167,18 +200,22 @@ function addRadarLayers(map: LibreMap) {
 }
 type Props = {
   frame: ViewState;
+  airports: Airport[];
+  selectedAirportId: string | null;
+  showAirports: boolean;
+  onSelectAirport: (id:string)=>void;
   selectedId: string | null;
   follow: boolean;
   style: MapStyle;
   onSelect: (id: string) => void;
   onStopFollow: () => void;
 };
-export function RadarMap({ frame, selectedId, follow, style, onSelect, onStopFollow }: Props) {
+export function RadarMap({ frame, airports, selectedAirportId, showAirports, onSelectAirport, selectedId, follow, style, onSelect, onStopFollow }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const currentStyle = useRef(style);
   const map = useRef<LibreMap | null>(null);
-  const props = useRef({ frame, selectedId, follow, onSelect, onStopFollow });
-  props.current = { frame, selectedId, follow, onSelect, onStopFollow };
+  const props = useRef({ frame, airports, selectedAirportId, showAirports, onSelectAirport, selectedId, follow, onSelect, onStopFollow });
+  props.current = { frame, airports, selectedAirportId, showAirports, onSelectAirport, selectedId, follow, onSelect, onStopFollow };
   const [error, setError] = useState<string | null>(null);
   // Jedna instance na mount; SSE state ani selection ji nesmí remountovat.
   useEffect(() => {
@@ -197,8 +234,7 @@ export function RadarMap({ frame, selectedId, follow, style, onSelect, onStopFol
       return;
     }
     map.current = instance;
-    // G-05.11: nástroj pouze pro místní CI benchmark, bez nového veřejného API.
-    // Není zapnutý na běžném DEV webu ani jiné host adrese.
+    // G-05.11: instrumentace pouze pro místní CI benchmark, bez veřejného API.
     const benchMode = window.location.hostname === "127.0.0.1" &&
       new URLSearchParams(window.location.search).has("g05-benchmark");
     if (benchMode) {
@@ -213,13 +249,27 @@ export function RadarMap({ frame, selectedId, follow, style, onSelect, onStopFol
       (instance.getSource(TRAIL_SOURCE) as GeoJSONSource | undefined)
         ?.setData(trailGeoJSON(current.frame, current.selectedId));
     };
-    instance.on("style.load", refresh);
+    const refreshAirportLayer = () => {
+      if (!instance.isStyleLoaded()) return;
+      const current=props.current;
+      (instance.getSource(AIRPORT_SOURCE) as GeoJSONSource | undefined)
+        ?.setData(airportsToGeoJSON(current.airports,current.selectedAirportId));
+      for (const id of [AIRPORT_POINTS,AIRPORT_LABELS]) {
+        if (instance.getLayer(id)) instance.setLayoutProperty(id,"visibility",current.showAirports?"visible":"none");
+      }
+    };
+    instance.on("style.load", () => { refresh(); refreshAirportLayer(); });
     const click = (event: { features?: Array<{ properties: Record<string, unknown> | null }> }) => {
       const id = event.features?.[0]?.properties?.id;
       if (typeof id === "string") props.current.onSelect(id);
     };
     instance.on("click", PLANE_LAYER, click);
     instance.on("click", DOT_LAYER, click);
+    instance.on("click", AIRPORT_POINTS, event => {
+      if (instance.queryRenderedFeatures(event.point,{layers:[PLANE_LAYER,DOT_LAYER]}).length) return;
+      const id=event.features?.[0]?.properties?.id;
+      if (typeof id==="string") props.current.onSelectAirport(id);
+    });
     // G-05.08 / R09: automatické easeTo nesmí bojovat s ruční navigací.
     // zoomstart/movestart nejsou vhodné: vyvolává je také naše easeTo.
     const stopFollow = () => props.current.onStopFollow();
@@ -252,13 +302,20 @@ export function RadarMap({ frame, selectedId, follow, style, onSelect, onStopFol
       canvasContainer.removeEventListener("wheel", stopFollow);
       canvasContainer.removeEventListener("touchmove", stopFollow);
       canvasContainer.removeEventListener("keydown", manualKeyboardMove);
-      if (benchMode) {
-        delete (window as Window & { __g05BenchMap?: LibreMap }).__g05BenchMap;
-      }
+      if (benchMode) delete (window as Window & { __g05BenchMap?: LibreMap }).__g05BenchMap;
       instance.remove();
       map.current = null;
     };
   }, []);
+  useEffect(() => {
+    const instance=map.current;
+    if (!instance?.isStyleLoaded()) return;
+    (instance.getSource(AIRPORT_SOURCE) as GeoJSONSource | undefined)
+      ?.setData(airportsToGeoJSON(airports,selectedAirportId));
+    for (const id of [AIRPORT_POINTS,AIRPORT_LABELS]) {
+      if (instance.getLayer(id)) instance.setLayoutProperty(id,"visibility",showAirports?"visible":"none");
+    }
+  },[airports,selectedAirportId,showAirports]);
   useEffect(() => {
     if (map.current && currentStyle.current !== style) {
       currentStyle.current = style;
