@@ -38,7 +38,7 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
 
 - [ ] **G-05.04 — Čitelné popisky**  
   **Implementace:** Zobraz stručné popisky jen pro dostupný callsign/výšku, MapLibre collision a minimalizovanou práci React. Použít [priority a kolizní testy](../plan/MAPOVE-IKONY-A-POPISKY.md) na zoom a hustý provoz.  
-  **Ověření:** Test hustého provozu nepřekrývá obrazovku nekontrolovanými DOM markery.
+  **Ověření:** Test hustého provozu nepřekrývá obrazovku nekontrolovanými DOM markery. PR G-05.04/.07 přidává sanitizaci a kolizní prioritu, ale čeká na CI obrazovou regresi a akceptaci.
 
 - [x] **G-05.05 — Seznam a vyhledávání v provozu**  
   **Implementace:** Vytvoř živý seznam letadel se základními filtry a řazením; používej stejný state jako mapa.  
@@ -50,7 +50,7 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
 
 - [ ] **G-05.07 — Skutečná letová stopa**  
   **Implementace:** Kresli krátkou omezenou stopu jen z validních přijatých poloh, s TTL a maximálním počtem bodů.  
-  **Ověření:** Test retence odřízne staré body a nevytváří budoucí predikce.
+  **Ověření:** Test retence odřízne staré body a nevytváří budoucí predikce. PR G-05.04/.07 přidává segmentaci výpadků i antimeridiánu, unit Vitest a kontrolu skutečné čáry na Chromium WebGL; checkbox až po PASS.
 
 - [x] **G-05.08 — Follow kamera**  
   **Implementace:** Volitelně sleduj vybrané letadlo s možností okamžitě vypnout sledování interakcí uživatele.  

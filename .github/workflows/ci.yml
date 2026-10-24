@@ -184,7 +184,7 @@ jobs:
           set -Eeuo pipefail
           npm ci --prefix apps/web --no-audit --no-fund
           python3 -m venv /tmp/airradar-g03-browser
-          /tmp/airradar-g03-browser/bin/pip install --disable-pip-version-check --quiet playwright==1.57.0
+          /tmp/airradar-g03-browser/bin/pip install --disable-pip-version-check --quiet playwright==1.57.0 Pillow==11.3.0
           command -v google-chrome >/dev/null || command -v google-chrome-stable >/dev/null
           sudo mkdir -p /opt/airradar-v2/current/web
           printf '<!doctype html><html lang="cs"><head><title>G03 test</title></head><body>G03</body></html>' | sudo tee /opt/airradar-v2/current/web/index.html >/dev/null
