@@ -30,6 +30,9 @@ class WorkflowTopology(unittest.TestCase):
         self.assertNotIn("self-hosted", g04)
         self.assertNotIn("gh release create", g04)
         self.assertNotIn("runner-deploy", g04)
+        self.assertIn("needs: pr_reuse", g04)
+        self.assertIn("--workflow g04-postgres-migrations.yml", g04)
+        self.assertIn("validated-g04-postgres-migrations-", g04)
 
     def test_single_canonical_validation_suite(self):
         ci = (WF / "ci.yml").read_text(encoding="utf-8")
@@ -47,7 +50,11 @@ class WorkflowTopology(unittest.TestCase):
         ):
             self.assertIn(required, ci)
         self.assertIn("uses: ./.github/workflows/ci.yml", release)
-        self.assertIn("needs: validate", release)
+        self.assertIn("needs: [pr_reuse, validate]", release)
+        self.assertIn("needs.pr_reuse.outputs.reusable == 'true'", release)
+        self.assertIn("if: needs.pr_reuse.outputs.reusable != 'true'", release)
+        self.assertIn("tools/ci_reuse_gate.py verify", release)
+        self.assertIn("tools/ci_reuse_gate.py create", ci)
         self.assertEqual(release.count("cargo test --locked"), 0)
         self.assertEqual(release.count("cargo clippy --locked"), 0)
         self.assertEqual(release.count("npm test"), 0)
