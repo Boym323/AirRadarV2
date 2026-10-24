@@ -5,6 +5,8 @@
 **Závislosti:** G-02, G-03; G-04 pouze pokud je potřebná odolná fronta doručení; service worker lze dokončit společně s G-10.  
 **Primární KEEP ID:** `L06`, `L11`, `L12`.
 
+**Vizuální návaznost (24. 10. 2026):** [map-first UX](../plan/WEB-UX-UI-SPECIFIKACE.md), [ikony a mapové popisky](../plan/MAPOVE-IKONY-A-POPISKY.md), [audit úplnosti](../audits/VIZUALNI-ZADANI-AUDIT-2026-10-24.md): Nouzový stav 7500/7600/7700 vizuálně označ až při validaci, kombinuj červený obrys a explicitní text/kód. Žádné reálné push v DEV/CI/shadow. Tento dokumentační odkaz neuzavírá žádný krok.
+
 ## Cíl
 
 Implementovat schválenou funkční část s minimem závislostí, testy a transparentním provozním dopadem.
