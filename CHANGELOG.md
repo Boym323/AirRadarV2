@@ -3,7 +3,8 @@
 ## [Nepublikováno]
 
 
-### G-05.03/.04 — původní mapové siluety a adaptivní štítky (24. 10. 2026)
+### G-05.03/.04 — původní mapové siluety a adaptivní štítky (24. 10. 2026, PR #29)
+- [CI #40082045615](https://github.com/Boym323/AirRadarV2/actions/runs/40082045615) **3/3 PASS**, včetně Chromium MapLibre/SSE smoke; merge `8309f069`. Plná R03/R04 akceptace bez category DTO a GPU benchmarku stále otevřená.
 - Nový `apps/web/src/radar/aircraft-icons.ts`: 10 vlastních vektorových Path2D ikon registrovaných v MapLibre, bezpečný fallback při chybějícím typu/směru, jediný GeoJSON source.
 - `RadarMap.tsx` přidává zvýraznění vybraného cíle a kolizní popisky podle zoomu (callsign, validní výška), zachovává G-03 SSE, follow, stopu, přepnutí podkladu a živý seznam.
 - Kategoriové metadata jsou pouze volitelná příprava ve webovém store; G-03 API ani Rust nebyly upraveny. Full R03 přejímka a G-05.11 GPU benchmark jsou **otevřené**, žádné automatické povýšení `TESTED`.
