@@ -211,6 +211,7 @@ jobs:
           /tmp/airradar-g03-browser/bin/python tools/benchmark_g05_map.py
 
       - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request'
         with:
           name: g05-chromium-benchmark-${{ github.sha }}
           path: .artifacts/g05-map-benchmark.json
