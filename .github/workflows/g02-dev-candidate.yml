@@ -61,7 +61,7 @@ jobs:
           cargo build --locked --release -p airradarv2-engine
           cd apps/web
           npm ci --no-audit --no-fund
-          npm run build
+          VITE_APP_VERSION="$GITHUB_SHA" npm run build
           cd ../..
       - name: Sestavit immutable Debian artefakt pro DEV LXC
         shell: bash

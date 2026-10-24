@@ -53,6 +53,7 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px s
 .follow-button:disabled { opacity: .45; cursor: not-allowed; }
 .detail-hint, .empty-message, .hint { font-size: .77rem; line-height: 1.45; color: #b1c5d8; }
 .radar-footer { flex: 0 0 auto; padding: 6px 18px; background: #0b182a; color: #6f879b; font-size: .66rem; letter-spacing: .01em; white-space: normal; }
+.radar-version { margin-left: 10px; color: #89a8bd; white-space: nowrap; }
 @media (max-width: 850px) {
   .radar-header { flex-wrap: wrap; gap: 8px; padding: 9px 12px; }
   .header-actions { gap: 8px; flex-wrap: wrap; }\n  .header-tools { padding-left: 0; border-left: 0; }
