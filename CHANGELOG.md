@@ -1,5 +1,11 @@
 # CHANGELOG — AirRadar V2
 
+## 24. 10. 2026 — Oprava prázdné mapy a modernizace G-05 UI (PR v ověření)
+
+- **G-05.09 / R14:** odstraněna chybná automatická ztráta geografického podkladu po třech dílčích MapLibre chybách. Při selhání načtení celého stylu se po 6,5 s používá záložní geografický raster OpenStreetMap s atribucí; seznam, letiště, SSE a ikony se nemažou. Přidána ruční akce „Obnovit mapu“.
+- **G-05.05 / R06 a G-05.09 / R14:** sjednoceny modernější vizuální tokeny, kompaktní hlavička, zřetelné stavy, mapové ovládání, kontextové panely, responsive mobil; opraveny 4 chybné doslovné sekvence `\\n` v CSS.
+- Regresní browser scénář nově musí prokázat, že ani tři po sobě jdoucí chyby tiles neodeberou běžný styl či vrstvu letadel. Zatím bez CI/DEV důkazu této větve; G-05.11 fyzické GPU zůstává otevřena. V1, backend a databáze nedotčeny.
+
 ## 24. 10. 2026 — Kratší názvy GitHub Actions
 
 - Zkráceny pouze viditelné názvy workflow, jobů a kroků v CI, DEV release, G-04 PostgreSQL a denních statistikách. Jednotné české prefixy `CI`, `G01`–`G05`, `Rust`, `Web`, `DEV` a `Statistiky`.
@@ -45,7 +51,7 @@
 
 ### Issue #41 a stabilita mapového podkladu
 - Ochrana `main` je aktivní přes GitHub Branch Protection API; snapshot nad 1 MiB je fail-closed a retenční SQL je ověřené v izolaci i read-only proti DEV DB. Podrobný český audit je v [reportu](docs/reports/ISSUE-41-PROVOZNI-BRANY-2026-10-24.md).
-- MapLibre při výpadku externího OpenFreeMap stylu nebo při třech chybách tiles v krátkém okně použije lokální background-only fallback; jednotlivá chyba pouze stabilně zobrazí upozornění po omezenou dobu. Letadla a seznam zůstanou dostupné bez remountu. Chromium regrese pokrývá úplný i opakovaný výpadek podkladu.
+- Historický background-only fallback při třech chybách tiles byl shledán chybným: odstraňoval celou geografii i při dílčím síťovém problému. Novější oprava G-05.09 tuto podmínku odstranila; jednotlivé chyby dlaždic nyní původní styl zachovávají, neúspěšné načtení celého stylu se po časovém limitu přepne na geografický záložní podklad OSM. Uživatel může podklad ručně obnovit.
 
 ### G-05 vizuální doladění hlavičky a identity (24. 10. 2026)
 - Vlastní inline SVG symbol AirRadar místo systémového znaku letadla.
