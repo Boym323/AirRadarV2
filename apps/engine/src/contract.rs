@@ -503,7 +503,6 @@ mod tests {
         serde_json::from_str(text).unwrap()
     }
 
-
     #[test]
     fn g05_readsb_category_is_validated_and_public_only_if_known() {
         let mut raw = fixture(include_str!(
