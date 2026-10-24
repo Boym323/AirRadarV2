@@ -1,5 +1,14 @@
 # G-05 — průběžný výsledek implementace živé mapy
 
+## 24. 10. 2026 — skutečná kategorie letadla readsb/BEAST → G-03 SSE → ikony (PR #30, CI běží)
+
+- Rozšířen Rust `Observation` a `PublicAircraft` o **volitelnou** `emitterCategory`, kompatibilní s dosavadním snapshot/delta DTO a klienty. Staré fixture bez pole zůstávají validní.
+- Zdroj: readsb JSON `category` nebo CRC-validní DF17 identifikační BEAST (TC2–TC4); striktní whitelist pouze `A1–A7/B1/B2/B4/B6/C1/C2`. Neznámá, rezervovaná a nevalidní data se vynechávají; žádné odhady ze směru či callsignu. Jediná autorita v Rust RAM a pravidla kvality/provenance zůstala.
+- G-03 API/SSE, JSON Schema/OpenAPI a oba TS adaptéry byly aktualizovány. Jednotkové testy pokrývají validitu, CRC, časově starší metadata, falešnou kategorii, snapshot/delta a syntetických 2 000 identit. Browser Chromium scénář ověřuje zátěžový snapshot i změnu stylu bez remountu.
+- [ADR 0015](../adr/0015-g05-emitter-category.md). **PR #30**: https://github.com/Boym323/AirRadarV2/pull/30. Očekávané CI doklady budou doplněny po dokončení, zatím **NEOVĚŘENO**.
+- **Nezměněno:** žádná tabulka G-04, žádná produkční V1, žádný externí aircraft provider, žádné zvýšení počtu 45 aktivních KEEP. G-05.10 je závislé na G-06, G-05.11 vyžaduje skutečný desktop/mobil hardware, FPS a `setData`/ `updateData` benchmark. G-05 není uzavřeno.
+
+
 ## 24. 10. 2026 — mapové symboly a adaptivní štítky G-05.03/.04 (PR #29 sloučen)
 
 - Základna: `79a019e2d9c651a9d04ad04e17563c9934d602a6`. G-05.03/R03 + G-05.04/R04.
