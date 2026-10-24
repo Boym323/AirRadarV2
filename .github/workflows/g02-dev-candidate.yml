@@ -14,15 +14,38 @@ concurrency:
   group: airradarv2-dev-release-${{ github.ref }}
   cancel-in-progress: false
 jobs:
+  pr_reuse:
+    name: Ověřit PR důkaz před opakováním CI
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    outputs:
+      reusable: ${{ steps.check.outputs.reusable }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Ověřit shodu merge tree a úspěšných PR testů
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 tools/ci_reuse_gate.py verify --workflow ci.yml \
+            --repo "$GITHUB_REPOSITORY" --main-sha "$GITHUB_SHA" \
+            --github-output "$GITHUB_OUTPUT"
+
   validate:
-    name: Kompletní CI před vydáním
+    name: Kompletní CI před vydáním (při chybějícím PR důkazu)
+    needs: pr_reuse
+    if: needs.pr_reuse.outputs.reusable != 'true'
     uses: ./.github/workflows/ci.yml
     permissions:
       contents: read
 
   test-and-build:
     name: Sestavit immutable DEV artefakt
-    needs: validate
+    needs: [pr_reuse, validate]
+    if: always() && needs.pr_reuse.result == 'success' && (needs.pr_reuse.outputs.reusable == 'true' || needs.validate.result == 'success')
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
