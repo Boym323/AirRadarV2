@@ -50,6 +50,7 @@ class G03FinalDocumentation(unittest.TestCase):
         self.assertIn(SHA, report[:3000])
         self.assertIn("úmyslný", report[:3000].lower())
         self.assertIn("G-13", report[:3000])
+        # Tato čísla se průběžně mění: test G-03 nesmí vyžadovat stav G-04 před přijetím.
         self.assertIn("G-04/J09", read("README.md"))
         self.assertIn("G-13", read("README.md"))
 

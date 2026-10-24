@@ -7,6 +7,13 @@
 - Regresní testy: Vitest `followTargetChanged` a offline Chromium emulace chyby a obnovy podkladu; průběžná CI není dokladem fyzického GPU výkonu. G-05.11 zůstává otevřena.
 
 
+## 24. 10. 2026 — Provozní oprava auditu G-03/G-04 (ověření probíhá)
+
+- `J09` — zdravotní stav PostgreSQL nyní odpovídá read-only `SELECT 1` sondě s intervalem 15 s; HTTP při selhání přiznává `degraded`, namísto statického `database_connected=true`.
+- `J06/J07/J08` — společný dohled HTTP/ingest a řízené vypnutí na SIGTERM/SIGINT, G-04 umožňuje 65s SQL drain. Neočekávané selhání ingestu vyvolá chybový exit pro systemd restart.
+- Přidány Rust regrese `g04_health_reflects_database_up_and_down` a `unexpected_ingest_end_closes_http` a [ADR 0016](docs/adr/0016-g04-runtime-health-a-dozor-ingestu.md). Dokud neskončí CI a cílená DEV přejímka, nelze tvrdit PASS; ostatní G-04/G-05 kapacitní limity zůstávají otevřené.
+
+
 ## [Nepublikováno]
 
 ### G-05 vizuální doladění hlavičky a identity (24. 10. 2026)
