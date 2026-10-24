@@ -40,6 +40,7 @@ jobs:
           bash -n deploy/install-g02-live-auto.sh
           bash -n deploy/install-dev-bundle.sh deploy/install-main-dev-auto.sh
           bash -n tools/backup_g04_dev.sh tools/rollback_g04_canary.sh tools/monitor_g04_canary.sh tools/test_monitor_g04_canary.sh deploy/g04-db-monitor-readonly.sh
+          bash -n database/maintenance/g04_retention_bounded.sh tools/test_g04_retention_bounded.sh
           bash tools/test_monitor_g04_canary.sh
           python3 -m unittest discover -s tools -p 'test_evaluate_g04_canary.py'
           node tools/check-g04-deploy-boundary.mjs

@@ -68,4 +68,6 @@ jobs:
           cargo test --locked -p airradarv2-engine g04_explicit_lan_connection_has_no_tls_in_ci
       - name: Skutečný izolovaný pg_dump/pg_restore a jednorázová retence
         run: bash tools/test_g04_backup_restore.sh
+      - name: G-04.09 — ohraničená údržba 30 dnů s oddělenou SQL rolí
+        run: bash tools/test_g04_retention_bounded.sh
 

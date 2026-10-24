@@ -1,5 +1,11 @@
 # CHANGELOG — AirRadar V2
 
+## 24. 10. 2026 — Oddělená retence G-04 DEV (připraveno, NEAKTIVOVÁNO)
+
+- Auditní oprava G-04.09/J09: root/DBA-managed script `database/maintenance/g04_retention_bounded.sh` čistí pouze V2 DEV, max. 20 dávek po 1 000 řádcích a 90 s. Vyžaduje dedikovanou SQL roli a explicitní GO, běžná Rust runtime role nezískává `DELETE`.
+- Přidány samostatné systemd šablony pro DB LXC, bezpečnostní [ADR 0017](docs/adr/0017-g04-dba-retence.md), [runbook](docs/runbooks/G-04-RETENCE-30-DNI.md) a izolovaný PostgreSQL 18 CI test. Po merge se nic na DB LXC neinstaluje a timer se automaticky nezapíná; provozní schválení a měření stále chybí.
+
+
 ## 24. 10. 2026 — Auditní opravy mapy G-05.08 a obnovy podkladu
 
 - `R09/G-05.08`: kamera `follow` nespouští animaci každou sekundu při stejné poloze; nový výběr nebo opětovné zapnutí stále provede úvodní přesun. Respektováno `prefers-reduced-motion`.
