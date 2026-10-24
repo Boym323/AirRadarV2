@@ -2,6 +2,13 @@
 
 ## [Nepublikováno]
 
+### G-06.01/.02/.03/.07 → G-05.10 — legální letištní data a mapová vrstva (24. 10. 2026)
+- OurAirports The Unlicense, přesný SHA upstream CSV ověřený při Vite buildu; statický regionální JSON CZ/SK/AT/PL/HU s validovanými pozicemi a testy importéru. Žádná externí runtime síťová služba.
+- Oddělený statický GeoJSON source MapLibre, přepínač letištní vrstvy a klikací kontextový detail. NAVAID, frekvence a úplný G-06 REST jsou mimo tento základ; G-05.10 a R12 zůstávají ve stavu rozpracováno do plné přejímky.
+- [Průběžný report](docs/reports/G-06-VYSLEDEK.md). CI a nasazení dosud NEOVĚŘENO.
+
+
+
 ### G-05.03 — veřejné validované ADS-B emitter category, PR #30 (24. 10. 2026)
 - [CI #40084080300](https://github.com/Boym323/AirRadarV2/actions/runs/40084080300) 3/3 PASS, [izolovaný G-04 SQL #40084080298](https://github.com/Boym323/AirRadarV2/actions/runs/40084080298) PASS; squash merge `9c398c2f`.
 - Přes readsb JSON a CRC-validní identifikační BEAST DF17 přidána validovaná `emitterCategory` do jediné Rust RAM a volitelného veřejného G-03 SSE DTO. Staré snapshoty zůstávají kompatibilní; rezervované a nepovolené kódy se vynechají.
