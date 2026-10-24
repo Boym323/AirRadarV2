@@ -14,7 +14,8 @@ class G03FinalDocumentation(unittest.TestCase):
                      "docs/ukoly/G-03-API-A-SSE.md", "docs/runbooks/DEV-MAIN-AUTODEPLOY.md"):
             with self.subTest(path=path):
                 front = "\n".join(read(path).splitlines()[:18])
-                self.assertIn("23. 10. 2026", front)
+                self.assertTrue("23. 10. 2026" in front or "24. 10. 2026" in front,
+                                f"{path}: chybí datovaný aktuální nebo přejímací stav")
                 self.assertIn("G-03", front)
                 self.assertTrue("HOTOVO" in front or "ACCEPTED" in front)
                 self.assertTrue(
@@ -49,8 +50,8 @@ class G03FinalDocumentation(unittest.TestCase):
         self.assertIn(SHA, report[:3000])
         self.assertIn("úmyslný", report[:3000].lower())
         self.assertIn("G-13", report[:3000])
-        self.assertIn("4/14", read("README.md"))
-        self.assertIn("9/45", read("README.md"))
+        self.assertIn("G-04/J09", read("README.md"))
+        self.assertIn("G-13", read("README.md"))
 
 if __name__ == "__main__":
     unittest.main()
