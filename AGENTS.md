@@ -10,6 +10,8 @@
 4. Každou etapu uzavírej českým `docs/reports/G-XX-VYSLEDEK.md`, aktualizovaným `docs/plan/ETAPY-A-STAV.md`, `CHANGELOG.md` a testovacími důkazy v aktivní matici.
 5. Protržení hranic architektury či datových modelů vyžaduje české ADR.
 
+**Pro vývoj UI G-05 až G-10** nejdříve přečti [map-first UX](docs/plan/WEB-UX-UI-SPECIFIKACE.md), [mapové ikony](docs/plan/MAPOVE-IKONY-A-POPISKY.md) a [audit úplnosti](docs/audits/VIZUALNI-ZADANI-AUDIT-2026-10-24.md). Nepřiřazuj typ letadla bez ověřených veřejných dat, nepřipisuj screenshotům GPU benchmark a neměň schválených 45 funkcí.
+
 ## Kritické technické hranice
 
 - `Boym323/AirRadar`, jeho LXC, historie, PostgreSQL, porty, CI a konfigurace jsou **nedotknutelné**.
