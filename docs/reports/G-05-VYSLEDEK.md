@@ -1,5 +1,15 @@
 # G-05 — průběžný výsledek implementace živé mapy
 
+## G-05 map-first UI — návazná implementace podle schválené specifikace (24. 10. 2026)
+
+- Cíl: R01/R06/R08/R09/R14, P0 z `docs/plan/WEB-UX-UI-SPECIFIKACE.md`. Velká hlavička a trvale dvojpanelový layout nahrazeny kompaktní lištou a dominantní mapou na celou pracovní plochu.
+- Seznam se otevře jen na žádost uživatele, detail cíle se otevře po výběru z mapy i seznamu. Na desktopu jsou kontextové panely nad mapou, na mobilní šířce spodní panel. Zavření vrací focus na stabilní tlačítko v liště.
+- Detail zobrazuje pouze dostupnou výšku, rychlost vůči zemi, skutečný track a vertikální rychlost; neznámá data jsou „—“. Follow je explicitní a je zakázáno pro stale polohu či přerušený SSE stream. Bez nových backendových dat, mapových zdrojů a závislostí.
+- MapLibre `RadarMap` a jediný `useRadarStream` zůstávají trvale namountované a beze změny. Výběr při smazání identity a reconnectu nadále podléhá stávající kontrole epoch/seq.
+- Browser Chromium fixture byla rozšířena o výchozí map-first obrazovku, otevření/zavření panelů, fokus, detail, změnu stylu bez remountu a mobil 390×844 bez horizontálního scrollování.
+- **Přejímka:** nový commit a CI se teprve ověřují. E2E/FPS na fyzickém telefonu, měření G-05.11, letiště G-05.10 ani produkční release nejsou tímto krokem deklarované jako hotové.
+
+
 **Aktualizace:** 24. 10. 2026 · **Stav:** ROZPRACOVÁNO, 4/11 kroků plně ověřené (G-05.01/.02/.05/.06). [PR #22](https://github.com/Boym323/AirRadarV2/pull/22) byl **sloučen do main 23. 10.**; [DEV nasazení #40028968380](https://github.com/Boym323/AirRadarV2/actions/runs/40028968380) PASS, včetně G-04 živého API/SSE. Jde o DEV náhled, nikoli produkční release nebo finální G-05 přejímku.
 
 ## Implementované části

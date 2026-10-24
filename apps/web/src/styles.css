@@ -1,48 +1,77 @@
-:root { font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; color: #e5edf7; background: #0a1423; color-scheme: dark; }
+:root { font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; color: #e5edf7; background: #09121f; color-scheme: dark; }
 * { box-sizing: border-box; }
-body { margin: 0; }
+html, body, #root { height: 100%; margin: 0; }
 button, select, input { font: inherit; }
 button { cursor: pointer; }
-.radar-page { min-height: 100vh; padding: 18px clamp(12px, 2.4vw, 34px) 12px; }
-.radar-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 17px; }
-.eyebrow { margin: 0 0 4px; color: #81b4ce; letter-spacing: .12em; font-size: .72rem; font-weight: 700; }
-h1 { font-size: clamp(1.5rem, 3.8vw, 2.35rem); margin: 0; letter-spacing: -.035em; }
-h2 { font-size: 1.17rem; margin: 0 0 16px; }
-.connection { display: flex; align-items: center; gap: 8px; border: 1px solid #314860; border-radius: 50px; padding: 10px 15px; color: #b8c9d7; font-size: .86rem; background: #16263a; }
-.status-dot { width: 8px; height: 8px; border-radius: 100%; background: #f4b45a; display: inline-block; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid #6fd1f5; outline-offset: 2px; }
+.radar-page { height: 100dvh; min-height: 430px; display: flex; flex-direction: column; overflow: hidden; }
+.radar-header { z-index: 10; min-height: 68px; padding: 10px clamp(12px, 2vw, 28px); display: flex; align-items: center; justify-content: space-between; gap: 16px; background: #0b182a; border-bottom: 1px solid #273e53; }
+.brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.brand-mark { font-size: 1.55rem; color: #88d9f1; }
+.brand h1 { font-size: 1.15rem; margin: 0; line-height: 1.1; letter-spacing: -.02em; }
+.brand-subtitle { display: block; color: #88a4bb; font-size: .69rem; margin-top: 3px; }
+.header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; min-width: 0; }
+.radar-count { font-size: .85rem; font-weight: 680; color: #d6e7f7; white-space: nowrap; }
+.connection { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 24px; border: 1px solid #314b60; background: #132b3e; color: #e0edf8; font-size: .8rem; white-space: nowrap; }
+.status-dot { flex: 0 0 8px; height: 8px; border-radius: 50%; background: #ecb45f; }
 .connection-live .status-dot { background: #61df9a; }
-.connection-disconnected .status-dot, .connection-unavailable .status-dot { background: #f38383; }
-.radar-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(290px, 345px); gap: 14px; min-height: min(730px, calc(100vh - 170px)); }
-.map-panel, .traffic-panel { border: 1px solid #2a4057; border-radius: 15px; background: #122238; overflow: hidden; }
-.map-panel { display: flex; min-width: 0; flex-direction: column; }
-.toolbar { min-height: 54px; display: flex; justify-content: space-between; align-items: center; padding: 9px 15px; border-bottom: 1px solid #2a4057; }
-.toolbar > span { font-weight: 650; }
-.toolbar label { display: flex; align-items: center; gap: 8px; color: #adc1d4; font-size: .83rem; }
-select, input { background: #0b1b2d; color: #e5edf7; border: 1px solid #38516a; padding: 9px 11px; border-radius: 8px; }
-input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px solid #61c9f5; outline-offset: 2px; }
-.map-wrap { position: relative; flex: 1; min-height: 430px; background: #1a3145; }
+.connection-disconnected .status-dot, .connection-unavailable .status-dot { background: #fa8888; }
+.header-button { padding: 9px 15px; min-height: 40px; color: #f0f8ff; border: 1px solid #55728a; background: #1b3650; border-radius: 9px; white-space: nowrap; }
+.header-button[aria-expanded="true"], .header-button:hover { background: #254d6b; border-color: #7dd9f0; }
+.style-control { display: flex; align-items: center; gap: 7px; font-size: .78rem; color: #adc2d5; white-space: nowrap; }
+.style-control select, .radar-panel select, .radar-panel input { padding: 9px 10px; background: #0b1d30; color: #eff6ff; border: 1px solid #416078; border-radius: 8px; min-width: 0; }
+.radar-stage { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; background: #152b3d; }
+.map-surface, .map-wrap { position: absolute; inset: 0; }
 .map-canvas { position: absolute; inset: 0; }
-.map-error { position: absolute; bottom: 16px; left: 16px; right: 16px; max-width: 410px; background: #3b2930eb; border: 1px solid #ae6475; border-radius: 8px; padding: 11px; font-size: .83rem; pointer-events: none; }
-.map-footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: #91a6bc; font-size: .73rem; padding: 10px 15px; border-top: 1px solid #2a4057; }
-.traffic-panel { display: flex; flex-direction: column; padding: 17px; max-height: 740px; }
-.search-label, .filter-label { margin: 8px 0 6px; color: #aebed0; font-size: .8rem; }
-.traffic-list { list-style: none; overflow: auto; padding: 0; margin: 16px -5px 8px 0; flex: 1; }
-.traffic-list li { margin: 0 5px 6px 0; }
-.traffic-button { border: 1px solid #304860; border-radius: 8px; display: grid; gap: 5px; padding: 11px; text-align: left; width: 100%; background: #1c2d42; color: #edf5ff; }
-.traffic-button:hover, .traffic-button.selected { border-color: #77cef4; background: #203c56; }
-.traffic-name { font-weight: 700; letter-spacing: .01em; }
-.traffic-meta { font-size: .76rem; color: #aabfd4; }
-.selected-panel { border-top: 1px solid #344c63; padding-top: 13px; }
-.selected-heading { display: flex; align-items: center; justify-content: space-between; }
-.selected-heading h3 { margin: 0; }
-.selected-panel p { color: #b7c8d8; font-size: .85rem; }
-.selected-panel button { padding: 7px 10px; background: #19364f; color: white; border: 1px solid #527c97; border-radius: 7px; }
-.selected-panel button:disabled { opacity: .5; cursor: not-allowed; }
-.empty-message, .hint { color: #adc2d6; line-height: 1.5; font-size: .87rem; }
-footer { font-size: .75rem; color: #8095ab; padding: 14px 3px; }
-@media (max-width: 800px) {
-  .radar-grid { grid-template-columns: 1fr; }
-  .map-wrap { min-height: 390px; }
-  .traffic-panel { max-height: 440px; }
+.map-error { position: absolute; z-index: 7; bottom: 50px; left: 15px; right: 15px; max-width: 430px; background: #3b2930ed; border: 1px solid #ae6475; border-radius: 8px; padding: 11px; font-size: .83rem; pointer-events: none; }
+.map-disclosure { z-index: 2; position: absolute; left: 14px; bottom: 14px; padding: 6px 10px; border-radius: 8px; background: #0b1a2cda; color: #c5d6e6; font-size: .71rem; pointer-events: none; }
+.radar-panel { position: absolute; z-index: 5; top: 12px; bottom: 12px; width: min(350px, calc(100% - 24px)); display: flex; flex-direction: column; min-height: 0; background: #101f32f2; border: 1px solid #38556c; border-radius: 14px; padding: 16px; box-shadow: 0 12px 36px #010a1499; backdrop-filter: blur(8px); }
+.traffic-panel { left: 12px; }
+.detail-panel { right: 12px; bottom: auto; max-height: calc(100% - 24px); overflow-y: auto; }
+.panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.panel-heading h2 { font-size: 1.1rem; margin: 0; }
+.close-button { flex: 0 0 38px; height: 38px; color: #d8e8f4; border: 1px solid #3a5870; background: #193249; border-radius: 9px; }
+.close-button:hover { background: #284b66; }
+.panel-eyebrow { display: block; margin-bottom: 3px; font-size: .69rem; letter-spacing: .09em; text-transform: uppercase; color: #91c9e4; }
+.field-label { font-size: .78rem; color: #b8cad9; margin: 11px 0 5px; }
+.traffic-list { list-style: none; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0; margin: 14px -4px 0 0; }
+.traffic-list li { margin: 0 4px 6px 0; }
+.traffic-button { display: grid; gap: 4px; width: 100%; padding: 11px; border: 1px solid #2f4b63; border-radius: 8px; background: #1a3047; color: #eef6ff; text-align: left; }
+.traffic-button:hover, .traffic-button.selected { background: #254765; border-color: #7bc9ee; }
+.traffic-name { font-weight: 700; }
+.traffic-meta { font-size: .76rem; color: #b4c6d6; }
+.aircraft-id { margin: 0 0 12px; color: #b1c4d6; font-size: .84rem; }
+.position-state { padding: 9px 11px; margin: 0 0 14px; border-radius: 8px; font-size: .82rem; }
+.position-state.fresh { background: #163a39; color: #a5ebcb; }
+.position-state.stale { background: #392e32; color: #ffd3bc; }
+.telemetry-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0 0 16px; }
+.telemetry-grid div { border: 1px solid #334b62; border-radius: 8px; padding: 10px; background: #182b40; min-width: 0; }
+.telemetry-grid dt { font-size: .72rem; color: #a9bed2; margin-bottom: 5px; }
+.telemetry-grid dd { margin: 0; font-size: .94rem; font-weight: 650; }
+.follow-button { padding: 12px; background: #206384; border: 1px solid #67add1; color: #f5fdff; border-radius: 8px; font-weight: 660; }
+.follow-button[aria-pressed="true"] { background: #3a654b; border-color: #89d5a5; }
+.follow-button:disabled { opacity: .45; cursor: not-allowed; }
+.detail-hint, .empty-message, .hint { font-size: .77rem; line-height: 1.45; color: #b1c5d8; }
+.radar-footer { flex: 0 0 auto; padding: 7px 18px; background: #0b182a; color: #849db1; font-size: .7rem; white-space: normal; }
+@media (max-width: 850px) {
+  .radar-header { flex-wrap: wrap; gap: 8px; padding: 9px 12px; }
+  .header-actions { gap: 8px; flex-wrap: wrap; }
+  .brand-subtitle { display: none; }
+  .connection { padding: 7px 9px; }
 }
-@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+@media (max-width: 650px) {
+  .radar-header { flex-wrap: nowrap; min-height: 56px; }
+  .brand h1 { font-size: .94rem; }
+  .brand-mark { font-size: 1.1rem; }
+  .header-actions { gap: 6px; }
+  .radar-count, .style-control > span { display: none; }
+  .connection { max-width: 120px; overflow: hidden; text-overflow: ellipsis; font-size: .72rem; }
+  .header-button { min-height: 36px; padding: 7px 9px; font-size: .77rem; }
+  .style-control select { padding: 7px 6px; max-width: 89px; font-size: .73rem; }
+  .radar-panel { top: auto; left: 0; right: 0; bottom: 0; width: 100%; max-height: min(62dvh, 560px); border-radius: 16px 16px 0 0; padding: 14px; }
+  .traffic-panel { height: min(62dvh, 560px); }
+  .detail-panel { bottom: 0; overflow-y: auto; }
+  .map-disclosure { bottom: 34px; font-size: .65rem; }
+  .radar-footer { text-align: center; padding: 4px 7px; font-size: .61rem; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; } }
