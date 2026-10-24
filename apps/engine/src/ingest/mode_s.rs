@@ -461,6 +461,19 @@ mod tests {
         frame[13] ^= 1;
         assert!(decode_df17(&frame, 42.0).is_none());
     }
+
+    #[test]
+    fn real_beast_velocity_frame_keeps_track_for_future_sources() {
+        // Zachyceno z BEAST vstupu pro icao:8965c2. Tento test chrání
+        // normalizovaný kontrakt telemetrie i při přidání dalších zdrojů.
+        let frame = hex_decode("8d8965c2991180a1980405dea0cf").unwrap();
+        let decoded = decode_df17(&frame, 1792872147.0).unwrap();
+
+        assert_eq!(decoded.key, "icao:8965c2");
+        assert!((decoded.telemetry.ground_speed_kt.unwrap() - 466.88114119120297).abs() < 1e-9);
+        assert!((decoded.telemetry.track_degrees.unwrap() - 124.88143013153471).abs() < 1e-9);
+    }
+
     #[test]
     fn stale_pair_and_wrong_df_no_position() {
         let f: serde_json::Value = serde_json::from_str(include_str!(
