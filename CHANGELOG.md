@@ -24,7 +24,7 @@
 
 ### Issue #41 a stabilita mapového podkladu
 - Ochrana `main` je aktivní přes GitHub Branch Protection API; snapshot nad 1 MiB je fail-closed a retenční SQL je ověřené v izolaci i read-only proti DEV DB. Podrobný český audit je v [reportu](docs/reports/ISSUE-41-PROVOZNI-BRANY-2026-10-24.md).
-- MapLibre při výpadku externího OpenFreeMap stylu jednorázově použije lokální background-only fallback; letadla a seznam zůstanou dostupné bez remountu. Chromium regrese pokrývá úplný výpadek podkladu.
+- MapLibre při výpadku externího OpenFreeMap stylu nebo při třech chybách tiles v krátkém okně použije lokální background-only fallback; jednotlivá chyba pouze stabilně zobrazí upozornění po omezenou dobu. Letadla a seznam zůstanou dostupné bez remountu. Chromium regrese pokrývá úplný i opakovaný výpadek podkladu.
 
 ### G-05 vizuální doladění hlavičky a identity (24. 10. 2026)
 - Vlastní inline SVG symbol AirRadar místo systémového znaku letadla.

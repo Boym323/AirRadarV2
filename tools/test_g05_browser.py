@@ -360,6 +360,13 @@ def main():
             recovery.evaluate("() => window.__g05BenchMap.fire('style.load')")
             expect(recovery.locator(".map-error")).to_have_count(0)
             expect(recovery.locator(".maplibregl-canvas")).to_be_visible()
+            recovery.evaluate("""() => {
+              for (let i = 0; i < 3; i++) {
+                window.__g05BenchMap.fire('error', {error: new Error('repeated tile error')});
+              }
+            }""")
+            expect(recovery.locator(".map-error")).to_contain_text(
+                "Mapový podklad není dostupný", timeout=12000)
             recovery.close()
 
             # Úplný výpadek externího stylu nesmí skrýt radar ani rozkmitat canvas.
