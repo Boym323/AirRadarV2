@@ -199,6 +199,14 @@ function addRadarLayers(map: LibreMap) {
       },
     });
 }
+export function followTargetChanged(
+  previous: { id: string; lon: number; lat: number } | null,
+  next: { id: string; lon: number; lat: number },
+): boolean {
+  return previous === null || previous.id !== next.id ||
+    previous.lon !== next.lon || previous.lat !== next.lat;
+}
+
 type Props = {
   frame: ViewState;
   airports: Airport[];
@@ -215,6 +223,7 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
   const container = useRef<HTMLDivElement>(null);
   const currentStyle = useRef(style);
   const map = useRef<LibreMap | null>(null);
+  const lastFollowTarget = useRef<{ id: string; lon: number; lat: number } | null>(null);
   const props = useRef({ frame, airports, selectedAirportId, showAirports, onSelectAirport, selectedId, follow, onSelect, onStopFollow });
   props.current = { frame, airports, selectedAirportId, showAirports, onSelectAirport, selectedId, follow, onSelect, onStopFollow };
   const [error, setError] = useState<string | null>(null);
@@ -289,6 +298,8 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
       }
     };
     instance.on("style.load", () => {
+      // Úspěšné obnovení podkladu ruší staré varování, nikoli samotný radar.
+      setError(null);
       // Změna stylu zahodí registry map sources; nikdy neposlat diff do nové mapy.
       previousAircraft = null;
       previousEpoch = null;
@@ -327,13 +338,22 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
       if (!instance.isStyleLoaded()) return;
       if (!benchMode) refresh();
       const selected = props.current.frame.aircraft.find(a => a.id === props.current.selectedId);
-      if (props.current.follow && selected?.position) {
-        instance.easeTo({ center: [selected.position.lon, selected.position.lat], duration: 700 });
+      if (props.current.follow && selected?.position && !selected.stale) {
+        const nextTarget = { id: selected.id, lon: selected.position.lon, lat: selected.position.lat };
+        if (followTargetChanged(lastFollowTarget.current, nextTarget)) {
+          const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+          instance.easeTo({ center: [nextTarget.lon, nextTarget.lat], duration: reduceMotion ? 0 : 700 });
+          lastFollowTarget.current = nextTarget;
+        }
       }
     }, 1000);
     instance.on("error", () => {
       // Styl/dlaždice může být krátkodobě offline; letadla jsou i v seznamu.
       setError("Mapový podklad může být nedostupný; živý seznam funguje dál.");
+    });
+    instance.on("idle", () => {
+      // Po úspěšném dokončení style/tile loadingu odstranit zastaralou chybu.
+      if (instance.isStyleLoaded() && instance.areTilesLoaded()) setError(null);
     });
     return () => {
       clearInterval(tick);
@@ -346,6 +366,10 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
       map.current = null;
     };
   }, []);
+  useEffect(() => {
+    // Nový výběr či opětovné zapnutí follow musí udělat úvodní přesun kamery.
+    lastFollowTarget.current = null;
+  }, [selectedId, follow]);
   useEffect(() => {
     const instance=map.current;
     if (!instance?.isStyleLoaded()) return;
