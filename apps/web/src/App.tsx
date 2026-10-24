@@ -6,8 +6,6 @@ import { loadAirportCatalog, type Airport } from "./radar/airport-catalog";
 
 type Panel = "none" | "traffic" | "detail" | "airport";
 
-const appVersion = import.meta.env.VITE_APP_VERSION || "dev";
-
 function displayName(a: Aircraft): string {
   return a.callsign?.trim() || a.id;
 }
@@ -30,9 +28,9 @@ export default function App() {
   const [filter, setFilter] = useState<"all" | "position">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [follow, setFollow] = useState(false);
-  const [style, setStyle] = useState<MapStyle>("fiord");
+  const [style, setStyle] = useState<MapStyle>("dark");
+  const [layersOpen, setLayersOpen] = useState(false);
   const [airports, setAirports] = useState<Airport[]>([]);
-  const [airportsError, setAirportsError] = useState(false);
   const [showAirports, setShowAirports] = useState(true);
   const [selectedAirportId, setSelectedAirportId] = useState<string | null>(null);
   useEffect(() => {
@@ -40,10 +38,11 @@ export default function App() {
     if (typeof fetch !== "function") return () => controller.abort();
     loadAirportCatalog(controller.signal)
       .then(setAirports)
-      .catch(() => { if (!controller.signal.aborted) setAirportsError(true); });
+      .catch(() => { /* Katalog je volitelný: ostatní mapa se vykreslí i bez něj. */ });
     return () => controller.abort();
   }, []);
   const listToggleRef = useRef<HTMLButtonElement>(null);
+  const layersToggleRef = useRef<HTMLButtonElement>(null);
   const selected = frame.aircraft.find(a => a.id === selectedId) ?? null;
   const selectedAirport = airports.find(a => a.id === selectedAirportId) ?? null;
 
@@ -76,6 +75,7 @@ export default function App() {
     setSelectedAirportId(null);
     setFollow(false);
     setPanel("detail");
+    setLayersOpen(false);
   };
   const selectAirport = (id: string) => {
     if (!airports.some(a => a.id === id)) return;
@@ -83,6 +83,7 @@ export default function App() {
     setSelectedId(null);
     setFollow(false);
     setPanel("airport");
+    setLayersOpen(false);
   };
   const closePanel = () => {
     if (panel === "airport") setSelectedAirportId(null);
@@ -94,6 +95,7 @@ export default function App() {
     listToggleRef.current?.focus();
   };
   const toggleTraffic = () => {
+    setLayersOpen(false);
     if (panel === "traffic") closePanel();
     else setPanel("traffic");
   };
@@ -106,39 +108,41 @@ export default function App() {
   return (
     <main className="radar-page">
       <header className="radar-header">
-        <div className="brand">
-          <span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" role="img"><path d="M3 14.1 13.8 11l4-7.2 2 .8-1.6 7.1 8.4 2.6c1 .3 1.6 1 1.6 1.7s-.6 1.4-1.6 1.7l-8.4 2.5 1.6 7.2-2 .8-4-7.3L3 18.8l-1.2-1.6L3 15.6l7.1-1.4L3 14.1Z" /></svg></span>
-          <div>
-            <h1>AirRadar V2</h1>
-            <span className="brand-subtitle">Místní letecký radar</span>
+        <div className="brand" aria-label="AirRadar V2 – živý letecký radar">
+          <span className="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="currentColor"><path d="M15.5 2c-1.3 0-2.1 1.1-2.1 2.9v8.5L3.2 18.5a2.1 2.1 0 0 0-1.2 1.9V23l11.4-3.7v6.3l-3.1 2.4v2l5.2-1.4 5.2 1.4v-2l-3.1-2.4v-6.3L29 23v-2.6a2.1 2.1 0 0 0-1.2-1.9L17.6 13.4V4.9c0-1.8-.8-2.9-2.1-2.9Z"/></svg>
+          </span>
+          <div className="brand-copy">
+            <div className="brand-title"><h1>AirRadar</h1><span className="version-tag">V2</span></div>
+            <span className="brand-subtitle">Živý letecký radar</span>
           </div>
         </div>
-        <div className="header-actions">
-          <span className="radar-count" aria-label="Počet zachycených letadel">{aircraftCount(frame.aircraft.length)}</span>
-          <div className={"connection connection-" + status} role="status" aria-live="polite">
-            <span className="status-dot" aria-hidden="true" />
-            {connectionMessage}
+        <nav className="header-actions" aria-label="Hlavní ovládání radaru">
+          <div className="flight-summary">
+            <span className="radar-count" aria-label="Počet zachycených letadel">{aircraftCount(frame.aircraft.length)}</span>
+            <div className={"connection connection-" + status} role="status" aria-live="polite">
+              <span className="status-dot" aria-hidden="true" />
+              <span className="connection-label">{connectionMessage}</span>
+            </div>
           </div>
+          <span className="header-divider" aria-hidden="true" />
           <button ref={listToggleRef} type="button" className="header-button"
-            aria-controls="traffic-panel" aria-expanded={panel === "traffic"}
+            aria-label="Letadla" aria-controls="traffic-panel" aria-expanded={panel === "traffic"}
             onClick={toggleTraffic}>
-            {panel === "traffic" ? "Skrýt letadla" : "Letadla"}
+            <svg className="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h16"/><circle cx="7" cy="7" r="1" fill="currentColor"/><circle cx="7" cy="12" r="1" fill="currentColor"/>
+            </svg>
+            <span className="button-label">Letadla</span>
           </button>
-          <div className="header-tools">
-            <label className="style-control">
-              <input type="checkbox" checked={showAirports}
-                disabled={!airports.length} onChange={event => setShowAirports(event.target.checked)} />
-              Letiště
-            </label>
-            <label className="style-control">
-              <span>Podklad</span>
-              <select aria-label="Mapový podklad" value={style} onChange={event => setStyle(event.target.value as MapStyle)}>
-                <option value="fiord">Tmavý</option>
-                <option value="liberty">Světlý</option>
-              </select>
-            </label>
-          </div>
-        </div>
+          <button ref={layersToggleRef} type="button" className="header-button layers-trigger"
+            aria-label="Vrstvy" aria-controls="layers-panel" aria-expanded={layersOpen}
+            onClick={() => { setLayersOpen(value => !value); }}>
+            <svg className="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true">
+              <path d="m12 3 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 16l9 5 9-5"/>
+            </svg>
+            <span className="button-label">Vrstvy</span>
+          </button>
+        </nav>
       </header>
 
       <section className="radar-stage" aria-label="Živý radar">
@@ -148,7 +152,28 @@ export default function App() {
             showAirports={showAirports} onSelectAirport={selectAirport}
             follow={follow} style={style} onSelect={select} onStopFollow={() => setFollow(false)} />
         </div>
-        <div className="map-disclosure">Lokální ADS-B · jen potvrzené polohy</div>
+        {layersOpen && (
+          <aside id="layers-panel" className="layers-panel" aria-label="Nastavení mapy">
+            <div className="panel-heading">
+              <div><span className="panel-eyebrow">ZOBRAZENÍ</span><h2>Mapa a vrstvy</h2></div>
+              <button className="close-button" type="button" aria-label="Zavřít vrstvy"
+                onClick={() => { setLayersOpen(false); layersToggleRef.current?.focus(); }}>✕</button>
+            </div>
+            <label className="layer-field" htmlFor="radar-map-style">Mapový podklad</label>
+            <select id="radar-map-style" aria-label="Mapový podklad" value={style}
+              onChange={event => setStyle(event.target.value as MapStyle)}>
+              <option value="dark">Tmavý kontrastní</option>
+              <option value="fiord">Tmavý atlas</option>
+              <option value="liberty">Světlý</option>
+            </select>
+            <label className="layer-row">
+              <span className="layer-copy"><strong>Letiště</strong>
+                <small>Veřejný katalog OurAirports</small></span>
+              <input type="checkbox" aria-label="Letiště" checked={showAirports}
+                disabled={!airports.length} onChange={event => setShowAirports(event.target.checked)} />
+            </label>
+          </aside>
+        )}
 
         {panel === "traffic" && (
           <aside id="traffic-panel" className="radar-panel traffic-panel" aria-label="Seznam letadel">
@@ -231,12 +256,6 @@ export default function App() {
           </aside>
         )}
       </section>
-      <footer className="radar-footer">
-        AirRadar V2 · Lokální ADS-B · Letiště: OurAirports (public domain){airportsError ? " — katalog dočasně nedostupný" : ""}
-        <span className="radar-version" title={appVersion === "dev" ? "Lokální vývojový build" : `Commit ${appVersion}`}>
-          Verze {appVersion === "dev" ? appVersion : appVersion.slice(0, 12)}
-        </span>
-      </footer>
     </main>
   );
 }
