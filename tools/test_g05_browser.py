@@ -12,6 +12,22 @@ STYLE = {"version": 8, "name": "CI offline map", "sources": {},
          "layers": [{"id": "land", "type": "background",
                      "paint": {"background-color": "#1c3445"}}]}
 
+# Syntetická bodová fixture; skutečný veřejný katalog se tvoří zvlášť
+# z pinned/unlicensed OurAirports CSV při npm run build.
+AIRPORTS = {
+    "version":1,
+    "source":{"name":"OurAirports",
+              "commit":"3b10d0b967cc04c62eb6411939e4e9936a88e701"},
+    "airports":[
+        {"id":"CZ-TEST1","name":"Testovací letiště CZ-TEST1",
+         "type":"small_airport","lat":49.23,"lon":17.67,"country":"CZ"},
+        {"id":"CZ-TEST2","name":"Testovací letiště CZ-TEST2",
+         "type":"small_airport","lat":49.28,"lon":17.84,"country":"CZ"},
+        {"id":"CZ-TEST3","name":"Testovací letiště CZ-TEST3",
+         "type":"small_airport","lat":49.10,"lon":17.48,"country":"CZ"},
+    ],
+}
+
 MOCK = r"""
 (() => {
   const now = Date.now() / 1000;
@@ -81,6 +97,10 @@ def main():
                        lambda route: route.fulfill(
                            status=200, content_type="application/json",
                            body=json.dumps(STYLE)))
+            page.route("**/data/airports-ourairports.json",
+                       lambda route: route.fulfill(
+                           status=200, content_type="application/json",
+                           body=json.dumps(AIRPORTS)))
             page.goto(URL)
             expect(page.locator("html")).to_have_attribute("lang", "cs")
             expect(page.get_by_role("heading", name="AirRadar V2")).to_be_visible()
@@ -151,6 +171,29 @@ def main():
             expect(page.get_by_text("Žádná odpovídající letadla.")).to_be_visible()
             page.get_by_role("button", name="Zavřít seznam").click()
             expect(page.get_by_role("complementary", name="Seznam letadel")).to_have_count(0)
+            # G-05.10: ověřená samostatná letištní vrstva bez mutace SSE.
+            page.evaluate("""() => window.__emitRadar('snapshot', {
+              kind:'snapshot',epoch:'g05-airport-ci',seq:0,
+              generatedAt:new Date().toISOString(),aircraft:[]
+            })""")
+            expect(page.get_by_text("0 letadel")).to_be_visible(timeout=12000)
+            airport_toggle = page.get_by_label("Letiště", exact=True)
+            expect(airport_toggle).to_be_enabled(timeout=12000)
+            airport_toggle.uncheck()
+            airport_toggle.check()
+            bounds = canvas.bounding_box()
+            assert bounds is not None
+            page.mouse.click(bounds["x"] + bounds["width"] / 2,
+                             bounds["y"] + bounds["height"] / 2)
+            expect(page.get_by_role("complementary", name="Vybrané letiště")).to_be_visible(
+                timeout=12000)
+            expect(page.get_by_role("heading", name="Testovací letiště CZ-TEST1")).to_be_visible()
+            page.get_by_label("Mapový podklad").select_option("fiord")
+            expect(page.get_by_role("heading", name="Testovací letiště CZ-TEST1")).to_be_visible()
+            assert canvas.get_attribute("data-g05-mounted") == "once"
+            page.get_by_role("button", name="Zavřít detail letiště").click()
+            expect(page.get_by_role("complementary", name="Vybrané letiště")).to_have_count(0)
+
             # Základní mobilní geometrie G-05 (plná a11y/GPU přejímka patří G-10).
             mobile = browser.new_page(viewport={"width": 390, "height": 844},
                                       is_mobile=True, has_touch=True)
@@ -159,6 +202,10 @@ def main():
                          lambda route: route.fulfill(
                              status=200, content_type="application/json",
                              body=json.dumps(STYLE)))
+            mobile.route("**/data/airports-ourairports.json",
+                         lambda route: route.fulfill(
+                             status=200, content_type="application/json",
+                             body=json.dumps(AIRPORTS)))
             mobile.goto(URL)
             expect(mobile.locator(".maplibregl-canvas")).to_be_visible(timeout=12000)
             assert mobile.evaluate("document.documentElement.scrollWidth <= innerWidth"), (
