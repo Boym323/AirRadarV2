@@ -2,6 +2,11 @@
 
 ## [Nepublikováno]
 
+### G-05 vizuální doladění hlavičky a identity (24. 10. 2026)
+- Vlastní inline SVG symbol AirRadar místo systémového znaku letadla.
+- Zjednodušený podtitul a patička bez trvalého označení interní etapy G-05.
+- Seskupené ovládání letišť a mapového podkladu; méně dominantní hlášení chyby WebGL.
+
 ### Dokumentační oprava aktuálního stavu G-05/G-06 (24. 10. 2026)
 - Sjednocen aktuální stav v README, `ZACNI-ZDE-NOVE-VLAKNO.md` a `ETAPY-A-STAV.md`.
 - Opraveny zastaralé údaje o G-04, G-05 (10/11 kroků), G-06 a počtu funkcí `TESTED/ACCEPTED`.
