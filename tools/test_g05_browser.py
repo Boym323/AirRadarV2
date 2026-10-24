@@ -361,8 +361,24 @@ def main():
             expect(recovery.locator(".map-error")).to_have_count(0)
             expect(recovery.locator(".maplibregl-canvas")).to_be_visible()
             recovery.close()
+
+            # Úplný výpadek externího stylu nesmí skrýt radar ani rozkmitat canvas.
+            offline = browser.new_page(viewport={"width": 1370, "height": 850})
+            offline.add_init_script(MOCK)
+            offline.route("https://tiles.openfreemap.org/**", lambda route: route.abort())
+            offline.route("**/data/airports-ourairports.json",
+                          lambda route: route.fulfill(
+                              status=200, content_type="application/json",
+                              body=json.dumps(AIRPORTS)))
+            offline.goto(URL)
+            expect(offline.get_by_text("2 letadla")).to_be_visible(timeout=12000)
+            expect(offline.locator(".maplibregl-canvas")).to_be_visible(timeout=12000)
+            expect(offline.get_by_role("status").filter(
+                has_text="Mapový podklad není dostupný"
+            )).to_be_visible(timeout=12000)
+            offline.close()
             browser.close()
-        print("PASS G-05 Chromium: map-first desktop/mobil, panely, focus, MapLibre/SSE, kategorie a 2 000 synthetic targets (SwiftShader smoke, ne FPS)")
+        print("PASS G-05 Chromium: map-first desktop/mobil, MapLibre/SSE, 2 000 cílů a fallback při výpadku podkladu (SwiftShader smoke, ne FPS)")
     finally:
         process.terminate()
         try:
