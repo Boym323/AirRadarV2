@@ -384,9 +384,13 @@ def main():
                                status=200, content_type="application/json",
                                body=json.dumps(AIRPORTS)))
             recovery.goto(URL + "?g05-benchmark")
-            recovery.wait_for_function(
-                "window.__g05BenchMap && window.__g05BenchMap.isStyleLoaded()",
-                timeout=12000)
+            recovery.wait_for_function("""() => {
+              const map = window.__g05BenchMap;
+              return map && map.isStyleLoaded() &&
+                !!map.getSource('radar-aircraft') &&
+                !!map.getLayer('radar-aircraft-symbols') &&
+                !map.getSource('radar-osm-backup');
+            }""", timeout=12000)
             assert recovery.evaluate("""() => {
               const map = window.__g05BenchMap;
               return ['generic-fixedwing', 'rotorcraft'].every(icon =>
@@ -398,7 +402,9 @@ def main():
                 window.__g05BenchMap.fire('error', {error: new Error('synthetic tile error')})
             """)
             expect(recovery.locator(".map-error")).to_have_count(0)
-            recovery.evaluate("() => window.__g05BenchMap.fire('style.load')")
+            # Dílčí tile chyba nesmí rušit již načtenou mapu.
+            # style.load zde nevynucovat synteticky: je to vnitřní lifecycle
+            # událost MapLibre, skutečný style switch testujeme výše.
             expect(recovery.locator(".maplibregl-canvas")).to_be_visible()
             recovery.evaluate("""() => {
               for (let i = 0; i < 3; i++) {
