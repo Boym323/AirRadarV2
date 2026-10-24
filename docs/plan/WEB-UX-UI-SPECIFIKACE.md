@@ -144,7 +144,11 @@ Přednost má souvislá mapa přes hlavní obsahovou oblast. Ovládání tvoří
 
 **Otevřené a nikoliv předem schválené detaily:** přesné breakpointy, šířka bočních panelů, výsledná barevná paleta, mobilní výška spodního panelu, podoba ikonek a počet současně zobrazitelných sekundárních panelů. Přijímat je podle návrhu a E2E přejímky, bez změny aktivního rozsahu.
 
-## 11. Související dokumentace
+## 11. Konkurence a vizuální inspirace
+
+Srovnání Flightradar24, ADS-B Exchange, AirNav Radar, Plane Finder, tar1090, Airplanes.live a FlightAware včetně rozhodnutí **převzít / odložit / nepřebírat** a mapování na existující ID je v [konkurenčním UX průzkumu (24. 10. 2026)](../audits/KONKURENCNI-UX-PRUZKUM-2026-10-24.md). Nejde o schválení další funkce ani o důkaz jejich implementace.
+
+## 12. Související dokumentace
 
 - [Závazné zadání](ZADANI-AIRRADAR-V2.md)
 - [Schválené moduly a ID](MODULY-A-ROZSAH.md)
