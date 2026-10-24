@@ -26,7 +26,26 @@ const SELECTION_LAYER = "radar-selected-halo";
 const DOT_LAYER = "radar-aircraft-unknown-heading";
 const TRAIL_LAYER = "radar-selected-trail";
 const emptyAircraft = (): FeatureCollection<Point> => ({ type: "FeatureCollection", features: [] });
-const emptyTrail = (): FeatureCollection<LineString> => ({ type: "FeatureCollection", features: [] });
+const emptyTrail = (): FeatureCollection<MultiLineString> => ({ type: "FeatureCollection", features: [] });
+
+// R04: jedině krátký ověřený callsign. Zlom řádku ani řídicí znaky nesmí
+// obcházet MapLibre kolizní pravidla či vytvářet domnělý typ letadla.
+export function mapCallsign(raw: string | null): string {
+  const value = raw?.trim() ?? "";
+  return /^[a-z0-9-]{1,8}$/i.test(value) ? value : "";
+}
+export function mapLabel(aircraft: Aircraft): { label: string; detailLabel: string } {
+  const label = mapCallsign(aircraft.callsign);
+  const altitude = aircraft.telemetry?.altitudeBaroFt;
+  return {
+    label,
+    detailLabel: label && typeof altitude === "number" && Number.isFinite(altitude) &&
+      altitude >= -2000 && altitude <= 65000
+      ? `${label}\n${Math.round(altitude).toLocaleString("cs-CZ")} ft`
+      : label,
+  };
+}
+
 
 /** Žádný DOM marker — jediný GeoJSON source se stabilními ID. */
 export function toGeoJSON(aircraft: Aircraft[], selectedId: string | null): FeatureCollection<Point> {
@@ -38,13 +57,7 @@ export function toGeoJSON(aircraft: Aircraft[], selectedId: string | null): Feat
       geometry: { type: "Point", coordinates: [a.position!.lon, a.position!.lat] },
       properties: {
         id: a.id,
-        label: a.callsign?.trim() || "",
-        detailLabel: a.callsign?.trim()
-          ? (typeof a.telemetry?.altitudeBaroFt === "number" &&
-             Number.isFinite(a.telemetry.altitudeBaroFt) &&
-             a.telemetry.altitudeBaroFt >= -2000 && a.telemetry.altitudeBaroFt <= 65000
-              ? `${a.callsign.trim()}\n${Math.round(a.telemetry.altitudeBaroFt).toLocaleString("cs-CZ")} ft`
-              : a.callsign.trim()) : "",
+        ...mapLabel(a),
         heading: validGroundTrack(a.telemetry?.trackDegrees) ? a.telemetry!.trackDegrees : null,
         icon: iconForAircraft(a.emitterCategory, a.telemetry?.trackDegrees),
         selected: a.id === selectedId,
@@ -52,15 +65,36 @@ export function toGeoJSON(aircraft: Aircraft[], selectedId: string | null): Feat
     })),
   };
 }
-function trailGeoJSON(frame: ViewState, selectedId: string | null): FeatureCollection<LineString> {
+/**
+ * R08: pouze skutečné přijímané body z G-03. Při výpadku příjmu >120 s
+ * nebo přes antimeridián nezačínat vymýšlený spojovací úsek.
+ */
+export function trailGeoJSON(frame: ViewState, selectedId: string | null): FeatureCollection<MultiLineString> {
   const trail = selectedId ? frame.trails.get(selectedId) : undefined;
   if (!trail || trail.length < 2) return emptyTrail();
+  const segments: number[][][] = [];
+  let current: number[][] = [];
+  let previous: (typeof trail)[number] | undefined;
+  for (const point of trail) {
+    if (!Number.isFinite(point.lat) || !Number.isFinite(point.lon) ||
+        !Number.isFinite(point.at) || Math.abs(point.lat) > 90 ||
+        Math.abs(point.lon) > 180) continue;
+    if (previous && (point.at <= previous.at || point.at - previous.at > 120 ||
+      Math.abs(point.lon - previous.lon) > 180)) {
+      if (current.length >= 2) segments.push(current);
+      current = [];
+    }
+    current.push([point.lon, point.lat]);
+    previous = point;
+  }
+  if (current.length >= 2) segments.push(current);
+  if (!segments.length) return emptyTrail();
   return {
     type: "FeatureCollection",
     features: [{
       type: "Feature",
       properties: { id: selectedId },
-      geometry: { type: "LineString", coordinates: trail.map(p => [p.lon, p.lat]) },
+      geometry: { type: "MultiLineString", coordinates: segments },
     }],
   };
 }
@@ -146,11 +180,14 @@ function addRadarLayers(map: LibreMap) {
     map.addLayer({
       id: LABEL_LAYER, type: "symbol", source: AIRCRAFT_SOURCE,
       layout: {
-        "text-field": ["step", ["zoom"], "", 8, ["get", "label"], 11, ["get", "detailLabel"]],
+        "text-field": ["case", ["get", "selected"], ["get", "detailLabel"],
+          ["step", ["zoom"], "", 8, ["get", "label"], 11, ["get", "detailLabel"]]],
         "text-size": ["case", ["get", "selected"], 13, 11],
-        "text-offset": [0, 1.5],
+        "text-offset": [0, 1.4],
         "text-anchor": "top",
-        "text-allow-overlap": false,
+        "text-max-width": 12,
+        "text-padding": 2,
+        "text-allow-overlap": ["get", "selected"],
         "text-ignore-placement": false,
         "symbol-sort-key": ["case", ["get", "selected"], 0, 1],
       },
