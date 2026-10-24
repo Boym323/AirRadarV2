@@ -70,7 +70,7 @@ Audit úspornosti vedl k [adaptivní deduplikaci v Rust RAM](../technical/RAM-CA
 
 ## Dev infrastruktura po G-01
 
-Připraven [ruční balíčkovací workflow](../../.github/workflows/dev-package.yml) a [bezpečný instalační runbook](../runbooks/DEV-LXC-PRVNI-NASAZENI.md) pro potvrzený DEV LXC. GitHub Actions vytváří oddělený artefakt, ale **sám se k LXC nepřipojuje a nic nenasazuje**. První G-00/G-01 web a Rust health ještě neznamená dokončení G-02/G-03 ani produktových 45 KEEP.
+Historický ruční workflow byl nahrazen [automatickým ověřeným DEV release pipeline](../../.github/workflows/g02-dev-candidate.yml) a nadále platí [instalační runbook](../runbooks/DEV-LXC-PRVNI-NASAZENI.md). GitHub Actions nyní po CI **vydává immutable SHA artefakt a přes izolovaný V2 runner nasazuje do DEV LXC**, produkční V1 nikdy neupravuje. První G-00/G-01 web a Rust health ještě neznamená dokončení G-02/G-03 ani produktových 45 KEEP.
 
 ## První skutečné DEV LXC nasazení — 22. 10. 2026
 
