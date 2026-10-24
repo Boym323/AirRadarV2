@@ -105,10 +105,10 @@ export default function App() {
     <main className="radar-page">
       <header className="radar-header">
         <div className="brand">
-          <span className="brand-mark" aria-hidden="true">✈</span>
+          <span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" role="img"><path d="M3 14.1 13.8 11l4-7.2 2 .8-1.6 7.1 8.4 2.6c1 .3 1.6 1 1.6 1.7s-.6 1.4-1.6 1.7l-8.4 2.5 1.6 7.2-2 .8-4-7.3L3 18.8l-1.2-1.6L3 15.6l7.1-1.4L3 14.1Z" /></svg></span>
           <div>
             <h1>AirRadar V2</h1>
-            <span className="brand-subtitle">Místní letecký radar · G-05 DEV</span>
+            <span className="brand-subtitle">Místní letecký radar</span>
           </div>
         </div>
         <div className="header-actions">
@@ -228,7 +228,7 @@ export default function App() {
         )}
       </section>
       <footer className="radar-footer">
-        Vývojová verze G-05 · Letiště: OurAirports (public domain){airportsError ? " — katalog dočasně nedostupný" : ""} · AirRadar V1 zůstává samostatný
+        AirRadar V2 · Lokální ADS-B · Letiště: OurAirports (public domain){airportsError ? " — katalog dočasně nedostupný" : ""}
       </footer>
     </main>
   );
