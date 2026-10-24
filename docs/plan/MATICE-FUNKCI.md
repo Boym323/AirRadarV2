@@ -18,12 +18,12 @@ Tento soubor se generuje ze `contracts/feature-matrix.json` a obsahuje výhradn�
 | `J11` | Místní příjem | Kontinuita identity letadel, detekce výpadků a deduplikace · základ systému | `TESTED` | G-02 identita, dedup, plausibilita, neplatné CRC a stale polohy, CI #39769323592, G-02 realny BEAST 60min read-only DEV LXC, GitHub #39795592425, SHA d0cefc4a |
 | `R01` | Mapa | Základní interaktivní mapa MapLibre · základ systému | `TESTED` | G-05 MapLibre 6.15.0 + Vite build a Chromium canvas smoke, PR #22 hlavní CI #40024971130 PASS; jediné mapové DOM mount. |
 | `R03` | Mapa | Ikony letadel podle typu a směru | `TESTED` | G-05.03 typové siluety G-05 PR #29+#30, CI #40082045615 a #40084080300 PASS: Rust readsb/DF17-CRC, veřejný G-03 DTO, TS atomický SSE store, 2 000 cílů Chromium a fallback bez směru. |
-| `R04` | Mapa | Popisky letadel a řízení jejich kolizí | `IN_PROGRESS` | G-05 první implementace v PR #22; jednotkové testy projekce/retence a browser smoke #40024971130 PASS; plná interakční/benchmark přejímka ještě neproběhla. |
+| `R04` | Mapa | Popisky letadel a řízení jejich kolizí | `TESTED` | G-05.04 PR #32, CI #40087996178 PASS: MapLibre vybraný štítek, zoom 8/11, sanitizovaný callsign, známá výška, 2 000 syntetických cílů; DEV #40088791328 SUCCESS. |
 | `R06` | Mapa | Živý seznam provozu a filtrování letadel | `TESTED` | G-05 Chromium #40024971130: skutečný SSE fixture snapshot/delta, seznam, výběr, removed a filtrování, 1Hz UI; PASS. |
-| `R08` | Mapa | Zobrazení živé letové stopy (trail) | `IN_PROGRESS` | G-05 první implementace v PR #22; jednotkové testy projekce/retence a browser smoke #40024971130 PASS; plná interakční/benchmark přejímka ještě neproběhla. |
+| `R08` | Mapa | Zobrazení živé letové stopy (trail) | `TESTED` | G-05.07 PR #32, CI #40087996178 PASS: věrná MultiLineString stopa, 120s výpadek, antimeridián, odstranění cíle a WebGL screenshot warm_pixels=124; DEV #40088791328 SUCCESS. |
 | `R09` | Mapa | Sledování letadla kamerou mapy (follow) | `TESTED` | G-05.08 volitelný follow CI #40082045615 a #40084080300 PASS v Chromium: explicitní zapnutí, drag/wheel/touchmove/klávesnice vypne režim bez přemountování mapy. |
-| `R12` | Mapa | Vrstvy okolních letišť | `NOT_STARTED` | — |
-| `R14` | Mapa | Mapové podklady, vzhled a předvolby vrstev | `IN_PROGRESS` | G-05 první implementace v PR #22; jednotkové testy projekce/retence a browser smoke #40024971130 PASS; plná interakční/benchmark přejímka ještě neproběhla. |
+| `R12` | Mapa | Vrstvy okolních letišť | `TESTED` | G-05.10 PR #33, CI #40094724356 PASS: připnutý OurAirports SHA1, import 884 letišť, Vitest GeoJSON, Chromium pixel bodu a klikací detail při přepnutí stylu; DEV #40095020297 SUCCESS. |
+| `R14` | Mapa | Mapové podklady, vzhled a předvolby vrstev | `TESTED` | G-05.09/.10 PR #32 a #33, CI #40087996178 a #40094724356 PASS: přepnutí Fiord/Liberty, obnova sprite, zachování stop/follow/výběru a vrstev; DEV #40095020297 SUCCESS. |
 | `A01` | Letiště | Katalog letišť a vyhledávání podle ICAO | `NOT_STARTED` | — |
 | `A02` | Letiště | Detail letiště – dráhy, poloha, vybavení a frekvence | `NOT_STARTED` | — |
 | `T10` | Navigace | NAVAID/FIX databáze a navigační průzkumník | `NOT_STARTED` | — |
