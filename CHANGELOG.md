@@ -7,6 +7,14 @@
 - Runner po úspěšném SHA-bound deployi atomicky publikuje skutečný `current/VERSION` do `/dev-deploy-status.json`; doplněn regresní test.
 - Retence G-04 zůstává deaktivovaná do DBA schválení; fyzický GPU/FPS test a release-security evidence zůstávají NEOVĚŘENO/BLOKOVÁNO podle reportu [issue #41](docs/reports/ISSUE-41-PROVOZNI-BRANY-2026-10-24.md).
 
+## 24. 10. 2026 — Omezení opakovaných PR/main testů bez oslabení release gate
+
+- Po úspěšném `pull_request` CI a odděleném PostgreSQL CI se ukládá krátkodobý artefakt s PR číslem, přesným HEAD SHA, ID a pokusem běhu a Git tree skutečně otestovaného merge checkoutu.
+- Následný `main` workflow zkontroluje vazbu sloučeného PR na konkrétní commit, úspěšný výsledek odpovídajícího CI a shodu Git tree s výsledným commitem. Pouze v takovém případě přeskočí **stejnou** kompletní testovací sadu. Testy G-04 vyžadují samostatný důkaz; jejich provedení není nahrazeno obecným CI.
+- Přímý push do `main`, změna výsledného stromu, neplatný/expirující artefakt, odlišný běh nebo výpadek GitHub API znamenají **fail-closed** návrat k plným testům. Sestavení, vydání, DEV deployment a jeho provozní kontroly se nepřeskakují.
+- Regresní testy pokrývají úspěšnou shodu, odlišný tree, jiný pokus CI, přímý push i oddělení databázového důkazu. G-04 ruší také zbytečné rozpracované PR běhy při novém commitu.
+
+
 ## 24. 10. 2026 — Oddělená retence G-04 DEV (připraveno, NEAKTIVOVÁNO)
 
 - Auditní oprava G-04.09/J09: root/DBA-managed script `database/maintenance/g04_retention_bounded.sh` čistí pouze V2 DEV, max. 20 dávek po 1 000 řádcích a 90 s. Vyžaduje dedikovanou SQL roli a explicitní GO, běžná Rust runtime role nezískává `DELETE`.

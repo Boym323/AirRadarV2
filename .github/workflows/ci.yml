@@ -28,7 +28,7 @@ jobs:
         # expressions bez těchto dvou historických false positives.
         # Starší development-metrics.yml používá vlastní timezone klíč
         # neslučitelný s actionlint 1.7.7; jeho plánování zde neměníme.
-        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -shellcheck= -ignore 'label "airradarv2-dev" is unknown' .github/workflows/ci.yml .github/workflows/g02-dev-candidate.yml
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -shellcheck= -ignore 'label "airradarv2-dev" is unknown' .github/workflows/ci.yml .github/workflows/g02-dev-candidate.yml .github/workflows/g04-postgres-migrations.yml
       - name: Kontrola dokumentace a 45 aktivních funkcí
         run: node tools/check-docs.mjs
       - name: Kontrola syntaxe skriptů DEV LXC
@@ -50,6 +50,7 @@ jobs:
           python3 -m py_compile deploy/g02-auto-pull.py
           python3 -m unittest discover -s tools -p 'test_g02_auto_pull.py'
           python3 -m unittest discover -s tools -p 'test_workflows_layout.py'
+          python3 -m unittest discover -s tools -p 'test_ci_reuse_gate.py'
           python3 -m unittest discover -s tools -p 'test_deploy_workflow.py'
           python3 -m unittest discover -s tools -p 'test_g03_auto_deploy.py'
           python3 -m unittest discover -s tools -p 'test_g03_documentation.py'
@@ -257,3 +258,28 @@ jobs:
           grep -q "Není připojen živý provoz" dist/assets/*.js
           test -s dist/index.html
           grep -q 'lang="cs"' /tmp/airradar-v2-home.html
+
+  pr-reuse-proof:
+    name: Důkaz úspěšného PR CI pro přesný Git tree
+    if: github.event_name == 'pull_request'
+    needs: [documentation, rust-engine, vite-web]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: Zaznamenat testovaný merge checkout
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 tools/ci_reuse_gate.py create --workflow ci.yml \
+            --pr "$PR_NUMBER" --head "$PR_HEAD_SHA" \
+            --run "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT" \
+            --output validated-pr-tree.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: validated-ci-${{ github.run_id }}-${{ github.run_attempt }}
+          path: validated-pr-tree.json
+          if-no-files-found: error
+          retention-days: 7
