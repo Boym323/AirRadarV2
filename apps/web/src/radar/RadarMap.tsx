@@ -255,7 +255,7 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
         container: container.current,
         style: STYLES[currentStyle.current],
         center: [17.67, 49.23],
-        zoom: 7.7,
+        zoom: 8.2,
         attributionControl: { compact: true },
       });
     } catch {
