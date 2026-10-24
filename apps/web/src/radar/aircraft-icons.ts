@@ -6,16 +6,16 @@
 import type { Map as LibreMap } from "maplibre-gl";
 
 export const AIRCRAFT_PATHS = {
-  "generic-fixedwing": "M32 4 L38 23 L57 37 L56 44 L37 39 L36 52 L44 58 L43 62 L32 57 L21 62 L20 58 L28 52 L27 39 L8 44 L7 37 L26 23 Z",
-  "large-fixedwing": "M32 3 Q36 4 38 19 L41 29 L60 41 L59 48 L39 43 L37 53 L46 59 L45 63 L32 58 L19 63 L18 59 L27 53 L25 43 L5 48 L4 41 L23 29 L26 19 Q28 4 32 3 Z",
-  "light-fixedwing": "M32 5 L36 26 L60 35 L59 41 L36 37 L35 52 L42 57 L41 61 L32 57 L23 61 L22 57 L29 52 L28 37 L5 41 L4 35 L28 26 Z",
-  "high-performance": "M32 4 L38 22 L58 45 L54 49 L37 40 L37 53 L44 59 L43 62 L32 58 L21 62 L20 59 L27 53 L27 40 L10 49 L6 45 L26 22 Z",
-  "rotorcraft": "M30 5 Q32 2 34 5 L35 23 L59 25 L59 31 L36 32 L36 46 L44 51 L43 55 L35 53 L35 61 L29 61 L29 53 L21 55 L20 51 L28 46 L28 32 L5 31 L5 25 L29 23 Z",
-  "glider": "M32 6 L35 27 L62 31 L62 36 L35 34 L34 54 L43 58 L42 62 L32 58 L22 62 L21 58 L30 54 L29 34 L2 36 L2 31 L29 27 Z",
-  "ultralight": "M32 9 L37 29 L53 33 L52 40 L37 38 L36 52 L42 57 L41 60 L32 56 L23 60 L22 57 L28 52 L27 38 L12 40 L11 33 L27 29 Z",
-  "lighter-than-air": "M32 4 C14 4 12 18 16 34 Q20 47 29 51 L29 58 L35 58 L35 51 Q44 47 48 34 C52 18 50 4 32 4 Z M28 58 L36 58 L36 63 L28 63 Z",
-  "uav": "M32 16 L35 25 L50 16 L54 21 L39 33 L54 44 L50 49 L35 40 L34 55 L30 55 L29 40 L14 49 L10 44 L25 33 L10 21 L14 16 L29 25 Z",
-  "ground-unit": "M17 11 L47 11 L53 23 L53 49 L47 55 L17 55 L11 49 L11 23 Z M17 25 L47 25 L47 43 L17 43 Z",
+  "generic-fixedwing": "M 32 4 L 38 23 L 57 37 L 56 44 L 37 39 L 36 52 L 44 58 L 43 62 L 32 57 L 21 62 L 20 58 L 28 52 L 27 39 L 8 44 L 7 37 L 26 23 Z",
+  "large-fixedwing": "M 32 3 Q 36 4 38 19 L 41 29 L 60 41 L 59 48 L 39 43 L 37 53 L 46 59 L 45 63 L 32 58 L 19 63 L 18 59 L 27 53 L 25 43 L 5 48 L 4 41 L 23 29 L 26 19 Q 28 4 32 3 Z",
+  "light-fixedwing": "M 32 5 L 36 26 L 60 35 L 59 41 L 36 37 L 35 52 L 42 57 L 41 61 L 32 57 L 23 61 L 22 57 L 29 52 L 28 37 L 5 41 L 4 35 L 28 26 Z",
+  "high-performance": "M 32 4 L 38 22 L 58 45 L 54 49 L 37 40 L 37 53 L 44 59 L 43 62 L 32 58 L 21 62 L 20 59 L 27 53 L 27 40 L 10 49 L 6 45 L 26 22 Z",
+  "rotorcraft": "M 30 5 Q 32 2 34 5 L 35 23 L 59 25 L 59 31 L 36 32 L 36 46 L 44 51 L 43 55 L 35 53 L 35 61 L 29 61 L 29 53 L 21 55 L 20 51 L 28 46 L 28 32 L 5 31 L 5 25 L 29 23 Z",
+  "glider": "M 32 6 L 35 27 L 62 31 L 62 36 L 35 34 L 34 54 L 43 58 L 42 62 L 32 58 L 22 62 L 21 58 L 30 54 L 29 34 L 2 36 L 2 31 L 29 27 Z",
+  "ultralight": "M 32 9 L 37 29 L 53 33 L 52 40 L 37 38 L 36 52 L 42 57 L 41 60 L 32 56 L 23 60 L 22 57 L 28 52 L 27 38 L 12 40 L 11 33 L 27 29 Z",
+  "lighter-than-air": "M 32 4 C 14 4 12 18 16 34 Q 20 47 29 51 L 29 58 L 35 58 L 35 51 Q 44 47 48 34 C 52 18 50 4 32 4 Z M 28 58 L 36 58 L 36 63 L 28 63 Z",
+  "uav": "M 32 16 L 35 25 L 50 16 L 54 21 L 39 33 L 54 44 L 50 49 L 35 40 L 34 55 L 30 55 L 29 40 L 14 49 L 10 44 L 25 33 L 10 21 L 14 16 L 29 25 Z",
+  "ground-unit": "M 17 11 L 47 11 L 53 23 L 53 49 L 47 55 L 17 55 L 11 49 L 11 23 Z M 17 25 L 47 25 L 47 43 L 17 43 Z",
 } as const;
 
 export type AircraftIcon = keyof typeof AIRCRAFT_PATHS;
@@ -24,7 +24,7 @@ const CATEGORY_ICON: Record<string, AircraftIcon> = {
   A3: "large-fixedwing", A4: "large-fixedwing", A5: "large-fixedwing",
   A6: "high-performance", A7: "rotorcraft",
   B1: "glider", B2: "lighter-than-air", B4: "ultralight",
-  B6: "uav", C1: "ground-unit", C2: "ground-unit",
+  B6: "uav", C 1: "ground-unit", C 2: "ground-unit",
 };
 
 /** Záměrně bez odhadu; neznámý směr = MapLibre kruh, ne otočené letadlo. */
