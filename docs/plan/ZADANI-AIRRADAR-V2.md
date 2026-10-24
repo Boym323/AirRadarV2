@@ -19,6 +19,8 @@ Závazný rozpis devíti logických modulů je v [MODULY-A-ROZSAH.md](MODULY-A-R
 
 Základní produkt tvoří: příjem readsb/BEAST, korektní identita a stav letadel, verzované API se SSE snapshot/delta, úsporná historie, základní mapa s ikonami/seznamem/stopou/follow, letiště a navigační body, vybraná meteorologická data, detekce nouzových squawk, volitelné push kanály, základní statistiky/diagnostika, PWA a lokalizace.
 
+**Schválené UX rozhodnutí (24. 10. 2026):** AirRadar V2 je **radar primárně orientovaný na mapu**. Výchozí pracovní plochou webu je živá MapLibre mapa; seznam letadel, detaily, letiště, meteorologie, notifikace, statistiky a diagnostika mají kontextové/sekundární ovládání. Podrobnosti a otevřené designové volby stanoví [map-first UX/UI specifikace](WEB-UX-UI-SPECIFIKACE.md). Toto rozhodnutí nemění rozsah 45 funkcí ani stav implementace.
+
 ## 3. Správnost příjmu a API
 
 - BEAST parser musí správně zvládat escape, rámcování, DF/CRC24, krátké/ztracené rámce a časová razítka.

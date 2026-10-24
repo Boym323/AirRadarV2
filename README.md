@@ -45,6 +45,7 @@ vypnutý; G-02 zůstává chráněno sdíleným lockem a jeho přejímky jsou od
 | Soubor | Účel |
 |---|---|
 | [Závazné zadání](docs/plan/ZADANI-AIRRADAR-V2.md) | Architektura místního radaru a provozní invarianty |
+| **[UX/UI specifikace: mapa na prvním místě](docs/plan/WEB-UX-UI-SPECIFIKACE.md)** | Schválené zaměření webu na mapu, rozložení a testy G-05 až G-10 |
 | **[Technologický průzkum](docs/plan/TECHNOLOGICKY-PRUZKUM.md)** | Ověřené zdroje a odpovědi na výběr jazyků, webu, DB, streamu a LXC |
 | [Cílová architektura](docs/plan/ARCHITEKTURA-V2.md) | Doporučený Rust engine + lehký statický web a DB brána |
 | [Technologická rozhodnutí](docs/plan/TECHNOLOGICKA-ROZHODNUTI.md) | Co zachovat, co doporučit změnit a co ještě vyžaduje benchmark |

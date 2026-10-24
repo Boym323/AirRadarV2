@@ -5,6 +5,8 @@
 **Závislosti:** G-05 živá mapa a potřebná veřejná API; případně G-08 pro Web Push service worker.  
 **Primární KEEP ID:** `U01`, `U02`, `U03`, `U04`, `U05`, `U08`.
 
+**UX návaznost:** [Map-first UX/UI specifikace](../plan/WEB-UX-UI-SPECIFIKACE.md) je výchozím podkladem pro `G-10.01/.02/.08/.09/.10`: mobil má zachovat hlavní mapu, seznam a detail mají být kontextové; offline obsah se nesmí tvářit jako živý.
+
 ## Cíl
 
 Implementovat schválenou funkční část s minimem závislostí, testy a transparentním provozním dopadem.
