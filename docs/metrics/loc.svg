@@ -3,11 +3,11 @@
 <text x="24" y="27" fill="#f8fafc" font-family="Arial,sans-serif" font-size="17" font-weight="bold">Vývoj počtu řádků zdrojového kódu</text>
 <path d="M66 43V185H858" fill="none" stroke="#64748b"/>
 <path d="M66 114H858" fill="none" stroke="#334155" stroke-dasharray="4 4"/>
-<text x="53" y="49" text-anchor="end" fill="#cbd5e1" font-size="12">8315</text>
+<text x="53" y="49" text-anchor="end" fill="#cbd5e1" font-size="12">11255</text>
 <text x="53" y="189" text-anchor="end" fill="#cbd5e1" font-size="12">0</text>
 <text x="66" y="213" fill="#cbd5e1" font-size="12">2026-10-21</text>
 <text x="858" y="213" fill="#cbd5e1" font-size="12" text-anchor="end">2026-10-23</text>
-<polyline points="66.0,179.1 198.0,176.5 330.0,176.5 462.0,176.5 594.0,174.3 726.0,139.7 858.0,55.9" fill="none" stroke="#60a5fa" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="66.0,180.6 179.1,178.7 292.3,178.7 405.4,178.7 518.6,177.1 631.7,151.6 744.9,89.6 858.0,55.9" fill="none" stroke="#60a5fa" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
 
-<text x="844" y="27" text-anchor="end" fill="#93c5fd" font-size="14">7559 řádků</text>
+<text x="844" y="27" text-anchor="end" fill="#93c5fd" font-size="14">10231 řádků</text>
 </svg>
