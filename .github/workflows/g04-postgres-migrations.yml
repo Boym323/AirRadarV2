@@ -102,8 +102,9 @@ jobs:
 
   pr-reuse-proof:
     name: Důkaz izolovaného PostgreSQL testu PR
-    if: github.event_name == 'pull_request'
     needs: isolated-postgres
+    # 'always' překoná implicitní success() zděděné ze skipped pr_reuse.
+    if: always() && github.event_name == 'pull_request' && needs.isolated-postgres.result == 'success'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
