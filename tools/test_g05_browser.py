@@ -108,12 +108,36 @@ def main():
             page.get_by_role("button", name="OKTEST").click()
             expect(page.get_by_role("heading", name="OKTEST")).to_be_visible()
             assert canvas.get_attribute("data-g05-mounted") == "once", "MapLibre remount během SSE"
+            # G-05.08: follow se musí vypnout při skutečném kolečku myši.
+            page.get_by_role("button", name="Sledovat na mapě").click()
+            expect(page.get_by_role("button", name="Ukončit sledování")).to_have_attribute(
+                "aria-pressed", "true")
+            location = canvas.bounding_box()
+            assert location is not None
+            page.mouse.move(location["x"] + location["width"] / 2,
+                            location["y"] + location["height"] / 2)
+            page.mouse.wheel(0, 150)
+            expect(page.get_by_role("button", name="Sledovat na mapě")).to_have_attribute(
+                "aria-pressed", "false")
+            # Klávesnice a dotykový pohyb musejí také ukončit follow.
+            page.get_by_role("button", name="Sledovat na mapě").click()
+            canvas.focus()
+            page.keyboard.press("ArrowLeft")
+            expect(page.get_by_role("button", name="Sledovat na mapě")).to_have_attribute(
+                "aria-pressed", "false")
+            page.get_by_role("button", name="Sledovat na mapě").click()
+            canvas.evaluate("""el => el.parentElement.dispatchEvent(
+                new Event('touchmove', {bubbles: true, cancelable: true})
+            )""")
+            expect(page.get_by_role("button", name="Sledovat na mapě")).to_have_attribute(
+                "aria-pressed", "false")
+            assert canvas.get_attribute("data-g05-mounted") == "once", "MapLibre remount během ovládání"
             page.get_by_label("Mapový podklad").select_option("fiord")
             expect(canvas).to_be_visible()
             page.get_by_label("Hledat volací znak nebo ICAO").fill("neexistuje")
             expect(page.get_by_text("Žádná odpovídající letadla.")).to_be_visible()
             browser.close()
-        print("PASS G-05 Chromium: bez RF/DB, stabilní MapLibre canvas, snapshot/delta, odstranění, filtr, výběr a styl")
+        print("PASS G-05 Chromium: bez RF/DB, stabilní MapLibre canvas, SSE, výběr, styl a G-05.08 wheel/keyboard/touch follow stop")
     finally:
         process.terminate()
         try:
