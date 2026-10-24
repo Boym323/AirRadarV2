@@ -229,6 +229,7 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
   const container = useRef<HTMLDivElement>(null);
   const currentStyle = useRef(style);
   const fallbackActive = useRef(false);
+  const styleEverLoaded = useRef(false);
   const map = useRef<LibreMap | null>(null);
   const lastFollowTarget = useRef<{ id: string; lon: number; lat: number } | null>(null);
   const props = useRef({ frame, airports, selectedAirportId, showAirports, onSelectAirport, selectedId, follow, onSelect, onStopFollow });
@@ -306,6 +307,7 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
     };
     instance.on("style.load", () => {
       // Úspěšné obnovení podkladu ruší staré varování, nikoli samotný radar.
+      styleEverLoaded.current = true;
       if (!fallbackActive.current) setError(null);
       // Změna stylu zahodí registry map sources; nikdy neposlat diff do nové mapy.
       previousAircraft = null;
@@ -357,7 +359,7 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
     instance.on("error", () => {
       // Při chybě stylu přepni pouze jednou na lokální plátno bez tiles.
       // Chyba jednotlivé dlaždice po načtení stylu fallback neaktivuje.
-      if (!instance.isStyleLoaded() && !fallbackActive.current) {
+      if (!styleEverLoaded.current && !fallbackActive.current) {
         fallbackActive.current = true;
         instance.setStyle(FALLBACK_STYLE, { diff: false });
       }
@@ -397,6 +399,7 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
     if (map.current && currentStyle.current !== style) {
       currentStyle.current = style;
       fallbackActive.current = false;
+      styleEverLoaded.current = false;
       setError(null);
       map.current.setStyle(STYLES[style]);
     }
