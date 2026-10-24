@@ -1,5 +1,15 @@
 # G-05 — průběžný výsledek implementace živé mapy
 
+## 24. 10. 2026 — Uživatelská reklamace UI po prvním DEV nasazení
+
+- **Důkaz:** nový screenshot zachycuje existující mapu OpenFreeMap, 56 letadel a stále viditelný banner „Některé dlaždice mapového podkladu nejsou dostupné“, navíc viditelné zbytečné technické překryvy a zalomení AirRadar V2.
+- **Příčina viditelného banneru:** `RadarMap.tsx` vydával při každé asynchronní události MapLibre `error` zprávu na 4,5 s. U dílčího výpadku tiles/glyphů tato informace nedává uživateli užitečnou akci; opakované chyby prodlužují její přítomnost. Ani screenshot, ani event neprokazují úplný výpadek mapy. Diagnostika konkrétních síťových odpovědí je otevřená.
+- **Náprava R14/G-05.09:** mapové zdroje mají dál oddělený full-style timeout a geografický OSM fallback; úspěšně načtená mapa již na jednotlivé chyby nevytváří overlay. Pro úplnou chybu primárního i záložního stylu / WebGL context lost zůstává opravdové upozornění s obnovou.
+- **Rozhraní G-05/R01/R06:** skutečně přeorganizována navigace, pevný jednořádkový brand, samostatný panel Vrstvy, vypuštěná technická patička a spodní levý disclosure, mobilní ikonová navigace, kontrastnější výchozí OpenFreeMap Dark. Povinné mapové atribuce zůstanou.
+- **Regresní E2E:** Chromium musí ověřit panel Vrstvy + změnu stylu, kontextové panely seznam/detail, mobil bez horizontálního posouvání, bez footer/disclosure, bez chybového hlášení při opakovaných dílčích chybách, geografický fallback při úplném výpadku. CI/DEV na této změně se dosud nespustilo; fyzické GPU měření G-05.11 není hotové.
+- Rozsah pouze frontend a testy; žádné změny V1, Rust RAM/SSE, DB ani 45 aktivních funkcí. Stav G-05 **10/11**.
+
+
 ## 24. 10. 2026 — vizuální náprava a incident chybějící geografie (CI zatím NEOVĚŘENO)
 
 - **Uživatelský důkaz:** screenshot DEV z 24. 10. 2026 ukázal živé symboly letadel nad jednobarevným pozadím a hlášení „Mapový podklad není dostupný“. Znamená to degradovaný mapový podklad, nikoli prokázanou chybu příjmu SSE.
