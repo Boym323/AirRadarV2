@@ -66,7 +66,7 @@ Každý krok realizuj v **samostatném malém PR nebo logicky uceleném commitu*
 
 - [ ] **G-05.11 — Výkon a regresní E2E**  
   **Implementace:** Porovnej setData a updateData pouze podle skutečných dat; změř 25/100/500/2000 cílů, 1/2 Hz, FPS, re-renders a paměť.  
-  **Ověření:** Důkaz s modelem zařízení, SHA a minimálně desktop+mobil browser scénář.
+  **Ověření:** Důkaz s modelem zařízení, SHA a minimálně desktop+mobil browser scénář. První [report 32 scénářů](../reports/G-05-VYKON-MERENI-2026-10-24.md) z [CI #40095503907](https://github.com/Boym323/AirRadarV2/actions/runs/40095503907) PASS poskytuje software Chromium SwiftShader baseline a p95 `setData` vs `updateData`; **nenahrazuje fyzický desktop/mobil GPU test, pan/zoom/follow a delší měření**. G-05.11 ponechat [ ] do této brány.
 
 ## Povinné výsledky a testovací brána
 
