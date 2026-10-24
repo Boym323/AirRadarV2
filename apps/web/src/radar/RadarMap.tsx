@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Map as LibreMap, NavigationControl, type GeoJSONSource } from "maplibre-gl";
+import { Map as LibreMap, NavigationControl, type GeoJSONSource, type StyleSpecification } from "maplibre-gl";
 import type { FeatureCollection, Point, MultiLineString } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Aircraft, ViewState } from "./aircraft-store";
@@ -15,6 +15,12 @@ export type MapStyle = "liberty" | "fiord";
 const STYLES: Record<MapStyle, string> = {
   liberty: "https://tiles.openfreemap.org/styles/liberty",
   fiord: "https://tiles.openfreemap.org/styles/fiord",
+};
+// Lokální plátno bez externích tiles zachová radar i při výpadku podkladu.
+const FALLBACK_STYLE: StyleSpecification = {
+  version: 8,
+  sources: {},
+  layers: [{ id: "radar-fallback-background", type: "background", paint: { "background-color": "#1a3145" } }],
 };
 const AIRCRAFT_SOURCE = "radar-aircraft";
 const TRAIL_SOURCE = "radar-trail";
@@ -222,6 +228,7 @@ type Props = {
 export function RadarMap({ frame, airports, selectedAirportId, showAirports, onSelectAirport, selectedId, follow, style, onSelect, onStopFollow }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const currentStyle = useRef(style);
+  const fallbackActive = useRef(false);
   const map = useRef<LibreMap | null>(null);
   const lastFollowTarget = useRef<{ id: string; lon: number; lat: number } | null>(null);
   const props = useRef({ frame, airports, selectedAirportId, showAirports, onSelectAirport, selectedId, follow, onSelect, onStopFollow });
@@ -299,7 +306,7 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
     };
     instance.on("style.load", () => {
       // Úspěšné obnovení podkladu ruší staré varování, nikoli samotný radar.
-      setError(null);
+      if (!fallbackActive.current) setError(null);
       // Změna stylu zahodí registry map sources; nikdy neposlat diff do nové mapy.
       previousAircraft = null;
       previousEpoch = null;
@@ -348,12 +355,19 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
       }
     }, 1000);
     instance.on("error", () => {
-      // Styl/dlaždice může být krátkodobě offline; letadla jsou i v seznamu.
-      setError("Mapový podklad může být nedostupný; živý seznam funguje dál.");
+      // Při chybě stylu přepni pouze jednou na lokální plátno bez tiles.
+      // Chyba jednotlivé dlaždice po načtení stylu fallback neaktivuje.
+      if (!instance.isStyleLoaded() && !fallbackActive.current) {
+        fallbackActive.current = true;
+        instance.setStyle(FALLBACK_STYLE, { diff: false });
+      }
+      setError(fallbackActive.current
+        ? "Mapový podklad není dostupný; živá letadla zůstávají zobrazena."
+        : "Některé dlaždice mapového podkladu nejsou dostupné; živá letadla fungují dál.");
     });
     instance.on("idle", () => {
       // Po úspěšném dokončení style/tile loadingu odstranit zastaralou chybu.
-      if (instance.isStyleLoaded() && instance.areTilesLoaded()) setError(null);
+      if (!fallbackActive.current && instance.isStyleLoaded() && instance.areTilesLoaded()) setError(null);
     });
     return () => {
       clearInterval(tick);
@@ -382,6 +396,8 @@ export function RadarMap({ frame, airports, selectedAirportId, showAirports, onS
   useEffect(() => {
     if (map.current && currentStyle.current !== style) {
       currentStyle.current = style;
+      fallbackActive.current = false;
+      setError(null);
       map.current.setStyle(STYLES[style]);
     }
   }, [style]);

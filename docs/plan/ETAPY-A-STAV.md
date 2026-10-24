@@ -1,6 +1,6 @@
 # Plán etap a aktuální stav AirRadar V2
 
-**Aktualizováno 24. 10. 2026.** Tento plán řeší **pouze 45 aktuálně vybraných funkcí**, bez vedlejších a nepoužívaných modulů. Výchozí jazyk: čeština. Zápis „NEZAHÁJENO“ není nedostatečný test — práce ještě nezačala.
+**Aktualizováno 24. 10. 2026.** Tento plán řeší **pouze 45 aktuálně vybraných funkcí**, bez vedlejších a nepoužívaných modulů. Výchozí jazyk: čeština. Zápis „NEZAHÁJENO“ není nedostatečný test — práce ještě nezačala. Audit výpadku mapového podkladu a retenční stav issue #41 jsou v [reportu](../reports/ISSUE-41-PROVOZNI-BRANY-2026-10-24.md).
 
 | Etapa | Výstup a zadání | Stav |
 |---|---|---|
