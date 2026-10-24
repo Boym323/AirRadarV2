@@ -314,7 +314,7 @@ jobs:
       - name: G05 · Příprava Playwright
         run: |
           python3 -m venv /tmp/g05-public
-          /tmp/g05-public/bin/pip install --disable-pip-version-check playwright==1.57.0
+          /tmp/g05-public/bin/pip install --disable-pip-version-check playwright==1.57.0 Pillow==11.3.0
           command -v google-chrome >/dev/null || command -v google-chrome-stable >/dev/null
       - name: G05 · Srovnání veřejné V2
         continue-on-error: true
