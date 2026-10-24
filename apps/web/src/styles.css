@@ -160,7 +160,7 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 .follow-button:disabled { opacity: .48; cursor: not-allowed; }
 .detail-hint, .empty-message, .hint { font-size: .75rem; line-height: 1.55; color: #a9c3d5; }
 .radar-footer {
-  position: absolute; z-index: 3; right: 13px; bottom: 13px; max-width: 46%;
+  position: absolute; z-index: 3; right: 13px; bottom: 43px; max-width: 46%;
   padding: 5px 9px; font-size: .61rem; color: #abc4d5;
   border-radius: 7px; border: 1px solid #accbde30; background: #08192bdc;
   white-space: normal; pointer-events: none; backdrop-filter: blur(8px);
@@ -191,7 +191,7 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   .detail-panel { bottom: 0; overflow-y: auto; }
   .map-error { bottom: 63px; left: 10px; max-width: calc(100% - 20px); }
   .map-disclosure { left: 10px; bottom: 32px; font-size: .63rem; }
-  .radar-footer { right: 6px; bottom: 6px; max-width: 60%; font-size: .57rem; }
+  .radar-footer { right: 6px; bottom: 42px; max-width: 60%; font-size: .57rem; }
   .maplibregl-ctrl-top-right { top: 10px; right: 9px; }
 }
 @media (max-width: 410px) {
