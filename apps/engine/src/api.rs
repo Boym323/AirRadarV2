@@ -16,8 +16,8 @@ use std::{
     collections::BTreeMap,
     convert::Infallible,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc, Mutex, Weak,
+        atomic::{AtomicBool, Ordering},
     },
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -733,7 +733,12 @@ mod tests {
             control.set_database_online(online);
             let response = app
                 .clone()
-                .oneshot(Request::builder().uri("/api/v1/health").body(Body::empty()).unwrap())
+                .oneshot(
+                    Request::builder()
+                        .uri("/api/v1/health")
+                        .body(Body::empty())
+                        .unwrap(),
+                )
                 .await
                 .unwrap();
             let body = to_bytes(response.into_body(), 1024).await.unwrap();
