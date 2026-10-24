@@ -129,7 +129,7 @@ describe("G-05.03 / R03 — vlastní směrové symboly", () => {
     }
   });
   it("GeoJSON používá důvěryhodný track, fallback, nadmořskou výšku a stabilní id", () => {
-    const rows = [
+    const rows: Aircraft[] = [
       { ...aircraft(), emitterCategory: "A7" },
       { ...aircraft("icao:bbbbbb"), emitterCategory: "B1", telemetry: {trackDegrees: 0}},
       { ...aircraft("icao:cccccc"), telemetry: {altitudeBaroFt: 6100}},
