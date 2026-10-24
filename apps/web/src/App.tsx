@@ -1,31 +1,51 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { RadarMap, type MapStyle } from "./radar/RadarMap";
 import { useRadarStream } from "./radar/use-radar-stream";
 import type { Aircraft } from "./radar/aircraft-store";
+
+type Panel = "none" | "traffic" | "detail";
 
 function displayName(a: Aircraft): string {
   return a.callsign?.trim() || a.id;
 }
 function formatAltitude(a: Aircraft): string {
   const altitude = a.telemetry?.altitudeBaroFt;
-  return typeof altitude === "number" ? `${altitude.toLocaleString("cs-CZ")} ft` : "—";
+  return typeof altitude === "number" ? altitude.toLocaleString("cs-CZ") + " ft" : "—";
 }
+function formatNumber(value: number | undefined, unit: string): string {
+  return typeof value === "number" ? value.toLocaleString("cs-CZ") + " " + unit : "—";
+}
+function aircraftCount(count: number): string {
+  const word = count === 1 ? "letadlo" : count >= 2 && count <= 4 ? "letadla" : "letadel";
+  return count.toLocaleString("cs-CZ") + " " + word;
+}
+
 export default function App() {
   const { frame, status } = useRadarStream();
+  const [panel, setPanel] = useState<Panel>("none");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "position">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [follow, setFollow] = useState(false);
-  const [style, setStyle] = useState<MapStyle>("liberty");
+  const [style, setStyle] = useState<MapStyle>("fiord");
+  const listToggleRef = useRef<HTMLButtonElement>(null);
   const selected = frame.aircraft.find(a => a.id === selectedId) ?? null;
-  // Nezachovávat výběr zaniklého cíle a při jeho případném návratu
-  // automaticky neskákat na jiný/stale objekt se stejnou identitou.
+
+  // Reconnect nesmí obnovit výběr identity, která z nového snapshotu zmizela.
   useEffect(() => {
     if (status === "live" && selectedId && frame.epoch && !selected) {
       setSelectedId(null);
       setFollow(false);
+      setPanel(previous => previous === "detail" ? "none" : previous);
     }
   }, [frame.epoch, selected, selectedId, status]);
+  // Zastaralá nebo neznámá poloha nesmí zůstat cílem automatické kamery.
+  useEffect(() => {
+    if (follow && (!selected?.position || selected.stale || status !== "live")) {
+      setFollow(false);
+    }
+  }, [follow, selected, status]);
+
   const shown = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("cs-CZ");
     return frame.aircraft.filter(a =>
@@ -34,80 +54,133 @@ export default function App() {
         a.id.toLowerCase().includes(needle))
     ).sort((a, b) => displayName(a).localeCompare(displayName(b), "cs"));
   }, [frame.aircraft, filter, query]);
-  const select = (id: string) => { setSelectedId(id); setFollow(false); };
+
+  const select = (id: string) => {
+    setSelectedId(id);
+    setFollow(false);
+    setPanel("detail");
+  };
+  const closePanel = () => {
+    if (panel === "detail") {
+      setSelectedId(null);
+      setFollow(false);
+    }
+    setPanel("none");
+    listToggleRef.current?.focus();
+  };
+  const toggleTraffic = () => {
+    if (panel === "traffic") closePanel();
+    else setPanel("traffic");
+  };
   const connectionMessage = status === "live" ? "Živý provoz" :
     status === "connecting" ? "Připojování k radaru" :
     status === "unavailable" ? "Provoz je dočasně nedostupný" :
     "Spojení přerušeno — probíhá obnova";
+  const hasCurrentPosition = !!selected?.position && !selected.stale;
+
   return (
     <main className="radar-page">
       <header className="radar-header">
-        <div>
-          <p className="eyebrow">AIRRADAR V2 · G-05 / VÝVOJ</p>
-          <h1>Živý letecký provoz</h1>
+        <div className="brand">
+          <span className="brand-mark" aria-hidden="true">✈</span>
+          <div>
+            <h1>AirRadar V2</h1>
+            <span className="brand-subtitle">Místní letecký radar · G-05 DEV</span>
+          </div>
         </div>
-        <div className={`connection connection-${status}`} role="status" aria-live="polite">
-          <span className="status-dot" /> {connectionMessage}
+        <div className="header-actions">
+          <span className="radar-count" aria-label="Počet zachycených letadel">{aircraftCount(frame.aircraft.length)}</span>
+          <div className={"connection connection-" + status} role="status" aria-live="polite">
+            <span className="status-dot" aria-hidden="true" />
+            {connectionMessage}
+          </div>
+          <button ref={listToggleRef} type="button" className="header-button"
+            aria-controls="traffic-panel" aria-expanded={panel === "traffic"}
+            onClick={toggleTraffic}>
+            {panel === "traffic" ? "Skrýt letadla" : "Letadla"}
+          </button>
+          <label className="style-control">
+            <span>Podklad</span>
+            <select aria-label="Mapový podklad" value={style} onChange={event => setStyle(event.target.value as MapStyle)}>
+              <option value="fiord">Tmavý</option>
+              <option value="liberty">Světlý</option>
+            </select>
+          </label>
         </div>
       </header>
-      <section className="radar-grid" aria-label="Živý radar">
-        <div className="map-panel">
-          <div className="toolbar">
-            <span>{frame.aircraft.length.toLocaleString("cs-CZ")} letadel</span>
-            <label>
-              Podklad
-              <select aria-label="Mapový podklad" value={style} onChange={e => setStyle(e.target.value as MapStyle)}>
-                <option value="liberty">Světlý</option>
-                <option value="fiord">Tmavý</option>
-              </select>
-            </label>
-          </div>
+
+      <section className="radar-stage" aria-label="Živý radar">
+        <div className="map-surface">
           <RadarMap frame={frame} selectedId={selected?.id ?? null}
             follow={follow} style={style} onSelect={select} onStopFollow={() => setFollow(false)} />
-          <div className="map-footer">
-            <span>Lokální ADS-B · polohy pouze z potvrzených pozorování</span>
-            <span>© OpenStreetMap contributors · OpenFreeMap</span>
-          </div>
         </div>
-        <aside className="traffic-panel" aria-label="Seznam letadel">
-          <h2>Letadla v dosahu</h2>
-          <label className="search-label" htmlFor="traffic-query">Hledat volací znak nebo ICAO</label>
-          <input id="traffic-query" type="search" placeholder="Např. OK123 nebo icao:…" value={query} onChange={e => setQuery(e.target.value)} />
-          <label className="filter-label" htmlFor="traffic-filter">Zobrazit</label>
-          <select id="traffic-filter" value={filter} onChange={e => setFilter(e.target.value as "all" | "position")}>
-            <option value="all">Všechna letadla</option>
-            <option value="position">S aktuální polohou</option>
-          </select>
-          <ul className="traffic-list">
-            {shown.slice(0, 300).map(a => (
-              <li key={a.id}>
-                <button type="button" className={a.id === selectedId ? "traffic-button selected" : "traffic-button"}
-                  onClick={() => select(a.id)} aria-pressed={a.id === selectedId}>
-                  <span className="traffic-name">{displayName(a)}</span>
-                  <span className="traffic-meta">{formatAltitude(a)} · {a.position && !a.stale ? "poloha" : "bez čerstvé polohy"}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          {shown.length > 300 && <p className="hint">Zobrazeno prvních 300 letadel. Upřesni vyhledávání.</p>}
-          {shown.length === 0 && <p className="empty-message">{status === "live" ? "Žádná odpovídající letadla." : "Není připojen živý provoz. Čekáme na data radaru."}</p>}
-          {selected && (
-            <section className="selected-panel" aria-label="Vybrané letadlo">
-              <div className="selected-heading">
-                <h3>{displayName(selected)}</h3>
-                <button type="button" onClick={() => { setSelectedId(null); setFollow(false); }} aria-label="Zrušit výběr">✕</button>
+        <div className="map-disclosure">Lokální ADS-B · jen potvrzené polohy</div>
+
+        {panel === "traffic" && (
+          <aside id="traffic-panel" className="radar-panel traffic-panel" aria-label="Seznam letadel">
+            <div className="panel-heading">
+              <h2>Letadla v dosahu</h2>
+              <button type="button" className="close-button" onClick={closePanel} aria-label="Zavřít seznam">✕</button>
+            </div>
+            <label className="field-label" htmlFor="traffic-query">Hledat volací znak nebo ICAO</label>
+            <input id="traffic-query" type="search" autoComplete="off"
+              placeholder="Např. OK123 nebo icao:…" value={query}
+              onChange={event => setQuery(event.target.value)} />
+            <label className="field-label" htmlFor="traffic-filter">Zobrazit</label>
+            <select id="traffic-filter" value={filter}
+              onChange={event => setFilter(event.target.value as "all" | "position")}>
+              <option value="all">Všechna letadla</option>
+              <option value="position">S aktuální polohou</option>
+            </select>
+            <ul className="traffic-list">
+              {shown.slice(0, 300).map(a => (
+                <li key={a.id}>
+                  <button type="button" className={a.id === selectedId ? "traffic-button selected" : "traffic-button"}
+                    onClick={() => select(a.id)} aria-pressed={a.id === selectedId}>
+                    <span className="traffic-name">{displayName(a)}</span>
+                    <span className="traffic-meta">{formatAltitude(a)} · {a.position && !a.stale ? "poloha" : "bez čerstvé polohy"}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {shown.length > 300 && <p className="hint">Zobrazeno prvních 300 letadel. Upřesni vyhledávání.</p>}
+            {shown.length === 0 && <p className="empty-message">
+              {status === "live" ? "Žádná odpovídající letadla." : "Není připojen živý provoz. Čekáme na data radaru."}
+            </p>}
+          </aside>
+        )}
+
+        {panel === "detail" && selected && (
+          <aside className="radar-panel detail-panel" aria-label="Vybrané letadlo">
+            <div className="panel-heading">
+              <div>
+                <span className="panel-eyebrow">Vybrané letadlo</span>
+                <h2>{displayName(selected)}</h2>
               </div>
-              <p>{selected.id} · {formatAltitude(selected)}</p>
-              <p>{selected.position && !selected.stale ? "Poloha dostupná" : "Bez čerstvé polohy"}</p>
-              <button type="button" aria-pressed={follow} disabled={!selected.position || selected.stale}
-                onClick={() => setFollow(previous => !previous)}>
-                {follow ? "Ukončit sledování" : "Sledovat na mapě"}
-              </button>
-            </section>
-          )}
-        </aside>
+              <button type="button" className="close-button" aria-label="Zavřít detail letadla" onClick={closePanel}>✕</button>
+            </div>
+            <p className="aircraft-id">{selected.id}</p>
+            <p className={hasCurrentPosition ? "position-state fresh" : "position-state stale"}>
+              {hasCurrentPosition ? "Aktuální poloha dostupná" : "Bez čerstvé polohy"}
+            </p>
+            <dl className="telemetry-grid">
+              <div><dt>Výška</dt><dd>{formatAltitude(selected)}</dd></div>
+              <div><dt>Rychlost vůči zemi</dt><dd>{formatNumber(selected.telemetry?.groundSpeedKt, "kt")}</dd></div>
+              <div><dt>Směr letu</dt><dd>{formatNumber(selected.telemetry?.trackDegrees, "°")}</dd></div>
+              <div><dt>Vertikální rychlost</dt><dd>{formatNumber(selected.telemetry?.verticalRateFpm, "ft/min")}</dd></div>
+            </dl>
+            <button type="button" className="follow-button" aria-pressed={follow}
+              disabled={!hasCurrentPosition || status !== "live"}
+              onClick={() => setFollow(previous => !previous)}>
+              {follow ? "Ukončit sledování" : "Sledovat na mapě"}
+            </button>
+            <p className="detail-hint">Stopa zobrazuje pouze skutečné přijaté polohy za posledních 20 minut.</p>
+          </aside>
+        )}
       </section>
-      <footer>Vývojová verze G-05 · Mapový podklad vyžaduje internet. AirRadar V1 zůstává samostatný.</footer>
+      <footer className="radar-footer">
+        Vývojová verze G-05 · Podklad OpenFreeMap vyžaduje internet · AirRadar V1 zůstává samostatný
+      </footer>
     </main>
   );
 }

@@ -1,5 +1,7 @@
 # G-05 — MapLibre mapa v již připraveném Vite webu
 
+**Navazující G-05 map-first UI (24. 10.):** implementováno nové kompaktní rozložení mapy, skrývatelný seznam a kontextový detail v izolované větvi; nový CI důkaz dosud nepotvrzen. Tento krok realizuje již existující R01/R06/R08/R09/R14 a schválenou `WEB-UX-UI-SPECIFIKACE.md`, nikoli nové produktové ID. Formální 4/11 se beze změny udržuje do přejímky.
+
 **Stav:** ROZPRACOVÁNO; [PR #22](https://github.com/Boym323/AirRadarV2/pull/22) sloučen 23. 10. 2026, DEV nasazení [#40028968380](https://github.com/Boym323/AirRadarV2/actions/runs/40028968380) PASS. 4 z 11 kroků jsou formálně ověřené, G-05.08 má navazující opravu a čeká na nové CI; úplný benchmark a letiště nejsou hotové.  
 **Odpovědnost:** M04 — Vite/React/MapLibre.  
 **Závislosti:** G-03; letištní vrstva se dokončí po G-06, ostatní části lze provést dříve.  

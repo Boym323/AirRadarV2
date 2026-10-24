@@ -1,5 +1,11 @@
 # CHANGELOG — AirRadar V2
 
+## [Nepublikováno] — map-first UI (24. 10. 2026)
+- G-05 (R01/R06/R08/R09/R14): místo statického dashboardu jedna dominantní mapa, kompaktní navigační lišta, sbalitelný seznam a kontextový panel letu, na telefonu spodní overlay. Jedna MapLibre instance a jeden G-03 SSE store zachovány.
+- Detail používá jen reálná DTO pole (výška, rychlost, heading, vertikální rychlost), stale výběr neumožní follow. Chromium E2E: desktop/mobil, zavření panelu/focus, stejný canvas, styl/SSE; výsledky CI teprve doložit.
+- Není implementována G-05.10 letištní vrstva ani potvrzen G-05.11 referenční GPU benchmark. V1, databáze a produkční prostředí nedotčeny.
+
+
 Sledujeme **skutečné změny kódu, dokumentace a provozních kontraktů**; všechny zápisy jsou česky. Jednotlivé implementační etapy mají vlastní reporty a přesné odkazy na CI.
 
 ## [Nepublikováno]
