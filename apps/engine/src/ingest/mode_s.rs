@@ -19,18 +19,31 @@ pub struct Decoded {
     pub telemetry: FlightData,
 }
 
-/// Pouze DF17: DF0/4/5/20/21 mají AP/address-parity a nelze pro ně
-/// slepě použít 0 CRC syndrom.
-pub fn decode_df17(data: &[u8], received_at: f64) -> Option<Decoded> {
+/// Rozšířený squitter s nezakrytým CRC: pouze DF17 a DF18 s CF=0/1.
+///
+/// DF18 CF=0 oznámí ICAO adresu (ES/NT); CF=1 používá anonymní/non-ICAO
+/// adresu a musí zůstat oddělen od stejné 24bitové ICAO identity.
+/// CF=2/3/5 (TIS-B), CF=6 (ADS-R) a CF=4/7 (management/reserved) vyžadují
+/// samostatný výklad zdroje, IMF a identit — zatím se odmítají. DF0/4/5/
+/// 11/16/20/21 nejsou obyčejný DF17 CRC a nelze je sem připojit.
+pub fn decode_extended_squitter(data: &[u8], received_at: f64) -> Option<Decoded> {
     if data.len() != 14
-        || data[0] >> 3 != 17
-        || crc24(data) != 0
         || !received_at.is_finite()
         || received_at < 0.0
     {
         return None;
     }
-    let key = aircraft_key(&format!("{:02x}{:02x}{:02x}", data[1], data[2], data[3]))?;
+    let df = data[0] >> 3;
+    let anonymous = match (df, data[0] & 7) {
+        (17, _) | (18, 0) => false,
+        (18, 1) => true,
+        _ => return None,
+    };
+    if crc24(data) != 0 {
+        return None;
+    }
+    let address = format!("{:02x}{:02x}{:02x}", data[1], data[2], data[3]);
+    let key = aircraft_key(&if anonymous { format!("~{address}") } else { address })?;
     let tc = data[4] >> 3;
     // ADS-B identifikační type codes 1–4 kódují emitter category D/C/B/A.
     // I při platném CRC se rezervovaný/nepodporovaný subtyp zahazuje.
@@ -139,6 +152,15 @@ pub fn decode_df17(data: &[u8], received_at: f64) -> Option<Decoded> {
         cpr,
         telemetry,
     })
+}
+
+/// Zpětně kompatibilní přísná DF17 cesta pro existující unit a parity testy.
+#[cfg(test)]
+pub fn decode_df17(data: &[u8], received_at: f64) -> Option<Decoded> {
+    if data.first().is_none_or(|byte| byte >> 3 != 17) {
+        return None;
+    }
+    decode_extended_squitter(data, received_at)
 }
 
 fn nl(lat: f64) -> i32 {
@@ -338,6 +360,55 @@ mod tests {
             frame[13] ^= 1;
             assert!(decode_df17(&frame, 1792627200.0).is_none());
         }
+    }
+
+    #[test]
+    fn df18_cf0_icao_and_cf1_anonymous_crc_parity_and_separate_cpr() {
+        let cases: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../contracts/fixtures/beast/cases.json"
+        ))
+        .unwrap();
+        let original = hex_decode(cases["valid"][0]["modeS"].as_str().unwrap()).unwrap();
+        let mut cache = CprCache::default();
+        for (cf, expected_key) in [(0u8, "icao:abc123"), (1u8, "nonicao:abc123")] {
+            let mut frame = original.clone();
+            frame[0] = (18 << 3) | cf;
+            let crc = crc24(&frame[..11]);
+            frame[11..].copy_from_slice(&[(crc >> 16) as u8, (crc >> 8) as u8, crc as u8]);
+            assert_eq!(crc24(&frame), 0);
+            assert!(decode_df17(&frame, 100.0).is_none());
+            let decoded = decode_extended_squitter(&frame, 100.0).unwrap();
+            assert_eq!(decoded.key, expected_key);
+            assert!(decoded.cpr.is_some());
+            let position = cache.observe(&decoded.key, decoded.cpr.clone().unwrap());
+            assert!(position.is_none(), "oba druhy adres mají vlastní CPR cache");
+            frame[13] ^= 1;
+            assert!(decode_extended_squitter(&frame, 100.0).is_none());
+        }
+        assert_eq!(cache.entries.len(), 2);
+    }
+
+    #[test]
+    fn df18_tisb_adsr_reserved_and_ap_replies_fail_closed() {
+        let f: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../contracts/fixtures/beast/cases.json"
+        ))
+        .unwrap();
+        let original = hex_decode(f["valid"][0]["modeS"].as_str().unwrap()).unwrap();
+        for cf in 2u8..=7 {
+            let mut frame = original.clone();
+            frame[0] = (18 << 3) | cf;
+            let crc = crc24(&frame[..11]);
+            frame[11..].copy_from_slice(&[(crc >> 16) as u8, (crc >> 8) as u8, crc as u8]);
+            assert!(decode_extended_squitter(&frame, 100.0).is_none(), "CF={cf}");
+        }
+        let mut reply = original;
+        reply[0] = 20 << 3;
+        let crc = crc24(&reply[..11]);
+        reply[11..].copy_from_slice(&[(crc >> 16) as u8, (crc >> 8) as u8, crc as u8]);
+        assert!(decode_extended_squitter(&reply, 100.0).is_none());
+        assert!(decode_extended_squitter(&reply[..7], 100.0).is_none());
+        assert!(decode_extended_squitter(&reply, f64::NAN).is_none());
     }
 
     #[test]
