@@ -17,6 +17,8 @@ pub struct Decoded {
     pub emitter_category: Option<String>,
     pub cpr: Option<Cpr>,
     pub telemetry: FlightData,
+    /// Konkrétní DF11 není ADS-B poloha; nesmí dědit ADS-B provenance.
+    pub position_origin: &'static str,
 }
 
 /// Rozšířený squitter s nezakrytým CRC: pouze DF17 a DF18 s CF=0/1.
@@ -152,6 +154,41 @@ pub fn decode_extended_squitter(data: &[u8], received_at: f64) -> Option<Decoded
         emitter_category,
         cpr,
         telemetry,
+        position_origin: "adsb",
+    })
+}
+
+/// DF11 all-call 56bit reply má explicitní ICAO (AA) a PI parity
+/// s překrytím 7bitovým interrogator kódem (II/SI), NIKOLIV nulový
+/// CRC syndrom jako DF17. Pouze CA 0/4–7 a syndrome <= 127.
+pub fn decode_verified_all_call(data: &[u8], received_at: f64) -> Option<Decoded> {
+    if data.len() != 7
+        || data[0] >> 3 != 11
+        || !received_at.is_finite()
+        || received_at < 0.0
+    {
+        return None;
+    }
+    let capability = data[0] & 7;
+    if capability != 0 && capability < 4 {
+        return None;
+    }
+    // Zaručené II/SI je nejvýše sedm bitů; vyšší syndrome znamená
+    // chybu parity nebo nepodporovaný format. Bez falešných AA identit.
+    if crc24(data) > 0x7f {
+        return None;
+    }
+    let key = aircraft_key(&format!("{:02x}{:02x}{:02x}", data[1], data[2], data[3]))?;
+    if key == "icao:000000" {
+        return None;
+    }
+    Some(Decoded {
+        key,
+        callsign: None,
+        emitter_category: None,
+        cpr: None,
+        telemetry: FlightData::default(),
+        position_origin: "unknown",
     })
 }
 
@@ -317,7 +354,7 @@ pub fn observation(decoded: Decoded, position: Option<Position>, received_at: f6
         position_origin: if position.is_some() {
             "adsb_cpr"
         } else {
-            "adsb"
+            decoded.position_origin
         }
         .into(),
         position_at_utc: position.as_ref().map(|_| received_at),
@@ -387,6 +424,33 @@ mod tests {
             assert!(decode_extended_squitter(&frame, 100.0).is_none());
         }
         assert_eq!(cache.entries.len(), 2);
+    }
+
+    #[test]
+    fn all_call_df11_icao_and_pi_interrogator_parity_are_verified() {
+        // Junzi Sun, The 1090 MHz Riddle, all-call example, AA 484FDE,
+        // PI syndrome 22 (interrogator code, not a CRC failure).
+        let valid = hex_decode("5d484fdea248f5").unwrap();
+        assert_eq!(crc24(&valid), 22);
+        let decoded = decode_verified_all_call(&valid, 123.0).unwrap();
+        assert_eq!(decoded.key, "icao:484fde");
+        assert_eq!(decoded.position_origin, "unknown");
+        assert!(decoded.cpr.is_none());
+        let event = observation(decoded, None, 123.0);
+        assert_eq!(event.position_origin, "unknown");
+        assert!(event.position.is_none());
+        assert!(!crate::contract::eligible_for_sql(&event));
+        let mut bad = valid.clone();
+        bad[6] ^= 0x80;
+        assert!(decode_verified_all_call(&bad, 123.0).is_none());
+        assert!(decode_verified_all_call(&valid[..6], 123.0).is_none());
+        assert!(decode_verified_all_call(&valid, f64::INFINITY).is_none());
+        let mut wrong_df = valid.clone();
+        wrong_df[0] = 4 << 3;
+        assert!(decode_verified_all_call(&wrong_df, 123.0).is_none());
+        let mut reserved_ca = valid.clone();
+        reserved_ca[0] = (11 << 3) | 2;
+        assert!(decode_verified_all_call(&reserved_ca, 123.0).is_none());
     }
 
     #[test]
