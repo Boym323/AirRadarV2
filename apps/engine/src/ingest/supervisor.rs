@@ -3,7 +3,7 @@
 use super::{
     beast::Decoder,
     json::{parse_replay, read_snapshot, wall_seconds},
-    mode_s::{CprCache, Decoded, decode_df17, observation},
+    mode_s::{CprCache, Decoded, decode_extended_squitter, observation},
     state::RadarState,
 };
 use crate::contract::Observation;
@@ -508,12 +508,12 @@ async fn poll_beast(addr: &str, sender: mpsc::Sender<Ingress>, dropped: Arc<Atom
                 match timeout(Duration::from_secs(5), tcp.read(&mut buf)).await {
                     Ok(Ok(n)) if n > 0 => {
                         for frame in decoder.push(&buf[..n]) {
-                            // Mode A/C, DF parity-overlay a nevalidní CRC nejsou důvěryhodné DF17.
+                            // Přijímáme jen CRC-ověřené DF17 a DF18 CF=0/1. AP/TIS-B/ADS-R zatím odmítáme.
                             if frame.kind != 0x33 {
                                 continue;
                             }
                             let now = wall_seconds();
-                            if let Some(decoded) = decode_df17(&frame.payload, now) {
+                            if let Some(decoded) = decode_extended_squitter(&frame.payload, now) {
                                 enqueue(&sender, &dropped, Ingress::Beast { decoded, at: now });
                             }
                         }
@@ -781,7 +781,7 @@ pub fn replay() -> Result<RadarState, &'static str> {
     {
         let bytes = crate::contract::hex_decode(case["modeS"].as_str().ok_or("modeS")?)?;
         let at = 1792627206.0 + i as f64;
-        let decoded = decode_df17(&bytes, at).ok_or("beast crc")?;
+        let decoded = decode_extended_squitter(&bytes, at).ok_or("beast crc")?;
         consume(
             Ingress::Beast { decoded, at },
             &mut state,
@@ -793,7 +793,7 @@ pub fn replay() -> Result<RadarState, &'static str> {
         crate::contract::hex_decode(cases["invalid"][3]["hex"].as_str().ok_or("invalid frame")?)?;
     let mut decoder = Decoder::default();
     let frames = decoder.push(&bad);
-    if frames.len() != 1 || decode_df17(&frames[0].payload, 1792627210.0).is_some() {
+    if frames.len() != 1 || decode_extended_squitter(&frames[0].payload, 1792627210.0).is_some() {
         return Err("bad CRC accepted");
     }
     if state.tracks.len() != 3 {
@@ -1013,7 +1013,7 @@ mod tests {
         {
             let frame = crate::contract::hex_decode(case["modeS"].as_str().unwrap()).unwrap();
             let at = base + index as f64;
-            let decoded = decode_df17(&frame, at).unwrap();
+            let decoded = decode_extended_squitter(&frame, at).unwrap();
             consume(
                 Ingress::Beast { decoded, at },
                 &mut state,
@@ -1224,7 +1224,7 @@ mod tests {
         {
             let frame = crate::contract::hex_decode(case["modeS"].as_str().unwrap()).unwrap();
             let at = 1792627201.0 + i as f64;
-            let decoded = decode_df17(&frame, at).unwrap();
+            let decoded = decode_extended_squitter(&frame, at).unwrap();
             consume(
                 Ingress::Beast { decoded, at },
                 &mut state,
@@ -1276,7 +1276,7 @@ mod tests {
         {
             let frame = crate::contract::hex_decode(case["modeS"].as_str().unwrap()).unwrap();
             let at = 1792627220.0 + i as f64;
-            let decoded = decode_df17(&frame, at).unwrap();
+            let decoded = decode_extended_squitter(&frame, at).unwrap();
             consume(
                 Ingress::Beast { decoded, at },
                 &mut state,
