@@ -1,4 +1,4 @@
-## 2026-10-25 — G-02 experiment: bezpečný Mode-S DF11 all-call
+## 2026-10-25 — G-02 Mode-S DF11 all-call (CI a DEV ověřeno)
 
 - Přidán oddělený 56bit DF11 validátor se skutečnou PI/interrogator paritou
   (`CRC24 syndrome <= 127`), pouze dovoleným CA a explicitní ICAO adresou.
@@ -6,8 +6,9 @@
   15 s, oddělených alespoň 250 ms; potvrzovací mapa maximálně 2 048 klíčů.
 - DF11 nemá vlastní polohu: nevytváří GPS/CPR bod ani SQL historii, nepřiřazuje
   mu nepravdivě původ ADS-B. AP odpovědi DF0/4/5/16/20/21 zůstávají vypnuté.
-- Připraveno k izolovaným CI a živým V1/V2 srovnávacím testům; žádný zásah
-  do V1, LXC či konfigurace readsb.
+- PR #59 CI včetně SQL integrace PASS; V2 DEV commit `931cdffe` nasazen.
+  Živý read-only V1/V2 test 3× PASS (V1 39, Rust 40, společných 38, pouze V1 1).
+  V1 produkce nedotčena; úplný cutover a CPU A/B stále NO-GO.
 
 ## 2026-10-25 — G-02 údržba dekodéru: DF18 (testování)
 

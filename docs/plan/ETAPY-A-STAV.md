@@ -139,10 +139,16 @@ zatím nedokazuje, že tento rozdíl vyřeší. Report:
 
 ### G-02 oprava pokrytí Mode-S DF11 — experiment 25. 10. 2026
 
-**Kandidát; CI/DEV po samostatném PR.** Po opravě porovnávací metodiky V1/Rust V2
+**CI + DEV PASS; tři další živá parity měření ukazují 1 cíl pouze ve V1 a 2 pouze v Rust V2.** Po opravě porovnávací metodiky V1/Rust V2
 zůstalo ve V1 navíc pouze 3–5 cílů (měření #40234262802); byly bez polohy a
 převládal poslední typ zprávy DF11. Rust experiment proto zavádí validovaný
 Mode-S DF11 all-call do stávajícího BEAST příjmu s dvoufázovým potvrzením
 identity, oddělenou provenance `unknown` a nulovým SQL zápisem z DF11.
 Report: `docs/reports/G-02-DF11-OVERENI-2026-10-25.md`. Produkční V1
 zůstává beze změny; přepnutí main V1 je nadále NO-GO.
+
+DF11 dokumentovaná přejímka: [V2 DEV release
+#40235165530](https://github.com/Boym323/AirRadarV2/actions/runs/40235165530),
+SHA `931cdffe` PASS; živý V1/V2 tester po nasazení 3/3 PASS (V1 39,
+Rust 40, společných 38, V1-only 1, Rust-only 2). Nezávislý soak/CPU
+ani produktový V1 cutover tím nejsou schválené.

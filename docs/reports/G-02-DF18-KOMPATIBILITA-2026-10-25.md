@@ -1,7 +1,6 @@
 # G-02 — bezpečné rozšíření DF18 pro V1/V2 srovnávací testy
 
-**Stav 25. 10. 2026: implementace v izolované PR větvi; CI a DEV live A/B
-zatím NEOVĚŘENO.**
+**Stav 25. 10. 2026: DF18 CF0/CF1 CI a DEV nasazení PASS; příspěvek ke snížení rozdílu nebyl izolovaně prokázán.**
 
 ## Proč
 
@@ -41,3 +40,13 @@ polohy podle již existující SQL eligiblity logiky; V1 PostgreSQL nedotčeno.
    validátor AP reply vůči již známé identitě, ne slepé přijetí jejich CRC.
 
 Dokončení tohoto PR není souhlas s Rust V1 produkčním cutoverem.
+
+## Skutečný DF18 výsledek
+
+[PR #58](https://github.com/Boym323/AirRadarV2/pull/58) sloučen jako
+`de282bf5c64ad48778e553cb0caf8c5c0f66ae2d` a [DEV release
+#40233582640](https://github.com/Boym323/AirRadarV2/actions/runs/40233582640)
+PASS. První porovnání po DF18 však ještě mylně ignorovalo Rust identitu s
+`stale=true`, které znamená pouze zastaralou polohu. Po opravě
+porovnávacího nástroje byl rozdíl jen 3–5 cílů, převážně bezpolohové DF11.
+Viz navazující DF11 report.
