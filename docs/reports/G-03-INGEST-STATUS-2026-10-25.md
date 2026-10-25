@@ -1,6 +1,6 @@
 # G-03: veřejný ingest status pro šetření neaktivní V2
 
-**Stav 25. 10. 2026: návrh, bez potvrzeného DEV nasazení.**
+**Stav 25. 10. 2026: CI a DEV nasazení PASS; dlouhodobá stabilita ještě NEOVĚŘENA.**
 
 ## Ověřený incident
 Nezávislé GitHub Actions testování veřejných rozhraní dalo V1 HTTP 200,
@@ -27,3 +27,20 @@ adresu BEAST serveru, cestu k JSON, DB konfiguraci ani tajemství. Nezavádíme
 3. Veřejně ověřit JSON odpověď, pravdivý `stage` a úspěšné 1Hz ingest tick.
 4. Podle výsledků diagnostikovat chybějící BEAST/JSON vstup a reálně obnovit
    zdroj. Teprve pak provést porovnání V1/V2 živých poloh.
+
+## Provedená přejímka (25. 10. 2026)
+
+- [V2 PR #56](https://github.com/Boym323/AirRadarV2/pull/56): schválené testy,
+  merge do V2 main `88be61c7d1d4036dd28c0589287cacfcb50404c9`.
+- [DEV release #40227541079](https://github.com/Boym323/AirRadarV2/actions/runs/40227541079):
+  sestavení, publikace a nasazení na izolovaný DEV runner PASS.
+- [Živá read-only kontrola #40227633768](https://github.com/Boym323/AirRadar/actions/runs/40227633768):
+  `mode=read_only`, `stage=G-04`, `beastConfigured=true`,
+  `beastConnected=true`, stáří rámce a ingest ticku 0 s.
+  `jsonConfigured=false` je při používaném BEAST zdroji přípustné.
+- Tři párové HTTP snapshoty: V1 lokálních 52/54/54, Rust V2 42/41/39,
+  shodných 42/41/39 a P95 rozdílu poloh 0,497/0,000/0,122 km.
+  **To nedokazuje ekvivalenci všech funkcí, CPU ani vhodnost produkčního cutoveru.**
+- Příčina předchozí absence pozorování zůstává bez historických provozních
+  důkazů neznámá; nové nasazení obnovilo živý příjem, ale nedokazuje
+  trvalé vyřešení původní příčiny.
