@@ -17,7 +17,7 @@ use std::{
     convert::Infallible,
     sync::{
         Arc, Mutex, Weak,
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
     },
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -73,11 +73,52 @@ struct Frame {
     unavailable: bool,
 }
 
+
+#[derive(Default)]
+struct IngestSignals {
+    json_configured: AtomicBool,
+    beast_configured: AtomicBool,
+    json_last_ok: AtomicU64,
+    json_last_error: AtomicU64,
+    beast_last_frame: AtomicU64,
+    beast_connected: AtomicBool,
+    last_tick: AtomicU64,
+}
+
+fn seconds(value: f64) -> u64 {
+    if value.is_finite() && value >= 0.0 {
+        value as u64
+    } else {
+        0
+    }
+}
+
+fn age_seconds(now: u64, then: u64) -> Option<u64> {
+    (then != 0).then(|| now.saturating_sub(then))
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PublicIngestStatus {
+    mode: &'static str,
+    stage: &'static str,
+    json_configured: bool,
+    beast_configured: bool,
+    json_healthy: bool,
+    json_last_ok_age_seconds: Option<u64>,
+    json_last_error_age_seconds: Option<u64>,
+    beast_connected: bool,
+    beast_last_frame_age_seconds: Option<u64>,
+    ingest_tick_age_seconds: Option<u64>,
+    aircraft_count: usize,
+}
+
 #[derive(Clone)]
 pub struct Feed {
     rx: watch::Receiver<Arc<Frame>>,
     clients: Arc<Semaphore>,
     database_online: Arc<AtomicBool>,
+    ingest: Arc<IngestSignals>,
 }
 
 impl Feed {
@@ -89,11 +130,17 @@ impl Feed {
     fn database_online(&self) -> bool {
         self.database_online.load(Ordering::Relaxed)
     }
+
+    pub fn set_sources_configured(&self, json: bool, beast: bool) {
+        self.ingest.json_configured.store(json, Ordering::Relaxed);
+        self.ingest.beast_configured.store(beast, Ordering::Relaxed);
+    }
 }
 
 pub struct Publisher {
     sender: watch::Sender<Arc<Frame>>,
     epoch: String,
+    ingest: Arc<IngestSignals>,
 }
 
 fn unix_now() -> f64 {
@@ -166,17 +213,40 @@ pub fn new() -> (Feed, Publisher) {
         unavailable: false,
     });
     let (sender, rx) = watch::channel(initial);
+    let ingest = Arc::new(IngestSignals::default());
     (
         Feed {
             rx,
             clients: Arc::new(Semaphore::new(MAX_CLIENTS)),
             database_online: Arc::new(AtomicBool::new(false)),
+            ingest: Arc::clone(&ingest),
         },
-        Publisher { sender, epoch },
+        Publisher { sender, epoch, ingest },
     )
 }
 
 impl Publisher {
+    pub fn record_tick(&self, at: f64) {
+        self.ingest.last_tick.store(seconds(at), Ordering::Relaxed);
+    }
+
+    pub fn record_json_health(&self, at: f64, ok: bool) {
+        let target = if ok {
+            &self.ingest.json_last_ok
+        } else {
+            &self.ingest.json_last_error
+        };
+        target.store(seconds(at), Ordering::Relaxed);
+    }
+
+    pub fn record_beast_link(&self, connected: bool) {
+        self.ingest.beast_connected.store(connected, Ordering::Relaxed);
+    }
+
+    pub fn record_beast_frame(&self, at: f64) {
+        self.ingest.beast_last_frame.store(seconds(at), Ordering::Relaxed);
+    }
+
     /// Jen ingest task (jediný vlastník RAM) volá maximálně jednou za 1 s.
     /// Všechny klienty obsluhuje jeden vypočtený a serializovaný update.
     pub fn publish(
@@ -385,6 +455,44 @@ async fn aircraft(State(state): State<ApiState>, query: RawQuery) -> Response {
     .into_response()
 }
 
+// Pouze atomická, veřejná, anonymní diagnostika. Žádné souřadnice,
+// interní IP, uživatelské parametry nebo dotazy na DB/upstream.
+async fn ingest_status(State(state): State<ApiState>, query: RawQuery) -> Response {
+    if let Some(response) = reject_parameters(query) {
+        return response;
+    }
+    let now = seconds(unix_now());
+    let source = &state.feed.ingest;
+    let json_ok = source.json_last_ok.load(Ordering::Relaxed);
+    let json_error = source.json_last_error.load(Ordering::Relaxed);
+    let frame = state.feed.rx.borrow().clone();
+    let result = PublicIngestStatus {
+        mode: "read_only",
+        stage: state.stage,
+        json_configured: source.json_configured.load(Ordering::Relaxed),
+        beast_configured: source.beast_configured.load(Ordering::Relaxed),
+        json_healthy: age_seconds(now, json_ok).is_some_and(|age| age <= 5)
+            && json_ok >= json_error,
+        json_last_ok_age_seconds: age_seconds(now, json_ok),
+        json_last_error_age_seconds: age_seconds(now, json_error),
+        beast_connected: source.beast_connected.load(Ordering::Relaxed),
+        beast_last_frame_age_seconds: age_seconds(
+            now,
+            source.beast_last_frame.load(Ordering::Relaxed),
+        ),
+        ingest_tick_age_seconds: age_seconds(
+            now,
+            source.last_tick.load(Ordering::Relaxed),
+        ),
+        aircraft_count: frame.snapshot.aircraft.len(),
+    };
+    let mut response = Json(result).into_response();
+    response
+        .headers_mut()
+        .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    response
+}
+
 // Emits at most one 16KiB slice per poll. The current Bytes refers to ONE
 // globally serialized immutable event, not a separate serialized client copy.
 // Client-local pending application queue is exactly zero, i.e. <=256KiB.
@@ -571,6 +679,7 @@ pub fn router_with_runtime(feed: Feed, stage: &'static str, database_connected: 
     Router::new()
         .route("/api/v1/health", get(health))
         .route("/api/v1/aircraft", get(aircraft))
+        .route("/api/v1/ingest-status", get(ingest_status))
         .route("/api/v1/stream", get(events))
         .with_state(ApiState {
             feed,
@@ -588,6 +697,36 @@ mod tests {
     };
     use futures_util::StreamExt;
     use tower::ServiceExt;
+
+    #[tokio::test]
+    async fn ingest_status_exposes_only_source_aggregates() {
+        let (feed, publisher) = new();
+        feed.set_sources_configured(true, true);
+        let api = router_with_runtime(feed, "G-04", true);
+        let response = api.clone()
+            .oneshot(Request::builder().uri("/api/v1/ingest-status").body(Body::empty()).unwrap())
+            .await.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = to_bytes(response.into_body(), 4096).await.unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(json["mode"], "read_only");
+        assert_eq!(json["stage"], "G-04");
+        assert_eq!(json["jsonConfigured"], true);
+        assert_eq!(json["beastConfigured"], true);
+        assert_eq!(json["jsonHealthy"], false);
+        assert_eq!(json["aircraftCount"], 0);
+        assert!(json.get("aircraft").is_none());
+        assert!(json.get("receiver").is_none());
+        assert!(json.get("beastAddr").is_none());
+        let bad = api.oneshot(Request::builder()
+            .uri("/api/v1/ingest-status?host=internal")
+            .body(Body::empty()).unwrap()).await.unwrap();
+        assert_eq!(bad.status(), StatusCode::BAD_REQUEST);
+        publisher.record_tick(unix_now());
+        publisher.record_json_health(unix_now(), true);
+        publisher.record_beast_link(true);
+        publisher.record_beast_frame(unix_now());
+    }
 
     fn fixture_tracks() -> Vec<PublicAircraft> {
         let source: serde_json::Value = serde_json::from_str(include_str!(
