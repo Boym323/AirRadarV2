@@ -201,6 +201,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // not claim an active DB runtime when the protected DEV DB is absent.
         pool.acquire().await?;
         let (feed, publisher) = api::new();
+        feed.set_sources_configured(config.json_path.is_some(), config.beast_addr.is_some());
         let bind =
             std::env::var("AIRRADAR_V2_BIND").unwrap_or_else(|_| "127.0.0.1:4102".to_owned());
         let listener = tokio::net::TcpListener::bind(bind).await?;
@@ -261,6 +262,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if std::env::args().any(|arg| arg == "--g03-live-api") {
         let config = ingest::supervisor::Config::from_env()?;
         let (feed, publisher) = api::new();
+        feed.set_sources_configured(config.json_path.is_some(), config.beast_addr.is_some());
         let bind =
             std::env::var("AIRRADAR_V2_BIND").unwrap_or_else(|_| "127.0.0.1:4102".to_owned());
         let listener = tokio::net::TcpListener::bind(bind).await?;
@@ -273,6 +275,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let pool = history_store::dev_pool_from_env()?;
         pool.acquire().await?;
         let (feed, publisher) = api::new();
+        feed.set_sources_configured(config.json_path.is_some(), config.beast_addr.is_some());
         feed.set_database_online(true);
         let monitor = tokio::spawn(monitor_database(pool.clone(), feed.clone()));
         let bind =
@@ -329,6 +332,7 @@ mod tests {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let (feed, publisher) = api::new();
+        feed.set_sources_configured(config.json_path.is_some(), config.beast_addr.is_some());
         let result = tokio::time::timeout(
             Duration::from_secs(3),
             run_supervised_live(config, listener, api::router(feed), publisher, None),

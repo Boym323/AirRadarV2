@@ -111,3 +111,13 @@ se nepřepisuje. Autorizace vyžaduje aktivní DEV release shodný
 s GitHub `main` a immutable bot release. Offline G-02 timer se
 nezapíná; LIVE timer se zachovává. Jde o opravu testovací infrastruktury,
 nikoli o novou produktovou funkci nebo nový 60min PASS.
+
+
+### G-03 — diagnostika příjmu z veřejného V2 API (25. 10. 2026)
+
+Stav: **připraveno k CI, nenapravuje samo o sobě chybějící letadla**. Na veřejném
+V2 API byly při read-only šetření získány HTTP 200, `waiting_for_observations`
+a 0 letadel. V1 vracel 49 lokálních letadel. Přidán veřejný pouze čtecí,
+anonymizovaný `/api/v1/ingest-status`. Důkazy a plán přejímky:
+`docs/reports/G-03-INGEST-STATUS-2026-10-25.md`. Schválení G-13 ani zásah do V1
+se tím neprovádí.
