@@ -27,10 +27,7 @@ pub struct Decoded {
 /// samostatný výklad zdroje, IMF a identit — zatím se odmítají. DF0/4/5/
 /// 11/16/20/21 nejsou obyčejný DF17 CRC a nelze je sem připojit.
 pub fn decode_extended_squitter(data: &[u8], received_at: f64) -> Option<Decoded> {
-    if data.len() != 14
-        || !received_at.is_finite()
-        || received_at < 0.0
-    {
+    if data.len() != 14 || !received_at.is_finite() || received_at < 0.0 {
         return None;
     }
     let df = data[0] >> 3;
@@ -43,7 +40,11 @@ pub fn decode_extended_squitter(data: &[u8], received_at: f64) -> Option<Decoded
         return None;
     }
     let address = format!("{:02x}{:02x}{:02x}", data[1], data[2], data[3]);
-    let key = aircraft_key(&if anonymous { format!("~{address}") } else { address })?;
+    let key = aircraft_key(&if anonymous {
+        format!("~{address}")
+    } else {
+        address
+    })?;
     let tc = data[4] >> 3;
     // ADS-B identifikační type codes 1–4 kódují emitter category D/C/B/A.
     // I při platném CRC se rezervovaný/nepodporovaný subtyp zahazuje.
