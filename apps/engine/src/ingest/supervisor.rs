@@ -272,10 +272,27 @@ pub async fn run_with_publisher_and_history_until<F: Future<Output = ()>>(
                 }
             },
             item=rx.recv()=>{
-                match item {Some(event)=>{consume(event, &mut state, &mut cpr, &mut sources);},None=>break}
+                match item {
+                    Some(event) => {
+                        if let Some(publish) = publisher.as_ref() {
+                            match &event {
+                                Ingress::JsonBatch { at, .. } => publish.record_json_health(*at, true),
+                                Ingress::JsonHealth { at, ok } => publish.record_json_health(*at, *ok),
+                                Ingress::BeastLink { connected, .. } => publish.record_beast_link(*connected),
+                                Ingress::Beast { at, .. } => publish.record_beast_frame(*at),
+                                Ingress::Json(_) => {}
+                            }
+                        }
+                        consume(event, &mut state, &mut cpr, &mut sources);
+                    }
+                    None => break,
+                }
             },
             _=tick.tick()=>{
                 let now = wall_seconds();
+                if let Some(publish) = publisher.as_ref() {
+                    publish.record_tick(now);
+                }
                 state.cleanup(now);
                 if let Some(history) = state.history.as_mut() {
                     if history_enabled {
