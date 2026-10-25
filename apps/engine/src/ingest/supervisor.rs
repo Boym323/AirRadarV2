@@ -3,7 +3,7 @@
 use super::{
     beast::Decoder,
     json::{parse_replay, read_snapshot, wall_seconds},
-    mode_s::{CprCache, Decoded, decode_extended_squitter, observation},
+    mode_s::{CprCache, Decoded, decode_extended_squitter, decode_verified_all_call, observation},
     state::RadarState,
 };
 use crate::contract::Observation;
@@ -11,6 +11,7 @@ use crate::{
     history::{HistorySampler, Sample},
     history_store::WriterDiagnostics,
 };
+use std::collections::BTreeMap;
 use std::future::Future;
 use std::{
     path::{Path, PathBuf},
@@ -488,6 +489,38 @@ async fn poll_json(
         }
     }
 }
+/// Dvě nezávislá validní DF11 all-call pozorování během 15 sekund.
+/// Omezujeme falešné 24bitové adresy při syndrome PI <= 0x7f.
+/// Probation je bounded, lokální pro jedno BEAST TCP spojení a nikdy
+/// nepíše historii ani nemění primární Rust RAM bez druhého potvrzení.
+#[derive(Default)]
+struct AllCallConfirmation {
+    first: BTreeMap<String, f64>,
+    next_cleanup: f64,
+}
+impl AllCallConfirmation {
+    fn confirm(&mut self, key: &str, now: f64) -> bool {
+        if !now.is_finite() || now < 0.0 {
+            return false;
+        }
+        if now >= self.next_cleanup {
+            self.first.retain(|_, at| now >= *at && now - *at <= 15.0);
+            self.next_cleanup = now + 5.0;
+        }
+        if let Some(first) = self.first.get(key)
+            && now - *first >= 0.25
+            && now - *first <= 15.0
+        {
+            return true;
+        }
+        if self.first.len() >= 2048 && !self.first.contains_key(key) {
+            self.first.pop_first();
+        }
+        self.first.insert(key.to_owned(), now);
+        false
+    }
+}
+
 async fn poll_beast(addr: &str, sender: mpsc::Sender<Ingress>, dropped: Arc<AtomicU64>) {
     let mut delay = 1u64;
     loop {
@@ -503,17 +536,21 @@ async fn poll_beast(addr: &str, sender: mpsc::Sender<Ingress>, dropped: Arc<Atom
                 },
             );
             let mut decoder = Decoder::default();
+            let mut all_call = AllCallConfirmation::default();
             let mut buf = [0_u8; 4096];
             loop {
                 match timeout(Duration::from_secs(5), tcp.read(&mut buf)).await {
                     Ok(Ok(n)) if n > 0 => {
                         for frame in decoder.push(&buf[..n]) {
-                            // Přijímáme jen CRC-ověřené DF17 a DF18 CF=0/1. AP/TIS-B/ADS-R zatím odmítáme.
-                            if frame.kind != 0x33 {
-                                continue;
-                            }
                             let now = wall_seconds();
-                            if let Some(decoded) = decode_extended_squitter(&frame.payload, now) {
+                            let decoded = match frame.kind {
+                                0x33 => decode_extended_squitter(&frame.payload, now),
+                                0x32 => decode_verified_all_call(&frame.payload, now)
+                                    .filter(|row| all_call.confirm(&row.key, now)),
+                                // Mode A/C, AP, TIS-B, ADS-R zatím záměrně fail-closed.
+                                _ => None,
+                            };
+                            if let Some(decoded) = decoded {
                                 enqueue(&sender, &dropped, Ingress::Beast { decoded, at: now });
                             }
                         }
@@ -907,6 +944,28 @@ pub fn benchmark() -> Result<(), &'static str> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod all_call_tests {
+    use super::*;
+    #[test]
+    fn df11_requires_two_separate_receptions_and_is_bounded() {
+        let mut p = AllCallConfirmation::default();
+        assert!(!p.confirm("icao:484fde", 100.0));
+        assert!(!p.confirm("icao:484fde", 100.1));
+        assert!(p.confirm("icao:484fde", 100.5));
+        assert!(!p.confirm("icao:484fde", 120.0));
+        assert!(p.confirm("icao:484fde", 121.0));
+        assert!(!p.confirm("icao:000001", 121.0));
+        assert!(!p.confirm("icao:000002", f64::NAN));
+        for x in 0..2200 {
+            let key = format!("icao:{x:06x}");
+            p.confirm(&key, 122.0);
+        }
+        assert!(p.first.len() <= 2048);
+        assert!(!p.confirm("icao:484fde", 138.0));
+    }
 }
 
 #[cfg(test)]

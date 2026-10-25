@@ -1,3 +1,14 @@
+## 2026-10-25 — G-02 experiment: bezpečný Mode-S DF11 all-call
+
+- Přidán oddělený 56bit DF11 validátor se skutečnou PI/interrogator paritou
+  (`CRC24 syndrome <= 127`), pouze dovoleným CA a explicitní ICAO adresou.
+- Nové DF11 identity vstupují do Rust RAM až po dvou platných přijetích během
+  15 s, oddělených alespoň 250 ms; potvrzovací mapa maximálně 2 048 klíčů.
+- DF11 nemá vlastní polohu: nevytváří GPS/CPR bod ani SQL historii, nepřiřazuje
+  mu nepravdivě původ ADS-B. AP odpovědi DF0/4/5/16/20/21 zůstávají vypnuté.
+- Připraveno k izolovaným CI a živým V1/V2 srovnávacím testům; žádný zásah
+  do V1, LXC či konfigurace readsb.
+
 ## 2026-10-25 — G-02 údržba dekodéru: DF18 (testování)
 
 - Rust BEAST ingest přijímá CRC24-ověřený DF18 CF=0 (přímá ICAO adresa) a
