@@ -73,7 +73,6 @@ struct Frame {
     unavailable: bool,
 }
 
-
 #[derive(Default)]
 struct IngestSignals {
     json_configured: AtomicBool,
@@ -221,7 +220,11 @@ pub fn new() -> (Feed, Publisher) {
             database_online: Arc::new(AtomicBool::new(false)),
             ingest: Arc::clone(&ingest),
         },
-        Publisher { sender, epoch, ingest },
+        Publisher {
+            sender,
+            epoch,
+            ingest,
+        },
     )
 }
 
@@ -240,11 +243,15 @@ impl Publisher {
     }
 
     pub fn record_beast_link(&self, connected: bool) {
-        self.ingest.beast_connected.store(connected, Ordering::Relaxed);
+        self.ingest
+            .beast_connected
+            .store(connected, Ordering::Relaxed);
     }
 
     pub fn record_beast_frame(&self, at: f64) {
-        self.ingest.beast_last_frame.store(seconds(at), Ordering::Relaxed);
+        self.ingest
+            .beast_last_frame
+            .store(seconds(at), Ordering::Relaxed);
     }
 
     /// Jen ingest task (jediný vlastník RAM) volá maximálně jednou za 1 s.
@@ -480,10 +487,7 @@ async fn ingest_status(State(state): State<ApiState>, query: RawQuery) -> Respon
             now,
             source.beast_last_frame.load(Ordering::Relaxed),
         ),
-        ingest_tick_age_seconds: age_seconds(
-            now,
-            source.last_tick.load(Ordering::Relaxed),
-        ),
+        ingest_tick_age_seconds: age_seconds(now, source.last_tick.load(Ordering::Relaxed)),
         aircraft_count: frame.snapshot.aircraft.len(),
     };
     let mut response = Json(result).into_response();
@@ -703,9 +707,16 @@ mod tests {
         let (feed, publisher) = new();
         feed.set_sources_configured(true, true);
         let api = router_with_runtime(feed, "G-04", true);
-        let response = api.clone()
-            .oneshot(Request::builder().uri("/api/v1/ingest-status").body(Body::empty()).unwrap())
-            .await.unwrap();
+        let response = api
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/ingest-status")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
         assert_eq!(response.status(), StatusCode::OK);
         let body = to_bytes(response.into_body(), 4096).await.unwrap();
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
@@ -718,9 +729,15 @@ mod tests {
         assert!(json.get("aircraft").is_none());
         assert!(json.get("receiver").is_none());
         assert!(json.get("beastAddr").is_none());
-        let bad = api.oneshot(Request::builder()
-            .uri("/api/v1/ingest-status?host=internal")
-            .body(Body::empty()).unwrap()).await.unwrap();
+        let bad = api
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/ingest-status?host=internal")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
         assert_eq!(bad.status(), StatusCode::BAD_REQUEST);
         publisher.record_tick(unix_now());
         publisher.record_json_health(unix_now(), true);
