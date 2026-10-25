@@ -1,6 +1,6 @@
 # Plán etap a aktuální stav AirRadar V2
 
-**Aktualizováno 24. 10. 2026.** Tento plán řeší **pouze 45 aktuálně vybraných funkcí**, bez vedlejších a nepoužívaných modulů. Výchozí jazyk: čeština. Zápis „NEZAHÁJENO“ není nedostatečný test — práce ještě nezačala. Aktuální provozní audit a stav issue #41 jsou v [reportu](../reports/ISSUE-41-PROVOZNI-BRANY-2026-10-24.md).
+**Aktualizováno 25. 10. 2026.** Tento plán řeší **pouze 45 aktuálně vybraných funkcí**, bez vedlejších a nepoužívaných modulů. Výchozí jazyk: čeština. Zápis „NEZAHÁJENO“ není nedostatečný test — práce ještě nezačala. Aktuální provozní audit a stav issue #41 jsou v [reportu](../reports/ISSUE-41-PROVOZNI-BRANY-2026-10-24.md).
 
 | Etapa | Výstup a zadání | Stav |
 |---|---|---|
@@ -115,9 +115,12 @@ nikoli o novou produktovou funkci nebo nový 60min PASS.
 
 ### G-03 — diagnostika příjmu z veřejného V2 API (25. 10. 2026)
 
-Stav: **připraveno k CI, nenapravuje samo o sobě chybějící letadla**. Na veřejném
+Stav: **CI + DEV auto-deploy PASS, úvodní tři živé parity vzorky PASS; dlouhodobý soak a CPU A/B chybí**. Na veřejném
 V2 API byly při read-only šetření získány HTTP 200, `waiting_for_observations`
 a 0 letadel. V1 vracel 49 lokálních letadel. Přidán veřejný pouze čtecí,
 anonymizovaný `/api/v1/ingest-status`. Důkazy a plán přejímky:
 `docs/reports/G-03-INGEST-STATUS-2026-10-25.md`. Schválení G-13 ani zásah do V1
 se tím neprovádí.
+
+Veřejné API `/api/v1/ingest-status` po nasazení potvrdilo G-04, BEAST připojen,
+zpráva i tick čerstvé; 39–42 současných letadel s V1. Produkce G-13 zůstává NO-GO.

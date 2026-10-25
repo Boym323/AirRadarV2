@@ -1,10 +1,12 @@
-## 2026-10-25 — G-03 anonymní diagnostika ingestu (před přejímkou)
+## 2026-10-25 — G-03 anonymní diagnostika ingestu (CI a DEV ověřeno)
 
 - Připraven veřejný read-only endpoint `GET /api/v1/ingest-status`,
   který bez autentizace sděluje pouze agregované příznaky JSON/BEAST příjmu a
   životnost ingest smyčky. Nikdy nevypisuje IP, host, cesty, HEX letadel ani DB.
 - Cílem je vyšetření neaktivního veřejného V2 radaru bez zásahu do V1.
-- Stav se považuje za prokázaný až po CI a přejímce na samostatném DEV LXC.
+- CI + DEV nasazení ověřeno na V2 main `88be61c7`; endpoint vrací anonymní
+  příznaky BEAST a čerstvost ingest smyčky. Tři první V1/V2 parity vzorky
+  obsahovaly společná letadla, úplný Rust cutover dosud neschválen.
 
 # CHANGELOG — AirRadar V2
 
