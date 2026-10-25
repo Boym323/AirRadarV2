@@ -162,11 +162,7 @@ pub fn decode_extended_squitter(data: &[u8], received_at: f64) -> Option<Decoded
 /// s překrytím 7bitovým interrogator kódem (II/SI), NIKOLIV nulový
 /// CRC syndrom jako DF17. Pouze CA 0/4–7 a syndrome <= 127.
 pub fn decode_verified_all_call(data: &[u8], received_at: f64) -> Option<Decoded> {
-    if data.len() != 7
-        || data[0] >> 3 != 11
-        || !received_at.is_finite()
-        || received_at < 0.0
-    {
+    if data.len() != 7 || data[0] >> 3 != 11 || !received_at.is_finite() || received_at < 0.0 {
         return None;
     }
     let capability = data[0] & 7;
