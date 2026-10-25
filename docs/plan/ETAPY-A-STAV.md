@@ -135,3 +135,14 @@ zatím zůstávají záměrně neimplementované. Důvodem je skutečné porovn�
 V2 vykazuje o 10–16 lokálně pozorovaných ADS-B cílů méně. Uvedená implementace
 zatím nedokazuje, že tento rozdíl vyřeší. Report:
 `docs/reports/G-02-DF18-KOMPATIBILITA-2026-10-25.md`.
+
+
+### G-02 oprava pokrytí Mode-S DF11 — experiment 25. 10. 2026
+
+**Kandidát; CI/DEV po samostatném PR.** Po opravě porovnávací metodiky V1/Rust V2
+zůstalo ve V1 navíc pouze 3–5 cílů (měření #40234262802); byly bez polohy a
+převládal poslední typ zprávy DF11. Rust experiment proto zavádí validovaný
+Mode-S DF11 all-call do stávajícího BEAST příjmu s dvoufázovým potvrzením
+identity, oddělenou provenance `unknown` a nulovým SQL zápisem z DF11.
+Report: `docs/reports/G-02-DF11-OVERENI-2026-10-25.md`. Produkční V1
+zůstává beze změny; přepnutí main V1 je nadále NO-GO.
