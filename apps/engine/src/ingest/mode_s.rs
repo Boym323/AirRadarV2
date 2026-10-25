@@ -171,7 +171,12 @@ pub fn decode_verified_all_call(data: &[u8], received_at: f64) -> Option<Decoded
     }
     // Zaručené II/SI je nejvýše sedm bitů; vyšší syndrome znamená
     // chybu parity nebo nepodporovaný format. Bez falešných AA identit.
-    if crc24(data) > 0x7f {
+    // CRC24 helper returns the residual polynomial for an entire frame,
+    // not the DF11 interrogator overlay itself. PI must be checked as
+    // expected four-byte-header CRC XOR the transmitted three-byte parity.
+    let parity = (u32::from(data[4]) << 16) | (u32::from(data[5]) << 8) | u32::from(data[6]);
+    let interrogator_code = crc24(&data[..4]) ^ parity;
+    if interrogator_code > 0x7f {
         return None;
     }
     let key = aircraft_key(&format!("{:02x}{:02x}{:02x}", data[1], data[2], data[3]))?;
@@ -427,7 +432,7 @@ mod tests {
         // Junzi Sun, The 1090 MHz Riddle, all-call example, AA 484FDE,
         // PI syndrome 22 (interrogator code, not a CRC failure).
         let valid = hex_decode("5d484fdea248f5").unwrap();
-        assert_eq!(crc24(&valid), 22);
+        assert_eq!(crc24(&valid[..4]) ^ 0xa248f5, 22);
         let decoded = decode_verified_all_call(&valid, 123.0).unwrap();
         assert_eq!(decoded.key, "icao:484fde");
         assert_eq!(decoded.position_origin, "unknown");
