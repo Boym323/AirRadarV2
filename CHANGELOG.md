@@ -1,3 +1,13 @@
+## 2026-10-25 — G-02 údržba dekodéru: DF18 (testování)
+
+- Rust BEAST ingest přijímá CRC24-ověřený DF18 CF=0 (přímá ICAO adresa) a
+  CF=1 (anonymní non-ICAO, oddělená identita i CPR cache).
+- Ostatní DF18 CF=2–7 zatím fail-closed: TIS-B/ADS-R mají jiné pořadí důvěry
+  a některé vyžadují IMF pro určení identity. Mode-S AP parity zůstává vypnutá.
+- Nové Rust testy platného CRC, poškozené parity, rezervovaných typů a odlišných
+  ICAO/non-ICAO identit. Žádná změna V1 ani zdrojů/DB konfigurace.
+- Měření příjmu a reakce V1/V2 shadow po nasazení teprve následují.
+
 ## 2026-10-25 — G-03 anonymní diagnostika ingestu (CI a DEV ověřeno)
 
 - Připraven veřejný read-only endpoint `GET /api/v1/ingest-status`,

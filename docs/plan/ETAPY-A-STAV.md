@@ -124,3 +124,14 @@ se tím neprovádí.
 
 Veřejné API `/api/v1/ingest-status` po nasazení potvrdilo G-04, BEAST připojen,
 zpráva i tick čerstvé; 39–42 současných letadel s V1. Produkce G-13 zůstává NO-GO.
+
+
+### G-02 údržba kompatibility V1/V2: DF18 (25. 10. 2026)
+
+**Kandidát / čeká na CI:** dosavadní Rust BEAST decoder G-02 dekódoval pouze
+CRC24-validní DF17. Doplněna bezpečná podmnožina DF18 CF0/CF1 se správně
+oddělenou ICAO/non-ICAO identitou a existujícím CPR; CF2–CF7, DF11 a AP reply
+zatím zůstávají záměrně neimplementované. Důvodem je skutečné porovnání V1/V2:
+V2 vykazuje o 10–16 lokálně pozorovaných ADS-B cílů méně. Uvedená implementace
+zatím nedokazuje, že tento rozdíl vyřeší. Report:
+`docs/reports/G-02-DF18-KOMPATIBILITA-2026-10-25.md`.
