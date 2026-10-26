@@ -32,12 +32,21 @@
 
 # CHANGELOG — AirRadar V2
 
-## 24. 10. 2026 — Aviation Atlas I1 (CI/DEV zatím NEOVĚŘENO)
+## 24. 10. 2026 — Aviation Atlas I2: siluety a živá vizuální přejímka (CI NEOVĚŘENO)
+
+- G-05.03/R03 a G-05.06/R06: běžné ikony jsou jemně modrobílé s kontrastním tmavým okrajem, vybraný cíl má vlastní azurový sprite a výraznější halo. Tvar vychází jen z validované `emitterCategory`, chybějící směr dál znamená bod; žádné falešné typy.
+- G-05.04/R04: vylepšená čitelnost pravdivých callsign/ft štítků na všech stylech, bez DOM markerů a nových datových zdrojů; běžné ikony mají menší váhu při nižším zoomu.
+- Chromium kontroluje selected sprite atlas a ukládá screenshot výběru.
+- Oprava přeskočeného post-release vizuálního jobu V2: explicitně vyžaduje úspěch DEV deploye. Detektor detailu screenshotu rozlišuje jednobarevné plátno od pravděpodobně vykreslené kartografie (pouze heuristika, fyzické GPU stále NEOVĚŘENO).
+
+
+## 24. 10. 2026 — Aviation Atlas I1 (CI/DEV PASS)
 
 - Proveden [konkrétní vizuální audit veřejného screenshotu](docs/audits/G-05-VIZUALNI-PREJIMKA-2026-10-24.md), kritické priority P0/P1 a měřitelné podmínky pro opakované iterace G-05.
 - G-05.01/R01 a G-05.05/R06: mapa nyní zabírá celý viewport, značka a ovládací prvky se vznášejí nad mapou, hledání letadel/ICAO používá stávající jediný seznam a store; klávesa `/` otevře hledání.
 - G-05.09/R14: čitelnější OpenFreeMap Fiord jako výchozí atlas; předchozí tmavý a světlý styl zůstávají výslovnou volbou ve Vrstvách. Technická patička z výchozího pohledu odstraněna, MapLibre atribuce musí zůstat.
 - G-05.11: Chromium pořizuje desktop/mobile layout snímky a read-only porovnává nasazenou veřejnou V2; samostatný post-release job stávajícího DEV workflow kontroluje skutečný veřejný web po úspěšném V2 DEV releasu. Pokud je veřejný web nedostupný ze sítě runneru, report stav pravdivě označí jako NEOVĚŘENO. **Ani tyto screenshoty nenahrazují fyzické GPU/FPS**.
+- **I1 PR #53** sloučen do `main` jako `e249baa5`; [PR Chromium / Rust / web / dokumentace CI #40130532118](https://github.com/Boym323/AirRadarV2/actions/runs/40130532118) PASS; [DEV release #40130900374](https://github.com/Boym323/AirRadarV2/actions/runs/40130900374) SUCCESS. Veřejná after-release vizuální job byla v prvním releasu chybně SKIPPED; její podmínka je opravována v I2. Public HTTP 200 před I1 bylo přímo měřeno ze sítě runneru (původní canvas 760/850 px, header 66 px, patička přítomna); veřejný live SSE/mapa z této CI screenshot baseline potvrzena nebyla.
 - G-05 stále formálně 10/11, beze změn V1, Rust, DB, schválených KEEP ID.
 
 

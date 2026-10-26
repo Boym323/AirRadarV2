@@ -38,24 +38,29 @@ export function iconForAircraft(category: unknown, track: unknown): AircraftIcon
   return CATEGORY_ICON[category] ?? "generic-fixedwing";
 }
 
-/** Kreslit originální SVG path segmenty jednou do canvas image registru MapLibre. */
+/** G-05.03 / R03: dvě vlastní kontrastní varianty téže pravdivé siluety.
+ * Výběr nemění kategorii letadla: pouze vizuální prioritu a čitelnost.
+ * Canvas sprites jsou neměnné, registrované jednou za style.load.
+ */
 export function registerAircraftIcons(map: Pick<LibreMap, "hasImage" | "addImage">): void {
   for (const [name, path] of Object.entries(AIRCRAFT_PATHS)) {
-    const id = `radar-${name}`;
-    if (map.hasImage(id)) continue;
-    const canvas = document.createElement("canvas");
-    canvas.width = 64;
-    canvas.height = 64;
-    const context = canvas.getContext("2d");
-    if (!context) continue;
-    const silhouette = new Path2D(path);
-    context.lineJoin = "round";
-    context.lineCap = "round";
-    context.fillStyle = "#f9fcff";
-    context.strokeStyle = "#17314d";
-    context.lineWidth = 3;
-    context.stroke(silhouette);
-    context.fill(silhouette);
-    map.addImage(id, context.getImageData(0, 0, 64, 64), { pixelRatio: 2 });
+    for (const selected of [false, true]) {
+      const id = selected ? `radar-selected-${name}` : `radar-${name}`;
+      if (map.hasImage(id)) continue;
+      const canvas = document.createElement("canvas");
+      canvas.width = 64;
+      canvas.height = 64;
+      const context = canvas.getContext("2d");
+      if (!context) continue;
+      const silhouette = new Path2D(path);
+      context.lineJoin = "round";
+      context.lineCap = "round";
+      context.fillStyle = selected ? "#7ce8f8" : "#e6f3fc";
+      context.strokeStyle = selected ? "#06485e" : "#17344a";
+      context.lineWidth = selected ? 4 : 3.5;
+      context.stroke(silhouette);
+      context.fill(silhouette);
+      map.addImage(id, context.getImageData(0, 0, 64, 64), { pixelRatio: 2 });
+    }
   }
 }

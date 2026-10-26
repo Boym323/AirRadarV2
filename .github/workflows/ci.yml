@@ -209,7 +209,7 @@ jobs:
         with:
           name: g05-visual-${{ github.sha }}
           path: |
-            .artifacts/g05-i1-*.png
+            .artifacts/g05-i*.png
             .artifacts/g05-public-*.png
             .artifacts/g05-public-*.json
           include-hidden-files: true
