@@ -1,0 +1,51 @@
+name: One-time V2 DEV retirement preflight (read-only)
+on:
+  push:
+    branches: [audit/v2-retirement-preflight-20261027]
+    paths:
+      - '.github/workflows/v2-retirement-preflight.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-inventory:
+    name: Read-only V2 DEV LXC service inventory
+    runs-on: [self-hosted, linux, x64, airradarv2-dev]
+    timeout-minutes: 5
+    steps:
+      - name: Check V2 runtime without credentials or service changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '=== V2-only unit states (no writes) ==='
+          for unit in \
+            airradarv2-engine.service \
+            airradarv2-g04-canary.service \
+            airradarv2-g02-auto.timer \
+            airradarv2-g02-live-auto.timer \
+            airradarv2-main-deploy.timer \
+            airradarv2-g04-retention.timer \
+            airradarv2-runner.service \
+            actions.runner.Boym323-AirRadarV2.airradarv2-dev.service; do
+            active="$(systemctl is-active "$unit" 2>/dev/null || true)"
+            enabled="$(systemctl is-enabled "$unit" 2>/dev/null || true)"
+            printf '%s active=%s enabled=%s\n' "$unit" "$active" "$enabled"
+          done
+          echo '=== Other installed V2 units (identifiers + states only) ==='
+          systemctl list-units --all --no-legend 'airradarv2*' 'actions.runner.Boym323-AirRadarV2*' 2>/dev/null |
+            awk '{print $1, $3, $4}' | head -n 80 || true
+          echo '=== V2 local listening ports (yes/no only) ==='
+          for port in 4100 4101 4114; do
+            if ss -H -lnt "sport = :$port" 2>/dev/null | grep -q .; then
+              echo "tcp/$port listening"
+            else
+              echo "tcp/$port not-listening"
+            fi
+          done
+          echo '=== V2 local HTTP status (no response content) ==='
+          for path in /health /api/health / /api/v1/health; do
+            code="$(curl --silent --output /dev/null --write-out '%{http_code}' --connect-timeout 2 --max-time 4 "http://127.0.0.1:4101$path" || true)"
+            printf 'localhost:4101%s HTTP %s\n' "$path" "$code"
+          done
+          echo '=== Runtime inventory complete; no host changes made ==='
